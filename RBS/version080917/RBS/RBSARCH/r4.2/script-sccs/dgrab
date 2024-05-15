@@ -1,0 +1,46 @@
+#! /bin/sh -e
+#
+case $# in
+0) echo "Usage: dgrab filename [path]"; exit 1;;
+1) ;;
+2) ;;
+*) echo "Usage: dgrab filename [path]"; exit 1;;
+esac
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+#
+set -e 
+trap 'echo "DGRAB: Error during dgrab" ; rm -f $1.ascii ; cd $savedir ; exit 2' 0
+#
+#
+cd doc/source
+if ( test -s  $1 )
+then echo "DGRAB: File already exists in your source directory!"
+     exit
+elif ( test -s $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/s.$1.ascii )
+then echo "grabbing...."
+     rm -f $1.ascii
+#     sccs -d$RBS_ARCHIVE$RBS_RELEASE/doc -psccs edit -s $1 1> /dev/null 2>&1
+     sccs -d$RBS_ARCHIVE$RBS_RELEASE/doc -psccs edit -s $1.ascii
+     uudecode $1.ascii
+     rm -f $1.ascii
+     chmod u+rwx $1
+     echo "grabbed file $1"
+else echo "DGRAB: File does not exist in the archive!"
+     exit 
+fi
+#
+if ( test $2 )
+then
+   if ( test -r $2 )
+   then cp $2 $1
+     echo "DGRAB: copied file $2 into source directory of component doc"
+   else 
+      echo "DGRAB: File $2 is not readable!"
+   fi
+fi
+#
+#
+cd $savedir
+trap 0

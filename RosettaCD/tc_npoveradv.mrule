@@ -1,0 +1,229 @@
+DUTCH 10
+&
+\newpage
+\begin{verbatim}
+%
+% TRANSFORMATION TNPoverADv1
+< m1:CLAUSE{CLAUSErec1}
+           [ I1:mu1,
+             I2:mu2,
+             predrel/VERBP{VERBPrec1}
+                    [ I3:mu3,
+                      I4:rel1/T2,
+                      I5:mu4 
+                    ],
+             mu5 
+           ]
+>
+
+< m :CLAUSE{CLAUSErec2}
+           [ I1:mu1,
+             I6:preadvrel/T2,
+             I2:mu2,
+             predrel/VERBP{VERBPrec1}
+                    [ I3:mu3,
+                      I5:mu4 
+                    ],
+             mu5 
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1 : ALL(mu1, I11:rel2/..)
+       I2 : NOT EXIST(mu2,[I11:rel2/..]) AND NOT EXIST(mu2, [preadvrel/..])
+       I3 : ALL(mu3, I13:rel3/..)
+       I4 : rel1 IN [objrel, indobjrel,argrel] AND
+            (T2.CAT IN [NPVAR] WITH T2.REC.NPhead IN [datNP,ditNP,dieNP,
+                    persproNP, otherNP, allesNP, ietsNP, elkaarNP])
+       I5 : NOT EXIST(mu4,[I13:rel3/..]) 
+       I6 : T2.CAT IN [NPVAR]
+       I11: rel2 IN AUX_preerposrels
+       I13: rel3 IN AUX_insidevpadvrels
+      >
+
+      COMP
+         <
+          C1: rel1 = objrel AND CLAUSErec1.synvpefs * 
+                                 (AUX_objvps + [synzijn]) <> [] AND
+              NOT EXIST(mu4, [indobjrel/..])                          
+          A1: CLAUSErec2 := CLAUSErec1;
+              CLAUSErec2.synvpefs := CLAUSErec1.synvpefs * 
+                                          (AUX_objvps + [synzijn]) ;
+          C2: rel1 = indobjrel AND CLAUSErec1.synvpefs * AUX_indobjvps <> []
+          A2: CLAUSErec2 := CLAUSErec1;
+              CLAUSErec2.synvpefs := CLAUSErec1.synvpefs * AUX_indobjvps;
+          C3: rel1 = argrel AND CLAUSErec1.synvpefs * AUX_VRvps <> [] AND
+              NOT EXIST(mu4, [indobjrel/..])                          AND
+              NOT EXIST(mu4, [objrel/..])                          
+          A3: CLAUSErec2 := CLAUSErec1;
+              CLAUSErec2.synvpefs := CLAUSErec1.synvpefs * AUX_VRvps;
+
+         > 
+
+      DECOMP
+         <
+          C1: CLAUSErec2.synvpefs * (AUX_objvps  + [synzijn]) <> [] AND
+              NOT EXIST(mu4, [indobjrel/..])                          
+          A1: rel1 := objrel;
+              CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.synvpefs := CLAUSErec2.synvpefs * 
+                                          (AUX_objvps + [synzijn]);
+          C2: CLAUSErec2.synvpefs * AUX_indobjvps <> [] 
+          A2: rel1 := indobjrel;
+              CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.synvpefs := CLAUSErec2.synvpefs * AUX_indobjvps;
+          C3: CLAUSErec2.synvpefs * AUX_VRvps <> [] AND
+              NOT EXIST(mu4, [indobjrel/..])        AND
+              NOT EXIST(mu4, [objrel/..])                          
+          A3: rel1 := argrel;
+              CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.synvpefs := CLAUSErec2.synvpefs * AUX_VRvps;
+         >
+
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] TNPoverADv1
+\item[* relevant examples:]
+x1 gisteren x2 x3 gaf $\rightarrow$\\
+x1 x2 gisteren x3 gaf $\rightarrow$\\
+x1 x2 x3 gisteren gaf
+(hij gaf gisteren de man het boek $\rightarrow$\\
+ hij gaf de man gisteren het boek
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] XPPROPToCLAUSE
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 4-JUN-1987 10:20:40  
+\item[* author:] Jan Odijk
+\item[* copied from:]--
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To turn object and indirect object NPVARs or CNVARs into
+preadvrels, when no aanobjrel or voorobjrel is present.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+
+The relation name is lost after application of this transformation.
+It might be useful to retain it. This makes sense for the surface parser,
+and for making the coice for the objrel or indobjrel more deterministic,
+as e.g. in TNPoverADV2.
+It can best be done in combination with the argrel strategy for V-raising.
+
+The preadvrel is put as far to the left as possible. A consequence is that
+e.g. {\em ..dat hij gisteren de man niet zag} cannot be derived, only
+{\em ..dat hij de man gisteren niet zag} can. To achieve the result that
+also the first one is generated, as one of the options, a separate hopping
+transformation is necessary. This does not exist yet.
+
+Deeply emdedded VARs can (in combination with VR and pruning) 
+get higher by this rule, e.g. {\em dat hij die man niet wil zien}. In
+English deep, (over unlimited distances) substitution is necesary 
+in such cases. This problem has not been solved yet.
+
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] none
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER Fnopreadv
+< m :CLAUSE{CLAUSErec1}[I1:mu1]
+>
+  
+   MATCHCONDITIONS
+      <
+       I1: EXIST(mu1, [preadvrel/..])
+      >
+
+         <
+          C1: true
+          A1: @
+         >
+
+
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] Fnopreadv
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 9-DEC-1989 13:54:54  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+%%

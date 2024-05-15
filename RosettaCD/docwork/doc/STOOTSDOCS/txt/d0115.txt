@@ -1,0 +1,2861 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$XC ~`
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3.morphology
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Rosetta3 English Morphology, inflection
+
+         Author       :  Agnes Mijnhout
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  115
+
+         Date         :  09/12/86
+
+         Status       :  concept
+
+         Supersedes   :  
+
+         Distribution :  project
+
+         Clearance    :  project
+
+         Keywords     :  morphology, inflection, English
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright (c) Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 115                      date: 09/12/86
+$LD 4
+$Np 1
+$UC _
+$C1 Introduction
+$ This document presents the inflection rules of English morphology for 
+Rosetta3. In section 2 domain T is defined, i.e., the categories, attributes
+and attribute-values used in the morphological rules. Section 3 discusses the
+three types of rules that are used in the morphological component: GLUE-rules,
+segmentation-rules and lextree-rules. Section 4 discusses the rules, attributes
+and attribute-values used for verbs, section 5 contains the same for nouns, 
+section 6 for adjectives and adverbs, and section 7 for the other categories
+(PERSPRO, POSSADJ, POSSPRO, WHPRO). Sections 8, 9 and 10 contain the actual
+rules. Commentary on the rules can be found there, as well as in the other
+sections.$
+
+$C1 Domain T of English morphology
+$ This section contains a list of categories and records. The attributes and
+attribute-values that make up the records are also specified. Some categories
+in the list play no role in the inflection-rules, they are used in the 
+derivation-rules only. They are nevertheless included here. The attribute 
+_affix_ is only used in derivation-rules too. The division that has been made
+between BCAT, SUBCAT and CAT is explained in section 3. In the sections 4, 5,
+6 and 7 the attributes and attribute-values are explained.$
+
+$UC ø
+ENGLISH DOMAIN_T
+
+AFFIXKEYS =   (SFKam,SFKis,SFKwas,SFKare,SFKwere,SFKirrpp,SFKirring,
+	       SFKirrptpp,SFKirrS,SFKmodpt,SFKirrnc,SFKirrpt,SFKirrpt2,
+               SFKirrpp2,SFKirrpp3,SFKregptpp,SFKcdptpp,SFKcding,SFKreging,
+	       SFKregS,SFKregEs,SFKvoicingS,SFKirrplur,SFKlatplur,SFKirrcomp,
+	       SFKirrsuper,SFKirrcomp2,SFKirrsuper2,SFKcdcomp,SFKcdsuper,
+               SFKregcomp,SFKregsuper,
+               SFKacc,SFKposs,SFKpredposs,PFKanti1,PFKanti2,PFKex,PFKhyper,
+               PFKpro,PFKre,PFKvice,SFKregable,SFKtruncable,SFKcdable
+              );
+
+TYPES:
+       <
+        affixtype = (anti1,anti2,pro,re,vice,ex,hyper,able,noaffix);
+        casestype = SET OF cases; cases = (nominative, accusative);
+        compformationstype = SET OF compformations; compformations = (regcomp,
+                                                cdcomp,nocomp,irrcomp,irrcomp2);
+        compformtype = (compar, super, basic);
+        complcattype = (Vcomplcat,Ncomplcat,Acomplcat,Advcomplcat);
+        conjclassestype = SET OF conjclasses; conjclasses = 0..14;
+        headstype = SET OF heads; heads = (nounhead,verbhead,adjhead,advhead,
+                                           propernounhead);
+        ingformtype = (reging,cding,cdreging,noing,irring);
+        modustype = (infinitive, indicative, subjunctive, ingform, participle);
+        xpmoodtype = (wh, nowh);
+        numberstype = SET OF numbers; numbers = (singular,plural);
+        personstype = SET OF persons; persons = 1..3;
+        persprocasetype = (nom, acc);
+        plurformstype = SET OF plurforms;plurforms = (onlyplur,noplur,irrplur,
+                                                      regplur,regEplur,latplur,
+                                                      voicingplur,singandplur);
+        posstype = BOOLEAN;
+        predpostype = BOOLEAN;
+        sformtype = (regS,regEs,noS,irrS);
+        tensetype = (omegatense, presenttense, pasttense);
+        whcasetype = BOOLEAN;
+       >
+RECORDS:
+       <
+
+        BADJrecord    = <compformations:compformationstype:[regcomp]
+                         KEY
+                        >
+        SUBADJrecord  = <compformations:compformationstype:[regcomp]
+                         affix:affixtype:noaffix
+                        >
+        ADJrecord     = <compformations:compformationstype:[regcomp]
+                         affix:affixtype:noaffix
+                         compform:compformtype:basic
+                        >
+        POSSADJrecord= <mood:xpmoodtype:nowh
+                       >
+        BADJSUFFrecord = <complcat:complcattype:Vcomplcat
+                          KEY
+                         >
+        BADVrecord    = <compformations:compformationstype:[regcomp]
+                         KEY
+                        >
+        SUBADVrecord  = <compformations:compformationstype:[regcomp]
+                         affix:affixtype:noaffix
+                        >
+        ADVrecord     = <compformations:compformationstype:[regcomp]
+                         affix:affixtype:noaffix
+                         compform:compformtype:basic
+                        >
+        BIRRPREFrecord = <heads:headstype:[nounhead]
+                          KEY
+                         >
+        BNOUNrecord   = <plurforms:plurformstype:[regplur]
+                         KEY
+                        >
+        SUBNOUNrecord = <plurforms:plurformstype:[regplur]
+                         affix:affixtype:noaffix
+                        >
+        NOUNrecord    = <plurforms:plurformstype:[regplur]
+                         numbers:numberstype:[singular]
+                         affix:affixtype:noaffix
+                        >
+        BPERSPROrecord = <predpos:predpostype:true
+                          KEY
+                         >
+        PERSPROrecord  = <predpos:predpostype:true
+                          persprocase:persprocasetype:nom
+                         >
+        POSSPROrecord = <
+                        >
+        BPREFIXrecord  = <heads:headstype:[nounhead]
+                          KEY
+                         >
+        BPROPERNOUNrecord = <plurforms:plurformstype:[regplur]
+                             KEY
+                            >
+        SUBPROPERNOUNrecor = <plurforms:plurformstype:[regplur]
+                              affix:affixtype:noaffix
+                             >
+        PROPERNOUNrecord = <plurforms:plurformstype:[regplur]
+                            affix:affixtype:noaffix
+                            numbers:numberstype:[singular]
+                           >
+        SFCATrecord    = <KEY
+                         >
+        BVERBrecord   = <conjclasses:conjclassestype:[10]
+                         ingform:ingformtype:reging
+                         sform:sformtype:regS
+                         KEY
+                        >
+        SUBVERBrecord = <conjclasses:conjclassestype:[10]
+                         ingform:ingformtype:reging
+                         sform:sformtype:regS
+                         affix:affixtype:noaffix
+                        >
+        VERBrecord    = <conjclasses:conjclassestype:[10]
+                         ingform:ingformtype:reging
+                         sform:sformtype:regS
+                         affix:affixtype:noaffix
+                         modus:modustype:infinitive
+                         tense:tensetype:omegatense
+                         persons:personstype:[]
+                         numbers:numberstype:[]
+                        >
+        BWHPROrecord   = <poss:posstype:true
+                          whcase:whcasetype:true
+                          KEY
+                         >
+        WHPROrecord    = <poss:posstype:true
+                          whcase:whcasetype:true
+                          cases:casestype:[]
+                         >
+       >
+RELATIONS : (head,compl,pref)
+
+CATEGORIES :
+            <
+              <BADJ:BADJrecord>
+              <SUBADJ:SUBADJrecord>
+              <ADJ:ADJrecord>
+              <BADJSUFF:BADJSUFFrecord>
+              <BADV:BADVrecord>
+              <SUBADV:SUBADVrecord>
+              <ADV:ADVrecord>
+              <BIRRPREF:BIRRPREFrecord>
+              <BNOUN:BNOUNrecord>
+              <SUBNOUN:SUBNOUNrecord>
+              <NOUN:NOUNrecord>
+              <BPERSPRO:BPERSPROrecord>
+              <PERSPRO:PERSPROrecord>
+              <POSSADJ:POSSADJrecord>
+              <POSSPRO:POSSPROrecord>
+              <BPREFIX:BPREFIXrecord>
+              <BPROPERNOUN:BPROPERNOUNrecord>
+              <SUBPROPERNOUN:SUBPROPERNOUNrecord>
+              <PROPERNOUN:PROPERNOUNrecord>
+              <SFCAT:SFCATrecord>
+              <BVERB:BVERBrecord>
+              <SUBVERB:SUBVERBrecord>
+              <VERB:VERBrecord>
+              <BWHPRO:BWHPROrecord>
+              <WHPRO:WHPROrecord>
+            >
+
+COPY:   bverbtosubverb = FROM BVERBrecord TO SUBVERBrecord
+        subverbtoverb = FROM SUBVERBrecord TO VERBrecord
+        bnountosubnoun = FROM BNOUNrecord TO SUBNOUNrecord
+        subnountonoun = FROM SUBNOUNrecord TO NOUNrecord
+        bpropernountosubpropernoun = FROM BPROPERNOUNrecord TO 
+                                     SUBPROPERNOUNrecord
+        subpropernountopropernoun = FROM SUBPROPERNOUNrecord TO
+                                    PROPERNOUNrecord
+        badjtosubadj = FROM BADJrecord TO SUBADJrecord
+        subadjtoadj = FROM SUBADJrecord TO ADJrecord
+        badvtosubadv = FROM BADVrecord TO SUBADVrecord
+        subadvtoadv = FROM SUBADVrecord TO ADVrecord
+        bpersprotoperspro = FROM BPERSPROrecord TO PERSPROrecord
+        bwhprotowhpro = FROM BWHPROrecord TO WHPROrecord
+
+END
+$UC _
+$C1 Rules: GLUE, segmentation and lextree
+$ In the morphological component of Rosetta3 three types of rules are used:
+GLUE-rules, segmentation-rules and lextree-rules. Section 3.1 describes how the
+GLUE-rules work. Sections 3.2 and 3.3 discuss the segmentation-rules and the
+lextree-rules. The formalism of the rules will be described in a different 
+document by Joep Rous. I will only illustrate what they look like for English
+and what their effects are.
+
+$C2 GLUE-rules
+$ Analytically speaking, GLUE-rules separate two words (and put a GLUE between
+them). Generatively, the GLUE-rules stick together two words divided by a GLUE.
+These rules are used for English for (a.o.) contractions of auxiliaries onto the
+subject (_I've_, _he's_) and for contractions of _not_ (_dont't_, _won't_).
+An example of such a rule is:$
+
+is   +   not  :: isn't;
+
+$ This rule is both for analysis and generation. If a rule is prefixed by either
+/A or /G it means that the rule is intended for analysis or generation only.
+There are two types of GLUE-rules for English: mglue2 and rglue2. Mglue2 means:
+middle GLUE-rules with two arguments. Rglue2 means: right GLUE-rules with two
+arguments. Right GLUE-rules are GLUE-rules where a word is separated from the
+right-hand side of a word. An example:$
+
+*s   + 's   :: *s';
+
+$ The * indicates an arbitrary string, possibly emtpy. The above rule is for
+the genetive _s_. It indicates that if a string ends in _s_, the genitive _s_
+is only _'_. Middle GLUE-rules are rules where both words to be separated have
+to be entirely specified; the * notation is not used in these rules (the first
+example is a middle GLUE-rule). For English, there are no left GLUE-rules. The
+table of rules may start with a list of sets of strings. These can be used to
+specify part of *. There is a rule, e.g.,$
+
+*(NOTs)  +  's   :: *(NOTs)'s;
+
+$ The set NOTs contains all relevant characters that are not _s_, so that 
+genitive _s_ attaches as _'s_ if the string does not end in _s_.$
+$ The two rules for the attachment of genitive _s_ given above pose a problem,
+however. The GLUE-rules can only take the string into consideration: if it ends
+in _s_, the rule attaches only _'_; if it ends in something else than _s_ the
+rule attaches _'s_. This is not entirely correct, however. Some strings that do
+not end in _s_ should nevertheless receive only _'_, namely irregular plurals
+ending in a sibilant in pronunciation, such as _beaux_. On the other hand there
+are strings that end in _s_ that should nevertheless get _'s_: names ending in
+_s_ in spelling and in /s/ in pronunciation (_Ross's_) and singular words ending
+in _s_ (_mistress's_). So, we need to know more than just the string (namely
+whether it is plural or not) and this cannot be handled by the GLUE-rules. For 
+these
+cases analytical GLUE-rules have been added, but now wrong forms will also be
+accepted. A solution to this problem could be to handle the genitive _s_ not
+by means of GLUE-rules but by segmentation-rules, where it is possible to 
+express the differences we need. The fact that in English the genitive _s_
+attaches to NPs and not to Ns argues against this solution:$
+
+the king of Denmark's palace
+
+$ So, we have to conclude that the form of GLUE-rules is not suited for the
+correct handling of the genitive _s_. No solution has been found and this means
+that we are not able to handle the genitive _s_ entirely correct.$
+
+$C2 Segmentation-rules
+$ Segmentation-rules divide (analytically) a word into a word and a suffix or 
+into a prefix and a word. For English inflection there are only 
+segmentation-rules that produce a word and a suffix. The form of the rules is
+the same as for the GLUE-rules, except that the result is not two strings, but
+a string and a suffix-key (or prefix-key):$
+
+*come  + SFKirrpt   :: *came;
+
+$ This rule means that _come_ (and also _become_, _overcome_, etc.) plus the
+irregular past tense key gives _came_. In the lextree-rule that makes the past
+tense form of verbs, it is checked if _come_ is an irregular verb, i.e., it
+checks if the suffix-key and certain information of the verb (its conjugation
+class) coincide. In this way suffix-keys are reminiscent of the markers of
+Rosetta2.$
+$ There are three files with segmentation-rules: suffix, rsuffix and freefix.
+The rules in suffix and rsuffix start with *. In suffix the irregular forms
+are handled. In analysis these rules are applied after rsuffix, which consists
+of the regular rules. Rsuffix means recursive suffix and these rules are
+applied recursively. In analysis suffix follows rsuffix because no other rules
+will be possible after an irregular change of the base. In the file freefix,
+the rules do not use the * notation. These rules are for the highly irregular
+verbs such as _be_. In analysis these rules are applied latest.$
+ 
+$C2 Lextree-rules
+$ The lextree-rules make a lexical S-tree out of a word and a suffix. In the
+morphology, we distinguish three kinds of categories: BCAT, SUBCAT and CAT,
+where CAT = Verb, Noun, Adjective ,Adverb or Propernoun. BCATs are in the 
+dictionary,
+the level of SUBCAT is made by derivation-rules. The difference between BCAT
+and SUBCAT is that SUBCATs have no key. Derivational lextree-rules will produce
+S-trees that look like the following:$
+
+                       SUBCAT
+                        /\
+                       /  \
+                 BPREFIX  SUBCAT
+                           /\
+                          /  \
+                      BCAT  BSUFFIX
+
+$ There may be several levels of SUBCAT and the prefixes and affixes will be
+represented as nodes in the S-tree. The BCAT does not disappear from the S-tree
+either, as it did in Rosetta2. I will not go into derivational rules here; they
+will be treated in a separate document.$
+$ The inflectional lextree-rules make a CAT out of a SUBCAT:$
+
+                           CAT { ...}
+                            |
+                            |
+                         SUBCAT
+
+$ The suffixes are not represented in the S-tree as nodes; information on the
+inflectional form is represented by means of attribute-values.$
+$ In the lextree-rules the analytical part is called _comp_ (compositional) and
+the generative part _decomp_ (decompositional). Lextree-rules contain 
+subconditions and subactions; by means of nested conditions and actions joint
+parts of conditions or actions are efficiently represented (cf. also document
+on the morphology-formalism, to appear).$
+
+$C1 Inherent and non-inherent attributes of the English verbs
+$C2 The attribute conjclasses
+$ The attribute conjclasses is an inherent attribute of verbs; its values are
+sets of conjugation classes. For the English verbs, 14 conjugation classes have 
+been used. The conjugation
+classes are used in the lextree-rules as inherent attributes of verbs, that 
+check (in analysis) whether the segmentation that has taken place was correct 
+and that (in generation) choose the correct affix-key. Verbs can have more than
+one conjugation class; there are e.g. verbs that have both a regular and an 
+irregular inflection.$
+$ First, the conjugation classes are listed, indicating what kinds of verbs are
+assigned to each class. Next, a table is given that relates conjugation class 
+and suffix-keys for both past tense form and past participle form.$ 
+$ As an indication of the number of verbs in each class, lists are given of
+membership of the different classes. For conjugation classes 0-9 (the irregular
+verbs) and 12, 13, 14 (the modal verbs) the verbs are given that have been 
+encountered up till now, but this 
+does not necessarily mean that the lists are exhaustive. For conjugation 
+classes 10 and 11
+only a few examples have been given. Furthermore, a list is added of verbs that
+have more than one conjugation class. This list may not be exhaustive either, 
+and the ordering of the conjugation classes for each verb is arbitrary.$
+$ Finally, it should be noted that some of the conjugation classes have become 
+redundant while writing the rules. At first, no segmentation rules were written
+for verbs that do not change form, such as _put_. The table that relates
+conjugation classes and suffix-keys should contain elements of the same type,
+however, and therefore there should be suffix-keys for these verbs as well, 
+even if there were no rules using these suffix-keys. A uniform treatment was
+then chosen and segmentation rules were added for verbs such as _put_. However,
+conjugation class 3 need now not be distinguished anymore from conjugation 
+class 2, and classes 8 and 9 can be done away with as well, being similar to
+class 1. Still, this would not be a dramatic reduction of the number of 
+conjugation classes and rather than changing a lot of the work done, the 
+situation has been left as it was, with conjugation classes 3, 8, and 9 being
+redundant.$
+
+class  0: _be_  (sole member)
+
+class  1: both past tense (pt) and past participle (pp) are an irregular change
+          of the base form; and both have a different form.
+          (tread-trod-trodden)
+
+class  2: both pt and pp are an irregular change of the base form; and both 
+          have the same form.
+          (lead-led-led)
+
+class  3: both pt and pp are irregular, and they have the same form as the 
+          base.
+          (put-put-put)
+
+class  4: only the pp is irregular (and the regular pp does not exist).
+          (lade-laded-laden, sole member)
+
+class  5: there is a second, irregular pt.
+          (dive-dived,dove-dived)
+
+class  6: there is a second, irregular pp.
+          (shave-shaved-shaved,shaven)
+
+class  7: there is a third, irregular pp.
+          (stride-strode-strode,strid,stridden, sole member)
+
+class  8: the pt is an irregular change of the base form, the pp has the same
+          form as the base.
+          (come-came-come)
+
+class  9: the pt has the same form as the base, the pp is an irregular change 
+          of the base form.
+          (beat-beat-beaten, sole member)
+
+class 10: regular verbs without consonant doubling.
+          (enter-entered-entered)
+
+class 11: regular verbs with consonant doubling.
+          (bar-barred-barred)
+
+class 12: modal verbs which have both a present tense form and a past tense 
+          form.
+          (can-could)
+
+class 13: modal verbs which have no past tense form.
+          (must)
+
+class 14: modal verbs which have no present tense form.
+          (used (to), sole member)
+
+
+conj. class            pasttensetable       pastparticipletable
+
+ 0           {treated in lextree-rule}             SFKirrpp
+ 1                      SFKirrpt                   SFKirrpp
+ 2                      SFKirrptpp                 SFKirrptpp
+ 3                      SFKirrnc                   SFKirrnc
+ 4                      SFKregptpp                 SFKirrpp
+ 5                      SFKirrpt2
+ 6                                                 SFKirrpp2
+ 7                                                 SFKirrpp3
+ 8                      SFKirrpt                   SFKirrnc
+ 9                      SFKirrnc                   SFKirrpp
+10                      SFKregptpp                 SFKregptpp
+11                      SFKcdptpp                  SFKcdptpp
+12                      SFKmodpt                   {does not exist}
+13                      {does not exist}           {does not exist}
+14                      {exists, but cannot        {does not exist}
+                         be related to a stem
+                         b.m.o. a suffix}
+
+$ Note that classes 5, 6, and 7 may never appear as the only conjugation class
+of a
+verb, there should always be a conjugation class as well, in which the missing
+forms of these classes are present. Verbs can have more than one conjugation
+class, e.g. a regular and a irregular conjugation. There are also verbs that 
+have both conjugation class 10 and 11; 11 giving BrE spelling and 10 AmE.$
+
+irrpt     = irregular past tense form
+irrpp     = irregular past participle form
+irrptpp   = irregular past tense and past participle form
+irrnc     = irregular, no change of base form
+irrpt2    = second, irregular past tense form
+irrpp2    = second, irregular past participle form
+irrpp3    = third, irregular past participle form
+regptpp   = regular past tense and past participle form
+cdptpp    = consonant doubling past tense and past participle form
+modpt     = past tense form of a modal verb
+
+
+_Membership of the conjugation classes_
+
+_conjugation class 1_ 
+
+tread           give             steal       throw
+bid             drive            fall        slay
+ride            shrive           swim        fly
+see             thrive           begin       beget
+lie             strive           do          forget
+shake           freeze           go
+forsake         ring             bear
+take            spring           tear
+wake            sing             wear
+rise            speak            swear
+choose          break            eat
+smite           drink            draw
+write           shrink           blow
+cleave          sink             know
+weave           stink            grow
+
+
+_conjugation class 2_
+
+lead            flee             sting            mean
+feed            make             swing            spin
+bleed           strike           teach            win
+speed           shine            beseech          learn
+breed           shoe             catch            burn
+build           lose             stick            leap
+hold            bite             seek             sleep
+stand           heave            think            keep
+bend            leave            slink            creep
+lend            cleave           shrink           weep
+spend           bereave          deal             sweep
+rend            have             feel             hear
+send            stave            kneel            meet
+bind            reeve            spoil            fight
+find            dig              smell            light
+grind           hang             spell            spit
+wind            cling            sell             sit
+gird            fling            tell             shoot
+hide            bring            dwell            lay
+chide           sling            spill            pay
+slide           string           dream            say
+stride          wring            lean             buy
+bide            abide            get              blend
+bless
+
+_conjugation class 3_
+
+bet             knit             shut          read
+bid             let              slit
+burst           put              split 
+cast            quit             spread
+cost            rid              sweat           
+cut             set              thrust             
+hit             shed             wed             
+hurt            shit             wet             
+
+
+_conjugation class 4_
+
+lade    (only one member)
+
+_conjugation class 5_
+
+gild
+dive
+spin
+crow
+dare
+
+_conjugation class 6_
+
+hide             swell
+chide            shear
+slide            melt
+stride           saw
+strike           hew
+bite             strew
+shave            sew
+grave            show
+rive             mow
+prove            sow
+sink             get
+
+_conjugation class 7_
+
+stride    (only one member)
+
+_conjugation class 8_
+
+come
+run
+become
+overcome
+
+_conjugation class 9_
+
+beat    (only one member)
+
+_conjugation class 10_
+
+all regular verbs without consonant doubling; e.g.
+
+enter      pack          travel (AmE)      envelop
+visit      mow           program (AmE)     gallop
+dread      buzz          worship (AmE)     gossip
+pass       signal (AmE)  develop                        etc.
+
+_conjugation class 11_
+
+all regular verbs with consonant doubling; e.g.
+
+bar     prefer   traffic        program(me) (BrE)
+beg     occur    signal (BrE)   worship (BrE)
+permit  humbug   travel (BrE)                           etc.
+
+
+_conjugation class 12_
+
+can
+may
+shall
+will
+dare
+
+_conjugation class 13_
+
+must
+ought
+need
+
+_conjugation class 14_
+
+used (to)
+
+_Verbs with more than one conjugation class_
+
+bid      [1, 3]       stink    [2, 5]       spoil    [2, 10]       
+bet      [3, 11]      kneel    [2, 10]      smell    [2, 10]        
+spell    [2, 10]      dwell    [2, 10]      swell    [10, 6]            
+spill    [2, 10]      dream    [2, 10]      lean     [2, 10]               
+spin     [2, 5]       learn    [2, 10]      burn     [2, 10]                 
+leap     [2, 10]      shear    [10, 6]      light    [2, 10]               
+melt     [10, 6]      saw      [10, 6]      sew      [10, 6]                 
+hew      [10, 6]      strew    [10, 6]      show     [10, 6]             
+mow      [10, 6]      sow      [10, 6]      get      [2, 6]                   
+abide    [10, 2]      bide     [10, 2]      crow     [10, 5]             
+blend    [10, 2]      bless    [10, 2]      dare     [5, 10, 12]    
+knit     [11, 3]      quit     [11, 3]      rid      [11, 3]             
+sweat    [10, 3]      wet      [11, 3]      wed      [11, 3]              
+need     [10, 13]     hide     [2, 6]       worship  [10,11]
+chide    [2, 6]       slide    [2, 6]       strike   [2, 6]               
+stride   [2, 6, 7]    wake     [1, 10]      bite     [2, 6]                     
+cleave   [1, 2]       bereave  [2, 10]      shave    [10, 6]             
+grave    [10, 6]      dive     [10, 5]      rive     [10, 6]                
+prove    [10, 6]      hang     [10, 2]      shrink   [1, 2]            
+sink     [1, 6]       travel   [10,11]      program  [10,11]
+signal   [10,11]    
+
+$C2 The attribute ingform
+$ The attribute _ingform_ is an inherent attribute of verbs and has five 
+possible values: _reging_ ('regular ingform'), _cding_ ('consonant doubling
+ingform'), _cdreging_ (both consonant doubling and normal ingform are allowed),
+_noing_ (no ingform exists, for modals)
+ and _irring_ ('irregular ingform'). The _irring_ value is necessary
+for _singe_ and _be_, which unpredictably do not drop the final _e_ before
+the affix _-ing_.The value _noing_ is assigned to modal verbs, which have no
+_ingform_: *_maying_. The other three values for _ingform_ indicate whether the
+final
+consonant of a verb must be doubled before _-ing_. Here, a different choice 
+might have been made. To a certain extent, it is predictable whether a 
+consonant
+doubles or not, using phonetic information.  _Cding_ and _reging_ might be
+subsumed under one value; the output being predictable from a phonetic marker.
+The affix-rules would have to be more complicated, but the dictionary would not
+need to include this information (the assignment of the value of _ingform_ in
+the dictionary could, however, make use of phonetic information if this is 
+present in Van Dale). The value for _cdreging_, words that allow both consonant
+doubling and the normal form, is not predictable from phonetic information, 
+because one of the forms is an exception to the general rule. For this reason,
+the approach where the dictionary-entry indicates if the consonant is doubled,
+is chosen.$
+
+$C2 The attribute sform
+$ The attribute _sform_ is an inherent attribute of verbs and has four 
+possible values: _regS_ ('regular _s_-form'), _regEs_ (' regular _es_-form'),
+_noS_ (no _s_-form exists, for modals)
+and _irrS_ ('irregular _s_-form'). The _irrS_ value is necessary for 
+_does_, _goes_, _has_ and _is_. The value _noS_ is assigned to modal verbs, 
+which have no
+sform: *_mays_. The other two values indicate whether the _s_-form of
+verbs is spelled _s_ or _es_ (the same rules will be applicable to plurals
+of nouns). In this case as well,
+a different choice could have been made: the affix is spelled _es_ if the base
+does not end in an _e_ and if the base ends in a sibilant. It is not
+totally predictable how sibilants are represented in spelling, so a phonetic
+marker would have to be used. However, the affix-rules should still check
+whether the string ends in _e_ or not. Here, again, the assignment of the
+value to _sform_ in the dictionary could make use of phonetic information, if
+present in Van Dale. The affix-rules would be a little more complicated if a
+phonetic marker is used, but on the whole the two approaches are equivalent:
+no arguments have been found to prefer one to the other.$
+
+$C2 The attributes modus, tense, persons and numbers
+
+$ These attributes together indicate the form in which a verb appears. The 
+attributes are not inherent attributes of verbs. _Modus_ has 5 values:
+infinitive, indicative, subjunctive, ingform and participle. They refer to the
+form of the verb. Infinitive: _live_, indicative: _lives_ (3rd person) or 
+_lived_ (past tense), subjunctive: _live_ (all persons), ingform: _living_ and
+participle: _lived_.$
+$ _Tense_ has three values: omegatense, presenttense and pasttense. They need
+no further explanation.$
+$ _Persons_ has as value a set of persons (1-3). The reason for the value of 
+this attribute being a set is that _live_, e.g., is in singular form both 1st
+and 2nd person and in plural form 1st, 2nd and 3rd person.$
+$ _Numbers_ has as value a set of numbers (singular, plural). The value for
+this attribute is a set because with, e.g., subjunctive modus, the verb can be
+either singular or plural.$
+$ An example of a verb form and its attribute values:$
+
+ live:  modus = indicative,
+        tense = presenttense,
+        persons = [1,2],
+        numbers = [singular]
+   or:  modus = indicative,
+        tense = presenttense,
+        persons = [1,2,3],
+        numbers = [plural]
+
+$C1 Inherent and non-inherent attributes of the English nouns and propernouns
+$C2 The attribute plurforms
+$ The attribute plurforms is an inherent attribute of English nouns; its values
+are (just like the values of 'conjclasses') sets of plural forms: nouns can 
+have more than one plural form. There are eight 'plurforms':$
+1. onlyplur
+2. noplur
+3. irrplur
+4. regplur
+r. regEplur
+6. voicingplur
+7. latplur
+8. singandplur    (most of these values are the same as in Rosetta2)
+
+ad 1: _onlyplur_ is used for nouns that are always plural, such as _scissors_
+      and _cattle_.
+ad 2: _noplur_ is used for nouns that are always singular, such as _gold_ and
+      _music_.
+ad 3: _irrplur_ is used for nouns that have an irregular plural, such as
+      _child_ and _mouse_.
+ad 4: _regplur_ is used for nouns with regular plurals. _Regplur_ is in the
+      lextree-rules related to SFKregS, that is also used for the _sform_ of
+      verbs. The same rules as for verbs apply here.
+ad 5: _regEplur_ is used for nouns where the plural is written with _es_ 
+      instead of _s_. As was already noted, the choice between _es_ and 
+      _s_ cannot be made by looking at the string alone. _RegEplur_ is in the
+      lextree-rules related to SFKregEs and the rules are the same as for 
+      verbs. Note, that plural such as _heroes_, _tomatoes_, etc. can now also 
+      be handled by assigning the noun stems _regEplur_ as value for the 
+      attribute _plurforms_. This, however, has nothing to do with the "normal"
+      phonological process of when _es_ or _s_ should be added. Still, as we
+      have this attribute-value now anyway, I have included them in _regEplur_ 
+      and not in _irrplur_. If handled as irregular plurals, they should all be
+      listed in the table, and there would always be a chance of missing one.
+ad 6: _voicingplur_ is used for nouns with plurals that voice the last element
+      of the stem, such as _wife_ and _calf_. As this process is not 
+      predictable from the string, a separate value for the attribute plurforms
+      is necessary.
+ad 7: _latplur_ is used for nouns with latinate plurals, such as _antenna_ and
+      _stimulus_.
+ad 8: _singandplur_ is used for nouns that have the same form in singular and
+      plural, such as _sheep_ and _salmon_.
+
+$ I have assumed that proper nouns only have the values irrplur or regplur.
+If this is incorrect, the lextree-rules should be adapted and look the same as
+the rules for nouns.$
+
+$C2 The attribute number
+$ The attribute _number_ is not an inherent attribute of nouns. The noun stems
+have value omega for number, and in the lextree-rules the attribute is assigned
+either singular or plural.$
+
+$C1 Inherent and non-inherent attributes of the English adjectives and adverbs
+$C2 The attribute compformations
+The attribute _compformations_ is an inherent attribute of English adjectives 
+and adverbs, which takes care of the comparative and superlative forms of both
+adjectives and adverbs. Its values are sets of comparative formations: some
+adjectives and adverbs have more than one comparative and superlative form. 
+There are five 'compformations':
+1. regcomp
+2. cdcomp
+3. nocomp
+4. irrcomp
+5. irrcomp2   (most of these values are the same as in Rosetta2, although they
+               were not used for adverbs there)
+
+ad 1: _regcomp_ is used for adjectives and adverbs with a regular comparative
+      and superlative form, such as _young_.
+ad 2: _cdcomp_ is used for adjectives and adverbs which double the final
+      consonant before comparative and superlative suffixes, such as _big_.
+ad 3: _nocomp_ is used for adjectives and adverbs which allow no comparative
+      and superlative forms, such as _beautiful_.
+ad 4: _irrcomp_ is used for adjectives and adverbs which have an irregular
+      comparative and superlative form, such as _good_.
+ad 5: _irrcomp2_ is used (next to irrcomp) for adjectives and adverbs that 
+      allow two irregular comparative and superlative forms, such as _far_
+      (farther, further - farthest, furthest).
+
+$ Adverbs that have the same form as the corresponding adjectives, can undergo
+comparative formation in the same way the adjectives do. Adverbs formed by
+adding _-ly_ to an adjective will be assigned _nocomp_ as value for 
+_compformations_. _Badly_ is the only exception and should be a separate entry
+in the dictionary, indicating that it forms an irregular comparative and 
+superlative form. There are a few adverbs which have no corresponding adjective
+with the same form, but which can nevertheless undergo comparative formation.$
+
+$C2 The attribute compform
+$ The attribute _compform_ is not an inherent attribute of adjectives and 
+adverbs. The adjective and adverb stems have value omega for 'compform',
+and in the lextree-rules the attribute is assigned either basic, compar or
+super (basic form, comparative form and superlative form).$
+
+$C1 Other categories (PERSPRO, POSSADJ, POSSPRO, WHPRO)
+$ For these categories no difference between BCAT and SUBCAT is made, because
+these categories do not undergo derivation. Some of the rules applying to these
+categories change the top category of the S-tree (POSSADJ is made from PERSPRO,
+e.g.). They are still inflection-rules, however, the suffixes used in the
+rules are not represented in the S-tree and the information is represented in
+attributes.$
+
+$C2 Inherent and non-inherent attributes of the English PERSPROs
+$ The English PERSPROs are: _I_, _you_, _he_, _she_, _it_, _we_ and _they_.
+These forms are interpreted by the lextree-rules as nominative. There are
+segmentation rules that form _me_ from _I_ and _him_ from _he_.$
+$ Possessive forms are also formed by segmentation rules from the PERSPROs
+(_my_ from _I_). In Rosetta2, the resulting forms have a different category,
+however: POSSADJ. This means that the lextree-rules make an S-tree with a
+POSSADJ dominating a PERSPRO.$
+$ The possessive forms that are used predicatively (_mine_, _yours_) are also
+derived from PERSPROs, the resulting category is POSSPRO.$
+
+$C2 The attribute predpos
+$ The inherent attribute _predpos_ has two values: true and false. It is 
+necessary
+to indicate for PERSPROs whether a possessive form that can be used 
+predicatively is allowed, because _it_ cannot undergo this rule. All other 
+PERSPROs have the value true for this attribute. This value is checked in the
+lextree-rule that makes the POSSPRO.$
+
+$C2 The attribute persprocase
+$ _Persprocase_ is not an inherent attribute of BPERSPROs; it has the value 
+omegacase
+in the dictionary. The lextree-rules then assign either the value nom 
+(nominative) or acc (accusative).$
+
+$C2 POSSADJs and POSSPROs
+$ From PERSPROs, the lextree-rules can make S-trees with as the top node 
+POSSADJ or POSSPRO. This means that a new record must be made and at least the
+inherent attributes should be assigned a value. The Rosetta2 attributes and
+values are used here to a certain extent. The iso-group has decided that it is
+no longer necessary to have the attributes _person_, _number_ and _gender_ in
+the record of POSSADJs. A new attribute has been added for POSSADJs: _mood_, 
+with two possible values, _wh_ and _nowh_. This is necessary to differentiate
+POSSADJs made from PERSPROs (nowh) from POSSADJs made from WHPROs (wh). This
+also means that the category WHPOSSADJ has now become superfluous.$
+$ For the POSSPROs, the attributes for person, number and gender have also
+become superfluous.$
+
+$C2 Inherent and non-inherent attributes of WHPROs
+$ BWHPROs are words such as _who_, _what_ and _which_. Some of these words have
+a different form for accusative case: _who/whom_. The possssive form _whose_ is
+formed from _who_. The resulting category is then a POSSADJ (cf. section 5 on
+PERSPROs).$
+
+$C2 The attribute poss
+$ The inherent attribute _poss_ has two values: _true_ and _false_. It is 
+necessary
+for BWHPROs to indicate if a possessive form is possible: the attribute has
+value _true_ for _who_ and _false_ for all other words. This value is checked 
+in the
+lextree-rule that makes the POSSADJ.$
+
+$C2 The attribute whcase
+$ The inherent attribute _whcase_ has two values: _true_ and _false_. It is 
+necessary for BWHPROs to indicate if they have different forms for different
+cases. The attribute has value _true_ for _who_ and _false_ for all other words.
+This value is checked in the lextree-rules that assign a value to the non-
+inherent attribute _cases_.$ 
+
+$C2 The attribute cases
+$ _Cases_ is not an inherent attribute of BWHPROs. Its value is a set, which is
+empty in the dictionary. The possible values are _nominative_ and _accusative_
+and the lextree-rules assign these values to WHPROs which have value _true_ for
+the attribute _whcase_. The value of this attribute must be a set, because _who_
+is both nominative and accusative.$
+
+$C1 GLUE-rules
+
+TYPE rglue2
+
+VAR
+
+NOTs = [ a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, t, u, v, w, x,
+         y, z, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, T, U, V,
+         W, X, Y, Z, ., 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+
+TABLE
+
+
+{These rules make the genitive form.}
+
+   *s      + 's :: *s';         
+   *S      + 'S :: *S';
+   *(NOTs) + 's :: *(NOTs)'s;
+/A *s      + 's :: *s's;
+
+$ {Actually, these rules should be sensitive to phonetic information. The first
+rule attaches only an apostrophe if the string ends in an _s_. However, 
+irregular plurals ending in an _s_ in pronunciation but not in writing, should
+also receive only an apostrophe: _beaux'_ (at least according to the OED, Quirk
+is not very clear on this point). This form is rejected by the rules
+above. _'s_ is attached by the above rules if the string does not end in 
+an _s_. This is not always correct: singular words (Quirk gives only examples
+with names)  ending in an _s_ in pronunciation
+should receive _'s_: _Ross's_. This form cannot be generated by the rules 
+above. Furthermore, with singular words (again only examples with names in 
+Quirk) ending in a _z_ in pronunciation, there is a
+choice between _'_ and _'s_: _Dickens'_ or _Dickens's_. Only the first form
+of these two is generated by the rules. A rule is added that accepts 
+_Dickens's_. This rule will now incorrectly allow other strings in analysis
+too, however. This means that all incorrect forms are now accepted as well.}$
+$ {A rule is added for genitive forms of abbreviations: _M.P.'s_,
+plural _M.P.s'_ (examples from the OED) and for numerals _1960's_; this last
+item is given as an example of a genitive form in the OED, but Quirk claims
+that it can be plural as well, next to _1960s_.}$
+
+
+{These rules contract the auxiliary onto the subject}
+
+/A * + will   :: *'ll;
+/A * + had    :: *'d;
+/A * + would  :: *'d;
+/A * + has    :: *'s;
+/A * + is     :: *'s;
+/A * + are    :: *'re;
+/A * + have   :: *'ve;
+
+{These rules work only in analysis, in generation the auxiliaries are only
+contracted onto pronouns. The generative rule are middle gluerules, because
+of their formulation, using no * and are therefore not included here.}
+
+END.
+
+$NP
+TYPE  mglue2
+
+
+VAR
+
+A = [I, you, he, she, it, we, you, they];
+
+B = [he, she, it];
+
+C = [you, we, they];
+
+D = [I, you, we, they];
+
+TABLE
+
+
+{These rules make a contracted negative form of auxiliaries}
+
+   shall  + not :: shan't;       
+   should + not :: shouldn't;  
+   will   + not :: won't;        
+   would  + not :: wouldn't;  
+   can    + not :: cannot;
+/A can    + not :: can't;         
+   could  + not :: couldn't;
+   must   + not :: mustn't;  
+   might  + not :: mightn't;
+   ought  + not :: oughtn't;
+   used   + not :: usedn't;
+   need   + not :: needn't;
+   dare   + not :: daren't; 
+   do     + not :: don't;
+   does   + not :: doesn't;
+   did    + not :: didn't;
+   have   + not :: haven't;
+   has    + not :: hasn't;
+   had    + not :: hadn't;
+   are    + not :: aren't;
+   am     + not :: aren't;       {only in questions: aren't I?}
+   am     + not :: ain't;        {If the grammar never generates a GLUE
+                                  between _am_ and _not_, these forms
+                                  will be analyzed, but not generated}
+   is     + not :: isn't;
+   was    + not :: wasn't;
+   were   + not :: weren't;
+
+
+{These rules contract the auxiliary onto the subject} 
+
+/G (A)   + will  :: (A)'ll;         
+/G (A)   + had   :: (A)'d;          
+/G (A)   + would :: (A)'d;          
+/G (B)   + has   :: (B)'s;          
+/G (B)   + is    :: (B)'s;
+    I    + am    ::  I'm;
+/G (C)   + are   :: (C)'re;
+/G (D)   + have  :: (D)'ve;         
+
+{Wanna-contraction}
+
+want + to :: wanna;
+ 
+{let us}
+
+let + us :: let's;
+
+END.
+
+
+$NP
+$C1 Segmentation-rules
+
+TYPE SUFFIX;
+
+TABLE
+
+
+{The table starts with rules that make past tense and past participle forms for
+ irregular verbs. pt means past tense and pp means past participle. The numbers
+ in front of the verbs indicate the conjugation class. (See also 'Comments on 
+ the Rules', 2.1)
+ The names of the suffix keys:
+ irrpt = irregular past tense form
+ irrpp = irregular past participle firm
+ irrptpp = irregular past tense and past participle form
+ irrpt2 = second irregular past tense form
+ irrpp2 = second irregular past participle form
+ irrpp3 = third irregular past participle form 
+ irrnc = irregular, no change of form }
+
+
+{2}   *lead          + SFKirrptpp  :: *led;       {pt + pp}
+{3}   *spread        + SFKirrnc    :: *spread;    {pt + pp}
+{1}   *tread         + SFKirrpt    :: *trod;      {pt}
+{1}   *tread         + SFKirrpp    :: *trodden;   {pp}
+{2}   *feed          + SFKirrptpp  :: *fed;       {pt + pp}
+{2}   *bleed         + SFKirrptpp  :: *bled;      {pt + pp}
+{2}   *speed         + SFKirrptpp  :: *sped;      {pt + pp}
+{2}   *breed         + SFKirrptpp  :: *bred;      {pt + pp}
+{3}   *shed          + SFKirrnc    :: *shed;      {pt + pp}
+{3}   *wed           + SFKirrnc    :: *wed;       {pt + pp, also regular}
+{3}   *bid           + SFKirrnc    :: *bid;       {pt + pp}
+{1}   *bid           + SFKirrpt    :: *bade;      {pt}
+{1}   *bid           + SFKirrpp    :: *bidden;    {pp}
+{3}   *rid           + SFKirrnc    :: *rid;       {pt + pp. also regular}
+{5}   *gild          + SFKirrpt2   :: *gilt;      {pt}
+{2}   *build         + SFKirrptpp  :: *built;     {pt + pp}
+{2}   *hold          + SFKirrptpp  :: *held;      {pt + pp}
+{2}   *stand         + SFKirrptpp  :: *stood;     {pt + pp}
+{2}   *bend          + SFKirrptpp  :: *bent;      {pt + pp}
+{2}   *lend          + SFKirrptpp  :: *lent;      {pt + pp}
+{2}   *spend         + SFKirrptpp  :: *spent;     {pt + pp}
+{2}   *rend          + SFKirrptpp  :: *rent;      {pt + pp}
+{2}   *send          + SFKirrptpp  :: *sent;      {pt + pp}
+{2}   *bind          + SFKirrptpp  :: *bound;     {pt + pp}
+{2}   *find          + SFKirrptpp  :: *found;     {pt + pp}
+{2}   *grind         + SFKirrptpp  :: *ground;    {pt + pp}
+{2}   *wind          + SFKirrptpp  :: *wound;     {pt + pp}
+{2}   *gird          + SFKirrptpp  :: *girt;      {pt + pp}
+
+{4}   *lade          + SFKirrpp    :: *laden;     {pp}
+{2}   *bide          + SFKirrptpp  :: *bode;      {pt + pp}
+{2}   *hide          + SFKirrptpp  :: *hid;       {pt + pp}
+{6}   *hide          + SFKirrpp2   :: *hidden;    {pp}
+{2}   *chide         + SFKirrptpp  :: *chid;      {pt + pp, also regular}
+{6}   *chide         + SFKirrpp2   :: *chidden;   {pp, also regular}
+{2}   *slide         + SFKirrptpp  :: *slid;      {pt + pp}
+{6}   *slide         + SFKirrpp2   :: *slidden;   {pp, as an adjective}
+{1}   *ride          + SFKirrpt    :: *rode;      {pt}
+{1}   *ride          + SFKirrpp    :: *ridden;    {pp}
+{2}   *stride        + SFKirrptpp  :: *strode;    {pt + pp}
+{7}   *stride        + SFKirrpp3   :: *stridden;  {pp, rare}
+{6}   *stride        + SFKirrpp2   :: *strid;     {pp}
+{2}   *flee          + SFKirrptpp  :: *fled;      {pt + pp}
+{1}   *see           + SFKirrpt    :: *saw;       {pt}
+{1}   *see           + SFKirrpp    :: *seen;      {pp}
+{1}   *lie           + SFKirrpt    :: *lay;       {pt}
+{1}   *lie           + SFKirrpp    :: *lain;      {pp}
+{1}   *shake         + SFKirrpt    :: *shook;     {pt}
+{1}   *shake         + SFKirrpp    :: *shaken;    {pp}
+{2}   *make          + SFKirrpt    :: *made;      {pt + pp}
+{1}   *forsake       + SFKirrpt    :: *forsook;   {pt}
+{1}   *forsake       + SFKirrpp    :: *forsaken;  {pp}
+{1}   *take          + SFKirrpt    :: *took;      {pt}
+{1}   *take          + SFKirrpp    :: *taken;     {pp}
+{1}   *wake          + SFKirrpt    :: *woke;      {pt, also regular}
+{1}   *wake          + SFKirrpp    :: *woken;     {pp, also regular}
+{2}   *strike        + SFKirrptpp  :: *struck;    {pt + pp}
+{6}   *strike        + SFKirrpp2   :: *stricken;  {pp, as an adjective}
+{8}   *come          + SFKirrpt    :: *came;      {pt}
+{8}   *come          + SFHirrnc    :: *come;      {pp}
+{2}   *shine         + SFKirrptpp  :: *shone;     {pt + pp}
+{2}   *shoe          + SFKirrptpp  :: *shod;      {pt + pp}
+{5}   *dare          + SFKirrpt2   :: *durst;     {pt, archaic}
+{1}   *rise          + SFKirrpt    :: *rose;      {pt}
+{1}   *rise          + SFKirrpp    :: *risen;     {pp}
+{2}   *lose          + SFKirrptpp  :: *lost;      {pt + pp}
+{1}   *choose        + SFKirrpt    :: *chose;     {pt}
+{1}   *choose        + SFKirrpp    :: *chosen;    {pp}
+{2}   *bite          + SFKirrptpp  :: *bit;       {pt + pp}
+{6}   *bite          + SFKirrpp2   :: *bitten;    {pp}
+{1}   *smite         + SFKirrpt    :: *smote;     {pt}
+{1}   *smite         + SFKirrpp    :: *smitten;   {pp}
+{1}   *write         + SFKirrpt    :: *wrote;     {pt}
+{1}   *write         + SFKirrpp    :: *written;   {pp}
+{2}   *heave         + SFKirrptpp  :: *hove;      {pt + pp}
+{2}   *leave         + SFKirrptpp  :: *left;      {pt + pp}
+{1}   *cleave        + SFKirrpt    :: *clove;     {pt}
+{1}   *cleave        + SFKirrpp    :: *cloven;    {pp}
+{2}   *bereave       + SFKirrptpp  :: *bereft;    {pt + pp, also regular, less 
+                                                         common}
+{1}   *weave         + SFKirrpt     :: *wove;      {pt}
+{1}   *weave         + SFKirrpp     :: *woven;     {pp}
+{6}   *shave         + SFKirrpp2    :: *shaven;    {pp}{also regular}
+{6}   *grave         + SFKirrpp2    :: *graven;    {pp}{also regular}
+{2}   *stave         + SFKirrptpp   :: *stove;     {pt + pp}
+{2}   *reeve         + SFKirrptpp   :: *rove;      {pt + pp}
+{5}   *dive          + SFKirrpt2    :: *dove;      {pt AmE, regular in BrE}
+{1}   *give          + SFKirrpt     :: *gave;      {pt}
+{1}   *give          + SFKirrpp     :: *given;     {pp}
+{6}   *rive          + SFKirrpp2    :: *riven;     {pp}
+{1}   *drive         + SFKirrpt     :: *drove;     {pt}
+{1}   *drive         + SFKirrpp     :: *driven;    {pp}
+{1}   *shrive        + SFKirrpt     :: *shrove;    {pt}
+{1}   *shrive        + SFKirrpp     :: *shriven;   {pp}
+{1}   *thrive        + SFKirrpt     :: *throve;    {pt}
+{1}   *thrive        + SFKirrpp     :: *thriven;   {pp}
+{1}   *strive        + SFKirrpt     :: *strove;    {pt}
+{1}   *strive        + SFKirrpp     :: *striven;   {pp}
+{6}   *prove         + SFKirrpp2    :: *proven;    {pp}{also regular}
+{1}   *freeze        + SFKirrpt     :: *froze;     {pt}
+{1}   *freeze        + SFKirrpp     :: *frozen;    {pp}
+
+
+{2}   *dig           + SFKirrptpp   :: *dug;       {pt + pp}
+{2}   *hang          + SFKirrptpp   :: *hung;      {pt + pp, regular in meaning
+                                                         'put to death'} 
+{2}   *cling         + SFKirrptpp   :: *clung;     {pt + pp}
+{2}   *fling         + SFKirrptpp   :: *flung;     {pt + pp}
+{1}   *ring          + SFKirrpt     :: *rang;      {pt}
+{1}   *ring          + SFKirrpp     :: *rung;      {pp}
+{2}   *bring         + SFKirrptpp   :: *brought;   {pt + pp}
+{2}   *sling         + SFKirrptpp   :: *slung;     {pt + pp}
+{2}   *string        + SFKirrptpp   :: *strung;    {pt + pp}
+{2}   *wring         + SFKirrptpp   :: *wrung;     {pt + pp}
+{1}   *sing          + SFKirrpt     :: *sang;      {pt}
+{1}   *sing          + SFKirrpp     :: *sung;      {pp}
+{2}   *sting         + SFKirrptpp   :: *stung;     {pt + pp}
+{2}   *swing         + SFKirrptpp   :: *swung;     {pt + pp}
+
+{2}   *teach         + SFKirrptpp   :: *taught;    {pt + pp}  
+{2}   *beseech       + SFKirrptpp   :: *besought;  {pt + pp}
+{2}   *catch         + SFKirrptpp   :: *caught;    {pt + pp}
+
+{1}   *speak         + SFKirrpt     :: *spoke;     {pt}
+{1}   *speak         + SFKirrpp     :: *spoken;    {pp}
+{1}   *break         + SFKirrpt     :: *broke;     {pt}
+{1}   *break         + SFKirrpp     :: *broken;    {pp}
+{2}   *stick         + SFKirrptpp   :: *stuck;     {pt + pp}
+{2}   *seek          + SFKirrptpp   :: *sought;    {pt + pp}
+{2}   *think         + SFKirrptpp   :: *thought;   {pt + pp}
+{2}   *slink         + SFKirrptpp   :: *slunk;     {pt + pp}
+{1}   *drink         + SFKirrpt     :: *drank;     {pt}
+{1}   *drink         + SFKirrpp     :: *drunk;     {pp}
+{2}   *shrink        + SFKirrptpp   :: *shrunk;    {pt + pp}
+{1}   *shrink        + SFKirrpt     :: *shrank;    {pt}
+{1}   *shrink        + SFKirrpp     :: *shrunken;  {pp, as an adjective}
+{1}   *sink          + SFKirrpt     :: *sank;      {pt}
+{1}   *sink          + SFKirrpp     :: *sunk;      {pp}
+{6}   *sink          + SFKirrpp2    :: *sunken;    {pp, as an adjective}
+{5}   *stink         + SFKirrpt     :: *stank;     {pt}
+{2}   *stink         + SFKirrptpp   :: *stunk;     {pt + pp}
+
+{2}   *deal          + SFKirrptpp   :: *dealt;     {pt + pp}
+{1}   *steal         + SFKirrpt     :: *stole;     {pt}
+{1}   *steal         + SFKirrpp     :: *stolen;    {pp}
+{2}   *feel          + SFKirrptpp   :: *felt;      {pt + pp} 
+{2}   *kneel         + SFKirrptpp   :: *knelt;     {pt + pp, also regular, AmE}
+{2}   *spoil         + SFKirrptpp   :: *spoilt;    {pt + pp, also regular, AmE}
+{1}   *fall          + SFKirrpt     :: *fell;      {pt}
+{1}   *fall          + SFKirrpp     :: *fallen;    {pp}
+{2}   *smell         + SFKirrptpp   :: *smelt;     {pt + pp, also regular, AmE}
+{2}   *spell         + SFKirrptpp   :: *spellt;    {pt + pp, also regular, AmE}
+{2}   *sell          + SFKirrptpp   :: *sold;      {pt + pp}
+{2}   *tell          + SFKirrptpp   :: *told;      {pt + pp}
+{2}   *dwell         + SFKirrptpp   :: *dwelt;     {pt + pp, also regular, AmE}
+{6}   *swell         + SFKirrpp2    :: *swollen;   {pp, also regular}
+{2}   *spill         + SFKirrptpp   :: *spilt;     {pt + pp, also regular, AmE}
+
+{2}   *dream         + SFKirrptpp   :: *dreamt;    {pt + pp, also regular, AmE}
+{1}   *swim          + SFKirrpt     :: *swam;      {pt}
+{1}   *swim          + SFKirrpp     :: *swum;      {pp}
+
+{2}   *lean          + SFKirrptpp   :: *leant;     {pt + pp, also regular, AmE}
+{2}   *mean          + SFKirrptpp   :: *meant;     {pt + pp}
+{1}   *begin         + SFKirrpt     :: *began;     {pt}
+{1}   *begin         + SFKirrpp     :: *begun;     {pp}
+{2}   *spin          + SFKirrptpp   :: *spun;      {pt + pp}
+{5}   *spin          + SFKirrpt2    :: *span;      {pt, archaic}
+{2}   *win           + SFKirrptpp   :: *won;       {pt + pp}
+{2}   *learn         + SFKirrptpp   :: *learnt;    {pt + pp, also regular, AmE}
+{2}   *burn          + SFKirrptpp   :: *burnt;     {pt + pp, also regular, AmE}
+{8}   *run           + SFKirrpt     :: *ran;       {pt}
+{8}   *run           + SFKirrnc     :: *run;       {pp}
+
+{1}   *do            + SFKirrpt     :: *did;       {pt}
+{1}   *do            + SFKirrpp     :: *done;      {pp}
+{1}   *go            + SFKirrpt     :: *went;      {pt}
+{1}   *go            + SFKirrpp     :: *gone;      {pp}
+
+{2}   *leap          + SFKirrptpp   :: *leapt;     {pt + pp, also regular, AmE}
+{2}   *sleep         + SFKirrptpp   :: *slept;     {pt + pp}
+{2}   *keep          + SFKirrptpp   :: *kept;      {pt + pp}
+{2}   *creep         + SFKirrptpp   :: *crept;     {pt + pp}
+{2}   *weep          + SFKirrptpp   :: *wept;      {pt + pp}
+
+{1}   *bear          + SFKirrpt     :: *bore;      {pt}
+{1}   *bear          + SFKirrpp     :: *borne;     {pp}
+{2}   *hear          + SFKirrptpp   :: *heard;     {pt + pp}
+{6}   *shear         + SFKirrpp2    :: *shorn;     {pp, also regular}
+{1}   *tear          + SFKirrpt     :: *tore;      {pt}
+{1}   *tear          + SFKirrpp     :: *torn;      {pp}
+{1}   *wear          + SFKirrpt     :: *wore;      {pt}
+
+{2}   *bless         + SFKirrptpp   :: *blest;     {pt + pp}
+
+
+{1}   *eat           + SFKirrpt     :: *ate;       {pt}
+{1}   *eat           + SFKirrpp     :: *eaten;     {pp}    
+{9}   *beat          + SFKirrnc     :: *beat;      {pt}
+{9}   *beat          + SFKirrpp     :: *beaten;    {pp}
+{3}   *sweat         + SFKirrnc     :: *sweat;     {pt + pp, also regular}
+{2}   *meet          + SFKirrptpp   :: *met;       {pt + pp}
+{3}   *bet           + SFKirrnc     :: *bet;       {pt + pp}
+{2}   *get           + SFKirrptpp   :: *got;       {pt + pp}
+{6}   *get           + SFKirrpp2    :: *gotten;    {pt + pp}
+{1}   *beget         + SFKirrpt     :: *begot;     {pt}
+{1}   *beget         + SFKirrpp     :: *begotten;  {pp}
+{1}   *forget        + SFKirrpt     :: *forgot;    {pt}
+{1}   *forget        + SFKirrpp     :: *forgotten; {pp}
+{3}   *let           + SFKirrnc     :: *let;       {pt + pp}
+{3}   *set           + SFKirrnc     :: *set;       {pt + pp}
+{3}   *wet           + SFKirrnc     :: *wet;       {pt + pp, also regular}
+{2}   *fight         + SFKirrptpp   :: *fought;    {pt + pp}
+{2}   *light         + SFKirrptpp   :: *lit;       {pt + pp, also regular}
+{3}   *hit           + SFKirrnc     :: *hit;       {pt + pp}
+{3}   *slit          + SFKirrnc     :: *slit;      {pt + pp}
+{3}   *split         + SFKirrnc     :: *split;     {pt + pp}
+{3}   *knit          + SFKirrnc     :: *knit;      {pt + pp, also regular} 
+{2}   *spit          + SFKirrptpp   :: *spat;      {pt + pp}
+{2}   *sit           + SFKirrptpp   :: *sat;       {pt + pp}
+{3}   *quit          + SFKirrnc     :: *quit;      {pt + pp, also regular}
+{6}   *melt          + SFKirrpp2    :: *molten;    {pp, as an adjective}
+{2}   *shoot         + SFKirrptpp   :: *shot;      {pt + pp}
+{3}   *hurt          + SFKirrnc     :: *hurt;      {pt + pp}
+{3}   *cast          + SFKirrnc     :: *cast;      {pt + pp}
+{3}   *cost          + SFKirrnc     :: *cost;      {pt + pp}   
+{3}   *burst         + SFKirrnc     :: *burst;     {pt + pp}
+{3}   *thrust        + SFKirrnc     :: *thrust;    {pt + pp}
+{3}   *cut           + SFKirrnc     :: *cut;       {pt + pp}
+{3}   *shut          + SFKirrnc     :: *shut;      {pt + pp}
+{3}   *put           + SFKirrnc     :: *put;       {pt + pp}
+
+{1}   *draw          + SFKirrpt     :: *drew;      {pt}
+{1}   *draw          + SFKirrpp     :: *drawn;     {pp}   
+{6}   *saw           + SFKirrpp2    :: *sawn;      {pp, also regular}
+{6}   *hew           + SFKirrpp2    :: *hewn;      {pp, also regular}
+{6}   *strew         + SFKirrpp2    :: *strewn;    {pp, also regular}
+{6}   *sew           + SFKirrpp2    :: *sewn;      {pp, also regular}
+{6}   *show          + SFKirrpp2    :: *shown;     {pp, also regular}
+{1}   *blow          + SFKirrpt     :: *blew;      {pt}
+{1}   *blow          + SFKirrpp     :: *blown;     {pp}
+{6}   *mow           + SFKirrpp2    :: *mown;      {pp, also regular}
+{1}   *know          + SFKirrpt     :: *knew;      {pt}
+{1}   *know          + SFKirrpp     :: *known;     {pp}
+{5}   *crow          + SFKirrpt2    :: *crew;      {pt, archaic}
+{1}   *grow          + SFKirrpt     :: *grew;      {pt}
+{1}   *grow          + SFKirrpp     :: *grown;     {pp}
+{1}   *throw         + SFKirrpt     :: *threw;     {pt}
+{1}   *throw         + SFKirrpp     :: *thrown;    {pp}
+{6}   *sow           + SFKirrpp2    :: *sown;      {pp, also regular}
+
+{2}   *lay           + SFKirrptpp   :: *laid;      {pt + pp}
+{1}   *slay          + SFKirrpt     :: *slew;      {pt}
+{1}   *slay          + SFKirrpp     :: *slain;     {pp}
+{2}   *pay           + SFKirrptpp   :: *paid;      {pt + pp}
+{2}   *say           + SFKirrptpp   :: *said;      {pt + pp}
+{1}   *fly           + SFKirrpt     :: *flew;      {pt}
+{1}   *fly           + SFKirrpp     :: *flown;     {pp}   
+{2}   *buy           + SFKirrptpp   :: *bought;    {pt + pp}
+
+
+{These rules are for irregular plurals
+ irrplur = irregular plural
+ latplur = latinate plural}
+
+{First the plurals with mutation of the vowel are given}
+
+   *foot          + SFKirrplur          :: *feet;
+   *tooth         + SFKirrplur          :: *teeth;
+   *goose         + SFKirrplur          :: *geese;
+   *louse         + SFKirrplur          :: *lice;
+   *mouse         + SFKirrplur          :: *mice;
+   *man           + SFKirrplur          :: *men;
+
+{-_en_ plurals}
+
+   *brother       + SFKirrplur        :: *brethren;  {= 'fellow members of a 
+                                                    religious society; 
+                                                    otherwise regularly 
+                                                   _brothers_}
+   *child         + SFKirrplur        :: *children;
+   *ox            + SFKirrplur        :: *oxen;
+
+{foreign plurals}
+
+   *us            + SFKlatplur      :: *i;
+   *a             + SFKlatplur      :: *ae;
+   *um            + SFKlatplur      :: *a;
+   *ex            + SFKlatplur      :: *ices;
+   *ix            + SFKlatplur      :: *ices;
+   *is            + SFKlatplur      :: *es;
+   *on            + SFKlatplur      :: *a;
+   *eau           + SFKlatplur      :: *eaux;
+   *ieu           + SFKlatplur      :: *ieux;
+   *o             + SFKlatplur      :: *i;
+
+   *corpus        + SFKirrplur      :: *corpora;    {also regular}
+   *genus         + SFKirrplur      :: *genera;
+   *stigma        + SFKirrplur      :: *stigmata;
+   *bandit        + SFKirrplur      :: *banditti;
+   *dilettante    + SFKirrplur      :: *dilettanti;
+
+   *cherub        + SFKirrplur      :: *cherubim;     {also regular}
+   *seraph        + SFKirrplur      :: *seraphim;     {also regular}
+   *kibbutz       + SFKirrplur      :: *kibbutzim;
+
+{other irregulars}
+
+   *dry           + SFKirrplur      :: *drys;     {'prohibitionists'}
+   *fez           + SFKirrplur      :: *fezzes;
+   *quiz          + SFKirrplur      :: *quizzes;
+   *bus           + SFKirrplur      :: *busses;   {AmE, BrE is regular}
+   *by            + SFKirrplur      :: *bys;      { in _stand-bys_, _lay-bys_}
+   *die           + SFKirrplur      :: *dice;
+   *penny         + SFKirrplur      :: *pence;
+
+
+{These rules are for irregular comparative and superlative forms of adjectives
+ and adverbs. Some adjectives and adverbs have the same form; in that case
+ both can occur in comparative and superlative form. There are, however, some
+ adverbs not corresponding to adjectives, that undergo comparative formation.
+- irrcomp    = irregular comparative form
+- irrsuper   = irregular superlative form
+- irrcomp2   = second, irregular comparative form
+- irrsuper2  = second, irregular comparative form}
+
+
+   *good         + SFKirrcomp       :: *better;
+   *good         + SFKirrsuper      :: *best;
+   *bad          + SFKirrcomp       :: *worse;
+   *bad          + SFKirrsuper      :: *worst;
+   *far          + SFKirrcomp       :: *farther;
+   *far          + SFKirrcomp2      :: *further;
+   *far          + SFKirrsuper      :: *farthest;
+   *far          + SFKirrsuper2     :: *furthest;
+   *old          + SFKirrcomp       :: *elder;     {also regular}
+   *old          + SFKirrsuper      :: *eldest;    {also regular}
+
+   *well         + SFKirrcomp       :: *better;
+   *well         + SFKirrsuper      :: *best;
+   *badly        + SFKirrcomp       :: *worse;
+   *badly        + SFKirrsuper      :: *worst;
+   *little       + SFKirrcomp       :: *less;
+   *little       + SFKirrsuper      :: *least;
+   *much         + SFKirrcomp       :: *more;
+   *much         + SFKirrsuper      :: *most;
+
+END
+
+
+$NP
+
+TYPE FREEFIX;
+
+
+TABLE
+
+{These rules are for Verbs}
+
+{0} be   + SFKam       :: am;     {1st prs sg pres}
+{0} be   + SFKirrS     :: is;     {3rd prs sg pres}
+{0} be   + SFKwas      :: was;    {3rd prs sg past}
+{0} be   + SFKare      :: are;    {2nd prs sg/pl pres or 1st/3rd prs pl pres}
+{0} be   + SFKwere     :: were;   {2nd prs sg/pl past or 1st/3rd prs pl past}
+{0} be   + SFKirrpp    :: been;   {pp}
+    be   + SFKirring   :: being;
+
+{2} have + SFKirrptpp  :: had;    {pt + pp}
+
+    have + SFKirrS     :: has;
+
+{12} can   + SFKmodpt    :: could;  {pt}
+{12} may   + SFKmodpt    :: might;  {pt}
+{12} shall + SFKmodpt    :: should; {pt}
+{12} will  + SFKmodpt    :: would;  {pt}
+{12} dare  + SFKmodpt    :: dared;  {pt, this might also be handled by the
+                                     regular rule, but then a separate 
+                                     conjugation class would be necessary for
+                                     _dare_}
+
+{These rules are for Proper Nouns}
+
+Germany    + SFKirrplur  :: Germanys;
+Kennedy    + SFKirrplur  :: Kennedys;   {this applies to names ending in _y_.
+                                         There may be more than only these two}
+
+
+{These rules are for PERSPROs
+ acc = accusative form}
+
+I          + SFKacc       :: me;
+you        + SFKacc       :: you;
+he         + SFKacc       :: him;
+she        + SFKacc       :: her;
+it         + SFKacc       :: it;
+we         + SFKacc       :: us;
+they       + SFKacc       :: them;
+
+{These rules are for PERSPROs. The lextree-rules make POSSADJs
+ poss = possessive form }
+
+I          + SFKposs      :: my;
+you        + SFKposs      :: your;
+he         + SFKposs      :: his;
+she        + SFKposs      :: her;
+it         + SFKposs      :: its;
+we         + SFKposs      :: our;
+they       + SFKposs      :: their;
+
+{These rules are for PERSPROs. The lextree-rules make POSSPROs
+ predposs = possessive form, used predicatively}
+
+I          + SFKpredposs  :: mine;
+you        + SFKpredposs  :: yours;
+he         + SFKpredposs  :: his;
+she        + SFKpredposs  :: hers;
+we         + SFKpredposs  :: ours;
+they       + SFKpredposs  :: theirs;
+
+{These rules are for WHPROs. The lextree-rules make a WHPRO for the first
+ rule and a WHPOSSADJ for the second rule.}
+
+who        + SFKacc       :: whom;
+
+who        + SFKposs      :: whose;
+
+END
+
+$NP
+
+TYPE RSUFFIX;
+
+VAR
+
+C = [b, c, d, f, g, h, j, k, l, m, n, p, q, r, s, t, v, w, z] ;
+
+{Consonants. If these letters precede _y_, _y_ changes into _i_ if _ed_ , _s_,
+ _er_ or _est_ is added.}
+
+V = [a, e, i, o, u]
+
+{Vowels. If these letters precede _y_, _y_ doesn't change into _i_.}
+
+Else = [a, b, c, d, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, z];
+
+{Not _e_ and not _y_. _e_ and _y_ are special if _ed_, _er_ pr _est_ is added, 
+ this set allows normal addition of _ed_.}
+        
+
+{Both C and Else may be too large; it may be the case that some forms allowed
+ by this formulation do not actually exist. Especially _i_ in Else may give
+ unwarranted ambiguities in analysis of regular past tenses and past 
+ participles (see the rule). If there are no 'normal' verbs ending in _i_,
+ it can be removed from this set.}
+
+D = [b, d, f, g, k, l, m, n, p, r, s, t, z]; 
+
+{These letters can be doubled before _-ed_  and _-ing_}
+
+E = [b, c, d, f, g, k, l, m, n, p, r, s, t, z];
+
+{E is the same as D, except that it also contains _c_. These letters can be
+ doubled in comparative and superlative adjectives; before _-er_ and _-est_.}
+
+A = [e, y, o];  
+
+{_e_ does not drop preceding _-ing_ if preceded by these letters}
+
+CompA = [a, b, c, d, f, g, h, j, k, l, m, n, p, q, r, s, t, u, v, w, x, z];
+        
+{_e_ does drop before _-ing_ after these letters. Notice that CompA does not 
+include  _i_ to prevent wrong rule-application (see rules). Are all elements 
+necessary?}
+
+NotE = [a, b, c, d, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y,
+        z]; 
+
+{If a word ends in these letters, _-ing_ can be attached without any change of 
+form. Are all elements necessary?}
+
+CompCy = [a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w,
+          x, z, ay, ey, oy, buy, guy, puy, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+{This set defines the complement of strings ending in C(onsonant)y and _quy_.
+ This set is necessary for the regular affixation of _s_}
+
+F = [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y,
+     Z, ., 0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+{This set allows plural _s_ to be attached by both _s_ and _'s_. This is
+necessary for plurals of abbreviations and dates.}
+
+B = [c, e, g, o, y];
+
+{_e_ does not drop before _-able_ if preceded by these letters}
+
+CompB = [a, b, d, f, h, i, j, k, l, m, n, p, q, r, s, t, u, v, w, x, z];
+
+{Complement of B. _e_ does drop before _-able_ if precede by these letters}
+
+TABLE
+
+{These rules make past tense and past participle forms for regular verbs. Names
+ of the suffix keys: 
+ regptpp = regular past tense and past participle form
+ cdptpp  = consonant doubling past tense and past participle form}
+
+{10}  *e             + SFKregptpp   :: *ed;        {pt + pp}
+{10}  *(C)y          + SFKregptpp   :: *(C)ied;    {pt + pp}
+{10}  *(V)y          + SFKregptpp   :: *(V)yed;    {pt + pp}
+{10}  *(Else)        + SFKregptpp   :: *(Else)ed;  {pt + pp}
+{11}  *(D)           + SFKcdptpp    :: *(D)(D)ed;  {pt + pp}
+{11}  *c             + SFKcdptpp    :: *cked;      {pt + pp}
+
+{These rules make _-ing_ forms of verbs, for progressive and nominalizations.
+ Verbs need an attribute, e.g. _ingform_, with five possible values: cding,
+ reging, cdreging, noing and irring.
+ cding  = consonant doubling ing-form
+ reging    = regular ing-form
+ cdreging = both consonant doubling and normal ing-form are allowed
+ noing = there is no ing-form
+ irring = irregular ing-form
+ See also 'Comments on the Rules', 2.2}
+
+*(D)                 + SFKcding     :: *(D)(D)ing;
+*c                   + SFKcding     :: *cking;
+*ie                  + SFKreging    :: *ying;
+*(A)e                + SFKreging    :: *(A)eing;
+*(CompA)e            + SFKreging    :: *(CompA)ing;
+*(NotE)              + SFKreging    :: *(NotE)ing;
+*singe               + SFKirring    :: *singeing;
+
+{These rules make an _s_-form of a word. This can be either the third person
+ singular form of a verb, or the plural of a noun. Verbs have an attribute
+ _sform_, with four possible values: regS, regEs, noS and irrS.
+ regS = regular s-form
+ regEs = regular es-form (instead of _s_, _es_ is added to the base)
+ noS = there is no s-form
+ irrS = irregular s-form.
+ Nouns have an attribute plurforms, the value of which can be a set; nouns
+ can have different plural forms. For the values of this attribute and their
+ meaning see 'Comments on the rules', ... The value _regplur_ (regular plural)
+ corresponds to SFKregS, _regEplur_ (regular e-plural) corresponds to SFKregEs,
+ and _voicingplur_ to SFKvoicingplur.}
+
+
+
+   *(CompCy)           + SFKregS        :: *s;
+   *(C)y               + SFKregS        :: *(C)ies;
+   *(V)y               + SFKregS        :: *(V)ys;
+   *(F)                + SFKregS        :: *(F)s;
+/A *(F)                + SFKregS        :: *(F)'s;
+   *quy                + SFKregS        :: *quies;
+   *                   + SFKregEs       :: *es;
+   *f                  + SFKvoicingS    :: *ves;
+   *ife                + SFKvoicingS    :: *ives;
+   *do                 + SFKirrS        :: *does;
+   *go                 + SFKirrS        :: *goes;
+
+{The different attribute-values for regS and regEs are necessary, because it is
+ not possible to predict from the string whether the added affix must be _s_ or
+ _es_. This is because it is really a phonological process, and the spelling
+ is not always the same as the pronunciation. This applies especially to words
+ ending in _ch_. Most of the times this is a sibilant, and the added affix is 
+ _es_, but sometimes the pronunciation is /k/, e,g, in _monarch_, _patriarch_,
+ etc. The solution that has been chosen here is to mark every verb in the 
+ dictionary with an attribute-value that spells out this phonetic information.
+ Another possibility would be to use phonetic markers in these rules. The
+ rules would be a little more complicated. The assignment of the attribute-
+ values could use the phonetic information in the dictionary, of course.
+ See also 'Comments on the Rules', 2.3.}
+
+
+{These rules make comparative and superlative forms of adjectives and adverbs.
+ Adjectives and adverbs have an inherent attribute _compformations_, the value
+ of which is a set. _Compformations_ has four values: _regcomp_ (for regular
+ comparative and superlative forms), _cdcomp_ (for comparative and superlative
+ forms that show consonant doubling), _nocomp_ (for adjectives that do not
+ allow comparative and superlative forms), _irrcomp_ (for irregular comparative
+ and superlative forms) and _irrcomp2_ (for a second, irregular comparative and
+ superlative form). The lextree-rules relate these values to the suffix-keys
+ mentioned in these rules.}
+
+
+*(E)                + SFKcdcomp           :: *(E)(E)er;
+*(E)                + SFKcdsuper          :: *(E)(E)est;
+*(C)y               + SFKregcomp          :: *(C)ier;
+*(V)y               + SFKregcomp          :: *(V)yer;
+*(C)y               + SFKregsuper         :: *(C)iest;
+*(V)y               + SFKregsuper         :: *(V)yest;
+*e                  + SFKregcomp          :: *er;
+*e                  + SFKregsuper         :: *est;
+*(Else)             + SFKregcomp          :: *(Else)er;
+*(Else)             + SFKregsuper         :: *(Else)est;
+
+
+END.
+
+$NP
+
+_Lextree-rules for verbs_
+$UC ø
+%ENGLISH1
+&
+
+%LBVerb
+
+m1: BVERB{BVERBrec1}
+
+m: SUBVERB{SUBVERBrec1}[head/BVERB{BVERBrec1}]
+
+comp:
+
+C1: true
+A1: SUBVERBrec1 := copyT_bverbtosubverb(BVERBrec1)
+
+decomp: 
+
+C1: true
+A1: @
+
+&
+
+This rule is for verbs to which no derivation applies.
+
+$NP
+
+%LVerbBaseform
+
+m1: SUBVERB{SUBVERBrec1}
+
+m: VERB{VERBrec1}[head/SUBVERB{SUBVERBrec1}]
+
+comp:
+
+C1: true
+
+  C2: [0, 5, 6, 7, 12, 13, 14] * SUBVERBrec1.conjclasses = []
+
+    C3: true
+    A3: VERBrec1.modus := indicative;
+        VERBrec1.tense := presenttense;
+        VERBrec1.persons := [1,2];
+        VERBrec1.numbers := [singular]
+
+    C4: true
+    A4: VERBrec1.modus := indicative;
+        VERBrec1.tense := presenttense;
+        VERBrec1.persons := [1,2,3];
+        VERBrec1.numbers := [plural]
+
+    C5: true
+    A5: VERBrec1.modus := infinitive;
+        VERBrec1.tense := omegatense;
+        VERBrec1.persons := [];
+        VERBrec1.numbers := []
+
+    C6: true
+    A6: VERBrec1.modus := subjunctive;
+        VERBrec1.tense := presenttense;
+        VERBrec1.persons := [1,2,3];
+        VERBrec1.numbers := [singular, plural]
+
+  A2: @
+
+  C7: [12, 13] * SUBVERBrec1.conjclasses <> []
+  A7: VERBrec1.modus := indicative;
+      VERBrec1.tense := presenttense;
+      VERBrec1.persons := [1,2,3];
+      VERBrec1.numbers := [singular, plural]
+
+  C8: 14 in SUBVERBrec1.conjclasses
+  A8: VERBrec1.modus := indicative;
+      VERBrec1.tense := pasttense;
+      VERBrec1.persons := [1,2,3];
+      VERBrec1.numbers := [singular, plural]
+
+A1: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1)
+
+decomp:
+
+C1: true
+
+  C2: [0, 5, 6, 7, 12, 13, 14] * VERBrec1.conjclasses = []
+
+    C3: VERBrec1.modus = indicative and
+        VERBrec1.tense = presenttense and
+        [1,2] * VERBrec1.persons <> [] and
+        singular in VERBrec1.numbers 
+    A3: @
+
+    C4: VERBrec1.modus = indicative and
+        VERBrec1.tense = presenttense and
+        [1,2,3] * VERBrec1.persons <> [] and
+        plural in VERBrec1.numbers 
+    A4: @
+
+    C5: VERBrec1.modus = infinitive and
+        VERBrec1.tense = omegatense and
+        VERBrec1.persons = [] and
+        VERBrec1.numbers = [] 
+    A5: @
+
+    C6: VERBrec1.modus = subjunctive and
+        VERBrec1.tense = presenttense and
+        [1,2,3] * VERBrec1.persons <> [] and
+        [singular, plural] * VERBrec1.numbers <> [] 
+    A6: @
+
+  A2: @
+
+  C7: VERBrec1.modus = indicative and
+      VERBrec1.tense = presenttense and
+      [1,2,3] * VERBrec1.persons <> [] and
+      [singular, plural] * VERBrec1.numbers <> [] and
+      [12, 13] * VERBrec1.conjclasses <> []
+  A7: @  
+
+  C8: VERBrec1.modus = indicative and
+      VERBrec1.tense = pasttense and
+      [1,2,3] * VERBrec1.persons <> [] and
+      [singular, plural] * VERBrec1.numbers <> [] and
+      14 in VERBrec1.conjclasses
+  A8: @
+
+A1: @
+&
+This rule interprets the base form of verbs.
+
+$NP 
+
+%LVerbPasttense
+
+m1: SUBVERB{SUBVERBrec1}
+m2: SFCAT{SFCATrec1}
+
+m: VERB{VERBrec1}[head/SUBVERB{SUBVERBrec1}]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKirrpt and [1,8] * SUBVERBrec1.conjclasses <> [] 
+  A2: @
+ 
+  C3: SFCATrec1.key = SFKirrpt2 and 5 in SUBVERBrec1.conjclasses 
+  A3: @
+
+  C4: SFCATrec1.key = SFKirrptpp and 2 in SUBVERBrec1.conjclasses 
+  A4: @
+
+  C5: SFCATrec1.key = SFKirrnc and [3,9] * SUBVERBrec1.conjclasses <> [] 
+  A5: @
+
+  C6: SFCATrec1.key = SFKregptpp and [4,10] * SUBVERBrec1.conjclasses <> [] 
+  A6: @
+
+  C7: SFCATrec1.key = SFKcdptpp and 11 in SUBVERBrec1.conjclasses 
+  A7: @
+
+  C8: SFCATrec1.key = SFKmodpt and 12 in SUBVERBrec1.conjclasses
+  A8: @
+
+A1: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+    VERBrec1.modus := indicative;
+    VERBrec1.tense := pasttense;
+    VERBrec1.persons := [1,2,3];
+    VERBrec1.numbers := [singular, plural]
+
+decomp:
+
+C1: VERBrec1.modus = indicative and
+    VERBrec1.tense = pasttense and
+    [1,2,3] * VERBrec1.persons <> [] and
+    [singular, plural] * VERBrec1.numbers <> []
+
+  C2: [1,8] * VERBrec1.conjclasses <> []
+  A2: SFCATrec1.key := SFKirrpt
+
+  C3: 5 in VERBrec1.conjclasses
+  A3: SFCATrec1.key := SFKirrpt2
+
+  C4: 2 in VERBrec1.conjclasses
+  A4: SFCATrec1.key := SFKirrptpp
+
+  C5: [3,9] * VERBrec1.conjclasses <> []
+  A5: SFCATrec1.key := SFKirrnc
+
+  C6: [4,10] * VERBrec1.conjclasses <> []
+  A6: SFCATrec1.key := SFKregptpp
+
+  C7: 11 in VERBrec1.conjclasses
+  A7: SFCATrec1.key := SFKcdptpp
+
+  C8: 12 in VERBrec1.conjclasses
+  A8: SFCATrec1.key := SFKmodpt
+
+A1: @
+&
+
+This rule makes the past tense form
+
+$NP 
+
+%LVerbPastparticiple
+
+m1: SUBVERB{SUBVERBrec1}
+m2: SFCAT{SFCATrec1}
+
+m: VERB{VERBrec1}[head/SUBVERB{SUBVERBrec1}]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKirrpp and [0,1,4,9] * SUBVERBrec1.conjclasses <> []
+  A2: @
+
+  C3: SFCATrec1.key = SFKirrptpp and 2 in SUBVERBrec1.conjclasses 
+  A3: @
+
+  C4: SFCATrec1.key = SFKirrpp2 and 6 in SUBVERBrec1.conjclasses 
+  A4: @
+
+  C5: SFCATrec1.key = SFKirrpp3 and 7 in SUBVERBrec1.conjclasses 
+  A5: @
+
+  C6: SFCATrec1.key = SFKirrnc and [3,8] * SUBVERBrec1.conjclasses <> []
+  A6: @
+
+  C7: SFCATrec1.key = SFKregptpp and 10 in SUBVERBrec1.conjclasses 
+  A7: @
+
+  C8: SFCATrec1.key = SFKcdptpp and 11 in SUBVERBrec1.conjclasses 
+  A8: @
+
+A1: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+    VERBrec1.modus := participle;
+    VERBrec1.tense := omegatense;
+    VERBrec1.persons := [];
+    VERBrec1.numbers := []
+
+decomp:
+
+C1: VERBrec1.modus = participle and
+    VERBrec1.tense = omegatense and
+    VERBrec1.persons = [] and
+    VERBrec1.numbers = []
+
+  C2: [0,1,4,9] * VERBrec1.conjclasses <> []
+  A2: SFCATrec1.key := SFKirrpp
+
+  C3: 2 in VERBrec1.conjclasses
+  A3: SFCATrec1.key := SFKirrptpp
+
+  C4: 6 in VERBrec1.conjclasses
+  A4: SFCATrec1.key := SFKirrpp2
+
+  C5: 7 in VERBrec1.conjclasses
+  A5: SFCATrec1.key := SFKirrpp3
+
+  C6: [3,8] * VERBrec1.conjclasses <> []
+  A6: SFCATrec1.key := SFKirrnc
+
+  C7: 10 in VERBrec1.conjclasses
+  A7: SFCATrec1.key := SFKregptpp
+
+  C8: 11 in VERBrec1.conjclasses
+  A8: SFCATrec1.key := SFKcdptpp
+
+A1: @
+&
+
+This rule makes the past participle form.
+
+$NP 
+
+%LVerbSform
+
+m1: SUBVERB{SUBVERBrec1}
+m2: SFCAT{SFCATrec1}
+
+m: VERB{VERBrec1}[head/SUBVERB{SUBVERBrec1}]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKregS and SUBVERBrec1.sform = regS
+  A2: @ 
+       
+  C3: SFCATrec1.key = SFKregEs and SUBVERBrec1.sform = regEs 
+  A3: @ 
+       
+  C4: SFCATrec1.key = SFKirrS and SUBVERBrec1.sform = irrS 
+  A4: @
+
+A1: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+    VERBrec1.modus := indicative;
+    VERBrec1.tense := presenttense;
+    VERBrec1.persons := [3];
+    VERBrec1.numbers := [singular]
+
+decomp:
+
+C1: VERBrec1.modus = indicative and
+    VERBrec1.tense = presenttense and
+    3 in VERBrec1.persons and
+    singular in VERBrec1.numbers
+
+  C2: VERBrec1.sform = regS
+  A2: SFCATrec1.key := SFKregS
+
+  C3: VERBrec1.sform = regEs
+  A3: SFCATrec1.key := SFKregEs
+
+  C4: VERBrec1.sform = irrS
+  A4: SFCATrec1.key := SFKirrS
+
+A1: @
+&
+
+This rule makes the third person singular form.
+
+$NP 
+
+%LVerbIngform
+
+m1: SUBVERB{SUBVERBrec1}
+m2: SFCAT{SFCATrec1}
+
+m: VERB{VERBrec1}[head/SUBVERB{SUBVERBrec1}]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKreging and SUBVERBrec1.ingform = reging 
+  A2: @
+
+  C3: SFCATrec1.key = SFKreging and SUBVERBrec1.ingform = cdreging 
+  A3: @
+
+  C4: SFCATrec1.key = SFKcding and SUBVERBrec1.ingform = cding 
+  A4: @
+
+  C5: SFCATrec1.key = SFKcding and SUBVERBrec1.ingform = cdreging 
+  A5: @
+
+  C6: SFCATrec1.key = SFKirring and SUBVERBrec1.ingform = irring 
+  A6: @
+
+A1:  VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+     VERBrec1.modus := ingform;
+     VERBrec1.tense := omegatense;
+     VERBrec1.persons := [];
+     VERBrec1.numbers := []
+
+decomp:
+
+C1: VERBrec1.modus = ingform and
+    VERBrec1.tense = omegatense and
+    VERBrec1.persons = [] and
+    VERBrec1.numbers = []
+
+  C2: VERBrec1.ingform = reging
+  A2: SFCATrec1.key := SFKreging
+
+  C3: VERBrec1.ingform = cdreging
+  A3: SFCATrec1.key := SFKreging
+
+  C4: VERBrec1.ingform = cding
+  A4: SFCATrec1.key := SFKcding
+
+  C5: VERBrec1.ingform = cdreging
+  A5: SFCATrec1.key := SFKcding
+
+  C6: VERBrec1.ingform = irring
+  A6: SFCATrec1.key := SFKirring
+
+A1: @
+&
+
+This rule makes the ing-form.
+
+$NP 
+
+%LVerbBe
+
+m1: SUBVERB{SUBVERBrec1}
+m2: SFCAT{SFCATrec1}
+
+m: VERB{VERBrec1}[head/SUBVERB{SUBVERBrec1}]
+
+comp:
+
+C1: 0 in SUBVERBrec1.conjclasses
+
+  C2: SFCATrec1.key = SFKam
+  A2: VERBrec1.modus := indicative;
+      VERBrec1.tense := presenttense;
+      VERBrec1.persons := [1];
+      VERBrec1.numbers := [singular]
+
+  C3: SFCATrec1.key = SFKirrS
+  A3: VERBrec1.modus := indicative;
+      VERBrec1.tense := presenttense;
+      VERBrec1.persons := [3];
+      VERBrec1.numbers := [singular]
+    
+  C4: SFCATrec1.key = SFKare
+
+    C5: true
+    A5: VERBrec1.modus := indicative;
+        VERBrec1.tense := presenttense;
+        VERBrec1.persons := [2];
+        VERBrec1.numbers := [singular]
+
+    C6: true
+    A6: VERBrec1.modus := indicative;
+        VERBrec1.tense := presenttense;
+        VERBrec1.persons := [1,2,3];
+        VERBrec1.numbers := [plural]
+
+  A4: @
+
+  C7: SFCATrec1.key = SFKwas
+  A7: VERBrec1.modus := indicative;
+      VERBrec1.tense := pasttense;
+      VERBrec1.persons := [1,3];
+      VERBrec1.numbers := [singular]
+
+  C8: SFCATrec1.key = SFKwere
+
+    C9: true
+    A9: VERBrec1.modus := indicative;
+        VERBrec1.tense := pasttense;
+        VERBrec1.persons := [2];
+        VERBrec1.numbers := [singular]
+
+    C10: true
+    A10: VERBrec1.modus := indicative;
+         VERBrec1.tense := pasttense;
+         VERBrec1.persons := [1,2,3];
+         VERBrec1.numbers := [singular, plural]
+
+    C11: true
+    A11: VERBrec1.modus := subjunctive;
+         VERBrec1.tense := pasttense;
+         VERBrec1.persons := [1,2,3];
+         VERBrec1.numbers := [singular, plural]
+
+  A8: @
+
+A1: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1)
+
+decomp:
+
+C1: 0 in VERBrec1.conjclasses
+
+  C2: VERBrec1.modus = indicative and
+      VERBrec1.tense = presenttense and
+      1 in VERBrec1.persons and
+      singular in VERBrec1.numbers
+  A2: SFCATrec1.key := SFKam
+
+  C3: VERBrec1.modus = indicative and
+      VERBrec1.tense = presenttense and
+      3 in VERBrec1.persons and
+      singular in VERBrec1.numbers
+  A3: SFCATrec1.key := SFKis
+
+  C4: true
+ 
+    C5: VERBrec1.modus = indicative and
+        VERBrec1.tense = presenttense and
+        2 in VERBrec1.persons and
+        singular in VERBrec1.numbers
+    A5: @
+
+    C6: VERBrec1.modus = indicative and
+        VERBrec1.tense = presenttense and
+        [1,2,3] * VERBrec1.persons <> [] and
+        plural in VERBrec1.numbers
+    A6: @
+
+  A4: SFCATrec1.key := SFKare
+
+  C7: VERBrec1.modus = indicative and
+      VERBrec1.tense = pasttense and
+      [1,3] * VERBrec1.persons <> [] and
+      singular in VERBrec1.numbers
+  A7: SFCATrec1.key := SFKwas
+
+  C8: true
+
+    C9: VERBrec1.modus = indicative and
+        VERBrec1.tense = pasttense and
+        2 in VERBrec1.persons and
+        singular in VERBrec1.numbers
+    A9: @
+
+    C10: VERBrec1.modus = indicative and
+         VERBrec1.tense = pasttense and
+         [1,2,3] * VERBrec1.persons <> [] and
+         plural in VERBrec1.numbers
+    A10: @
+
+    C11: VERBrec1.modus = subjunctive and
+         VERBrec1.tense = pasttense and
+         [1,2,3] * VERBrec1.persons <> [] and
+         [singular, plural] * VERBrec1.numbers <> []
+    A11: @
+
+  A8: SFCATrec1.key := SFKwere
+
+A1: @
+&
+$UC _
+This rule is for the verb _be_.
+
+$NP
+
+_Lextree-rules for nouns_
+
+$UC ø
+%ENGLISH2
+&
+
+%LBNoun
+
+m1: BNOUN{BNOUNrec1}
+
+m: SUBNOUN{SUBNOUNrec1}[head/BNOUN{BNOUNrec1}]
+
+comp:
+
+C1: true
+A1: SUBNOUNrec1 := copyT_bnountosubnoun(BNOUNrec1)
+
+decomp:
+
+C1: true
+A1: @
+
+&
+
+This rule is for nouns to which no derivation applies.
+
+$NP
+
+%LNounBaseform
+
+m1: SUBNOUN{SUBNOUNrec1}
+
+m:  NOUN{NOUNrec1}[head/SUBNOUN{SUBNOUNrec1}]
+
+comp:
+
+C1: true
+
+  C2: not (onlyplur in SUBNOUNrec1.plurforms)
+  A2: NOUNrec1.numbers := [singular]
+
+  C3: onlyplur in SUBNOUNrec1.plurforms
+  A3: NOUNrec1.numbers := [plural]
+
+  C4: singandplur in SUBNOUNrec1.plurforms
+  A4: NOUNrec1.numbers := [plural]
+
+A1: NOUNrec1 := copyT_subnountonoun(SUBNOUNrec1)
+
+decomp:
+
+C1: true
+
+  C2: singular in NOUNrec1.numbers and not (onlyplur in NOUNrec1.plurforms)
+  A2: @
+
+  C3: plural in NOUNrec1.numbers and onlyplur in NOUnrec1.plurforms
+  A3: @
+
+  C4: plural in NOUnrec1.numbers and singandplur in NOUNrec1.plurforms
+  A4: @
+
+A1: @
+&
+
+This rule interprets the base form of nouns.
+$NP
+%LNounPlural
+
+m1:  SUBNOUN{SUBNOUNrec1}
+m2:  SFCAT{SFCATrec1}
+
+m:   NOUN{NOUNrec1}[head/SUBNOUN{SUBNOUNrec1}]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKregS and regplur in SUBNOUNrec1.plurforms
+  A2: @        
+
+  C3: SFCATrec1.key = SFKregEs and regEplur in SUBNOUNrec1.plurforms
+  A3: @      
+
+  C4: SFCATrec1.key = SFKirrplur and irrplur in SUBNOUNrec1.plurforms
+  A4: @
+
+  C5: SFCATrec1.key = SFKlatplur and latplur in SUBNOUNrec1.plurforms
+  A5: @        
+
+  C6: SFCATrec1.key = SFKvoicingS and voicingplur in SUBNOUNrec1.plurforms
+  A6: @
+
+A1: NOUNrec1 := copyT_subnountonoun(SUBNOUNrec1);
+    NOUNrec1.numbers := [plural]
+
+decomp: 
+
+C1: plural in NOUNrec1.numbers
+
+  C2: regplur in NOUNrec1.plurforms
+  A2: SFCATrec1.key := SFKregS
+
+  C3: regEplur in NOUNrec1.plurforms
+  A3: SFCATrec1.key := SFKregEs
+
+  C4: irrplur in NOUNrec1.plurforms
+  A4: SFCATrec1.key := SFKirrplur
+
+  C5: latplur in NOUNrec1.plurforms
+  A5: SFCATrec1.key := SFKlatplur
+
+  C6: voicingplur in NOUNrec1.plurforms
+  A6: SFCATrec1.key := SFKvoicingS
+
+A1: @
+& 
+
+This rule makes the plural form of nouns.
+
+$NP
+
+%LBPropernoun
+
+m1: BPROPERNOUN{BPROPERNOUNrec1}
+
+m: SUBPROPERNOUN{SUBPROPERNOUNrec1}[head/BPROPERNOUN{BPROPERNOUNrec1}]
+
+comp:
+
+C1: true
+A1: SUBPROPERNOUNrec1 := copyT_bpropernountosubpropernoun(BPROPERNOUNrec1)
+
+decomp:
+
+C1: true
+A1: @
+
+&
+
+This rule is for proper nouns to which no derivation applies.
+
+$NP
+
+%LPropernounBaseform
+
+m1: SUBPROPERNOUN{SUBPROPERNOUNrec1}
+
+m: PROPERNOUN{PROPERNOUNrec1}[head/SUBPROPERNOUN{SUBPROPERNOUNrec1}]
+
+comp:
+
+C1: true
+A1: PROPERNOUNrec1.numbers := [singular]
+
+decomp:
+
+C1: singular in PROPERNOUNrec1.numbers
+A1: @
+
+&
+
+This rule is different from the rule for nouns in that I have assumed that 
+every proper noun can be singular. If this turns out to be incorrect, the rule
+can be adapted and look the same as the rule for nouns.
+
+$NP
+
+%LPropernounPlural
+
+m1: SUBPROPERNOUN{SUBPROPERNOUNrec1}
+m2: SFCAT{SFCATrec1}
+
+m: PROPERNOUN{PROPERNOUNrec1}[head/SUBPROPERNOUN{SUBPROPERNOUNrec1}]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKirrplur and irrplur in SUBPROPERNOUNrec1.plurforms
+  A2: @
+
+  C3: SFCATrec1.key = SFKregplur and regplur in SUBPROPERNOUNrec1.plurforms
+  A3: @
+
+A1: PROPERNOUNrec1 := copyT_subpropernountopropernoun(SUBPROPERNOUNrec1);
+    PROPERNOUNrec1.numbers := [plural]
+
+decomp:
+
+C1: plural in PROPERNOUNrec1.numbers
+
+  C2: irrplur in PROPERNOUNrec1.plurforms
+  A2: SFCATrec1.key := SFKirrplur
+
+  C3: regplur in PROPERNOUNrec1.plurforms
+  A3: SFCATrec1.key := SFKregplur
+
+A1: @
+
+&
+
+This rule assumes that proper nouns only have regular plurals or irregular
+plurals (Germanys). If more possibilities are needed (regular Es-plural,
+voicing plural) the rule should be adapted and look like the rule for nouns.
+
+$NP
+$UC _
+_Lextree-rules for adjectives_
+$UC ø
+%LBadj
+
+m1: BADJ{BADJrec1}
+
+m: SUBADJ{SUBADJrec1}[head/BADJ{BADJrec1}]
+
+comp:
+
+C1: true
+A1: SUBADJrec1 := copyT_badjtosubadj(BADJrec1)
+
+decomp:
+
+C1: true
+A1: @
+
+&
+
+This rule is for adjectives to which no derivation applies.
+
+$NP
+
+%LAdjBaseform
+
+m1: SUBADJ{SUBADJrec1}
+
+m: ADJ{ADJrec1}[head/SUBADJ{SUBADJrec1}]
+
+comp:
+
+C1:  true
+
+A1:  ADJrec1 := copyT_subadjtoadj(SUBADJrec1);
+     ADJrec1.compform := basic
+
+decomp:
+
+C1:  ADJrec1.compform = basic
+
+A1:  @
+&
+
+This rule interprets the base form of adjectives.
+
+$NP
+
+%LAdjComp
+
+m1: SUBADJ{SUBADJrec1}
+m2: SFCAT{SFCATrec1}
+
+m: ADJ{ADJrec1}[head/SUBADJ{SUBADJrec1}]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKregcomp and regcomp in SUBADJrec1.compformations
+  A2: @        
+
+  C3: SFCATrec1.key = SFKcdcomp and cdcomp in SUBADJrec1.compformations
+  A3: @          
+
+  C4: SFCATrec1.key = SFKirrcomp and irrcomp in SUBADJrec1.compformations
+  A4: @        
+
+  C5: SFCATrec1.key = SFKirrcomp2 and irrcomp2 in SUBADJrec1.compformations
+  A5: @       
+
+A1: ADJrec1 := copyT_subadjtoadj(SUBADJrec1);
+    ADJrec1.compform := compar
+
+decomp:
+
+C1: ADJrec1.compform = compar
+
+  C2: regcomp in ADJrec1.compformations
+  A2: SFCATrec1.key := SFKregcomp
+
+  C3: cdcomp in ADJREC1.compformations
+  A3: SFCATrec1.key := SFKcdcomp
+
+  C4: irrcomp in ADJrec1.compformations
+  A4: SFCATrec1.key := SFKirrcomp
+
+  C5: irrcomp2 in ADJrec1.compformations
+  A6: SFCATrec1.key := SFKirrcomp2
+
+A1: @
+&
+
+This rule makes the comparative form of adjectives.
+
+$NP
+
+%LAdjSuper
+
+m1: SUBADJ{SUBADJrec1}
+m2: SFCAT{SFCATrec1}
+
+m: ADJ{ADJrec1}[head/SUBADJ{SUBADJrec1}]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKregsuper and regcomp in SUBADJrec1.compformations
+  A2: @       
+
+  C3: SFCATrec1.key = SFKcdsuper and cdcomp in SUBADJrec1.compformations
+  A3: @         
+
+  C4: SFCATrec1.key = SFKirrsuper and irrcomp in SUBADJrec1.compformations
+  A4: @         
+
+  C5: SFCATrec1.key = SFKirrsuper2 and irrcomp2 in SUBADJrec1.compformations
+  A5: @
+
+A1: ADJrec1 := copyT_subadjtoadj(SUBADJrec1);
+    ADJrec1.compform := super
+
+decomp:
+
+C1: ADJrec1.compform = super
+
+  C2: regcomp in ADJrec1.compformations
+  A2: SFCATrec1.key := SFKregsuper
+
+  C3: cdcomp in ADJrec1.compformations
+  A3: SFCATrec1.key := SFKcdsuper
+
+  C4: irrcomp in ADJrec1.compformations
+  A4: SFCATrec1.key := SFKirrsuper
+
+  C5: irrcomp2 in ADJrec1.compformations
+  A5: SFCATrec1.key := SFKirrsuper2
+
+A1: @
+&
+
+This rule makes the superlative form of adjectives.
+
+$NP
+$UC _
+_Lextree-rules for adverbs_
+$UC ø
+%LBadV
+
+m1: BADV{BADVrec1}
+
+m: SUBADV{SUBADVrec1}[head/BADV{BADVrec1}]
+
+comp:
+
+C1: true
+A1: SUBADVrec1 := copyT_badvtosubadv(BADVrec1)
+
+decomp:
+
+C1: true
+A1: @
+
+&
+
+This rule is for adverbs to which no derivation applies.
+
+$NP
+
+%LAdvBaseform
+
+m1: SUBADV{SUBADVrec1}
+
+m: ADV{ADVrec1}[head/SUBADV{SUBADVrec1}]
+
+comp:
+
+C1: true
+
+A1: ADVrec1 := copyT_subadvtoadv(SUBADVrec1);
+    ADVrec1.compform := basic
+
+decomp:
+
+C1: ADVrec1.compform = basic
+
+A1: @
+&
+
+This rule interprets the base form of adverbs.
+
+$NP
+
+%LAdvComp
+
+m1: SUBADV{SUBADVrec1}
+m2: SFCAT{SFCATrec1}
+
+m: ADV{ADVrec1}[head/SUBADV{SUBADVrec1}]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKregcomp and regcomp in SUBADVrec1.compformations
+  A2: @        
+
+  C3: SFCATrec1.key = SFKcdcomp and cdcomp in SUBADVrec1.compformations
+  A3: @        
+
+  C4: SFCATrec1.key = SFKirrcomp and irrcomp in SUBADVrec1.compformations
+  A4: @       
+
+  C5: SFCATrec1.key = SFKirrcomp2 and irrcomp2 in SUBADVrec1.compformations
+  A5: @
+
+A1: ADVrec1 := copyT_subadvtoadv(SUBADVrec1);
+    ADVrec1.compform := compar
+
+decomp:
+
+C1: ADVrec1.compform =compar
+
+  C2: regcomp in ADVrec1.compformations
+  A2: SFCATrec1.key := SFKregcomp
+
+  C3: cdcomp in ADVREC1.compformations
+  A3: SFCATrec1.key := SFKcdcomp
+
+  C4: irrcomp in ADVrec1.compformations
+  A4: SFCATrec1.key := SFKirrcomp
+
+  C5: irrcomp2 in ADVrec1.compformations
+  A5: SFCATrec1.key := SFKirrcomp2
+
+A1: @
+&
+
+This rule makes the comparative form of adverbs.
+
+$NP
+
+%LAdvSuper
+
+m1: SUBADV{SUBADVrec1}
+m2: SFCAT{SFCATrec1}
+
+m: ADV{ADVrec1}[head/SUBADV{SUBADVrec1}]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKregsuper and regcomp in SUBADVrec1.compformations
+  A2: @         
+
+  C3: SFCATrec1.key = SFKcdsuper and cdcomp in SUBADVrec1.compformations
+  A3: @         
+
+  C4: SFCATrec1.key = SFKirrsuper and irrcomp in SUBADVrec1.compformations
+  A4: @         
+
+  C5: SFCATrec1.key = SFKirrsuper2 and irrcomp2 in SUBADVrec1.compformations
+  A5: @
+         
+A1: ADVrec1 := copyT_subadvtoadv(SUBADVrec1);
+    ADVrec1.compform := super
+
+decomp:
+
+C1: ADVrec1.compform = super
+
+  C2: regcomp in ADVrec1.compformations
+  A2: SFCATrec1.key := SFKregsuper
+
+  C3: cdcomp in ADVrec1.compformations
+  A3: SFCATrec1.key := SFKcdsuper
+
+  C4: irrcomp in ADVrec1.compformations
+  A4: SFCATrec1.key := SFKirrsuper
+
+  C5: irrcomp2 in ADVrec1.compformations
+  A5: SFCATrec1.key := SFKirrsuper2
+
+A1: @
+&
+
+This rule makes the superlative form of adverbs.
+
+$NP
+
+%ENGLISH3
+&
+$UC _
+_Lextree-rules for PERSPROs_
+$UC ø
+%LPersproNom
+
+m1: BPERSPRO{BPERSPROrec1}
+
+m: PERSPRO{PERSPROrec1}[head/BPERSPRO{BPERSPROrec1}]
+
+comp:
+
+C1: true
+A1: PERSPROrec1 := copyT_bpersprotoperspro(BPERSPROrec1);
+    PERSPROrec1.persprocase := nom
+
+decomp:
+
+C1: PERSPROrec1.persprocase = nom
+A1: @
+&
+
+This rule makes nominative PERSPROs.
+
+$NP
+
+%LPersproAcc
+
+m1: BPERSPRO{BPERSPROrec1}
+m2: SFCAT{SFCATrec1}
+
+m: PERSPRO{PERSPROrec1}[head/BPERSPRO{BPERSPROrec1}]
+
+comp:
+
+C1: SFCATrec1.key = SFKacc
+A1: PERSPROrec1 := copyT_bpersprotoperspro(BPERSPROrec1);
+    PERSPROrec1.persprocase := acc
+
+decomp:
+
+C1: PERSPROrec1.persprocase = acc
+A1: SFCATrec1.key := SFKacc
+&
+
+This rule makes accusative PERSPROs.
+
+$NP
+$UC _
+_Lextree-rule for POSSADJ_
+$UC ø
+%LPossadj
+
+m1: BPERSPRO{BPERSPROrec1}
+m2: SFCAT{SFCATrec1}
+
+m: POSSADJ{POSSADJrec1}[head/BPERSPRO{BPERSPROrec1}]
+
+comp:
+
+C1: SFCATrec1.key = SFKposs
+A1: POSSADJrec1.mood := nowh
+
+decomp:
+
+C1: POSSADJrec1.mood = nowh
+A1: SFCATrec1.key := SFKposs
+&
+$UC _
+In Rosetta2, POSSADJs also had attributes _number_, _person_ and _gender_.
+The iso-group decided that this is no longer necessary. There is a new
+attribute _mood_ for POSSADJs with two values: _wh_ and _nowh_. This is
+necessary to differentiate them from _whose_, which is now no longer a 
+WHPOSSADJ, but a POSSADJ as well, with value _wh_ for the attribute _mood_.
+
+$NP
+
+_Lextree-rule for POSSPRO_
+$UC ø
+%LPosspro
+
+m1: BPERSPRO{BPERSPROrec1}
+m2: SFCAT{SFCATrec1}
+
+m: POSSPRO{POSSPROrec1}[head/BPERSPRO{BPERSPROrec1}]
+
+comp:
+
+C1: BPERSPROrec1.predpos = true and
+    SFCATrec1.key = SFKpredposs  
+A1: @
+
+decomp:
+
+C1: BPERSPROrec1.predpos = true
+A1: SFCATrec1.key := SFKpredposs
+&
+$UC _
+This rule makes a POSSPRO (_mine_) from a PERSPRO.
+
+$NP
+
+_Lextree-rules for WHPROs_
+$UC ø
+%LWhpro
+
+m1: BWHPRO{BWHPROrec1}
+
+m: WHPRO{WHPROrec1}[head/BWHPRO{BWHPROrec1}]
+
+comp:
+
+C1: true
+
+  C2: BWHPROrec1.whcase = true
+  A2: WHPROrec1.cases := [nominative, accusative]
+
+  C3: BWHPROrec1.whcase = false
+  A3: @
+
+A1: WHPROrec1 := copyT_bwhprotowhpro(BWHPROrec1)
+
+decomp:
+
+C1: true
+
+  C2: BWHPROrec1.whcase = true and WHPROrec1.cases <> []
+  A2: @
+
+  C3: BWHPROrec1.whcase = false and WHPROrec1.cases = []
+  A3: @
+
+A1: @
+&
+$UC _
+This rule assigns both nominative and accusative case to _who_. For other 
+WHPROs the rule does not change anything in the attributes.
+
+$NP
+$UC ø
+%LWhproAcc
+
+m1: BWHPRO{BWHPROrec1}
+m2: SFCAT{SFCATrec1}
+
+m: WHPRO{WHPROrec1}[head/BWHPRO{BWHPROrec1}]
+
+comp:
+
+C1: SFCATrec1.key = SFKacc and BWHPROrec1.whcase = true
+A1: WHPROrec1 := copyT_bwhprotowhpro(BWHPROrec1);
+    WHPROrec1.cases := [accusative]
+
+decomp:
+
+C1: accusative in WHPROrec1.cases and BWHPROrec1.whcase = true
+A1: SFCATrec1.key := SFKacc
+&
+$UC _
+This rule assigns accusative case to _whom_.
+
+$NP
+
+_Lextree-rule for POSSADJ_
+$UC ø
+%LWhpossadj
+
+m1: BWHPRO{BWHPROrec1}
+m2: SFCAT{SFCATrec1}
+
+m: POSSADJ{POSSADJrec1}[head/BWHPRO{BWHPROrec1}]
+
+comp:
+
+C1: SFCATrec1.key = SFKposs and BWHPROrec1.poss = true
+A1: POSSADJrec1. mood := wh
+
+decomp:
+
+C1: POSSADJrec1.mood = wh and BWHPROrec1.poss = true
+A1: SFCATrec1.key := SFKposs
+&
+$UC _
+This rule is for _whose_.

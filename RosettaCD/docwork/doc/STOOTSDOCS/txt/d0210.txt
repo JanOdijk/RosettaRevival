@@ -1,0 +1,1690 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3.formalism
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Formal Specification of the Morphological Components 
+                         of Rosetta3
+
+         Author       :  Joep Rous
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  0210
+
+         Date         :  87/7/7
+
+         Status       :  concept
+
+         Supersedes   :  0065
+
+         Distribution :  project, F. Sijstermans, J.M. Jansen
+
+         Clearance    :  Philips
+
+         Keywords     :  morphology, formalism
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta                      Doc.nr: 0210                date:87/7/7
+$Np 1
+$LD 4
+$SC &%
+$UC _
+$C1 Preface
+$ In this paper I will give a specification of the theoretical definitions
+of the morphological components of the Rosetta3 system (A-MORPH and G-MORPH).
+The description of
+the Rosetta2 morphological components has served as a starting point for
+the design of the Rosetta3 components. For this reason parts of 
+document R0008 have been copied wherever possible. On a global level the 
+strategy during
+morphological analysis and generation remains the same. On a more detailed
+level, however, there are some major changes.$
+
+$ Although I've  tried to write this paper in such a way 
+that it can be read independently from R008, I recommend reading document 
+R008 (on the Rosetta2 morphological components) first. $
+
+$ The paper consists of five sections. Section 1 gives an
+informal introduction to the subject. Section 2 gives the formal
+definitions of the morphological components. In Section 3 is specified
+which kind of language specific information is needed for the the morphological
+components. In Section 4 some examples are given of different
+kinds of morphological rules. Finally, in Section 5 the problems 
+which Jan Landsbergen mentioned in chapter 3 of document R008 are discussed. $
+
+$ The morphological components of Rosetta3 make use of several kinds of 
+morphological rules. For each of these rule types we have designed a specialized
+language. The definition of these languages is outside the scope of this
+document, it will be given in a separate paper. $
+
+$C1 Informal introduction
+
+$C2 A simplified version of the morphological components
+
+$ The morphological components have the task to define the relation between
+words (strings of symbols) and lexical S-trees. Because it is also the task
+of the morphological components to define what should be considered a word
+the matter is somewhat more complicated, but in this subsection I will
+neglect this complication.$
+
+$ In this simplified version A-MORPH is applied to a string and delivers
+a set of lexical S-trees; G-MORPH is applied to a lexical S-tree and
+delivers a set of strings.$
+
+$ A-MORPH and G-MORPH are - in principle - 
+each other's reverse. They are based on the same 
+- reversible - rules. I will first discuss the rules of A-MORPH, mainly
+by means of examples, and then G-MORPH will be discussed briefly.$
+
+$ If we ignore complicating details, A-MORPH consists of three parts:$
+    1. segmentation phase
+    2. dictionary phase
+    3. W-parser phase
+$ The segmentation phase divides a word into a stem and - possibly - affixes.
+The dictionary gives for each stem the 
+corresponding S-tree(s). The W-parser combines the S-tree for the stem
+and the affixes to the lexical S-tree for the complete word.$
+       
+_Phase 1. Segmentation_
+
+$ The segmentation phase tries to apply segmentation rules to the input strings
+recursively and presents the results (including the original string) to the
+dictionary phase.$
+$ A segmentation rule divides a string into a new string and an affix key.$
+E.g. for the suffix "en" :
+    "vertellen" --> "vertel" + SFKen
+$ The affix serves to indicate which kind of segmentation rules have been 
+applied. In principle there is a lot of freedom in
+choosing the set of affix keys. E.g. we may use one affix key
+for all "regular ways" of forming the infinitive, including both
+"vertel" - "vertellen" and "loop" - "lopen".$
+$ The segmentation rules are applied in all possible ways to the input string
+and to the results of segmentation rules that have been applied already. The
+whole set of results, including the original input string, is sent to phase 2.$
+
+$ The segmentation phase has in general an ambiguous result, e.g.:$
+    "vertellen" ---->%segm%  "vertellen"
+                           "vertel" + SFKen
+$ Only after the tentative stems have been looked up in the dictionary it can
+be decided which segmentations are correct, in this example the second one. $
+$ Other examples of the application of segmentation rules for the suffix "en":$
+    "aarzelen" --> "aarzel" + SFKen
+but also:
+    "bevelen"  --> "beveel"  + SFKetoee
+    "aarzelen" --> "aarzeel" + SFKetoee
+
+_Phase 2. Dictionary_
+
+$ The strings that are produced by the segmentation rules as possible stems
+(including the original string) are looked up in the dictionary. This is done
+in two steps.$
+
+   (1) First the strings are looked up in AMDICT. AMDICT is the analytical 
+       morphological dictionary, which gives for each string a (possibly empty)
+       set of keys.
+ 
+   (2) Next, these keys, are looked up in B-LEX, which gives for each key
+       the corresponding S-tree.
+
+$ Let us assume that AMDICT gives the following keys for the 
+above-mentioned examples:$
+    "vertel" --> K%1%
+    "aarzel" --> K%2%
+    "bevel"  --> K%3%
+    "beveel" --> K%4%
+    "aarzeel" --> *  (not in dictionary)
+
+$ The segmentation of "aarzelen" into "aarzeel" + "en" is rejected here,
+because there is no stem "aarzeel" in the dictionary.$
+
+(2) B-LEX gives for each key the corresponding basic S-tree.
+
+    K%1% --> BVERB{key: K%1%, form: stemform}
+    K%2% --> BVERB{key: K%2%, form: stemform}
+    K%3% --> BNOUN{key: K%3%, number: singular}
+    K%4% --> BVERB{key: K%4%, form: stemform}
+
+$ So, one of the results of applying the dictionary phase to the 
+beforementioned examples is:$
+        BVERB{key: K%1%, .....} + SFKen
+
+
+_Phase 3. W-parser phase_
+
+$ The W-parser phase has the task to combine a segmented word to one S-tree:
+the lexical S-tree for that word. The result of the dictionary phase
+may already be a lexical S-tree, but otherwise rules ( to be called W-rules )
+have to be applied. They operate on the segmented string in
+which the stems are replaced by the corresponding basic S-trees. Only if
+the W-rules perform their task successfully, the original string
+is considered as a correct word.$
+
+Example of the application of a W-rule:
+
+BVERB{key:K%1%, form: stemform} + SFKen  ===>
+
+ VERB{...,form:inf,...} 
+
+$  By means of this rule a lexical S-tree is constructed for one of the
+possible segmentations of "vertellen".$
+
+
+$ G-MORPH is the mirror image of A-MORPH. Because in G-MORPH the dictionary
+information is available right from the start (in the lexical S-tree to
+which G-MORPH is applied), G-MORPH can operate in practice in 
+a more deterministic way than A-MORPH. (there may be ambiguities, but false
+paths are rare)$
+The three phases of G-MORPH are:
+$ 1. W-generator phase. The lexical S-tree is converted into rows
+of basic S-trees, affixes by means of generative
+W-rules.$
+$ Phase 2. The string corresponding to the basic S-tree is looked up in the
+dictionary. As the key of the basic S-tree is already in the S-tree itself,
+only the transition from key to string requires an explicit look-up, 
+in GMDICT (the generative morphological dictionary).$
+$ Phase 3. The generative segmentation rules join the stem and the affixes
+to one word.$
+
+Example:
+Phase 1.
+  VERB{key: K%1%, form: inf} ===>
+  BVERB{key: K%1%, form: stemform} + SFKen
+
+Phase 2.
+  K%1% ===> "vertel"
+
+Phase 3.
+  "vertel" + SFKen ===> "vertellen"
+
+$NP
+$C2 Complications
+
+$ In subsection 1.1 I sketched the main parts of the morphological components.
+However there are a number of phenomena that require a refinement of this
+framework. I will sum up a number of complications here, in terms of A-MORPH.
+Always the mirror image of these cases can be found in G-MORPH.$
+
+$ (1) A-MORPH is applied to a sequence of words. But an input sentence is a
+sequence of symbols, including spaces, carriage returns etc. Before words can
+be segmented it must be decided what the candidate words are. This is done
+in two steps by the so-called lay-out components. First the Sentence Layout
+Component generates a sequence of words from which spaces, TAB symbols, 
+and Carriage Return symbols are removed. Next, the Word Layout Component is
+applied to each individual word. A typical action performed by this component
+is a change from uppercase to lowercase of the first letter of the first word.
+It may also separate the "." character from the last word of the sentence.
+An example of the way the lay-out components may operate:$
+$RL 9
+Sentence Layout Component:
+  "Ik loop."  ===>    "Ik" + "loop."
+
+Word Layout Component:
+  "Ik" + "loop." ===> "Ik" + "loop" + "."
+                      "Ik" + "loop." + "."
+                      "ik" + "loop."
+                      "ik" + "loop" + "."
+                      "ik" + "loop."+ "."
+$ ("Ik" may have a capital either because "Ik" is a proper noun or 
+because "ik" is
+the beginning of the sentence; "loop." might be an abbreviation.)$
+
+$ (2) Sometimes a sequence of words must be considered to be one word.
+There is a special dictionary for this kind of idioms. (N.B. 
+In Rosetta3 various kinds of idioms are distinguished. Only one kind,
+idioms consisting of a fixed sequence of words and called "fixed
+idioms", is handled by the morphological components.)$
+For example, the Sentence Layout Component gives:
+    "op" + "en" + "top" 
+Next, the idiomatic dictionary tells that these three words should also be 
+treated as one word:
+    "op" + "en" + "top" ===> "op en top"
+                             "op" + "en" + "top"
+
+$ Notice that it is not necessary to use this idiomatic dictionary in the 
+generation component too. In generation application of the dictionary would 
+result in:$
+    "op en top" ===> "op" + "en" + "top"
+
+Next, the generative Sentence Layout Component would apply the reverse operation
+to this sequence of words, as follows:
+    "op" + "en" + "top" ===> "op en top"
+
+$ (4) Splitting. Sometimes a string that looks like one word, must be split up
+into two words.$
+For example, in Spanish: "damelo" ===> "da" + GLUE + "me" + GLUE + "lo"
+             in Dutch: "weglopen"===> "weg" + GLUE + "lopen"
+$ The GLUE serves to retain the information that the words were glued together.
+In the syntactic component it will be checked whether this was correct.$
+E.g.:  *"Je mag niet op de weglopen"
+        "Je mag niet weglopen"
+
+(5) Context conditions.
+Some words can have different forms, depending on the context.
+E.g., in English: "a" or "an".
+
+$ These phenomena are handled by making AMDICT more complex. Two types of
+information have been added to the dictionary. Phonetical information about
+the string and a condition which determines
+the (phonetical) context in which a string can occur.$
+$ At the end of the segmentation phase it is checked whether the context 
+conditions are compatible with the phonetic information corresponding with
+the (right) neighbour strings.$
+
+(6) Phonetical rules.
+$ In the previous examples we have seen that "vertellen" is segmented as
+"vertel" + SFKen. The most feasible way to prevent segmentation 
+of the string "aarzellen" into "aarzel" + SFKen by the same rule 
+is on the basis of phonetical information about the resulting word ("aarzel").
+E.g. the segmentation rule which transforms 
+"vertellen" into "vertel" + SFKen is only applicable if the result ("vertel")
+does not end on a 'sjwa' sound. Therefore the rule will not be applicable to 
+"aarzel" 
+because it has a 'sjwa' ending. However, in order to be able to perform these
+kind of checks, the phonetical information of the stems must be available
+in the MDICT dictionary.$
+
+$C1 The morphological components
+
+$C2 Overview. A-MORPH and G-MORPH.
+
+
+$ The analytical morphological component (A-MORPH) has the task to convert a
+sentence into a sequence of lexical S-trees; more precisely: a set of
+such sequences (because of the possibility of ambiguities). The generative
+morphological component (G-MORPH) converts a sequence of lexical S-trees
+into a set of sentences. (The set T%L% of lexical S-trees is defined
+as the set of S-trees that belong to sequences that are accepted
+by G-MORPH, and therefore generated by A-MORPH. The set of syntactic
+categories of these lexical S-trees is called LEXCATS, a subset of SYNCATS).$
+
+$ Each analytical dictionary, each set of segmentation rules and each set of
+W-rules has a generative counterpart. Only if these dictionaries and 
+rule sets in analysis and generation are each others reverse ( if they
+both satisfy the symmetry condition ), function G-MORPH will be the reverse of 
+AMORPH. $
+
+$ A-MORPH and G-MORPH are respectively preceded and followed by a
+"lay-out component". This component does not belong to the formal system
+Rosetta3; it is concerned with writing conventions such as the way in
+which the words of a sentence are separated (spaces, punctuation marks,
+carriage returns). The lay-out component will be discussed in more detail in 
+subsection 3.2.2.$
+
+$ Thanks to the lay-out component the input of A-MORPH is a 
+sequence of words$
+    w%1%, w%2%, . . . , w%n%
+$ where a word w%i% is a string without spaces or carriage returns. Note
+that in our notation the comma is a meta-symbol; it is used as a word 
+delimiter; a comma that belongs to the original sentence is treated as a word 
+w%i%.$
+$ The output of A-MORPH is a set of sequences of lexical S-trees$
+    t%1%, t%2%, . . . , t%m%.  (NB: m may be different for different sequences)
+ 
+$ The input of G-MORPH is a sequence of lexical S-trees $
+    t%1%, t%2%, . . . , t%m%
+$ The output of G-MORPH is a set of sequences of words, where each
+sequence has the form $
+    w%1%, w%2%, . . . , w%n%.    
+
+$ N.B. What is to be considered a "word", may differ before and after
+application of a morphological component. There is no one-to-one
+mapping between the strings w%i% and the lexical S-trees t%i%, because
+of fixed idiomatic expressions and splitting rules. If A-MORPH is applied to
+a sentence w%1%, . . . , w%n%, the result may be a sequence of lexical
+S-trees t%1%, . . . , t%m% with m<>n.$
+
+$ In mathematical terms, A-MORPH is a function from the set 
+of sequences of words to the set of
+sets of sequences of lexical S-trees. We will adopt the notational
+convention to characterize the range and the domain of a function by
+means of its "type":$
+    A-MORPH: sequence of words --> set of sequences of lexical S-trees.
+    G-MORPH: sequence of lexical S-trees --> set of sequences of words.
+
+$ A-MORPH and G-MORPH are both defined in terms of three other functions.$
+
+    A-SEGMENTATION: sequence of words --> set of sequences of rows of 
+                                             segment keys
+    A-LEX: sequence of rows of segment keys --> set of sequences of rows
+                                                   of segment S-trees
+    W-PARSER: sequence of rows of segment S-trees --> set of sequences
+                                                          of lexical S-trees
+    W-GENERATOR: sequence of lexical S-trees --> set of sequences of rows
+                                                   of segment S-trees
+    G-LEX: sequence of rows of segment S-trees --> set of sequences of rows
+                                                   of segment keys
+    G-SEGMENTATION: sequence of rows of segment keys --> set of sequences 
+                                                            of words
+
+
+$ There is no formal difference between a sequence and a row, but we will use
+the term sequence for lists of words or lists of other objects that correspond
+to words. The term row will be used here for lists of segments of words. 
+In sequences of words we will use the comma (,) as a separator, in rows of 
+segments the + sign will be the separator.$
+$ A segment key is the key of a segment, e.g. the key of a word stem or the
+key of an affix. A segment S-tree is the S-tree corresponding to a segment 
+key. $
+
+$ The definitions are as follows:$
+
+$RL 5
+    A-MORPH(s) =%def%  { l | _E_ r, q: r in A-SEGMENTATION(s) and
+                           q in A-LEX(r) and
+                           l in W-PARSER(q)           }
+
+    Here s : sequence of words without blanks,
+         r : sequence of rows of segment keys,
+         q : sequence of rows of segment S-trees,
+         l : sequence of lexical S-trees.
+
+
+$RL 3
+    G-MORPH(l) =%def%  { s | _E_ r, q:  q in W-GENERATOR(l) and
+                           r in G-LEX(q) and
+                           s in G-SEGMENTATION(r) }
+ 
+    Here l : sequence of lexical S-trees,
+         q : sequence of rows of segment S-trees,
+         r : sequence of rows of segment keys,
+         
+
+$ An example:$
+s = "de","kersen"
+r = K%de%, K%kers% + SFKregPlur
+q = ART{...}, BNOUN{.. , getal:omegagetal, ..} + SFKCAT{key: SFKen}
+l = ART{...}, NOUN{.. , getal:meervoud, ..}[..]
+
+$ Note that the definitions of A-MORPH and G-MORPH are symmetric. If 
+A-SEGMENTATION and G-SEGMENTATION, A-LEX and G-LEX, W-PARSER and 
+W-GENERATOR are pairs of reverse functions, it follows immediately from the 
+definitions that A-MORPH and G-MORPH are each other's reverse.$
+More precisely:
+If           r  in  A-SEGMENTATION(s) <---> s  in  G-SEGMENTATION(r),
+             q  in  A-LEX(r)          <---> r  in  G-LEX(q)
+             l  in  W-PARSER(q)       <---> q  in  W-GENERATOR(l)
+then
+              l  in  A-MORPH(s) <---> s  in  G-MORPH(l)
+
+$ In subsections 3.3 - 3.5 the newly introduced functions 
+will be defined. Here a brief overview is given $
+
+
+$ A-SEGMENTATION applies word-layout rules, splitting rules and 
+segmentation rules to the words of the
+sentence, it looks up the remaining stems in the dictionary MDICT and
+replaces them by keys in the way this dictionary prescribes. It also
+takes context-conditions into account. The final result is a sequence
+ of segmented words, where each segmented word is a row 
+consisting of keys of stems and affixes. I will refer to these keys as 
+"segment keys".$
+
+$ G-SEGMENTATION is applied to a sequence of rows of segment keys. First the 
+keys are replaced by strings, according to dictionary GMDICT. Then
+reverse segmentation rules and splitting rules are applied. The result is a 
+sequence of words.$
+
+$ A-LEX replaces the segment keys by the S-trees they denote, according to
+dictionary B-LEX. Keys of affixes are also replaced by S-trees (N.B.: Because
+some of the affixes are only relevant within the morphological components,
+their correponding S-trees do not belong to the domain T of S-tree.
+These affixes are replaced by S-trees for the sake of normalization).
+I will use the term "segment S-trees" for all these S-trees.$
+
+$ G-LEX replaces segment S-trees by segment 
+keys.$
+
+$ W-PARSER tries to reduce 
+a row of segment S-trees to one lexical S-tree,
+by application of analytical W-rules.$
+
+$ W-GENERATOR converts a lexical S-tree into a row of segment 
+S-trees (for stems and affixes) by application of generative W-rules.$  
+
+$ The functions have been described here as though they deliver
+one result, but in fact they all deliver a set of results. All functions
+may involve an ambiguity (more than one result) or act as a filter (an empty
+set of results). In Chapter 3 the precise definitions of the functions will 
+be given.$
+
+$ N.B. The definitions given in this document are the theoretical definitions, 
+of the pure system, without additions for robustness.$
+$NP
+
+$C2 Layout and segmentation .
+
+$C3 The outermost level.
+
+$ On the outermost level the segmentation function A-SEGMENTATION is defined
+in terms of A-WLAYOUT and A-GLUE&+&. A-SEGMENTATION applies A-WLAYOUT to
+each word of the input sequence. The result of this application is a set of
+word sequences (cf. 3.2.2.1). Next, A-GLUE&+& is applied to each sequence
+of words which corresponds with the complete sentence.$
+$RL 5
+    A-SEGMENTATION(s) =%def%  
+       { <r%1%,...,r%n%>| _E_ s%1%,...,s%n%, w%1%,...,w%n%, F, L:
+              w%1%,...,w%n% in FIXIDS(s) and
+              (_A_ i: 1_<_i_<_n: s%i% in A-WLAYOUT(w%i%, F(i,1), L(i,n)) and
+              <r%1%,...,r%n%> in A-GLUE&+&(<s%1%,...,s%n%>)    }
+
+    Here s  : sequence of words without blanks,
+         s%i% : sequence of words without blanks,
+         r%i% : row of segment keys,
+         w%i% : word without blanks,
+         F    : function that is TRUE if i=1 otherwise FALSE
+         L    : function that is TRUE if i=n otherwise FALSE
+$RL 5
+    G-SEGMENTATION(r) =%def%  
+       { s | _E_ w%1%,...,w%n%, s%1%,...,s%n%, F, L :
+             s = w%1%,...,w%n% and
+             (_A_ i: 1_<_i_<_n: w%i% in G-WLAYOUT(s%i%, F(i,1), L(i,n)) and
+             <s%1%,,...,s%n%> in G-GLUE&+&(r) }
+ 
+    Here r  : sequence of rows of segment keys,
+         s%i% : sequence of words without blanks,
+         s  : sequence of words,
+         w%i% : word
+         F    : function that is TRUE if i=1 otherwise FALSE
+         L    : function that is TRUE if i=n otherwise FALSE
+
+
+$C3 The lay-out components
+
+$ In Rosetta3 we distinguish two lay-out components: the sentence lay-out
+component and the word lay-out component. The analytical and the generative 
+sentence lay-out component are outside the scope of
+Rosetta as a formal translation system because it is not possible, or not
+desirable to describe them with reversible rules. Examples are the handling
+of the spaces between the words, the carriage returns etc.. 
+In analysis we want to allow an arbitrary number of spaces between words, but 
+it makes no sense to generate an infinite set of translations only differing 
+in the number of spaces.$
+$ In the word lay-out component reversible rules will never cause infinite sets.
+For this reason we could incorporate a formal definition of this function 
+on the description of the morphological components of Rosetta3.
+In practice, however, we don't want that each analytical word layout rule
+has a generative reverse counterpart because they would create superfluous
+ambiguities. Therefore, we will not give a complete formal specification 
+of the word layout components and restrict ourselves to the specification of the
+function interface ( cf. section 3.2.1, the definition of A-SEGMENTATION and 
+G-SEGMENTATION) together with an informal description of the components.
+
+$C4 The word lay-out components. A-WLAYOUT and G-WLAYOUT
+$ The input for A-WLAYOUT is a word as it is typed, consisting of letters, 
+ciphers and punctuation marks but without spaces and carriage returns. By 
+means of application of lay-out rules the input string is being transformed 
+into a sequence of strings.
+In many cases a local ambiguity arises in the lay-out component. E.g., a
+period at the end of a word may indicate the end of the sentence, but the
+word may also be an abbreviation (or both!). Another example: the capital
+at the beginning of the sentence; the first word may be a word with a
+capital (a proper noun, or the English word "I") or not. 
+In most cases this ambiguity will be solved during the dictionary look-up in 
+A-MORPH.$
+$ In the generative lay-out component the same phenomena are handled
+as in analysis. However, in order to avoid useless ambiguities during
+generation it may be desirable in some cases to give up the reversibility 
+requirement and to omit some generative rules.$
+$NP
+$C3 Overview. A-GLUE&+& and G-GLUE&+&
+
+In A-GLUE&+& three kinds of actions take place:
+$ (1) Glue rules try out whether the words can be split up into
+other words. If a glue rule is successful, the result is a pair of words
+separated by a GLUE marker. For example, in Spanish:$
+    "damelo" ==> "da" , GLUE, "me", GLUE, "lo"
+$ (2) Segmentation rules divide each word into stems and affixes, represented
+by affix-keys. For example:$
+    "lopen" ==> "loop" + SFKen
+
+$ (3) The stems are looked up in the dictionary MDICT (analytical
+ morphological
+dictionary) and if they are found they are replaced by the corresponding 
+triple(s) of key, context-condition and phonetical information.$ 
+$ Note that for stems and affixes (both strings) the difference with keys is 
+relevant.$
+$ Finally, this condition must be applied to the right context of the string.
+The right context is the phonetical information of the string to the right of 
+the string under consideration. 
+E.g., the context-conditions of the English "a" and "an"
+require respectively a consonant and a vowel in the right context.
+( The treatment of context-conditions is still a complicating factor in the
+morphological components, while on the other hand they are rarely used.)$
+
+$ In G-GLUE&+& the same things happen 'in the reverse order'. The dictionary
+MDICT (generative morphological dictionary) 
+delivers for a key the corresponding string(s), with a context-condition and
+phonetical information. After this the generative versions of segmentation
+rules and splitting rules are applied. Finally, the context conditions are 
+applied to the generated context(s).$
+
+$ The morphological functions as defined here always operate on one expression
+and give a set of results. One of the reasons that the implementation of
+the morphological components is complicated is, that it has been 
+tried to create
+and maintain efficient representations of these sets, in order to prevent
+that there are many duplicates of the same expressions to which the same 
+rules are applied many times. Note that the notion of right context in
+such a representation is a difficult one.$
+
+$ A-GLUE&+& and G-GLUE&+& operate on the sentence as a whole. They are defined
+in terms of functions A-GLUE and G-GLUE which operate on individual words.$
+
+    A-GLUE: <word> ---> set of triples <sequence of rows of segment keys,
+                                        phon. info., context condition>
+    G-GLUE: <sequence of rows of segment keys> ---> set of triples
+                                                 <word, phon. info., 
+                                                  context condition>
+$RL 6
+A-GLUE&+&(<w%1%,...,w%n%>) =%def% 
+         { <r%1%,...,r%n%> | _E_ CC%1%,...,CC%n%, f%1%,...,f%n% :
+                 (_A_i: 1_<_i_<_n: "r%i% has the form W.{GLUE.W}" and
+                             <r%i%, f%i%, CC%i%>in A-GLUE(w%i%) ) and
+                 (_A_i: 1_<_i_<_n-1: CC%i%(f%i+1%) ) and
+                 CC%n%(FONtrailer)    }
+
+Here w%i% : word,
+     r%i% : row of segment keys,
+     CC%i%: context condition,
+     f%i% : phonetic information.
+
+
+$RL 8
+G-GLUE&+&(r) =%def%
+         { <w%1%,...,w%n%> | _E_ r%1%,...,r%n%:
+                _E_ CC%1%,...,CC%n%, f%i%,...,f%n% 
+                r = r%1%,...,r%n%  and
+                (_A_i: 1_<_i_<_n: "r%i% has the form W.{GLUE.W}" and
+                            <w%i%, f%i%, CC%i%> in G-GLUE(r%i%) ) and
+                (_A_i: 1_<_i_<_n-1: CC%i%(f%i+1%)  ) and
+                CC%n%(FONtrailer)          }
+
+Here r  : sequence of rows of segment keys,
+     CC%i%: context condition,
+     w%i% : word without blanks,
+     r%i% : row of segment keys,
+     r  : sequence of rows of segment keys,
+     f%i% : phonetic information
+
+
+$ It is obvious from these definitions that G-GLUE&+& is the reverse of 
+A-GLUE&+&. In the Rosetta2 definitions this was not the case because the
+context conditions in analysis and generation were handled differently. The
+Rosetta2 formalism had to be altered at this point because we felt that
+context conditions are not conditions on a string but rather on phonetical 
+information of this string.$
+$ A context condition CC%i% is a boolean function with one argument
+containing phonetical information. Notice
+that the last word of a sentence has no right context. Therefore the context
+condition of the last word is applied to the fixed phonetical information 
+marker "FONtrailer". Application of a context condition to FONtrailer will in 
+general yield the value "TRUE", unless the word under consideration may not 
+appear as the last word in a sentence.$
+
+
+$C3 A-GLUE and G-GLUE.
+
+$ The definition of this part of the system is completely different from the
+Rosetta2 definition. In the Rosetta3 proposal there are 3 kinds of glue
+rules:$
+
+ - left glue (LGLUE) rules, used by the function A-LGLUE and G-LGLUE
+ - right glue (RGLUE) rules, used by the function A-RGLUE and G-RGLUE
+ - middle glue (MGLUE) rules, used by the function A-MGLUE 
+
+$ The next section contains a description of the different rule types. The
+functions A-GLUE and G-GLUE are defined in terms of these functions as follows:$
+
+$RL 10
+A-GLUE(a) =%def% 
+            { <r, f, CC> | 
+                  _E_ q%1%,...,q%M%, f%1%,...,f%M%, r%1%,...,r%M% :
+                  <q%1%,...,q%M%> in ( A-LGLUE(a) +
+                                   A-RGLUE(a)
+                                   A-MGLUE(a)) and
+                  (_A_i: 1_<_i_<_M-1: <r%i%, f%i%, CC%0%> in A-LSEGM(q%i%)) and
+                  <r%M%, f%M%, CC> in A-LSEGM(q%M%) and 
+                  r = r%1%,GLUE,...,GLUE,r%M-1%,GLUE,r%M%  and
+                  f = f%1%   }
+
+          + A-LSEGM(a)
+
+
+$RL 10
+G-GLUE(r) =%def% 
+            { <a, f, CC> | 
+                  _E_ q%1%,...,q%M%, f%1%,...,f%M%, r%1%,...,r%M%:
+                  a in (G-LGLUE(M, <q%1%,...,q%M%>) +
+                        G-RGLUE(M, <q%1%,...,q%M%>) +
+                        G-MGLUE(M, <q%1%,...,q%M%>)) and
+                  (_A_i: 1_<_i_<_M-1: <q%i%, f%i%, CC%0%> in G-LSEGM(r%i%)) and
+                  <q%M%, f%M%, CC> in G-LSEGM(r%M%) and 
+                  r = r%1%,GLUE,...,GLUE,r%M-1%,GLUE,r%M%  and
+                  f = f%1%      }
+
+          + G-LSEGM(r)
+
+Here a  : word,
+     M  : number,
+     q%i% : string,
+     r%i% : row of segment keys,
+     r  : sequence of rows of segment keys,
+     CC, CC%0% : context condition,
+     f, f%i% : phonetic information
+
+
+$ After application of the glue rules, A-GLUE applies A-LSEGM to the resulting
+string. A-GLUE requires that the context-conditions of all results of 
+A-LSEGM(q%i%) is CC%0%, except for A-LSEGM(q%M%). CC%0% is the
+empty context condition which is in fact a constant function with the value
+"true". The context condition and the phonetical information of the final 
+result of A-GLUE are taken from the result of segmentation of the last
+word and the first word respectively.$
+$ The GLUE is introduced by A-GLUE between the parts of a splitted word
+in order to have an indication in the subsequent components of the grammar 
+that a splitting rule has been applied.
+In generation the GLUE is created by the M-rules in order to indicate
+to the morphological component that a reverse glue rule must be applied.$
+
+$ One of the major differences between the Rosetta2 and the Rosetta3 definition
+is the lack of recursion in the Rosetta3 version of A-GLUE and G-GLUE. In stead
+the "arity" of the glue rules may be more than 2. The reason for this is 
+entirely empirical. Some phenomena could not be described in one single
+two-place rule. Handling one phenomenon in more than one rule, however, seemed
+a bad solution. Consequently, we created the possibility to have n-place glue
+rules. The power of n-place glue rules appeared to be strong enough for
+the Rosetta3 languages and recursively applicable glue rules were no longer
+needed.$
+
+$C3 The Glue Rules.
+
+$ As mentioned before there are three types of glue rules: left, right and
+middle glue rules. The Rosetta3 rules are very simple compared to the
+Rosetta2 rules. The rules types are the same for analysis and generation.
+The interpretation, however, differs. A left glue rule is defined as 
+follows:$
+
+ LGR%i% =%def% <M, q%1%,...,q%M%, p>
+
+$ The analytical interpretation of the rule application LGR%i%(a) is as 
+follows:$
+$ If a string a is equal to string p appended with a string b then the 
+result of the application are the strings q%1%,..,q%M-1% together with the 
+string q%M% to which b has been appended.$
+
+$ The set of all analytical left glue rules is called A-LGLUE-TABLE. The 
+analytical left glue rules are interpreted and applied by means of the 
+function A-LGLUE.
+This function is defined as:$
+
+$RL 6
+A-LGLUE(a) =%def% 
+            { <a%1%,...,a%M%> | _E_ q%1%,...,q%M%, p, b :
+                  < M, q%1%,...,q%M%, p > in A-LGLUE-TABLE and
+                  a%M% = q%M%.b and
+                  a = p.b and 
+                  (_A_i: 1_<_i_<_M-1: a%i% = q%i% ) }
+
+Here a, a%i%, q%i%, p, b : string,
+     M  : number
+
+$ In generation the rules are interpreted by means of the function G-LGLUE,$
+
+$RL 6
+G-LGLUE(<a%1%,...,a%M%> ) =%def% 
+            { a | _E_ q%1%,...,q%M%, p, b :
+                  < M, q%1%,...,q%M%, p > in G-LGLUE-TABLE and
+                  a%M% = q%M%.b and
+                  a = p.b and 
+                  (_A_i: 1_<_i_<_M-1: a%i% = q%i% ) }
+
+Here a, a%i%, q%i%, p, b : string,
+     M  : number
+
+$ in which a rule application is to be interpreted as:$
+$ If the sequence of input strings a%1%,...,a%M-1% is equal to q%1%,...,q%M-1%
+and if a%M% is equal to the concatenation of q%M% and an arbitrary string b then
+the result is the string p to which b has been appended.$
+
+$ If the set of analytical rules A-LGLUE-TABLE is equal to the set of
+generative rules G-LGLUE-TABLE then it is obvious that A-LGLUE is the reverse
+of G-LGLUE. Notice furthermore that it is not necessary anymore for the rules 
+to obey a measure condition (R0008 page 17) and that the symmetry condition is
+always satisfied (if A-LGLUE-TABLE = G-LGLUE-TABLE) by the way A-LGLUE and 
+G-LGLUE are defined.$
+
+$ Because the functions A-RGLUE, A-MGLUE, G-RGLUE and G-MGLUE are very similar
+to A-LGLUE and G-LGLUE, I will give just their definitions without any comment.$
+
+
+$RL 6
+A-RGLUE(a) =%def% 
+            { <a%1%,...,a%M%> | _E_ q%1%,...,q%M%, p, b :
+                  < M, q%1%,...,q%M%, p > in A-RGLUE-TABLE and
+                  a%1% = b.q%1% and
+                  a = b.p and 
+                  (_A_i: 2_<_i_<_M: a%i% = q%i% ) }
+
+$RL 3
+A-MGLUE(a) =%def% 
+            { <a%1%,...,a%M%> | < M, a%1%,...,a%M%, a > in A-MGLUE-TABLE }
+
+$RL 6
+G-RGLUE(M, <a%1%,...,a%M%> ) =%def% 
+            { a | _E_ q%1%,...,q%M%, p, b :
+                  < M, q%1%,...,q%M%, p > in G-RGLUE-TABLE and
+                  a%1% = b.q%1% and
+                  a = b.p and 
+                  (_A_i: 2_<_i_<_M: a%i% = q%i% ) }
+
+$RL 4
+G-MGLUE(M, <a%1%,...,a%M%> ) =%def% 
+            { a | < M, a%1%,...,a%M%, a > in G-MGLUE-TABLE }
+
+
+Here a  : word,
+     M  : number,
+     a%i%, q%i%, p, b : string,
+
+
+
+$C3 Segmentation. A-SEGM and G-SEGM.
+
+$ The task of the analytical segmentation is to transform a word (a string
+without spaces) into a segmented word (a row of keys of stems and affixes; we 
+will refer to them as segment keys) together with a context condition and
+phonetical information about the word. We will use the + as the
+separator between the segments.$
+$ The task of the generative (reverse) segmentation is to transform a
+segmented word (more generally: a sequence of segment keys) into a string
+with its phonetical information and a right context condition.$
+ 
+$ In the segmentation two kinds of segmentation rules are used: prefix
+rules and suffix rules. Prefix rules handle the prefixes,
+suffix rules handle the suffixes and the "internal changes"
+in words. 
+The set of analystical prefix and suffix rules rules is called A-RPREFIX-TABLE
+and A-RSUFFIX-TABLE respectively. The generative rules are called 
+G-RPREFIX-TABLE and G-RSUFFIX-TABLE. $
+
+
+$C4 Prefix rules
+
+$ A _prefix rule_ is a 4-tuple consisting of strings p and q,
+a prefix key PF-K and a phonetical rule FON.$
+We write this as:  < PF-K, q, p, FON >.
+$ In analysis the rule (being applied to string x) should be interpreted as 
+follows:$
+$ String p must be eliminated from the left part of string x and 
+it must be replaced by the string q.  However, the rule is only successful if
+the phonetical information of the newly created string y satisfies the
+phonetical rule FON. The prefix key serves to "remember" what kind of 
+prefix rule has been performed.$
+
+$ In generation things are the other way round; first it is tested whether
+the phonetical information of the input string y satisfies the phonetical 
+rule FON. After that, the string q in the left part of the input string 
+must be replaced by string p.$
+
+$ From the definition of the functions A-LSEGM and G-LSEGM which apply the 
+prefix rules it will follow that the Symmetry Condition can only be satisfied 
+if:$
+
+            A-RPREFIX-TABLE = G-RPREFIX-TABLE
+
+
+$C4 Suffix rules
+
+$ A _suffix rule_ is a 4-tuple consisting of strings p and q,
+a suffix key SF-K, a phonetical rule FON and a Context Condition.$
+We write this as:  < q, SF-K, p, FON, CC >.
+$ The interpretation of these rules is analogous to the interpretation of the 
+prefix rules, except for the fact that string p ( c.q. q ) must match with the
+_right_ part of the argument string.$
+
+$C4 Some remarks
+
+$ For reasons of clarity we will introduce the definition of the segmentation
+functions in two steps. In the first step we will use the prefix and suffix
+rules in a recursive way, that is, first all prefix rules are applied, on
+the results of this application again all prefix rules are applied etc.. If
+no prefix rules are applicable anymore, the suffix rules are applied in the 
+same way. It 
+will be obvious that in order to avoid infinite recursion the set of rules 
+must obey some measurement conditions. Another way to avoid infinite looping
+is to define an ordering on the set of rules. In the second step we will 
+introduce such an ordering in the formalism.$
+
+$C4 The function A-LSEGM, Step 1.
+
+$ A-LSEGM is a function from strings to segmented words. It is defined in 
+terms of:$
+  1) segmentation rules
+  2) composita rules 
+  3) the dictionary MDICT, which is a set of tuples of the form:
+     <stem, stem-key, phon. info., context condition, entrytype>
+     More about this in section 2.4.1.$  
+
+$ For efficiency reasons we have ordered the application 
+of prefix and suffix rules such that prefix rules are applied first.
+It is assumed that application of
+a prefix rule can never influence the applicability of a suffix rule,
+and vice versa. Under this assumption this ordering is not
+a real restriction, but only a way to avoid superfluous ambiguities.$
+$ The complete ordering (forced by the way the functions are defined)
+is as follows:$
+1. prefix rules (in AL-SEGM),
+2. analysis of composite words (AM-SEGM),
+3. suffix rules (AR-SEGM),
+4. dictionary (AD-SEGM).
+
+_Definition of A-LSEGM:_
+
+
+$RL 9
+A-LSEGM(a) =%def% 
+            { <r, f, CC> | 
+                  _E_ a%1%, f%1%, r%1%, b :
+                  _E_ < PF-K, q, p, FON > in A-RPREFIX-TABLE :
+                   a = p.b and 
+                   a%1% = q.b and
+                   <r%1%, f%1%, CC> in A-LSEGM(a%1%) and
+                   r = PF-K + r%1%  and
+                   {f} = FON(f%1%)          }
+
+         +  A-MSEGM(a) 
+
+
+$RL 10
+A-MSEGM(a) =%def% 
+            { <r, f, CC> | 
+                  _E_ a%1%, a%2%, f%1%, f%2%, r%1%, r%2% :
+                  _E_ an. comp. rule <COMP&an&, COM-K> in A-COMP-RULES:
+                   <a%1%, a%2%, FON> in COMP&an&(a) and
+                   <r%1%, f%1%, CC%0%> in A-RSEGM(a%1%) and
+                   <r%2%, f%2%, CC> in A-LSEGM(a%2%) and
+                   PW(a%1%) and PWS(a%2%) and
+                   r = r%1% + COM-K + r%2%  and
+                   {f} = FON(f%1%,f%2%)             }
+
+         +  A-RSEGM(a) 
+
+
+$RL 9
+A-RSEGM(a) =%def% 
+            { <r, f, CC> | 
+                  _E_ a%1%, f%1%, r%1%, b :
+                  _E_ < q, SF-K, p, FON > in A-RSUFFIX-TABLE :
+                   a = b.p    and 
+                   a%1% = b.q and
+                   <r%1%, f%1%, CC> in A-RSEGM(a%1%) and
+                      r = r%1% + SF-K and
+                   {f} = FON(f%1%)          }
+
+         +  A-DSEGM(a) 
+
+$RL 2
+A-DSEGM(a) =%def% 
+            { <r, f, CC> | _E_ e: <a, r, f, CC, e> in MDICT and
+                            "AMDICT" in e }
+
+Here a, a%i%  : string,
+     q, p, b: string,
+     r, r%i% : row of segment keys,
+     CC : context condition,
+     f, f%i% : phonetic information'
+     FON: phonetical condition,
+     SF-K : suffix key'
+     PF-K : prefix key
+
+     PW(a) is a test whether a string might be a word. It serves only for 
+     efficiency in the case that there are composita rules. In Dutch PW
+     might be: contains a vowel.
+
+$ Note that the order in which the segmentation rules are applied does not
+have to be the "logical" order, in contrast with the 
+application of the W-rules. This can be illustrated by an (unrealistic)
+example of the application of 
+A-LSEGM to a composite word:$
+
+    ontevredenheidsbetuigingen
+              |
+              | A-LSEGM
+              |
+    on + tevredenheidsbetuigingen
+              | 
+              | A-LSEGM, A-MSEGM
+              |
+         tevredenheids + betuigingen
+            |                  | 
+            | A-RSEGM          | A-LSEGM, A-MSEGM, A-RSEGM
+            |                  |
+        tevredenheid + s    betuiging + en
+            |                  |
+            | A-RSEGM          | A-RSEGM
+            |                  |
+     tevreden + heid         betuig + ing
+        |                      |
+        | A-RSEGM, A-DSEGM     | A-RSEGM, A-DSEGM
+        |                      |
+       K%i%                     K%j%
+
+
+_Definition of G-LSEGM_
+
+
+$RL 9
+G-LSEGM(r) =%def% 
+               { <a, f, CC> | 
+                  _E_ a%1%, f%1%, r%1%, b :
+                  _E_ <PF-K, q, p, FON> in G-RPREFIX-TABLE :
+                   a = p.b and 
+                   a%1% = q.b and
+                   <a%1%, f%1%, CC> in G-LSEGM(r%1%) and
+                   r = PF-K + r%1%  and
+                   {f} = FON(f%1%)             }
+
+         +  G-MSEGM(r) 
+
+
+$RL 10
+G-MSEGM(r) =%def% 
+            { <a, f, CC> | 
+                  _E_ a%1%, a%2%, f%1%, f%2%, r%1%, r%2% :
+                  _E_ gen. comp. rule <COMP&gen&, COM-K> in G-COM-RULES:
+                   <a, FON> in COMP&gen&(a%1%,a%2%) and
+                   <a%1%, f%1%, CC%0%> in G-RSEGM(r%1%) and
+                   <a%2%, f%2%, CC> in G-LSEGM(r%2%) and
+                   PCWS(r%1%) and PWS(r%2%) and
+                   r = r%1% + COM-K + r%2%  and
+                   {f} = FON(f%1%,f%2%)        }
+
+         +  G-RSEGM(r) 
+
+
+$RL 9
+G-RSEGM(r) =%def% 
+            { <a, f, CC> | 
+                  _E_ a%1%, f%1%, r%1%, b  :
+                  _E_ <q, SF-K, p, FON> in G-RSUFFIX-TABLE :
+                   a = b.p and 
+                   a%1% = b.q and
+                   <a%1%, f%1%, CC> in G-RSEGM(r%1%) and
+                   r = r%1% + SF-K  and
+                   {f} = FON(f%1%)            }
+
+         +  G-DSEGM(r) 
+
+
+G-DSEGM(r) =%def% 
+            { <a, f, CC> | _E_ e: <a, r, f, CC, e> in GMDICT and
+                           "GMDICT" in e }
+
+Here a, a%i%  : word,
+     q, p, b: string,
+     r, r%i% : row of segment keys,
+     CC : context condition,
+     f, f%i% : phonetic information
+     FON: phonetical condition,
+     SF-K : suffix key'
+     PF-K : prefix key
+
+
+$ The condition PWS(v%1%) in the definition of GM-SEGM tests whether 
+v%1% is a possible segmented word, for a non-composite word. Taking into
+account the context in which GM-SEGM is called, this condition is that
+v%1% must consist of one stem-key followed by a number of suffix keys.$
+$ The condition PCWS(v%2%) tests whether v%2% is a possible segmented
+word, for a composite or non-composite word. It is sufficient if PCWS
+tests whether v%2% begins with a stem-key or a prefix key.$
+$ PWS and PCWS are not strictly necessary, but they improve the efficiency.
+Other possible efficiency measures are:$
+- G-LSEGM calls G-MSEGM only if v does not begin with a prefix key.
+- G-RSEGM calls G-DSEGM only if v does not end with a suffix key.
+
+$NP
+$C4 The function A-LSEGM, Step 2.
+
+$ In the informal introduction we already described that in the last phase
+of the analytical morphology , the W-parser phase, a segmented word is
+combined to an S-tree by applying W-rules. In fact the W-grammar
+defines a language over the alphabet consisting of all possible segment 
+S-trees. A sentence of this language therefore consists of a sequence
+of segment S-trees. Furthermore, each sequence of segment S-trees corresponds
+with one unique sequence of keys.$
+$ Because the W-grammar ultimately defines what a correct lexical S-tree 
+is, A-LSEGM must be able to generate each sequence of keys 
+that is accepted by the W-grammar. By closely examining the W-rules
+it is possible to define a regular expression over the set of keys such 
+that the language defined by the W-grammar is a subset of the language
+defined by this regular expression ( apart from complications caused by 
+composita rules ). This regular expression is closely 
+related to the order in which the segmentation rules of A-LSEGM have to be 
+applied.
+Let us therefore compare the sentences of the W-grammar language
+with the sequences of segmentation rule applications.$
+
+A sentence of the language defined by the W-grammar has the form:
+ PF-K%1%,...,PF-K%n%,Stem,SF-K%1%,...,SF-K%n%
+
+$ This sequence can be generated by the A-LSEGM component by means of the
+following rule sequence ( we use the affix key to identify a set of 
+segmentation rules ):$
+ PF-K%1%,...,PF-K%n%,SF-K%n%,...,SF-K%1%,Stem
+ 
+$ It will be obvious that the regular expression that describes the 
+segmentation-rule sequences which generate correct key sequences can be 
+directly derived from the regular expression which describes the language
+defined by the W-grammar. This regular expression can be used in
+A-LSEGM not only to prevent infinite recursion but also to improve the 
+efficiency
+of the algorithm. For this purpose we use the ordering which is defined 
+by the regular expression on the set of keys. Each key in the regular
+expression has a uniquely defined set of successor keys. We define
+a function SUCC that gives for each key its set of successors. Furthermore,
+we define the function FIRST that gives the set of keys that can appear
+as leftmost key in the sentences of the W-grammar language. 
+Now, we can redefine the function A-GLUE and A-LSEGM as follows: $
+
+_Definition of A-GLUE:_
+
+$RL 10
+A-GLUE(a) =%def% 
+         { <r, f, CC> | _E_ q%1%,...,q%M%, f%1%,...,f%M%, r%1%,...,r%M% :
+           <q%1%,...,q%M%> in ( A-LGLUE(a) +
+                            A-RGLUE(a)
+                            A-MGLUE(a)) and
+           (_A_i: 1_<_i_<_M-1: <r%i%, f%i%, CC%0%> in A-LSEGM(q%i%, FIRST)) and
+           <r%M%, f%M%, CC> in A-LSEGM(q%M%) and 
+           r = r%1%,GLUE,...,GLUE,r%M-1%,GLUE,r%M%  and
+           f = f%1%   }
+
+        + A-LSEGM(a, FIRST)
+
+
+_Definition of A-LSEGM:_
+
+
+$RL 9
+A-LSEGM(a, S) =%def% 
+            { <r, f, CC> | 
+                  _E_ a%1%, f%1%, r%1%, b :
+                  _E_ < PF-K, q, p, FON > in A-RPREFIX-TABLE :
+                   a = p.b and 
+                   a%1% = q.b and
+                   <r%1%, f%1%, CC> in A-LSEGM(a%1%, SUCC(PF-K)) and
+                   r = PF-K + r%1%  and
+                   PFK in S and
+                   {f} = FON(f%1%)          }
+
+         +  A-MSEGM(a, S) 
+
+
+$RL 10
+A-MSEGM(a, S) =%def% 
+            { <r, f, CC> | 
+                  _E_ a%1%, a%2%, f%1%, f%2%, r%1%, r%2% :
+                  _E_ an. comp. rule <COMP&an&, COM-K> in A-COMP-RULES:
+                   <a%1%, a%2%, FON> in COMP&an&(a) and
+                   <r%1%, f%1%, CC%0%> in A-RSEGM(a%1%, SUCC(COM-K)) and
+                   <r%2%, f%2%, CC> in A-LSEGM(a%2%, FIRST) and
+                   PW(a%1%) and PWS(a%2%) and
+                   r = r%1% + COM-K + r%2%  and
+                   COM-K in S and
+                   {f} = FON(f%1%,f%2%)             }
+
+         +  A-RSEGM(a, S) 
+
+
+$RL 9
+A-RSEGM(a, S) =%def% 
+            { <r, f, CC> | 
+                  _E_ a%1%, f%1%, r%1%, b :
+                  _E_ < q, SF-K, p, FON > in A-RSUFFIX-TABLE :
+                   a = b.p    and 
+                   a%1% = b.q and
+                   <r%1%, f%1%, CC> in A-RSEGM(a%1%, SUCC(SF-K)) and
+                   r = r%1% + SF-K and
+                   SF-K in S and
+                   {f} = FON(f%1%)          }
+
+         +  A-DSEGM(a, S) 
+
+$RL 2
+A-DSEGM(a, S) =%def% 
+            { <r, f, CC> | _E_ <a, r, f, CC, e> in MDICT and
+                           "AMDICT" in e and
+                           S%0% in S }
+
+Here a, a%i%  : string,
+     q, p, b: string,
+     r, r%i% : row of segment keys,
+     CC : context condition,
+     f, f%i% : phonetic information'
+     FON: phonetical condition,
+     SF-K : suffix key
+     PF-K : prefix key
+     S    : set of affix keys
+    -PW(a) is a test whether a string might be a word. It serves only for 
+     efficiency in the case that there are composita rules. In Dutch PW
+     might be: contains a vowel.
+    -As an abbreviation of the specification in the regular expression of all 
+     possible stem keys, we use the key S%0%, denoting that the following 
+     key should be a stem key. 
+
+
+$ Unfortunately, we did not get completely rid of the phantom of infinite
+recursion. The regular expression may contain sub-expressions of the form
+{ E }. Each sub-expression of this form must obey a measure condition, e.g.
+the rules of the expression E applied to an arbitrary string should deliver
+always a smaller string. $
+$ Notice that the use of this regular expression does not alter the power of 
+the analytical morphological component as a whole, it still defines the same 
+lexical S-trees as it did before. The only reasons for introducing it are 
+infinite recursion and efficiency. Because we have no problems with infinite
+recursion in the generative segmentation component (each rule application
+diminishes the number of segments) we don't have to use the regular expression
+there too.$
+$NP
+$C2 A-LEX and G-LEX
+
+$ The input of A-LEX is a sentence of which the words have been splitted and
+segmented, i.e. a sequence of which the elements are segmented words or GLUEs,
+where the segmented words consist of stem-keys and affix keys. The stem-keys
+need some extra explanation. In the previous chapters we saw that there are
+two dictionaries involved in the morphological components: MDICT and B-LEX.
+MDICT can be viewed as a set of tuples <stem, key,...>, BLEX is a set of
+tuples <key, S-tree> where a key is the unique identification of the tuple. In
+Rosetta2 the key of an MDICT tuple corresponded with one tuple in BLEX. This 
+implies that MDICT contained several entries with the same stem with the
+same morphological behaviour. E.g. the verbs "lopen", "aflopen", "oplopen",
+etc. had distinct BLEX entries and therefore also distinct MDICT entries, 
+although these verbs had the same stem (namely "loop"). 
+This resulted in a number of ambiguities
+during the segmentation phase. In Rosetta3 we distinguish two kind of keys,
+we call the MDICT keys "fkeys" and the BLEX keys "skeys". Moreover there is
+a lexicon, SDICT, which defines the relation between fkeys ans skeys. This 
+lexicon
+is used for the translation of fkeys into skeys (during analysis) and
+vice versa ( during geneation). SDICT contains also a ( possibly empty )
+sequence of fkeys that
+have to be part of the sentence under consideration in order to make
+a meaningful translation from fkey to skey. This condition is only relevant
+during analysis, during generation the M-grammar guarantees that the
+condition is satisfied.$
+$ The translation by ALEX of a sequence of fkeys into a sequence of 
+segment S-trees takes place in two steps, first a translation from fkey to
+skey and next a translation from skey to S-tree, as follows:$
+
+$RL 5
+A-LEX(r) =%def% 
+             { q | _E_ r%1%: 
+                     r%1% in A-Fkey-To-Skey(r, r) and
+                     q in A-Skey-To-Stree(r%1%) }
+
+Here q : sequence of rows of segment S-trees,
+     r : sequence of rows of segment keys,
+     r%1% : sequence of rows of segment keys.
+
+
+$RL 7
+A-Fkey-To-Skey(r, p) =%def%
+              { q | _E_ r%1%, r%2%, K, K%1%,...,K%n%, k:
+                         r = K, r%1% and
+                         <K, K%1%,...,K%n%, k> in SDICT and
+                         ( _A_j: 1_<_j_<_n: PRESENT(p, K%j%) ) and
+                         r%2% in A-Fkey-To-Skey(r%1%, p>)  and
+                         q = k, r%2% }
+
+          +   { q | _E_ K, K%1%,...,K%n%, k:
+                         r = K and
+                         <K, K%1%,...,K%n%, k> in SDICT and
+                         ( _A_j: 1_<_j_<_n: PRESENT(p, K%j%) ) and
+                         q = k }
+
+Here q, r, p, r%1%, r%2% : sequence of rows of segment keys
+     k, K, K%1%,...,K%n% : keys
+
+
+$RL 4
+A-Skey-To-Stree(r) =%def% { q | _E_ v%1%,...,v%n%, u%1%,...,u%n% :
+                       q = u%1%,...,u%n% and
+                       ( _A_i: 1_<_i_<_n: u%i% = A-WLEX(v%i%) ) and
+                       r = v%1%,...,v%n% }
+
+$RL 4
+A-WLEX(v) =%def% { u | _E_ k%1%,...,k%n%, t%1%,...,t%n% :
+                       u = t%1% +...+ t%n% and
+                       ( _A_i: 1_<_i_<_n: t%i% = A-KLEX(k%i%) ) and
+                       v = k%1% +...+ k%n% }
+
+$RL 3
+A-KLEX(k) =%def% { t | ( BASIC-KEY(k) and <k,t> in B-LEX ) or
+                       ( PREFIX-KEY(k) and t = PFCAT{KEY = k} ) or
+                       ( SUFFIX-KEY(k) and t = SFCAT{KEY = k} ) or
+                       ( S-AFFIX-KEY(k) and <k,t> in B-LEX ) or
+                       ( GLUE-KEY(k) and t = GLUE[] }
+
+Here q  : sequence of rows of segment S-trees,
+     u, u%i% : row of segment S-trees,
+     t, t%i% : segment S-tree,
+     k, k%i% : segment key,
+     v, v%i% : row of segment keys,
+     r : sequence of rows of segment keys.
+
+$ A-Skey-To-Stree translates sequences of rows of segment keys into 
+sequences of rows of
+segment S-trees. A-WLEX translates rows of segment keys into rows of
+segment S-trees and finally, A-KLEX translates segment keys into segment 
+S-trees. In A-KLEX four different kinds of keys are distinguished, of
+which basic and glue keys need no further explanation. The affix keys can be 
+divided into two classes: one class containing prefix keys and suffix keys and
+the other class containing s-affix keys. Prefix and suffix keys are only used 
+within the morphological components, whereas s-affix keys can also occur in the 
+syntactical components (e.g. derivational affixes). Consequently, s-affix keys
+must be looked up in B-LEX, whereas prefix keys and suffix keys correspond with 
+fixed S-trees that only differ with respect to the key attribute.$
+
+$RL 5
+G-LEX(q) =%def% 
+             { r | _E_ r%1%: 
+                     r in G-Skey-To-Fkey(r%1%) and
+                     r%1% in G-Stree-To-Skey(q) }
+
+Here q  : sequence of rows of segment S-trees,
+     r  : sequence of rows of segment keys,
+     r%1%: sequence of rows of segment keys.
+
+$RL 8
+G-Sey-To-Fkey(q) =%def%
+              { r | _E_ r%1%, r%2%, K, K%1%,...,K%n%, k:
+                         r = K, r%1% and
+                         <K, K%1%,...,K%n%, k> in SDICT and
+                         r%1% in G-Skey-To-Fkey(r%2%)  and
+                         q = k, r%2% }
+
+          +   { r | _E_ K, K%1%,...,K%n%, k:
+                         r = K and
+                         <K, K%1%,...,K%n%, k> in SDICT and
+                         q = k }
+
+Here q, r, p, r%1%, r%2% : sequence of rows of segment keys
+     k, K, K%1%,...,K%n% : keys
+
+
+$RL 4
+G-Stree-To-Skey(q) =%def% { r | _E_ v%1%,...,v%n%, u%1%,...,u%n% :
+                       q = u%1%,...,u%n% and
+                       ( _A_i: 1_<_i_<_n: v%i% = G-WLEX(u%i%) ) and
+                       r = v%1%,...,v%n% }
+
+$RL 4
+G-WLEX(u) =%def% { v | _E_ k%1%,...,k%n%, t%1%,...,t%n% :
+                       u = t%1% +...+ t%n% and
+                       ( _A_i: 1_<_i_<_n: k%i% = G-KLEX(t%i%) ) and
+                       v = k%1% +...+ k%n% }
+
+$RL 3
+G-KLEX(t) =%def% { k | ( BLEXCAT(t) and <k,t> in B-LEX ) or
+                       ( t = PFCAT{KEY = k} ) or
+                       ( t = SFCAT{KEY = k} ) or
+                       ( S-AFFIXCAT(t) and <k,t> in B-LEX ) or
+                       ( t = GLUE[] and GLUE-KEY(k)) }
+
+Here q  : sequence of rows of segment S-trees,
+     u, u%i% : row of segment S-trees,
+     t, t%i% : segment S-tree,
+     k, k%i% : segment key,
+     v, v%i% : row of segment keys,
+     r  : sequence of rows of segment keys.
+
+$NP
+
+$C2 W-PARSER and W-GENERATOR
+ 
+$ W-PARSER is a function from sequences of rows of segment S-trees
+to sets of sequences of lexical S-trees.$
+$ W-PARSER applies W-PARSER&-& to each row of segment S-trees in the
+input sequence. If
+W-PARSER&-& is applicable to a row, the result is a lexical S-tree, i.e.
+the row is considered a correct word.$
+
+W-PARSER(v%1%, . . . , v%n%) =%def%
+
+              { t%1%, . . . , t%n% | _A_i: t%i% in W-PARSER&-&(v%i%) }
+
+(v%i% is a row of segment S-trees,
+ t%i% is an S-tree)
+
+$ W-GENERATOR is a function from sequences of lexical S-trees to sequences
+of rows of segment S-trees.$
+
+W-GENERATOR(t%1%, . . . , t%n%) =%def%
+
+              { v%1%, . . . , v%n% | _A_i: v%i% in W-GENERATOR&-&(t%i%) }
+ 
+
+$ W-PARSER&-& and W-GENERATOR&-& are defined in terms of analytical and 
+generative W- rules. In principle these are rather powerful rules, which 
+replace a
+row of segment S-trees by an S-tree (in analysis) or vice versa (in generation)
+.$
+$ There is a one-to-one correspondence between analytical W-rules and
+generative W-rules. The corresponding rules should be each other's 
+reverse ( document R0119 gives a syntax description of the W-rule 
+notation ). $
+
+$RL 8
+W-PARSER&-&(v) =%def% 
+             { u | _E_ v%1%, v%2%, t%1%,...,t%m%, t:
+                   _E_ an. W-rule LT&an&:
+                   v = v%1% + t%1% +...+ t%m% + v%2% and
+                   ( PREFIX-CAT(t%1%) or not AFFIXCAT(t%1%) ) and
+                   t in LT&an&(t%1%,...,t%m%) and
+                   u in W-PARSER&-&(<v%1% + t + v%2%>) }
+
+           + { v | LEXCAT(v) }
+
+Here v, v%i% : row of segment S-trees,
+     u, t, t%i% : S-tree,
+     
+
+$RL 8
+W-GENERATOR&-&(u) =%def% 
+             { v | _E_ v%1%, v%2%, t%1%,...,t%m%, t :
+                   _E_ gen. W-rule LT&gen& :
+                   u = v%1% + t + v%2%  and
+                   NON-AFFIXCAT(t) and
+                   <t%1%,...,t%m%> in LT&gen&(t) and
+                   v in W-GENERATOR&-&(<v%1% + t%1% +...+ t%m% + v%2%>) }
+
+$RL 3
+           + { u | _A_ v%1%,v%2%,t: u=v%1%+t+v%2%  -> ( BLEXCAT(t) or 
+                                                AFFIXCAT(t) or
+                                                GLUECAT(t) ) }
+
+Here v, v%i% : row of segment S-trees,
+     u, t, t%i% : S-tree,
+
+
+$ W-PARSER has a final condition: the row of segment S-trees must have
+been reduced to one S-tree with a category from LEXCATS. Other S-trees or 
+rows of S-trees are not allowed as a final result. In fact W-PARSER
+has also a pre-condition, viz. all segment S-trees of the first input sequence
+must have a category of BLEXCAT, AFFIXCAT or GLUECAT. This condition is not 
+explicitly stated here
+because this is guaranteed by the way A-LEX has been defined. $
+
+$ As the definition shows, W-GENERATOR generates only sequences containing 
+S-trees with a category in BLEXCAT, AFFIXCAT or GLUECAT. The M-grammar should 
+guarantee that W-GENERATOR will only be applied to an S-tree with a category in 
+LEXCATS.$
+
+$ In W-PARSER as well as W-GENERATOR infinite recursion must be avoided. This
+can be achieved by defining an adequate measure on rows of S-trees. For the
+current rules no explicit measures have been formulated, but this seems
+to be rather simple (e.g. a measure in terms of (i) the length of rows and
+(ii) categories of S-trees).$ 
+
+$C1 Overview of morphological language-specific information.
+
+$C2 Dictionaries
+
+$ In theory the same morphological dictionaries can be used for both 
+analysis and generation. To make the definitions more general, however, I used 
+different names for the analytical and generative version of each dictionary.$
+
+- MDICT(morph. dictionary):  a set of 4-tuples < a, K, CC, f, e>, where 
+       a is a string, K a key, CC a context condition, f is phonetical
+       information about the string and e is the entry type, indicating
+       whether the entry is present in AMDICT, GMDICT or in both.
+- B-LEX (morphological lexicon): a set of pairs < K, t >, where K is a 
+       key and t is an S-tree. 
+       B-LEX (basic lexicon) is in principle the same as the set B of basic
+       expressions, but now implemented as a set of pairs < K, t > in which 
+       K is the key of t, in such a way that it can be implemented efficiently
+       as a function from basic keys to basic expressions (e.g. ordered 
+       w.r.t. the keys). (Notice that there are words, e.g. particles or
+       reflexive pronouns, which must be represented in B-LEX as used in the
+       morphological component, but which are not really basic expressions 
+       and therefore not needed in the B-LEX used in the transfer components.
+       However, in transfer these extra entries do no harm; they are even
+       useful in some cases, for robustness reasons.)
+       For the reverse of the function B-LEX we do not need tables, as each
+       basic S-tree contains its own key.  
+- FIXED-IDLEX(idiom lexicon): a set of 
+       tuples of strings < s%1%, . . . , s%n% >, where each tuple corresponds
+       with an idiom and where s%1%, . . . , s%n% 
+       are the words of the idiom.
+- SDICT: a set of triples <f, <k%1%,...k%n%>, b>, where f and b are the
+       corresponding fkey and bkey and where <k%1%,...k%n%> specifies the
+       context in which a translation of f in to b may occur.
+
+$C2 Morphological Rules
+
+$ As I have pointed out before, G-MORPH and A-MORPH can only be each others
+reverse if the symmetry condition is satisfied by each rule. In some cases
+this implies that in analysis and generation, in principle, the same set of 
+rules can be used. In order to have a more general formalism, however, which 
+allows deviations from this symmetry condition, I have chosen different names 
+for the analytical and generative version of the rules.$
+
+-A-LGLUE-TABLE, G-LGLUE-TABLE, A-RGLUE-TABLE, G-RGLUE-TABLE 
+       (left and right glue rules): set op tuples of the form 
+        <M,q%1%,...,q%M%,p>, where M indicates that it is an M-ary 
+       rule and where q%1%,...,q%M%,p are strings. 
+-A-MGLUE-TABLE, G-MGLUE-TABLE (middle glue rules): set of triples of the form 
+       <a%1%,a%2%,a>, where a%1%, a%2% and a are strings. 
+-A-RPREFIX-TABLE, G-RPREFIX-TABLE, (prefix rules): 
+       set of four-tuples <PF-K, q, p, FON>,
+       PF-K is a prefix key, q and p are strings and FON is the name of a 
+       phonetical condition.
+-A-RSUFFIX-TABLE, G-RSUFFIX-TABLE, (suffix rules): 
+       set of five-tuples <PF-K, q, p, FON, CC>,
+       PF-K is a suffix key, q and p are strings, FON is the name of a 
+       phonetical condition and CC is the name of a context condition.
+-A-COMP-RULES, G-COMP-RULES (composita rules): set of names of composita rules.
+-A-W-RULES, G-W-RULES (W-rules): set of names of W-rules.
+-FON-CONDITIONS: set of phonetical conditions.
+-CC-CONDITIONS: set of context conditions.
+$NL 3
+$C2 Miscellaneous
+
+$ Besides the dictionaries and the rules a number of language specific
+functions are needed.$
+
+-LEXCAT          : function from S-trees to truth-values, yields "true" if
+                   the argument S-tree has a lexical category.
+-BLEXCAT         : function from S-trees to truth-values, yields "true" if
+                   the category of the argument S-tree can occur in B-LEX.
+-S-AFFIXCAT      : function from S-trees to truth-values, yields "true" if
+                   the argument S-tree is an S-tree with a S-AFFIXCAT. 
+
+$NP
+$C1 Examples
+$C2 Glue rules
+
+-Example of a number of Dutch left glue rules:
+
+aan       + * :: aan*;
+aaneen    + * :: aaneen*;      {aaneenschakelen}
+achter    + * :: achter*;      {achterhouden}
+achteraan + * :: achteraan*;   {achteraangaan}
+achterna  + * :: achterna*;    {achternalopen}
+achterom  + * :: achterom*;    {achteromkijken}
+achterop  + * :: achterop*;    {achteropkomen}
+achterover + * :: achterover*;  {achteroverdrukken}
+achteruit + * :: achteruit*;   {achteruitgaan}
+adem      + * :: adem*;        {ademhalen}
+ader      + * :: ader*;        {aderlaten}
+af        + * :: af*;
+auto      + * :: auto*;        {autorijden}
+
+
+$C2 Segmentation rules
+$C3 Prefix rules
+
+-Some Spanish prefix rules:
+
+PFKanti    +    *  ::   anti* ;
+PFKex      +    *  ::   ex-* ;
+PFKhiper   +    *  ::   hiper* ;
+PFKpro     +    *  ::   pro-* ;
+PFKre      +    *  ::   re* ;
+PFKvice    +    *  ::   vice* ;
+
+$C3 Suffix rules
+
+-A number of Dutch suffix rules:
+
+*or  + SFKlat  :: *ores;   {conquistador, pastor, quaestor, junior, imperator}
+*aur + SFKlat  :: *auri;   {centaur}
+*uur + SFKlat  :: *ures;   {censuur, paruur, cultuur (compare: sinecure, 
+                                                                      vacature)}
+*as  + SFKlat  :: *ates;   {civitas}
+*is  + SFKlat  :: *es;     {thesis, dosis, basis, crisis, fortis, tenuis, arsis}
+*ns  + SFKlat  :: *ntia;   {presens, deponens, detergens, absorbens}
+*os  + SFKlat  :: *oi;     {topos}
+*ps  + SFKlat  :: *pora;   {corps}
+*rs  + SFKlat  :: *rtes;   {pars}
+*us  + SFKlat  :: *i;      {cyclus, academicus, internuntius, baccalaureus}
+
+
+$C2 W-rules
+
+$ An example of the Dutch W-rule for 2th , 3th, 4th and 5th person 
+singular OTT. The "comp" part is used during analysis, the "decomp" part
+during generation.$
+
+VerbOttEnk2
+
+m1:   SUBVERB{SUBVERBrec1}
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}]
+
+comp:        
+         C: (SUBVERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> [])
+            and (SFCATrec1.key = SFKt)
+         A: VERBrec1          := copysubverbtoverb(SUBVERBrec1);
+            VERBrec1.tijd     := ott;
+            VERBrec1.number   := singular;
+            VERBrec1.persons  := [2,3,4,5]
+
+decomp:      
+          C: (VERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> []) 
+            and (VERBrec1.tijd  = ott) and 
+            (VERBrec1.number = singular) and
+            ((2 in VERBrec1.persons) or (3 in VERBrec1.persons) or
+             (4 in VERBrec1.persons) or (5 in VERBrec1.persons))
+         A: SFCATrec1.key  := SFKt
+
+
+$C1 Discussion
+
+$ In chapter 3 of document R0008 Jan Landsbergen discusses some problem areas
+of the Rosetta2 morphological components. The definition of the Rosetta3
+formalism offers a solution to some of these problem areas. In the next section
+I will discuss these problem areas in the same order as they occur in chapter 3
+of R0008.$
+
+$ 1. In contrast to the design period of Rosetta2 there are now a number of
+linguists working in the project who have been frequently consulted during 
+the design of the Rosetta3 morphological components. This interaction, however,
+caused no dramatic changes in the global design of the components.$
+
+$ 2. The proposal of Koskenniemi(1983,1984) has been looked at very 
+superficially. His approach is based on a lexicon that contains phonological
+representations of stems together with their possible inflectional endings.
+Furthermore there are rules that relate the phonological form and the surface
+form to each other. In contrast to other work in morphology Koskenniemi's
+rules can act as analytical and as generative rules. The result of 
+Koskenniemi's morphological analysis is a sequence of stems and affixes 
+augmented with some features. This means that we only could replace the
+Rosetta3 segmentation component by the KIMMO system, we would still need a
+kind of W-parser component to build the lexical S-trees. Furthermore, the
+KIMMO system has severe problems in dealing with prefixes and with
+some cases in which a word can have several affixes.
+
+$ 3. The interface choice between morphological components and  syntactic
+components does not affect the formalism as described in this
+document, because it is language independent. For Rosetta3, however, the
+linguists have chosen an interface which may contain non-terminal S-trees
+(cf. R0062). $
+
+$ 4. The W-rule notation developed for Rosetta3 is very similar to the 
+M-rule notation. In fact Rosetta3 W-rules look like simple M-rules. 
+The W-rules need to be more powerful than surface rules because they
+must be able to perform transformations on trees.$
+
+$ 5. The context conditions of Rosetta3 are applied to phonological information.
+This phonological information has been stored into the dictionary. 
+The Rosetta3 morphological formalism, however, has not exaggeratedly been 
+complicated
+by the presence of context conditions. One reason for this is that in
+contrast to Rosetta2 they are now treated in the same way both in analysis 
+and generation.
+The implementation of context conditions may still take
+some doing because context conditions establish a relation between a word
+and its right neighbour word, which makes an efficient implementation of
+a cartesian product very difficult. $
+
+$ 7. In Rosetta3 there is no difference between the treatment of regular
+and irregular words. There are segmentation rules which transform the 
+irregular form into the stem and a suffix key, e.g: $
+
+   zijn  + SFKis  :: is
+   zijn  + SFKwas :: was
+
+$ In this way the stems and the S-trees corresponding to the irregular word
+stems can be incorporated into the dictionaries M-DICT and B-LEX resp.. 
+Furthermore there is a W-rule which combines the S-trees for "zijn" and
+"SFKis" to one S-tree corresponding to "is". $
+
+$ 8. The Rosetta2 spelling markers have disappeared in the Rosetta3 formalism.
+This was made possible by the introduction of phonological rules. In Rosetta2
+the only information available during segmentation was string information. It
+therefore could not be checked during segmentation whether certain spelling
+rules had been applied rightly. A spelling marker served to remember the
+kind of spelling rule that had been applied. Not until the lextree phase it was
+possible to check whether the spelling rule had been applied rightly because
+there was more information available in the form of S-trees. $
+$ Because the segmentation rules are able to check the phonetical information
+corresponding to the word they are applied to, some erroneous segmentations
+can already be detected in the segementation phase. $
+
+$ 9. During the design phase I have considered the allomorph approach as
+suggested in R0008 chapter 3. However, a number of disadvantages ( which are
+outside the scope of this document) made this approach unacceptable for the 
+Rosetta system. 

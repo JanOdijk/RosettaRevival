@@ -1,0 +1,371 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3.formalism
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Formal Subgrammars
+
+         Author       :  Rene@' Leermakers
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  0068
+
+         Date         :  86/01/07
+
+         Status       :  informal
+
+         Supersedes   :  ...
+
+         Distribution :  project
+
+         Clearance    :  project
+
+         Keywords     :  subgrammar,M-rule,notation,M-grammar
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 0068                    date:86/01/07
+$LD 4
+$Np 1
+$QM
+$LD 4
+$CH 1,Introduction
+This document is closely related to doc. 0067 (Appelo and Fellinger). It is 
+meant to be a step towards the formalization of a number of concepts which
+where introduced in the latter paper in an informal way. However, because both
+documents evolved rather independently, some mismatches are bound to exist
+between them, for instance in terminology.
+$NL
+The framework presented below, arose from some preparatory work on formal 
+M-rule notation. It should form a basis for establishing a sound definition 
+of the semantics of such a notation.
+$CH 2,Ensembles
+We start with the introduction of the concept of an ensemble of strees. Such an
+ensemble is a set of strees, of which the tops share a collection of 
+properties. The top of an stree is its part above a certain fixed level. In 
+most cases the top will consist of the top node and the son nodes of the first 
+level, and the relations between them.
+$CH 2.1,Ensembles in terms of models
+A totally satisfying formal description of an ensemble is yet to be found. 
+However, for the present purposes, it is convenient to view an ensemble as 
+represented by a pair <model,cond>, where model is a structural description of 
+an stree, as defined in doc. 0012. 
+It contains a number of free variables, and describes the strees which are 
+obtained by assigning values to these variables. The cond part of the ensemble
+is an assertion in terms of the model variables, and restricts the number of 
+strees of the ensemble. If cond = false, the described ensemble is the empty 
+set, if cond = true the ensemble is described solely by its model part. 
+In general, cond will restrict the types and the number of the model variables.
+The remaining free variables we will call the ensemble variables. We will 
+assume that ensemble variables will never suffer from name conflicts, i.e. 
+ensemble descriptions have unique variable names.
+$NL
+This representation of an ensemble is not a perfect one, and certainly
+not its definition. In general, many <model,cond> pairs represent the same 
+ensemble. For the moment we will neglect this fact, assuming that the freedom 
+can be restricted such that at least a unique model can be defined. This model
+should perhaps be the most restrictive one, associated with the weakest 
+possible condition.
+$NL
+Given an ensemble A we denote its model as model(A), and its cond part as
+cond(A). We will allow a tuple of ensembles to be described as the tuple of its
+models plus one condition which is the concatination of all conditions of the 
+elements of the ensemble tuple:
+$NL
+<E%1%,..,E%n%> = <<model(E%1%),..,model(E%n%)>,cond>, 
+$NL
+where cond = cond(E%1%) and...and cond(E%n%).
+
+$CH 2.2, Partial ordering
+The relation 'is subset of' induces a partial ordering on the set of ensembles.
+Thus A<=B when ensemble A is a subset of ensemble B. In terms of the above
+representation of ensembles, we have 
+$NL
+(A<=B) <=> (<model(B),(cond(B) and UNIFY(A,B))> = A),
+$NL
+where UNIFY(A,B) is an assertion relating the variables of B to parts and 
+variables of A. The function UNIFY will in general not be defined uniquely 
+by the above equivalence, but for the moment we will neglect this difficulty. 
+UNIFY can be extended to describe the 'unification' of strees t with an 
+ensemble B:
+$NL
+(t in B) <=> (<model(B),(cond(B) and UNIFY({t},B))> = {t}).
+$NL
+Here the effect of UNIFY is the assignment of values to all ensemble variables
+of B. UNIFY can be extended to a function defined for all ensemble-ensemble 
+and stree-ensemble pairs through the equivalences
+$NL
+not(A<=B) <=> (UNIFY(A,B) = false),
+$NL
+not(t in B) <=> (UNIFY({t},B) = false).
+$CH 2.3,Categories
+An ensemble A is called a category of a set of ensembles E, when there is
+no element B in E, other than A itself, such that A<=B. When every element of 
+E is a category of E, and E is finite, then it is called a category set.
+$CH 3,Subgrammars
+Now we are able to introduce the notion of subgrammars. It should be born in
+mind that the following definitions are but one way to substantiate the notion;
+many variations exist and can be useful. The main purpose of this section is to
+show how subgrammars can be defined in a formal way, and to investigate their 
+usefulness. 
+$CH 3.1,General definition
+Let us denote subgrammars with the names SG%k%, with k:=<int>{.<int>}, where 
+<int> is an integer. Then a subgrammar SG%k% is defined recursively as a tuple
+$NL
+SG%k%:=<O%k%,I%k%,SG%k.0%,SG%k.1%,..,SG%k.n%>,
+$NL
+where O%k% is called the output ensemble and I%k% a set of ensembles called the
+input set, and n an integer depending on k. The subgrammars inside the 
+subgrammar (called sub-subgrammars) are not arbitrary, but their output 
+ensemble and input sets have to satisfy the following conditions:
+$UM
+
+UNION({O%k.0%,..,O%k.n%},I%k.0%,..,I%k.n%) is a category set;
+
+EXIST(int1..intm)[O%k%=UNION(O%k.int1%,..,O%k.intm%)];
+
+FORALL(A in I%k%)EXIST(int1..intm)EXIST(B%int1%..B%intm%)
+[(FORALL(j)[B%intj% in I%k.intj%]) and (A=UNION(B%int1%,..,B%intm%))];
+
+FORALL(i)[(O%k.i%<=O%k%) or (EXISTS(j)[O%k.i% in I%k.j%])];
+
+FORALL(i)FORALL(A in I%k.i%)[(EXISTS(B in I%k%)[A<=B])or(EXISTS(j)[A=O%k.j%])].
+$QM
+$CH 3.2,Fixed-structure Cut
+We have now defined a formal hierarchy of subgrammars. One way or other, we
+now must attach a meaning to each subgrammar. Intuitively, it is clear what
+a subgrammar should do; it should provide a relation between tuples of strees
+which belong to the input ensembles and members of the output ensemble. 
+$NL
+First we define the notion fixed-structure cut in the subgrammar hierarchy. 
+Viewing this hierarchy as a tree, this cut traverses the tree from left to 
+right, such that descending the hierarchy starting at the highest level
+one will always pass the cut, and each subgrammar either lies above the cut 
+or under it. Analogously to the above mentioned tops of strees, the subgrammars
+above the fixed-structure cut will be said to belong to the top of the grammar.
+The other subgrammars are given the adjective 'fixed'.
+$CH 3.2.1,Fixed Subgrammars
+Fixed subgrammars have some properties in addition to the general
+ones given in 2.1. Firstly, a fixed order is imposed on its input set, i.e.
+I%k% is an ordered tuple:
+$NL
+I%k% = <E&k,1&,..,E&k,m&>.
+$NL
+In addition, input sets of all sub-subgrammars, if they exist, are 
+fixed in a parallel way,
+$NL
+FORALL(int)[I%k.int% = <E&k.int,1&,..,E&k.int,m&>],
+$NL
+with FORALL(int)FORALL(i)[E&k.int,i& <= E&k,i&]. 
+$NL
+Lastly, similar to the last condition, we have for the output ensembles:
+$NL
+FORALL(int)[O%k.int% <= O%k%].
+$NL
+If no sub-subgrammars exist, SG%k% is called primitive. Only fixed subgrammars
+are allowed to be primitive.
+$CH 3.2.2, The meaning of fixed subgrammars
+For each fixed subgrammar the meaning is given by a pair of mappings.
+The first is the compositional mapping com%k%, which maps tuples of strees
+into a set of strees; the second is the mapping decom%k%, which maps an stree
+into a set of tuples of strees. For non-primitive fixed SG%k% these mappings 
+are defined recursively:
+$NL
+com%k%(t1,..,tm) = UNION(com%k.0%(t1,..,tm),..,com%k.n%(t1,..,tm));
+$NL
+decom%k%(t) = UNION(decom%k.0%(t),..,decom%k.n%(t)).
+$NL
+For primitive subgrammars the mappings com%k% and decom%k% must be defined
+explicitly. The idea is that the subgrammar hierarchy should be continued
+until these explicit definitions follow directly from an identification 
+between (all) the variables of the input ensembles on the one hand and those
+of the output ensemble on the other. After this identification we define as
+the meaning of primitive subgrammars:
+$UM
+
+com%k%(t%1%,..,t%m%) := <model(O%k%),cond>,
+$QM
+where cond = cond(O%k%) and UNIFY({t%1%},E&k,1&) and...and UNIFY({t%m%},E&k,m&)
+;
+$UM
+
+decom%k%(t) := <<model(E&k,1&),..,model(E&k,m&)>,cond>,
+where cond = cond(E&k,1&)and...and cond(E&k,m&) and UNIFY({t},O%k%).
+
+$QM
+It is assumed that at primitive level the function UNIFY yields unique results.
+In that case the reversibility condition
+$NL
+(t in com%k%(t%1%,..,t%n%)) <=> (<t%1%,..,t%n%> in decom%k%(t))
+$NL
+would follow automatically. If the uniqueness of UNIFY would be impossible to
+guarantee, the above definitions can easily be generalized. If no unification 
+is possible the value of the meaning functions is the empty set.
+$NL
+Summarizing, the unification of the input strees with the input ensembles 
+assigns values to all variables present in the output ensemble, which yields 
+com%k% for primitive subgrammars. Similarly, the unification of an stree with 
+the output ensemble gives the instantiations of the input ensembles needed for 
+decom%k%. 
+The meanings of fixed subgrammars follow directly from the meanings of their
+(primitive) parts, in such a way that they all satisfy the reversibility 
+condition.
+ 
+$CH 3.3,The meaning of top subgrammars
+The meaning of a subgrammar above the fixed-structure cut is also defined 
+in terms of the meanings of its sub-subgrammmars. For instance, one meaning
+definition arises from a free production system of the sub-subgrammars.
+In general, however, we choose to restrict the freedom of the production 
+system. Below, this restriction is introduced by the function CONTROL%k%.
+Just as for fixed subgrammars, the meaning of a top subgrammar is represented 
+by a pair of functions; one (also called com%k%, for simplicity) from 
+instantiations of subsets of the input set to members of the output ensemble, 
+the other (decom%k%) vice versa.
+$NL
+The function com%k% (or, equivalently, decom%k%, by virtue of the reversibility
+condition) may be used to define, in the next higher subgrammar level,
+the set TD%k%&+& (see doc. 0040, Rous) of pairs of strees and (subgrammar) 
+derivation trees:
+$NL
+$UM
+
+{(t,cat)| (cat in I%k%) and (t in cat)} in TD%k%&+&;
+
+{(t,d)| EXIST((t%1%,d%1%)..(t%n%,d%n%) in TD%k%&+&) and
+        EXISTS(int)[(d = SG%k.int%<d%1%,..,d%n%>) and
+                    (t in com%k.int%(t%1%,..,t%n%))] and
+        CONTROL%k%(d)} in TD%k%&+&.
+
+$QM
+As announced above, the function CONTROL%k% restricts the freedom of the 
+subgrammar production system. Its role may me like the one of the 
+context-free control grammar defined in doc. 0040, or it may be implemented as 
+in the controlled M-grammar of RN8407(Landsbergen), or it could contain regular
+expressions of subgrammar names, determining the allowed orders of subgrammar
+applications, like in RN8405(Landsbergen). However, it may also be used as a 
+place to do more 'intelligent' things, like interaction and robustness 
+control (see below and doc. 0067).
+$NL
+The set TD%k% of well-formed pairs is given by
+$NL
+TD%k% = {(t,d)|((t,d) in TD%k%&+&) and (t in O%k%)},
+$NL
+and with the help of this set the meaning functions of SG%k% can be 
+constructed as:
+$UM
+
+com%k%(t%1%,..,t%n%) = { t| (EXISTS((t,d) in TD%k%)) and
+			   (leaves(d) = <cat%1%,..,cat%n%>) and
+			   (t%1% in cat%1%) and...and (t%n% in cat%n%)};
+
+decom%k%(t) = {<t%1%,..,t%n%>|(EXISTS((t,d) in TD%k%)) and
+			   (leaves(d) = <cat%1%,..,cat%n%>) and
+			   (t%1% in cat%1%) and...and (t%n% in cat%n%)}.
+
+$QM
+It is easy to confirm that the above reversibility condition also holds for
+these meaning functions.
+Now that we have defined the meaning of a subgrammar in terms 
+of the meanings of its parts, ultimately, the highest level meaning can be 
+derived from the primitive meanings.
+
+$CH 3.4,M-grammars
+The general subgrammar notion introduced above has not yet been related to
+the linguistic 'needs' expressed in doc. 0067. It seems that the following 
+correspondence might (be made to) hold.
+$NL
+First level subgrammars correspond to the 'main' subgrammars, corresponding
+to the main categories NP,CL,ADJP,.... . The meaning of the utterance
+(zero level) subgrammar containing these main subgrammars should be determined
+by a free production system, i.e. CONTROL%0% = true.
+$NL
+The second level subgrammars are rule classes and transformation classes.
+Perhaps the meaning of the main subgrammars depends on some restriction
+on the allowed order of rule class and transformation class applications.
+$NL
+The third level contains rule and transformation schemes, if the 
+fixed-structure cut is laid in between the second and third level. The 
+transformation classes should not have the meaning of a free production system
+of transformation schemes, see R8405. Also, it seems wise to have some 
+structure imposed on rule classes, if only to handle robustness and 
+interaction.
+$NL
+Somewhere below the fixed-structure cut one has to identify subgrammars as
+M-rules. An M-rule is a fixed subgrammar which figures in the translation 
+because it has a primitive linguistic semantics, either model theoretically or 
+intuitively. As explained in doc. 0067, one may connect rule classes of 
+different main subgrammars to each other by defining M-rule classes. An M-rule 
+class is the set of the names of the M-rules encapsulated by those rule classes
+that treat the same linguistic phenomenon in different main subgrammars.
+$NL
+The M-grammar is defined by this set of M-rule classes, together with the 
+subgrammar hierarchy in which the M-rules 'fit'.
+$CH 3.5,Rule Notation
+The rule notation effectively causes yet another cut in the subgrammar 
+hierarchy; the level at which the 'rules' are actually written. Starting at
+this level, it should be possible to uniquely and automatically complete the 
+hierarchy downwards. In the ideal case the notation would be powerful enough
+to exactly describe all fixed subgrammars. In practice, it will be hard to 
+invent such a notation before the actual rule-writing. It will be sufficient
+though, to have a notation kernel that works all right for the majority of
+cases, and which can be extended ad-hoc to cover all.
+$CH 4,Discussion
+The framework erected above seems to have some merits. It makes it possible
+to have an M-grammar with built-in levels of abstraction. A structure like
+the one presented would in my opinion enhance the ease of writing, maintaining 
+and understanding the M-grammar. 
+$NL
+In some sense, if one adopts the above choice to make the topmost subgrammar(s)
+free production system(s), some of the elegances of one big free production 
+system of M-rules may be kept, while improving the manageability of the 
+grammar.
+For instance, it seems to me that a proof of the isomorphy of two M-grammars 
+becomes more feasible if the grammars are structured in terms of subgrammars.
+The proof may then be divided into smaller parts along the lines of the 
+divisions of the M-grammars.
+$NL
+Some new perspectives arise from the existence of derivation trees at 
+subgrammar level. Such higher-level derivation trees could prove helpful in
+reasoning about d-trees, for instance in future 'semantic' components of 
+Rosetta.
+Also, the various CONTROL functions offer new possibilities. For instance,
+their semantics could be governed by new types of rules. Robustness and
+interaction can then be made a formalized part of the system.
+$NL
+An exact description language for defining ensembles is still lacking. As a
+consequence, proofs of desired subgrammar properties can not yet be formulated.
+This problem impedes the strength of the formalism, and solving it should be a
+major goal of future efforts in this direction.
+

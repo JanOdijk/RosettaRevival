@@ -1,0 +1,753 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3.formalism
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Control expressions
+
+         Author       :  Jan Landsbergen
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  0101
+
+         Date         :  86/07/16
+
+         Status       :  concept
+
+         Supersedes   :  ...
+
+         Distribution :  project
+
+         Clearance    :  project
+
+         Keywords     :  control, subgrammar, transformation, filter
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright (c) Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 0101                    date:86/07/16
+$LD 4
+$Np 1
+$c1 Introduction
+$ This document is a successor of the Rosetta2 documents RN8405 and RN8407.
+These papers were early attempts to (1) make a distinction between 
+meaningful rules and syntactic transformations, where the former and not
+the latter would be involved in the isomorphy relation, (2) have an explicit
+way of controlling the application order of syntax rules.$
+$ Since 1984 there has been one major change in our conception of M-grammars:
+the introduction of subgrammars, in R0031 and especially in R0067 (Lisette
+Appelo and Carel Fellinger). Two insights emerging from R0067 have been
+very influential to the formalisation presented here: (1) the notion
+of a subgrammar as a kind of "module" with import and export expressions,
+(2) the fact that the application of a subgrammar always comes down to a
+linear sequence of rule applications, starting with a particular import
+expression (the "head") and leading to an export expression. So the
+corresponding part of a derivation tree is a path in that tree: the
+projection path (term coined by Franciska de Jong in R0098). The other
+arguments of the applied rules are imported, i.e. they are not created
+inside the current subgrammar by other rule applications. This enables
+us to define the ordering of the rules in a subgrammar 
+by means of a special kind
+of regular expressions, called control expressions. Control expressions
+appear to be a transparent way of defining the order of rule applications,
+much more transparent than the predecessor relation (in RN8407) or
+a context-free grammar on rules (proposed by Joep Rous in R0040 and R0090). 
+The definitions of subgrammars given by Rene Leermakers in R0068 and
+R0072 are much more general than the ones given here, e.g. there 
+subgrammars inside subgrammars were allowed and no use was made of
+the before-mentioned restriction to projection paths.$
+$ This is a preliminary proposal. The main goal is to
+define exactly what kind of control expressions are
+allowed and to make sure that for these expressions effective definitions
+of M-PARSER and M-GENERATOR can be given. 
+Ultimately this will have to lead to a new version of R0011.$
+$ Although document R0067 on subgrammars has been very influential, it is
+certainly not the aim of this paper to formalize all the aspects of
+subgrammars and rule classes discussed there.$
+$ This is the second version of the concept. The main difference with the
+first version is the way in which M-GENERATOR and M-PARSER are defined
+in sections 3 and 4. In the first version there was the possibility of
+an infinite recursion in these definitions. A surprising aspect of the new
+definitions is that they do not just avoid infinite recursion, but that
+they appear to be rather efficient too, for the most general kind of 
+control expressions.$
+$c1 Definitions
+$ I will not give here a complete new definition of an M-grammar. The main
+differences with the definitions in R0011 are:$
+$ - there are two kinds of M-rules: meaningful rules and transformation rules.
+  Transformation rules have one argument and have the identity function
+  as their meaning. For the isomorphy relation only the meaningful
+  rules are relevant.$  
+$ - an M-grammar consists of subgrammars, which are defined by _control 
+  expressions_, regular expressions over M-rules. $
+$ - the definition of the language and of the functions M-PARSER and M-GENERATOR
+  is given in terms of subgrammars.$
+
+Definition.
+Be given a set of meaningful rules and a set of transformation rules.
+$ A _control expression_ over these rules is a regular expression over the
+alphabet of rule indices (indices of both meaningful rules and 
+transformations). We require that 
+each instance of the regular expression contains 
+at least one meaningful
+rule.$
+
+$ Note: this definition of control expressions is as general as possible. I
+will define M-PARSER and M-GENERATOR in these general terms. In a later
+section I will propose a more restricted version of control expressions,
+for reasons of conceptual clarity, but the implementation of M-PARSER and
+M-GENERATOR should be based on the general version - if possible.$
+
+$ Regular expressions are defined in the usual way (cf the definitions in
+R0013 of regular expressions in surface rules). The notation { e } is used
+for iteration of e and [ e ] for optional e; ( e%1% . e%2% ) denotes
+concatenation, ( e%1% | e%2% ) a choice between alternatives. I will
+omit the parentheses in the definitions of the next few sections,
+but I assume that they are there if necessary.$ 
+$ The instances of a regular 
+expression are the strings over the alphabet (of rule indices in the
+case of control expressions) that are defined by the regular expression.$
+
+$ The measure condition on M-rules is now more complex to formulate than it
+was in the past, but it is
+easier to fulfill:$
+$ A measure on S-trees is a function from S-trees to positive integers 
+(or something
+similar; the only essential thing is that it is a countable set with
+a minimum); the terms smaller and bigger are used in relation to this
+measure.$ 
+$ The measure condition is:$
+$ 1. For each subexpression of the form { e } in a control expression a measure
+on S-trees must be defined, 
+such that the analytical rules in e deliver output S-trees
+that are smaller than the argument S-trees. This measure can be chosen
+very specifically for each expression { e }, e.g. for a set of substitution
+rules it may be the number of nodes that are no variables. $
+$ If { e } consists of transformations, more precisely if there are instances
+of e that do not contain a meaningful rule, there must be a measure for
+generation as well. Although one has to be careful with introducing
+this kind of recursive transformations, it is possible in practice
+to have both an analytical measure and a generative measure. E.g.
+if T is a transformation that moves a's form the left of b to the right
+of b, then the generative measure is the number of a's to the left of b
+and the analytical measure is the number of a's to the right of b.$
+$ 2. For the grammar as a whole a measure must be defined such that for
+each subgrammar holds that the exported expressions are always bigger than the 
+imported expressions. This measure is similar to the measure we had in
+the Rosetta2 formalism, but it is easier to define a measure for complete
+subgrammars than for rules. Possible measures are: the total number of nodes
+or the depth of an S-tree.$
+
+$ I will assume that from a formal point of view a control expression defines
+a subgrammar completely. So the additional characterization of import and export
+expressions is in fact redundant, what can be imported and exported follows 
+from the control expressions and the properties of the
+rules in the control expressions. However, both for conceptual transparency
+and for efficiency, this
+characterization is useful. Therefore we define a subgrammar G%i% as:$
+$ - a set HEADCATS%i% of syntactic categories (the categories of expressions
+that are allowed as the head S-tree),$
+$ - a set IMPORTCATS%i% of syntactic categories (the categories of other
+S-trees that may be imported),$
+$ - a set EXPORTCATS%i% of syntactic categories (the categories of S-trees that
+can be exported).$
+$ (usually HEADCATS%i% and EXPORTCATS%i% will consist of one category)$
+$ - a control expression, as defined before.$
+
+$ I propose the following additional condition on subgrammars:$
+$ For each subgrammar G%i%: the intersection of HEADCATS%i% and
+EXPORTCATS%i% is empty. $
+$ This seems to be a reasonable assumption,
+not in contrast with the intuitive use of subgrammars. The important
+implication is that in a well-formed derivation tree it can be decided
+unambiguously what sequence of nodes corresponds to one particular
+application of a particular subgrammar G%i%. This is of importance for the
+efficiency of M-GENERATOR (this point will be clearer to the reader after
+having looked at the definition of derivation tree in this section
+and the definition of M-GENERATOR in section 4).$
+$ If we choose for a definition of derivation trees in which
+the scope of a subgrammar application is explicit (a definition in
+the style of R0068), this condition
+is not necessary. $
+
+The definition of a derivation tree has to be changed a bit.
+ 
+A _derivation tree_ is:
+    - the name of a basic expression, _b_.
+    - or an expression of the form (i,j)<d%1%, ... , d%n%>, n > 0,
+      where i is the index of a subgrammar G%i%,
+      j is the index of a meaningful M-rule,
+      and d%1%, ... , d%n% are derivation trees.
+
+$ There are two differences with the old definition. The first
+ is that the non-terminal
+nodes contain a subgrammar index, next to the rule index. The second
+is that the derivation tree is no longer a complete trace of successful
+rule-applications, because the transformations are omitted. Maybe
+it is useful to distinguish "complete" and "reduced" derivation
+trees. Complete derivation trees may be useful in papers, in the
+system itself only reduced derivation trees will be used.$
+
+$ In contrast with the first version of this paper, I will assume that
+the index j of an M-rule uniquely identifies the subgrammar in which
+it occurs. So a rule R%j% can occur in only one subgrammar i. The
+index i in the derivation tree is in fact redundant, but may be useful
+anyway for a fast recognition of the subgrammar.$
+
+$ For each M-rule one of the arguments has to be defined as the "head"
+argument (in this way the projection path is defined).
+ For notational convenience I will assume here that the
+head is always the first argument. Then the definitions become a bit
+simpler. It may be advisable to stick to this convention, because
+the derivation trees are easier to "read" in this way.$
+
+$ In the definition of M-GENERATOR and M-PARSER we will use a kind
+of incomplete derivation tree, defined as follows.$
+
+An _open derivation tree_ is:
+    - the "empty derivation tree", D%EPS%. 
+    - or an expression of the form (i,j)<D%1%, ... , D%n%>,
+      where i is the index of a subgrammar G%i%,
+      j is the index of a meaningful M-rule,
+      D%1% is an open derivation tree,
+      D%2%, ... , D%n% are derivation trees.
+$ So an open derivation tree is an ordinary derivation tree with an empty
+derivation tree as leftmost subtree (as the "head"). $
+$ Where this is useful we will refer to an ordinary derivation tree as a 
+_closed_ 
+derivation tree.       $
+
+Example of open derivation tree:
+
+$RL 7
+                        (1,2)
+
+                   (1,3)      (2,6)
+
+               D%EPS%    _b_%1%  (2,7)  _b_%3%
+
+                              _b_%2%
+
+$ Be given open derivation trees D%1% and D%2%. $
+$ We define D%1%[D%2%] as the open derivation tree that results if D%2% is
+substituted for D%EPS% in D%1%. $
+                                 
+                    
+       D%2%   substituted into   D%1%    ===>          D%1%
+
+
+D%EPS%                        D%EPS%                D%2%
+
+
+                                              D%EPS%
+
+$ If D%2% is a closed derivation tree, the result of the substitution 
+D%1%[D%2%] is a closed derivation tree.$
+$c1 Definition of M-PARSER 
+First an informal description (in which I disregard ambiguities).
+
+$ If t is a basic expression b, M-PARSER(t) yields the derivation tree _b_.
+For a non-basic t M-PARSER (t) calls a subgrammar parser (M-PARSER%Gi%), 
+which tries
+to apply the rules of control expression ce%i% to t (the analytical rules,
+in reverse order).  Successful application of a rule yields S-trees
+t%1%, ... ,t%n%. To t%1% the "next" rule of the control expression is
+applied. To t%2%, ... , t%n% the full M-PARSER is applied.$
+$ A successful application of 
+the control expression to the
+subsequent t%1%'s and of M-PARSER to the other resulting t%i%'s (i>1)
+(the "import" S-trees for the subgrammar), 
+results in a pair (D, u), where D is an open derivation tree and
+u is the resulting "head" S-tree. $
+$ M-PARSER is applied to u. If successful, M-PARSER(u)
+yields a derivation tree d. Then D[d] is a derivation tree of t.$
+
+$ M-PARSER%Gi%(t) is defined by means of a function 
+CE-PARSER(i, ce%i%, D, t),
+where ce%i% is the control expression of G%i%.
+D is the derivation tree that has already been constructed before we arrive
+at t. 
+ It is D%EPS% when CE-PARSER is called for the first time.$
+
+$ CE-PARSER(i, ce, D, t) applies the rules of control expression ce to t
+and to the t%1%'s resulting from rule applications. M-PARSER is called
+for the t%2%'s etc. During the recursive application
+of CE-PARSER D "grows at the bottom" while ce%i% "shrinks at the right".$
+$ Inside CE-GEN successful application of 
+a meaningful rule R%j% leads to an addition of
+a node (i,j) at the bottom of D. $
+$ The result of applying CE-PARSER successfully 
+to (i, ce, D, t) is a triple (D', t', A). 
+All rules of one instance of ce have been
+applied then. D' is D with an extension at the bottom, t' is the remaining
+S-tree to be parsed yet. A is a boolean that tells whether a rule 
+(or transformation) has been applied. A is needed to avoid infinite recursion
+of CE-PARSER. $
+
+The definitions:
+
+M-PARSER(t) =%def%
+  { d | _E_ G%i%, d%1%, D%2%, t%1%:
+        t in EXPORTCATS%i% and
+        (D%2%, t%1%) in M-PARSER%Gi%(t) and d%1% in M-PARSER(t%1%)
+        and  d = D%2%[d%1%]  }
++ {d | d = _b_ and t = b }
+
+(* d, d%1% closed derivation trees,
+   D%2% an open derivation tree,
+   t, t%1% S-trees,
+   b a basic expression,
+   G%i% a subgrammar.
+   M-PARSER applies G%i% to t by applying a subgrammar parser to t;
+   this results into pairs of open derivation tree D%2% and an
+   "import head" t%1% to which M-PARSER is applied again. 
+   The derivation tree d%1% of t%1% is appended to D%2%. 
+   The condition on EXPORTCATS%i% is redundant, but may be important 
+   for efficiency. *)
+
+M-PARSER%Gi%(t) =%def% 
+         { (D, t%1%) | (D, t%1%, true) in CE-PARSER(i, ce%i%, D%EPS%, t)}
+
+
+(* ce%i% is the control expression of G%i%. 
+The "true" in (D, t, true) requires that at least one rule (or 
+transformation) is applied during application of CE-PARSER. *)
+
+CE-PARSER(i, ce, D, t) =%def%
+
+  { (D%2%, t%2%, A) | _E_ ce%1%, ce%2%, D%1%, t%1%:
+              ce = ce%1% . ce%2%  and
+              (D%1%, t%1%, A%1%) in CE-PARSER(i, ce%2%, D, t)  and
+              (D%2%, t%2%, A%2%) in CE-PARSER(i, ce%1%, D%1% ,t%1%)
+               and A = A%1% or A%2%  }
+
++ { (D%2%, t%2%, A) | _E_ ce%1%, ce%2%:
+              ce = ce%1%|ce%2%  and
+              (D%2%, t%2%, A) in (CE-PARSER(i, ce%2%, D, t) + 
+                               CE-PARSER(i, ce%1%, D, t)) }
+
++ { (D%2%, t%2%, A) | _E_ ce%1%:
+              ce = [ce%1%]  and
+              ((D%2% = D and t%2% = t and A  = false) or
+              ( (D%2%, t%2%, true) in CE-PARSER(i, ce%1%, D, t)) and A = true) }
+
++ { (D%2%, t%2%, A) | _E_ ce%1%:
+              ce = {ce%1%} and
+              ((D%2% = D and t%2% = t and A = false) or
+              ( _E_ D%1%, t%1%, A%1%:
+                    (D%1%, t%1%, true) in CE-PARSER(i, ce%1%, D, t)  and
+                    (D%2%, t%2%, A%1%) in CE-PARSER(i, ce, D%1%, t%1%) and
+                     A = true ) ) }
+
++ { (D%2%, t%2%, true) | _E_ k, n, R%k%, d%2%, ... d%n%: 
+              ce = R%k% and D%2% = D[(i, k)<D%EPS%, d%2%, ... , d%n%>] and
+              <t%1%, ... ,t%n%> in F'%Rk%(t)  and
+              d%2% in M-PARSER(t%2%), ... , d%n% in M-PARSER(t%n%)  }
+
++ { (D%2%, t%2%, true) | _E_ k, T%k%:
+                 D%2% = D  and  ce = T%k%  and  t%1% in F'%Tk%(t) }
+
+
+(* ce, ce%1%, ce%2% control (sub)expressions,
+   D%1%, D%2% open derivation trees,
+   d%2%, ... , d%n% closed derivation trees,
+   D%EPS% the empty derivation tree,
+   t, t%1%, t%2% S-trees,
+   R%k% a meaningful rule,
+   T%k% a syntactic transformation,
+   A, A%1%, A%2% booleans *)
+
+$ Note: for a control expression of the form {ce%1%} or [ce%1%] possible
+empty instances of ce%1% are ignored.$ 
+$c1 Definition of M-GENERATOR
+$ The definition of M-GENERATOR is symmetric to the definition of
+M-PARSER. Thanks to this symmetry it must be simple to prove that
+M-GENERATOR and M-PARSER are each other's reverse.$
+
+M-GENERATOR(d) =%def%
+  { t | _E_ G%i%, d%1%, D%2%, t%1%:
+        t%1% in M-GENERATOR(d%1%)  and syncat(t%1%) in HEADCATS%i% and  
+        t in M-GEN%Gi%(D%2%, t%1%)and d%1% in M-GENERATOR(t%1%)  and
+        d = D%2%[d%1%]  }
++ {t | d = _b_ and t = b }
+
+(* d, d%1% closed derivation trees,
+   D%2% an open derivation tree,
+   t, t%1% S-trees,
+   b a basic expression,
+   G%i% a subgrammar. *)
+
+(* M-GENERATOR looks for a "head sub-tree" of d, d%1%, such that 
+   - there is a subgrammar G%i% such that M-GEN%Gi% is applicable to 
+     D%2% (the open derivation tree that results when in d the sub-tree d%1% 
+     is replaced by D%EPS%),
+   - application of M-GENERATOR to d%1% yields an S-tree t%1%. *)
+
+$ Note: If the intersection of HEADCATS and EXPORTCATS is empty, it is easy to
+decide to which pieces of D-tree a particular subgrammar can be
+applied: the "maximal" subtree of the form$
+  (i,j%1%) <(i,j%2%) <.....<(i,j%n%) <_b_, ...>,...> .... > 
+$ where the top node, the first daughter, etc. all have the same 
+subgrammar-index i and where the top node is not dominated by
+a node with subgrammar-index i.$
+So the choice of subgrammar can be made in an efficient way.
+
+M-GEN%Gi% (D, t%1%) =%def%  
+           {t | (t, D%EPS%, true) in CE-GEN(i, ce%i%, D, t%1%)}
+
+(* ce%i% is the control expression of G%i%. *)
+
+$ M-GEN%Gi% applies subgrammar G%i% to an open derivation tree D and an 
+   S-tree t%1%;
+   t%1% is the already generated head corresponding to the empty sub-tree
+   of D; it is either generated by another subgrammar or it is a basic
+   expression. $
+$ During application of CE-GEN to (i, ce, D, t%1%) ce becomes smaller (at
+the left) and D becomes smaller too (at the bottom). After a successful
+application of CE-GEN the rules of one instance of ce have been applied
+and D is reduced to a smaller D'. The boolean A in the output of CE-GEN
+tells whether a rule has been applied. In this way infinite recursion
+during the processing of c.e.'s of the form {ce%1%} is avoided.$
+              
+CE-GEN(i, ce, D%2%, t%2%) =%def%
+
+  { (t, D, A) | _E_ ce%1%, ce%2%, D%1%, t%1%:
+              ce = ce%1%.ce%2%  and
+              (t%1%, D%1%, A%1%) in CE-GEN(i, ce%1%, D%2%, t%2%) and
+              (t, D, A%2%) in CE-GEN(i, ce%2%, D%1%, t%1%) }
+               and A = A%1% or A%2% ) }
+
++ { (t, D, A) | _E_ ce%1%, ce%2%:
+              ce = ce%1%|ce%2%  and
+              (t, D, A) in (CE-GEN(i, ce%1%, D%2%, t%2%) 
+                         + CE-GEN(i, ce%2%, D%2%, t%2%)) }
+
++ { (t, D, A) | _E_ ce%1%:
+              ce = [ce%1%]  and
+              ((D%2% = D  and t = t%2% and A = false) or
+              (t, D, true) in CE-GEN(i, ce%1%, D%2%, t%2%) and A = true) }
+
++ { (t, D, A) | _E_ ce%1%:
+              ce = {ce%1%} and
+              ((D%2% = D and t = t%2% and A = false) or
+              ( _E_ D%1%, t%1%, A%1%:
+                    (t%1%, D%1%, true) in CE-GEN(i, ce%1%, D%2%, t%2%)  and
+                    (t, D, A%1%) in CE-GEN(i, ce, D%1%, t%1%)  and
+                     A = true) ) }
+
++ { (t, D, true) | _E_ k, n, R%k%, d%2%, ... d%n%: 
+              ce = R%k% and D%2% = D[(i, k)<D%EPS%, d%2%, ... , d%n%>] and
+              t in F%Rk%(t%1%, ... , t%n%)  and
+              t%2% in M-GENERATOR(d%2%), ... , t%n% in M-GENERATOR(d%n%)  }
+
++ { (t, D, true) | _E_ k, T%k%:
+              D = D%2% = D%EPS%  and
+              ce = T%k%  and  t in F%Tk%(t%1%)  }
+
+
+(* ce, ce%1%, ce%2% control (sub)expressions,
+   D%1%, D%2% open derivation trees,
+   d%2%, ... , d%n% closed derivation trees,
+   D%EPS% the empty derivation tree,
+   t, t%1%, t%2% S-trees,
+   R%k% a meaningful rule,
+   T%k% a syntactic transformation, 
+   A a boolean that indicates if a rule has been applied during application
+   of CE-GEN *)
+
+$ _Note_
+$ The concatenation operation in control expressions is a binary operation,
+so  ce%1%.ce%2%.ce%3% has to be interpreted as (ce%1%.ce%2%).ce%3% or
+as ce%1%.(ce%2%.ce%3%). Obviously both expressions are equivalent: they
+define the same set of instances. But especially if we have control
+expressions with long concatenations it may be more efficient
+ to use
+the first interpretation in CE-PARSER and the second interpretation in
+CE-GEN, thereby avoiding unnecessary recursion. $
+$c1 Restrictions on control expressions
+$ In principle 
+there may be two reasons to impose restrictions on control expressions:
+conceptual clarity and efficiency. However, as the new definitions given in the
+previous sections suggest a rather straightforward and efficient
+implementation, only conceptual transparency appears to be an argument
+for restrictions. $
+
+$ For reasons of conceptual transparency it is advised to
+stick as much as possible 
+to the definition of control expressions that has already been
+described in
+Jan Odijk's R0093.$
+
+This restricted control expression is of the form
+      ce = A%0%.A%1%. ... . A%n%
+(to be interpreted as A%0%.(A%1%.( ... .A%n%)...)
+where each A%i% has the   form 1: R%1%|...|R%k%  (obligatory rule class)
+                     or form 2: T%1%|...|T%k%  (obligatory transf. class)
+                     or form 3: [R%1%|...|R%k%] (optional rule class)
+                     or form 4: [T%1%|...|T%k%] (optional transf. class)
+                     or form 5: {R%1%|...|R%k%} (repetitive rule class)
+                     or form 6: {T%1%|...|T%k%} (repetitive transf. class)
+
+$ In a discussion on the first version of this paper it has been suggested to 
+create the possibility to give names to parts of control expressions, in a
+similar way as for the regular expressions in surface rules. This may be
+useful. In fact it is already done to a certain extent, by giving names to
+rule classes.$
+$c1 Definition of isomorphy.
+$ The original definition in terms of corresponding 
+basic expressions and syntactic rules has to be reformulated or 
+extended with conditions
+on the correspondence between subgrammars. I will not give a new
+definition of isomorphy here, but restrict myself to one aspect: isomorphy
+of control expressions.$
+In short:
+$ A control expression ce is isomorphic to control expression ce' if
+RED(ce) is isomorphic to RED(ce').$
+$ Here RED(ce) denotes the reduced form of ce, i.e. the control expression
+that results if all syntactic transformations are deleted from ce. I will
+first define these reduced forms and then the isomorphy relation between
+reduced forms.$
+
+RED(ce) =%def%
+   ce = e.f  --> if RED(e) = eps then RED(f) 
+                 else if RED(f) = eps then RED(e)
+                 else RED(e).RED(f)
+   ce = e|f  --> if RED(e) = eps then RED(f) 
+                 else if RED(f) = eps then RED(e)
+                 else RED(e)|RED(f)
+   ce = {e}  --> if RED(e) = eps then eps
+                 else {RED(e)}
+   ce = [e]  --> if RED(e) = eps then eps
+                 else [RED(e)]
+   ce = T%i% --> eps     (T%i% a transformation rule)
+   ce = R%i% --> R%i%    (R%i% a meaningful rule)
+
+Example:
+ce = {R%1%.T%1%}.[T%2%].R%4%.(T%1% | T%3%)
+(* e.f.g is to be read as (e.(f.g)) *)
+
+RED(ce) = {R%1%}.R%4%
+
+Two reduced control expressions ce and ce' are isomorphic if:
+- ce = R%i%, ce' = R'%j%, R%i% and R'%j% are corresponding rules,
+- ce = (ce%1% | ce%2%), ce%1% isomorphic to ce' or ce%2% isomorphic to ce',
+- ce'= (ce'%1% | ce'%2%), ce isomorphic to ce'%1% or to ce'%2%,
+- ce = ce%1% . ce%2%, ce' = ce'%1% . ce'%2%, ce%1% isomorphic to ce'%1%
+  and ce%2% isomorphic to ce'%2%,
+- ce = { ce%1% }, ce' = { ce'%1% } and ce%1% isomorphic to ce'%1%,
+- ce = [ ce%1% ], ce' = [ ce'%1% ] and ce%1% isomorphic to ce'%1%.
+
+$ Presumably these definitions become much simpler if they are tailored
+to the restricted control expressions of the previous sections.$
+$c1 Transfer
+$ The new definition of nodes in derivation trees, as pairs (i, j) of
+a subgrammar index and a rule index, requires a new definition
+of rule transfer too.$
+$ 1. I assume that in IL there is a notion subgrammar too and that
+the nodes of IL trees are also labelled by pairs of indices.$
+$ 2. In principle a rule may be used in more than one subgrammar.
+It seems wise to make the transfer of rules dependent of the
+subgrammar in which they occur, more precisely: dependent of
+the transfer of the subgrammar.$
+The transfer is then organized as follows:
+For each subgrammar i:
+First a transfer of the subgrammar index:
+i --> i'%1%
+$ Then the translation of the rules of ce%i% in the scope of
+this subgrammar translation: $
+               j --> j'%1%, j'%2%, ...
+               k --> k'%1%, ...
+               ...
+Then possibly a second transfer of the subgrammar index:
+i --> i'%2%
+$ and then the translation of the rules in ce%i% in the scope
+of this subgrammar translation,$
+etc.
+  
+$ A-TRANSFER and G-TRANSFER have to be redefined according to this
+subgrammar-dependent translation of rule indices.$
+$c1 Extension
+$ Although the control expressions are a very powerful means to control rule
+applications, it is not yet possible to express everything we want, e.g.
+there is no way to express "apply this rule if it is applicable and else
+just skip it". It turned out to be not completely trivial to extend the
+power of control expressions in this sense while maintaining the
+principle of reversibility. An important part of the problem, which
+one tends to overlook when  one is only considering the functional
+behaviour of the rules, is the notation of the rules with the help
+of S-tree models. It is in general not possible to formulate the "negation of
+a model" in the form of another model. The solution I propose here comes
+down to introduce a special kind of transformation rules, of which
+the model is interpreted "negatively". I will first describe this
+extension and then show how it can be used.$
+
+Among the transformations we distinguish a subset of _filter transformations_.
+Their notation is:
+$ - an indication that it is a filter transformation (this can be done
+inside the rule or outside, a similar indication is needed for the
+distinction between meaningful rules and transformations),$
+- a model (this is both input and output model),
+$ - a condition in terms of the model variables (the same condition 
+for the compositional
+and the decompositional rule).$
+
+This should be interpreted as: 
+$ if the model matches with the input and 
+the conditions hold, the rule "blocks", i.e. the output is the empty set.$
+$ if there is no match or the 
+conditions do not hold, the output is a set with one element, 
+identical to the input S-tree.$
+$ This interpretation is the same for the compositional and the decompositional
+rule.$
+
+$ The definition of CE-PARSER and CE-GENERATOR does not have to be changed
+for this addition. The definitions for the case that the control expressions 
+consist of one transformation need not be changed, only the way in which
+the definition of the rule function follows from the notation is different.
+This implies that the symmetry between analysis and generation is not
+disturbed by this extension.$
+
+$ This extension of the notation enlarges the expressibility of 
+control expressions in the desired way.$
+
+$ 1. The first example is the
+ repetitive transformation (or transformation class) with the interpretation
+"apply this rule until it is no longer applicable" (e.g. in Franciska's de 
+Jong's R0098, section 2.1). $
+$ The interpretation of { T%1% } is different from what is desired here:
+if T%1% can be applied n times to a particular S-tree t, the result of
+applying T%1% is a set consisting of S-trees to which T%1% has been
+applied 0, 1, ..., n times.$
+$ From a purely generative point of view the introduction of a new
+control construction, similar to the "do ... od", would be a nice
+solution, but then we get problems with the reversibility. The solution
+with the filter transformation is as follows:$
+$ Assume that m%1% is the input model and C%1% the condition part of
+T%1%, then make
+a filter transformation FT%2% = (m%1%, C%1%) and make the control expression$
+{ T%1% } . FT%2%. 
+$ This has exactly the desired interpretation. In those cases that T%1% is
+applicable again 
+to a result of applying { T%1% }, filter FT%2% blocks this result.
+Only outputs to which T%1% is no longer applicable pass the filter.$
+$ The solution is not very efficient in one respect: after finding out that
+the condition of FT%2% holds, T%1% is applied again, which implies that the
+same condition is tested again. This seems to be the price  we
+have to pay for nice reversible rules and control expressions.$
+ 
+$ Example. Suppose we want to move all ADVP's in a sentence 
+from the left of the head
+to the right of the head.$
+$ For this we need a control expression { T%1% } . FT%2%.$
+
+The repetitive rule T%1% is:
+
+m1: S{Srec1}[mod/ADVP{ADVPrec1}, mu1, head/T1, mu2]
+m:  S{Srec1}[ mu1, head/T1, mod/ADVP{ADVPrec1}, mu2]
+
+C: true
+A: identity
+
+The filter FT%2% is:
+
+m: S{Srec1}[mod/ADVP{ADVPrec1}, mu1, head/T1, mu2]
+
+C: true
+
+$ Note that in generation the effect is that indeed all ADVP's are
+moved to the right. In analysis the effect is that (1) sentences
+with ADVP's left of the head are refused, (2) for sentences with an
+ADVP right of the head there are two results: a transformed sentence with
+the adverb left of the head,  and the original sentence. This is
+the correct reverse: in generation sentences with an adverb right of the head
+would not be rejected by this part of the syntax either.$
+$ If one is sure (thanks to knowledge of the rest of the grammar) 
+that at this stage of the generation adverbs cannot
+occur at the right and one is concerned about the inefficiency of 
+the analysis, the solution is to add a filter T%3% before the
+repetitive rule: $
+    FT%3% . { T%1% } . FT%2%
+$  FT%3% blocks sentences with ADVP's at the right; if this rule is
+redundant in generation, it is redundant in analysis too, but
+in analysis it may have a positive effect on the efficiency.$  
+
+$ 2. The second application of the filter, related to the first, is
+the "optional" rule or transformation, in the sense that the
+rule has to be applied if applicable, but is simply skipped
+if not applicable. The notation [ T%1% ] is not adequate for this,
+because then T%1% may also be skipped if T%1% is applicable.
+From a mathematical point of view the solution is simple: add
+a transformation T%2% with a condition complementary to the condition
+of T%1% and with the identity action. Then (T%1% | T%2%) has
+the desired effect. However, here again we have the notational 
+problem that T%2% cannot be written with the current means.$
+$ Various notational extensions for solving this problem are conceivable,
+e.g. we may add a part to a rule like T%1% with the
+interpretation "else identity", i.e. if the conditions do not hold then
+apply the identity function.  However, this solution leads to problems
+with the reversibility. Fortunately, the already introduced 
+filter transformation can be used for this purpose as well. If
+we define a filter transformation FT%3%, with the same input 
+model and condition as
+T%1%, then [T%1%] . FT%3% has the desired 
+effect.$
+$c1 Conclusion
+$ In this document the following modifications of the Rosetta formalism
+are proposed:$
+$ 1. Three kinds of M-rules are distinguished: meaningful rules,
+syntactic transformations and filters. Only the meaningful rules
+are relevant for translation. A filter differs from an ordinary 
+transformation in its notation (no explicit action part) and in
+the way the notation is interpreted (model and condition are used
+as _non_-applicability conditions).$
+$ 2. An M-grammar is subdivided into subgrammars, which are defined
+by means of control expressions. The functions 
+M-GENERATOR and M-PARSER are redefined in accordance with this
+modification.$
+$ 3. If the measure conditions are satisfied it is in principle possible to
+have arbitrarily complex regular expressions as control expressions.
+However, for reasons of conceptual clarity it is desirable
+to restrict the class of possible control expressions drastically,
+to a sequence of rule classes or transformation classes, which may
+be repetitive, optional or obligatory. I propose that the iso-group
+continues to use this restricted version and reports when there
+is a need for extension. $
+
+$ - Many consequences of the introduction of subgrammars have to be 
+investigated yet: the exact new definitions of derivation tree of 
+and super- or
+hyper-trees, new definitions of transfer and  isomorphy, maybe the relation 
+with the surface syntax, etc. This document was only meant 
+to solve the most urgent
+problems.$  

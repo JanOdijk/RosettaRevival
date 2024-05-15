@@ -1,0 +1,845 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3.software
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Global design decisions
+
+         Author       :  J. Rous
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  73
+
+         Date         :  17/04/86
+
+         Status       :  concept
+
+         Supersedes   :  
+
+         Distribution :  project
+
+         Clearance    :  Philips
+
+         Keywords     :  global design, process structure, 
+                         abstract datatypes.
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright (c) Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 73                        date:17/04/86
+$LD 4
+$QM
+$NP 1
+$C1 Introduction
+In this document the major global design decisions for the Rosetta3 system are
+described. Although a detailed functional specification of Rosetta3 did not 
+exist we tried to make these decisions on the basis of the knowledge that the 
+Rosetta3 system would resemble Rosetta2 with respect to the most global level.
+Therefore, our starting point was Rosetta2, with its eight major components.
+$NL
+For a number of reasons the introduction of a multi-process Rosetta3 system 
+seemed very attractive. These reasons are spelled out in chapter 2. The
+choice for a multi-process system entails a number of other facilities,
+that have to be provided. These facilities are described in chapters 3
+through 5. First the process interfaces are described in chapter 3. Chapter 4
+has been devoted to the introduction of the process communication mechanism,
+while in Chapter 5 an outline is given of the way the processes are created 
+and killed.
+$NL
+It is possible, using the concepts described just now, to give a very global 
+system outline. This is being done in Chapter 6. In Chapter 7 a few words
+are devoted to the eight major Rosetta components and Chapter 8 describes in 
+which way they are being used by the highest level control structure.
+$NL
+Although user interaction is not really important until Rosetta4, it is
+discussed, together with robustness in Chapter 9. Finally, the major abstract
+datatypes are enumerated in Chapter 10.
+$C1 Process structure
+One of the most important decisions which has to be made in accordance with
+the software design of the Rosetta3 system is whether the system will be 
+implemented by means of more than one process. In this approach the analysis
+component and the generation component would be mapped onto different
+processes, both controlled by one control process. This can be depicted
+as follows:
+$UM
+$RL 10
+
+                            CONTROL
+
+
+
+
+
+
+                     ANALYSIS     GENERATION
+
+$QM
+Introduction of processes, however, brings in a certain amount of overhead,
+because the system must deal with process control (initializing, starting, 
+stopping, and killing processes ), process communication ( mailboxes,
+files and global buffers ) and process synchronization. This overhead will
+be as well in the field of system performance as in the field of software 
+development time. The disadvantage of
+having this overhead must be compared with the advantages of the 
+multi-process structure. 
+$NL
+The main advantage is that it is a solution for the "an-gen problem".
+This typical Rosetta problem is described in R0051 by C. Fellinger. Not solving
+this problem would cause a duplication of a considerable amount of Rosetta3
+software and as a result severe source code management problems. 
+$NL
+Furthermore,
+the multi-process structure improves the system flexibility, even paralellism
+between analysis and generation becomes possible. For the present, however,
+we will assume that the system is strictly sequential. 
+$NL
+Another example of
+flexibility improvement is the possibility to postpone the choice 
+for a target-language until sentence analysis has been completed. Or, even
+more exotic, to enable the user to switch from one language pair to
+another during one and the same Rosetta3 session. This, however, would 
+require the following process structure:
+$UM
+$RL 10
+
+                            CONTROL
+
+
+
+
+
+
+DUTCH-AN ENGLISH-AN SPANISH-AN    DUTCH-GEN ENGLISH-GEN SPANISH-GEN
+
+$QM
+Finally, the multi-process structure links up better with the theoretical
+definitions of ROSETTA.
+$NL
+We think that the advantages described here, especially with respect to
+future extensions, are important enough to make the choice for a multi-process 
+ROSETTA3-system with the same structure as the one given in figure 1. . 
+The reader should keep in mind that the software design described in the next 
+chapters has therefore been based on this decision.
+$C1 Process interfaces
+In this chapter the interfaces CONTROL - ANALYSIS (C-A), CONTROL - GENERATION 
+(C-G) and 
+ANALYSIS - GENERATION (A-G) will be described. The description is given on a 
+rather global level. A more detailed description will be given in the detailed 
+design of the corresponding parts of the ROSETTA3 software. The fact that
+an interface has been defined between two processes does not imply that there 
+is direct communication between the processes. The way in which the processes
+communicate directly will be dealt with in Chapter 6.
+$NL 1
+1. CONTROL - ANALYSIS
+$NL 1
+Communication between CONTROL and ANALYSIS is necessary for passing control
+information. The CONTROL process receives information from the user about
+the mode of operation, the stop-level, etc.. After that, CONTROL selects 
+the information which is relevant for ANALYSIS out of
+the user-provided information and stores it into a so-called communication 
+block. This
+communication block is then passed to the ANALYSIS process. For this purpose
+a mailbox mechanism will be used, because it is a fast way
+of passing such a small amount of data. 
+$NL
+At the end of the analysis process a
+communication block is sent back to CONTROL. 
+This communication block will contain information about the status of the 
+result of the analysis process, e.g. whether the input sentence could be 
+successfully analyzed up to the specified level.
+$NL 1
+2. ANALYSIS - GENERATION
+$NL 1
+From a theoretical point of view, the interface between analysis and generation
+consists of
+a set of IL-trees. The most elegant implementation of trees in a programming
+language is a datastructure consisting of records ( for the implementation of 
+the tree nodes ) and pointers to records ( for the implementation of the 
+branches ). It is not possible, however, to use this kind of datastructure
+as an interface between ANALYSIS and GENERATION, because the pointers
+created by ANALYSIS point to data inside the process-space of
+the ANALYSIS process. Therefore these pointers cannot be used by the 
+GENERATION process.
+$NL
+So, before passing the tree to GENERATION the ANALYSIS process must map a
+tree on a different datastructure, which can then be written
+into a file or global buffer. This file or global buffer will serve as
+the interface between ANALYSIS and GENERATION. Whether in the actual
+implementation files or global buffers are used, will mainly depend on
+the weighing of performance against ease of implementation.
+$NL
+It will be necessary for testing purposes to short-circuit ANALYSIS and
+GENERATION on intermediate levels. Because the datastructures which are
+used on these levels all contain pointers, we apply the same strategy 
+as described above.
+$NL 1
+3. CONTROL - GENERATION
+$NL 1
+Because the control information which has to be exchanged between the 
+CONTROL process 
+and the GENERATION process is of the same kind as the one which is excanged
+between CONTROL and ANALYSIS, also the same mechanism is used, i.e. mailboxes
+and communication blocks. 
+$NL
+Furthermore, the GENERATION process will pass its final results ( the 
+translated sentences ) to CONTROL. These results are available for CONTROL 
+after GENERATION has sent a communication block containing a completion
+message to the CONTROL process. The final results will be exchanged by means 
+of a file or a global buffer.
+$C1 Process communication
+In the previous chapter the future use of mailboxes, files and global buffers
+has been introduced as different ways for information exchange between 
+processes. We have also mentioned that the choice between global buffers and
+files is an implementation decision. This decision will not be taken until
+all arguments can be compared. Therefore, this chapter only deals with
+mailboxes. The type of mailbox which will be used in ROSETTA3 can be described 
+as an abstract datatype on which four operations are defined:
+$UC ^
+$UM
+
+1. Opening a mailbox, by means of the function MB_OPEN
+2. Closing a mailbox, by means of MB_CLOSE
+3. Taking a message out of a mailbox, by means of MB_TAKE
+4. Putting a message in a mailbox, by means of MB_PUT
+
+$QM
+The functions MB_OPEN, MB_CLOSE, MB_TAKE and MB_PUT can be defined as 
+follows:
+$NL 1
+function MB_OPEN( mbx_name: string; 
+                  access  : mbx_access_type;
+                  create  : y_n_type;
+                  var mbxid   : mbxidtype) : status
+$NL 1
+$MA 5
+Opens mailbox <mbx_name> for usage. The <access> parameter defines whether the
+mailbox will be used for "taking" or "putting". The <create> parameter 
+specifies whether a new mailbox must be created or an existing one must be
+used. The opened mailbox gets an identification number <mbxid> , which must 
+be used when this mailbox is accessed.
+$NL 1
+$MA 0
+function MB_CLOSE( mbxid   : mbxidtype;
+                   delete  : y_n_type) : status
+$NL 1
+$MA 5
+Closes mailbox <mbx_name>. The parameter <delete> specifies whether the mailbox
+should be deleted or not. However, a mailbox may only be deleted by its
+creator. 
+$MA 0
+$NL 1
+$UM
+function MB_TAKE( mbxid   : mbxidtype;
+                  var message: communication_block ): status
+$QM
+$NL 1
+$MA 5
+This function takes a message out of the mailbox. This message will 
+have a fixed layout. The mailbox will be big enough to contain one message.
+If there is no message in the specified mailbox, the 
+current process is suspended until a message arrives. In the other case
+the function immediately returns control to the calling process. 
+$MA 0
+$NL 1
+function MB_PUT( mbxid: mbxidtype; 
+                 message: communication_block ): status
+$NL 1
+$MA 5
+MB_PUT puts a message into mailbox <mbxid>. The current process is
+suspended until the message is read by the receiving process. If the 
+mailbox already contained a message the program will enter an undefined
+state.
+$MA 0
+$NL 2
+In order to guarantee a correct synchronization and message passing the
+the following conditions must hold. 
+$NL
+1. All mailbox names used in one system must be unique.
+$NL
+2. A mailbox may not contain more than one message.
+$NL 1
+In the following chapters we will see that within the ROSETTA3 system it is
+easy to satisfy these conditions.
+$C1 Process control
+In chapter 2 it has already been mentioned that ROSETTA3 will be a strictly
+sequential system. This implies that we don't need to take care of process
+synchronization on behalf of resource sharing ( files, keyboard, screen, 
+etc. ). In the framework of ROSETTA3 we can confine ourselves to 
+a very small subset of the set of possible process handling primitives. 
+$NL
+First we need a primitive function for process creation:
+$NL 1
+function PC_CREATE( process_name : string;
+                    image_name   : string) : status;
+$NL 1
+$MA 5
+This function will run the executable with specification <image_name>. The 
+created process will have the name <process_name>. The function will
+return control to the calling process ( in this case always the CONTROL 
+process ) as soon as the sub-process
+( in this case the ANALYSIS or GENERATION process ) has been activated.
+The return-value of
+the PC_CREATE function shows whether the action was successful or not.
+$MA 0
+$NL 1
+function PC_EXIT: status;
+$NL 1
+$MA 5
+The function PC_EXIT waits until there are no more subprocesses. It furthermore
+prepares the deletion of the current process.
+$MA 0
+$NL 1
+Finally, we may need a function for process killing:
+$NL 1
+function PC_KILL( process_name : string ) : status;
+$NL 1
+$MA 5
+The function PC_KILL stops the execution of the subprocess and deactivates
+the executable. It will return control to the calling process as soon as
+the subprocess has been deactivated. The return-value
+of the PC_KILL function shows whether the action was successful or not.
+$MA 0
+$C1 Program flow on the outermost level
+With the help of the functions defined in the previous chapters we are
+able to give, in a very sketchy way, the program flow of the different
+processes. First, however, we must make some agreements in order to
+satisfy the conditions of the mailbox mechanism. 
+$NL
+The first condition can be
+satisfied by giving each process its own mailbox. So, the CONTROL process
+will have mailbox MBX_CONTROL, the ANALYSIS process will have mailbox
+MBX_ANALYSIS and finally GENERATION will have MBX_GENERATION. 
+$NL
+The second condition is already satisfied by the fact that the ROSETTA3
+system will be strictly sequential and by the fact that the mailbox functions
+are completely synchronous.
+$NL 1
+The program flow of the control process is decribed in Appendix A.
+$NL 1
+First, the CONTROL process creates its own mailbox and the ANALYSIS subprocess,
+according to the source language choice of the user. Then CONTROL waits until
+it receives a ready message from ANALYSIS. The ANALYSIS process creates a
+mailbox and assigns a channel to the mailbox of the CONTROL process.
+After these initialization actions a ready message is send to CONTROL.
+Next a similar sequence of actions is performed during the start-up of the
+GENERATION process.
+$NL 1
+The CONTROL process is now ready to receive some system mode information
+from the user. This information is then transformed into information which is
+relevant for the ANALYSIS and GENERATION process. Next, a start message 
+containing this information is send to ANALYSIS. After ANALYSIS has read the 
+message the CONTROL process continues
+and waits until ANALYSIS puts a message in the mailbox MBX_CONTROL indicating
+that is has finished. After the message has arrived the GENERATION process can 
+be activated by putting a message in its mailbox. The translation is finished
+when GENERATION sends a completion message to CONTROL. Appendix A gives an 
+overview of the flow of the CONTROL, ANALYSIS and GENERATION process in pseudo 
+PASCAL.
+$QM
+$C1 Major Rosetta3 components
+Rosetta3 consists of the same major components as Rosetta2. The
+analysis part consists of the following components:
+$NL
+$UM
+
+   A-MORPH        : analytical morphological component
+   S-PARSER       : surface parser for generation of S-trees
+   M-PARSER       : algorithm for applying the M-rules and generating
+                    D-trees
+   A-TRANSFER     : translates D-trees into the corresponding IL-trees
+$QM
+$NL 1
+The generation part consists of:
+$UM
+
+   G-TRANSFER     : translates IL-trees into the corresponding D-trees of
+                    the target language.
+   M-GENERATOR    : generates S-trees by means of M-rule application
+   LINEARIZER     : maps an input S-tree onto its leaves
+   G-MORPH        : generative morphological component, generates the
+                    output sentences.
+
+$QM
+As said before, these major components will be treated as black boxes 
+in this Global Design. They will be described in detail in the corresponding 
+design documents.
+$NL
+The sequence given above is also the default calling sequence applied by
+analysis and generation. However, in a special mode, the user will be able 
+to change the program flow. For this purpose two parameters will be
+available:
+$UM
+
+   - ^stop level^          : determines up to which interface level the system 
+                             should evaluate the input sentence.
+   - ^short-circuit level^ : determines at which interface level the short-
+                             circuit should take place.
+
+$QM
+Furthermore there will be facilities to generate additional information,
+like prints of the interface structures and traces of the major components.
+$C1 Strategies
+The strategies for the analysis and generation component will mainly be
+determined by the way in which the system deals with user-interaction for 
+desambiguation purposes and by the way in which the output sentences are 
+presented (cf. R0077, User-interface 
+specifications of Rosetta3). The first point will affect the analysis
+component, whereas the presentation of the output sentences will affect
+the generation component.
+$NL
+The task of the analysis component is to generate all IL-expressions for
+a given input sentence.
+The best strategy to generate these IL-expressions seems to be the
+breadth-first stategy. This strategy has the advantage that it can put the
+efficient storage of ambiguities to good use (cf R0036, chapter 5).
+Furthermore, in order to be able to let the user ( or the system) choose from 
+a number of ambiguities, it is necessary to have them all available at
+that moment. Although this might also be possible using a depth-first
+strategy combined with a complicated control structure in which results are 
+buffered, the breadth-first strategy seems to link up better with this 
+approach.
+$NL
+Therefore, we propose to use a breadth-first strategy inside the analysis
+component, i.e. each component takes the complete output of the previous
+component as input . Consequently, the analysis component will 
+produce all possible IL-expressions for an arbitrary input sentence.
+$NL
+The strategy within the generation component is mainly determined by the fact
+that the component must generate the output sentences one by one. As input
+for the G-TRANSFER component we select the best IL-expression from the total 
+set generated by analysis. The alternative, applying G-TRANSFER to the 
+complete set of IL-expressions, is not realistic because the number of
+IL-expressions can be very large, which would result in a combinatorial
+explosion of ambiguities in the component G-TRANSFER. 
+$NL
+From G-TRANSFER a breadth-first strategy will be applied. 
+All D-trees generated by G-TRANSFER will be input for the M-GENERATOR 
+component, which generates all S-trees for these D-trees. 
+These S-trees will be input for the LINEARIZER. 
+Finally, the complete output of the LINEARIZER will 
+be input for G-MORPH which then generates for this input the final sentences 
+of the target language. In case duplicates occur
+among the output sentences generated by G-MORPH they will be removed.
+$NL
+If the best (using <NEXT SENSE> function key) or last (using <NEXT> function
+key) sentence corresponding with an IL-expression has been presented and the 
+user asks for the next sentence then the generation component will be applied 
+to the next best IL-expression. This application results in a new set of 
+translated sentences of which the best one is presented to the user.
+$NL
+In summary we can say that both within analysis and generation a 
+breadth first strategy will be applied. The results of the
+analysis component, however, are processed one by one by the generation
+component.
+$NL
+We are now able to specify in more detail the system part which is called
+"body of analysis" and "body of generation" in Appendix B. This detailed
+specification can be found in Appendix C.
+$C1 User interaction and robustness
+In this global design document a few words have to be devoted to the items
+user interaction and robustness, because they can both influence the flow of
+control. The user interaction meant here is the interaction of
+the system with the user in order to resolve ambiguities. Although this problem
+is not a subject of the Rosetta3 development, it is necessary to take it
+already into consideration if we don't want the system to be changed 
+very drastically during the change-over to Rosetta4. We will not 
+go into detail here about the way robustness and user-interaction can be
+resolved but we rather try to draw up an inventory of the different ways 
+these items can affect the system.
+$C2 User interaction
+User interaction will only be used during analysis of the source language,
+because it seems rather strange to question a user about meaning of words and
+syntactic constructions in a language which he does not master. The kind of
+ambiguities that appear are syntactic and semantic word ambiguities and
+syntactic and semantic ambiguities on sentence level. These ambiguities are
+introduced at different points in the system, e.g. syntactic word ambiguities
+are introduced in the morphologic component, whereas semantic word ambiguities
+are introduced in the transfer component. However, in order ask the questions 
+about these ambiguities in the most logical order (for the user) it is 
+necessary to have an overall picture of them at one point in the system. 
+Therefore, it will be necessary to transport all ambguities in parallel through
+the analysis component. In the previous chapter we already described that this 
+approach lines up very well with a breadth first strategy.
+$NL
+One of the biggest problems in generating meaningful questions about 
+ambiguities will be
+to find the related sub-structures (words or sub-trees) in the different 
+datastructures to ask questions about. This can probably be facilitated in some
+cases by adding markers to the datastructure at the moment the ambiguity is 
+introduced. For this pupose the datastructures generated by AMORPH, S-PARSER,
+M-PARSER and A-TRANSFER will be augmented with some kind of markers.
+$NL 2
+$C2 Robustness
+It is useful to distinguish within the Rosetta3 system between linguistic 
+robustness and pure software robustness. 
+$NL
+Software robustness has to do with program correctness and with the fact that 
+the system must be 
+able to deal with extreme situations. A good example of such a situation in
+Rosetta2 which is not correctly handled is when S-PARSER tries to parse
+a very long or very ambiguous sentence. In these cases the parser keeps on
+consuming memory until eventually there is no more memory available
+and the Rosetta2 system crashes.
+$NL
+Typical problem areas for which software robustness is extremely important are:
+$UM
+
+- availability of memory
+- availability of disk space ( necessary because files will serve as 
+  interface )
+- strange input characters ( control-characters, function-keys)
+- consistency of the dictionaries ( availability of all dictionary files )
+
+$QM
+$NL
+During the development of the Rosetta3 system we must strive for 
+robustness in all the areas above mentioned.
+$NL
+Linguistic robustness is the ability of the system to deal with incorrect or 
+incomplete input ( with respect to the Rosetta3 system ) in a user-friendly 
+way. The correct place to deal with this kind of robustness seems not to be
+the most global level within analysis and generation but rather the level at 
+which linguistic rules are being applied. Therefore linguistic robustness
+will not affect the global control structure of the Rosetta3 system.
+$C1 Abstract Datatypes
+Until now we have seen two important abstract datatypes, nl:
+$NL
+1. ^Process^, implemented by means of the process control functions.
+$NL
+2. ^Mailbox^, implemented by means of the process communication functions.
+$NL 1
+But there are more abstract datatypes which are important for the Rosetta3
+system. In this chapter we will give an overview of the various datatypes, each
+one elucidated by means of a short global description.
+$C2 Dialogue-input
+The Dialogue-input abstract datatype provides functions to read input from the
+input device. For Rosetta3 this will be the terminal keyboard. If future
+releases make use of a "mouse", the functions supporting this device will be 
+incorporated in this abstract datatype. The input functions will be 
+synchronous, i.e. it will
+not be possible to perform an input request without waiting for the 
+completion of the input. There will be three types of input functions, namely
+alpha-numeric input, function key input and alpha-numeric or function key 
+input. The alpha-numeric input function does not accept function keys. In
+case the user enters a function key as a response to an alpha-numerical input
+request, the system gives an error message and skips the function key.
+$NL
+The function key input function gives the possibility to specify which function
+keys are allowed. In case an alphanumerical character or a function key which
+is not a member of the specified set is entered the system gives an error 
+message and skips the function key. 
+$NL
+The third kind of function is a combination of the previous ones and behaves
+as such too.
+$NL
+N.B. The most obvious place to handle the <HELP> key is within the input
+functions. If an arbitrary input request ( alphanumerical or function key) is 
+made by the system and the received input is the <HELP> key code, the input 
+function must place the HELP text on the screen which corresponds with the
+current system mode. 
+$C2 Dialogue-output
+The Dialogue-output abstract datatype provides functions to put text on the 
+terminal
+screen. Also cursor positioning functions will be provided. Just like
+the dialogue-input keyboard functions, these are synchronous functions. 
+If it is decided that windows are going to be used in Rosetta3, the window 
+manipulation functions will belong to the Screen abstract datatype. In that 
+case each function needs a parameter to indicate on which window the text must
+placed. Whether the <HELP> key will be implemented in Rosetta3 or not 
+depends highly on the decision about the usage of windows, because they
+are necessary for an easy and at the same time elegant implementation. Pressing
+the <HELP> key could then result in the creation of a window which will be put 
+on top of the current window on the screen. If the <HELP> exit key is pressed
+the HELP window is removed and the previous screen appears again.
+$NL
+It is important to notice that the fact that Rosetta3 is a strictly sequential 
+system has great consequences for the implementation of the previous two 
+abstract
+datatypes. Paralellism would complicate the implementation very much, because
+it then is necessary to keep an administration of the input and output requests
+of the various processes. It would furthermore be necessary to implement the 
+I/O handling by means of a process.
+$C2 Menu-handler
+At various places in Rosetta3 menu texts must be put on the screen. In order
+to keep the major Rosetta3 algorithms language independent these texts may not
+appear as such in the program. In stead an unique identification of the menu
+must be passed to the Menu-handler which then reads the corresponding
+menu from a file and puts it on the screen. This facility is not only meant
+for menu's, but also for arbitrary texts which must be put on the terminal 
+screen. Also functions are available to put text directly on the screen, 
+i.e. without reading it from a file.
+$NL
+It is often the case that a specific input is expected as a response
+from the user to the (menu-) text on the screen. It is worthwhile considering
+whether this input should also be handled by the Menu-handler, because from
+a conceptual point of view this seems to be exactly what a Menu-handler 
+should do. 
+$NL
+The language dependent menu-texts are stored in a file. Dependent on the 
+current interaction language, i.e. Dutch, English or Spanish, the system uses
+the appropriate file.
+$C2 Lexicon
+Because Rosetta3 will use various types of lexicons, there will eventually 
+exist more than one abstract datatype Lexicon. However, these abstract 
+datatypes resemble each other a lot. The implementation of the abstract 
+datatype will be such that the data are stored in a large file of records
+Furthermore, the data are only accessable via retrieval 
+functions, i.e. the files may not be updated. The interface of these functions 
+will be rather simple. In general
+it can be said that the task of a function is to look up all entries in the 
+lexicon with the key value, which has been passed as parameter. 
+$NL
+During processing of an input sentence, some of these dictionaries will be used
+very often. In order not to loose the real time effect of the system,
+the performance of the dictionary accesses is extremely important. However,
+this performance problem will not be easy to solve, because some of these 
+dictionaries will be very large (more than 100,000 entries). 
+At the moment we see three possible solutions for this problem. Other solutions
+can be obtained by combinations of the three alternatives.
+$NL
+The first solution we think of is postponing a number of look-up requests, with
+the intention to look them up all at the same time. We think that one
+search for a number of keys can be more efficient than one search for each
+individual key. Sometimes, however, this solution not applicable, 
+because it is important to know immediately whether a key is in the lexicon or 
+not. Another disadvantage of this solution is a temporary overhead of 
+memory-usage, because a number of choices cannot yet be made.
+$NL
+The second solution which might be applied in the future is using 
+asynchronous functions instead of synchronous ones. This means that 
+the function that has to lookup a particular record or set of records returns
+control to the caller immediately. While the search, of which the
+biggest part is disk I/O, is going on, the calling algorithm can perform
+other -more useful- calculations. When the search has finished a kind of 
+interrupt routine is called, which can process the results. The main 
+disadvantage of this solution is the fact that it will very much complicate the
+algorithm.
+$NL
+The third and final solution to the lexicon performance problem might be the 
+introduction of sub-processes, of which each performs an individual 
+search-task. This solution, however, seems to fit better in a parallellisation 
+of the complete Rosetta application. Also a process control overhead is
+created.
+$C2 String
+The String abstract datatype provides functions for string manipulation. The
+package contains among other things a concatenation operation, substring 
+operations, comparison operations, conversion operations, length calculation, 
+etc..
+$C2 Tree
+Similar to the Lexicon abstract datatype, one cannot talk about one single
+Tree datatype in Rosetta3, because many different tree structures will be used
+within Rosetta3, e.g. S-tree, D-tree, IL-tree, etc.. For each of them
+a number of functions will be provided, for creation of a new node, for 
+creation of a new leave-node, for looking up a sub-tree, etc.
+$C2 Low level I/O
+This abstract datatype will provide functions, which can be considered the
+first layer on the operating system provided (VMS) I/O functions. This
+abstract datatype will be used by the Dialogue and Menu-handler abstract
+datatype.
+$C2 Error logging
+It must be possible to write error messages that are generated during a
+Rosetta session to a file, in order not to pollute the user-screen with
+system messages that are inconceivable for the lay-user. The Error logging 
+package will provide a number of primitive functions that support the
+error logging file-I/O.
+$C2 Statistics
+$A1 Appendix A
+$UM
+
+^process^ CONTROL;
+
+^begin^
+   MB_OPEN("CONTROL",take_access,yes,mbxcontrol);
+   "ask which source- and target-language"
+   PC_CREATE("ANALYSIS");
+   MB_TAKE(mbxcontrol,ready_message)
+   MB_OPEN("ANALYSIS",put_access,no,mbxanalysis);
+   PC_CREATE("GENERATION");      
+   MB_TAKE(mbxcontrol,ready_message)
+   MB_OPEN("GENERATION",put_access,no,mbxgeneration);
+   "ask user about modes of operation"
+   ^repeat^
+      "generate analysis communication block"
+      MB_PUT(mbxanalysis, an_start_message);
+      MB_TAKE(mbxcontrol, an_result_message);
+      ^if^ "correct_result(an_result_message)" ^then^
+         "generate generation communication block"
+         MB_PUT(mbxgeneration, gen_start_message);
+         MB_TAKE(mbxgeneration, gen_result_message);
+         ^if^ "correct_result(gen_result_message)" ^then^
+            "display results"
+         ^else^
+            "display error message"
+         ^fi^
+      ^else^
+         "display error message"
+      ^fi^
+      "ask user about modes of operation"
+   ^until^ "end of session";
+   MB_PUT(mbxanalysis, stop_message)
+   MB_CLOSE(mbxanalysis, no)
+   MB_PUT(mbxgeneration, stop_message);
+   MB_CLOSE(mbxgeneration, no);
+   MB_CLOSE(mbxcontrol, yes);
+   PC_TERMINATE;
+^end^ CONTROL
+
+$QM
+( Note: In the algorithms described here we leave out some details, like 
+status-checking, for reasons of clarity. )
+$A1 Appendix B
+$UM
+
+^process^ ANALYSIS;
+
+^begin^
+   MB_OPEN("ANALYSIS", take_access, yes, mbxanalysis);
+   MB_OPEN("CONTROL", put_access, no, mbxcontrol);
+   "initialization phase"
+   MB_PUT(mbxcontrol,ready_message)
+   MB_TAKE(mbxanalysis, message);
+   ^while^ message <> stop_message
+   ^do^
+      "body of analysis process"
+      MB_PUT(mbxcontrol, result_message)
+      MB_TAKE(mbxanalysis, message);
+   ^od^
+   MB_CLOSE(mbxcontrol, no);
+   MB_CLOSE(mbxanalysis, yes);
+   PC_TERMINATE
+^end^ ANALYSIS
+
+
+
+^process^ GENERATION;
+
+^begin^
+   MB_OPEN("GENERATION", take_access, yes, mbxgeneration);
+   MB_OPEN("CONTROL", put_access, no, mbxcontrol);
+   "initialization phase"
+   MB_PUT(mbxcontrol,ready_message)
+   MB_TAKE(mbxgeneration, message);
+   ^while^ message <> stop_message
+   ^do^
+      "body of generation process"
+      MB_PUT(mbxcontrol, result_message)
+      MB_TAKE(mbxgeneration, message);
+   ^od^;
+   MB_CLOSE(mbxcontrol, no);
+   MB_CLOSE(mbxgeneration, yes);
+   PC_TERMINATE
+^end^ GENERATION
+
+                       
+$QM
+$A1 Appendix C
+$UM
+
+
+"body of analysis":
+
+
+         ^function^ analysis_body(message : message_type): message_type;
+         ^var^ interface_level,
+               stop_level,
+               short_circuit_level : level_type;
+               return_message: message_type;
+
+         ^begin^
+           interface_level := -1;
+           stop_level := message.stop_level,
+           short_circuit_level := message.short_circuit_level;
+           ^repeat^
+             ^case^ interface_level ^of^ 
+             -1: "read the input sentence typed in by the user and assign it
+                    to interface[0]"
+             0 : interface[1] := A_MORPH(interface[0]);
+             1 : interface[2] := S_PARSER(interface[1]);
+             2 : interface[3] := M_PARSER(interface[2]);
+             3 : interface[4] := A_TRANSFER(interface[3])
+             ^end^;
+             interface_level := succ(interface_level);
+           ^until^ (interface_level = stop_level) ^or^ 
+                 (interface_level = short_circuit_level)
+           ^if^ interface_level = short_circuit_level ^then^
+             "write interface[short_circuit_level] to analysis/generation 
+              interface level "short_circuit_level" "
+           ^fi^;
+           "generate a communication block with a completion message for
+            the CONTROL process and assign it to return_message"
+           analysis_body := return_message
+         ^end^;
+
+$NP
+
+"body of generation":
+
+
+^function^ generation_body(message: message_type): message_type;
+
+         ^function^ generation(interface: interface_type
+                             stop_level,
+                             short_circuit_level: level_type): gen_result_type;
+         ^var^ interface_level: level_type;
+
+         ^begin^
+           interface_level := short_circuit_level;
+           ^repeat^
+             ^case^ interface_level ^of^ 
+             4 : interface[5] := G_TRANSFER(interface[4]);
+             5 : interface[6] := M_GENERATOR(interface[5]);
+             6 : interface[7] := LINEARIZER(interface[6]);
+             7 : interface[8] := G_MORPH(interface[7]);
+             8 : display(interface[8], system_mode)
+             ^end^;
+             interface_level := succ(interface_level);
+           ^until^ (interface_level = stop_level) 
+           generation := (interface, interface_level)
+         ^end^;
+
+^begin^
+         ^while^ "any element od analysis/generation interface on level 
+                  "short_circuit_level left" 
+         ^do^
+           "read one element and assign it to 
+            interface[short_circuit_level] "
+            result := generation(interface,
+                                 message.stop_level,
+                                 message.short_circuit_level)
+         ^od^
+         "generate a communication block with a completion message for
+          the CONTROL process and assign it to result_message"
+
+         generation_body := result_message
+^end^

@@ -1,0 +1,45 @@
+#! /bin/sh -e
+#
+case $# in
+0) echo "Usage: tdrag fromrelease componentname"; exit 1;;
+1) echo "Usage: tdrag fromrelease componentname"; exit 1;;
+*) ;;
+esac
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+#
+#
+trap '' 1 2 3
+#
+trap 'echo "TDRAG: No tdrag allowed during your other grabs"; umask 22; cd $savedir; exit 2' 0
+umask 222
+( echo "  " > $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs ) 2> /dev/null
+umask 22
+#
+#
+set -e
+trap 'echo "TDRAG: No tdrag allowed during your integrate"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs ; cd $savedir; exit 2' 0
+if ( test -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs )
+then exit 0
+fi
+if ( test -f $1/integrate.rbs )
+then exit 0
+fi
+#
+#
+set -e 
+trap 'echo "TDRAG: Error during tdrag" ; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs ; cd $savedir ; exit 2' 0
+#
+#
+#
+if ( test "$2" = "actions" )
+then echo "TDRAG: actions component has no targets"
+else cd $2/target
+     mv $1/$2/target/* .
+fi
+#
+#
+rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs
+cd $savedir
+trap 0

@@ -1,0 +1,1260 @@
+R0262.tex
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{General}
+   \RosTitle{Yet another view of M-grammars: The attribute grammar approach.}
+   \RosAuthor{Joep Rous}
+   \RosDocNr{262}
+   \RosDate{\today}
+   \RosStatus{informal}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Attribute grammar, formalism, control mechanisms}
+   \MakeRosTitle
+\newcommand{\da}{\downarrow}
+\newcommand{\ua}{\uparrow}
+
+\section{Introduction}
+In the past there have been several discussions in which a kind of attribute 
+evaluation on the level of syntactic derivation trees was mentioned. This
+suggestion was initially inspired by the desire to find a more elegant solution
+for what is known as the pre-action technique. 
+
+In this document I will show that the current M-grammar specification can be 
+viewed at as the specification of an attribute grammar. 
+In order to make that specification complete I will introduce some extensions 
+of the control mechanism as proposed in \cite{Landsbergen}. At the moment 
+we have a control mechanism which operates
+within one subgrammar. Above the level of subgrammars there is still a kind
+of free production system. It is my intension to extend the control mechanism
+to this level as well. This extension will be dealt with in the first chapter.
+In chapter 1 I will also introduce the context free 
+grammar which is the basis of the attribute grammar. In chapter 2 the context 
+free rules will be enriched with attributes and the attribute grammar will be 
+introduced. In chapter 3 I will show how an analytical and generative 
+version of the grammar can be derived. The pre-action which was the motive for
+this discussion is treated in chapter 4. Finally, in chapter 5, I will 
+show how the attribute grammar approach lends itself to certain extensions.
+
+In this document I will use the notion "attribute grammar" as defined in
+\cite{Hemerik}. Furthermore, I will adopt some of the ideas about an extended 
+definition of attribute grammars as described in \cite{Fellinger}.
+
+\section{The context free framework}
+The basis for an attribute grammar definition is the definition of a context
+free grammar. The main objective of this chapter is the construction of
+such a grammar.
+In \cite{Rous} I have shown that it is possible to define a context free
+grammar which can be used for a complete control of the order of application
+of M-rules. Furthermore, I have indicated that it would be possible to
+derive such a context free grammar from the control expression definitions
+and the rule import specifications of the M-rules. Although it would be 
+possible to use the 
+context free grammar defined in this way as the basis for the attribute grammar,
+in the first instance I will not do so. The main reason for this is that I want 
+to try to stay as close as possible to the current definitions of an M-grammar.
+
+Below, I will construct step by step the set of production rules which will
+define the context free part of the attribute grammar.
+
+First, we introduce a new level of control. In practice there appears 
+to be an explicit ordering of the subgrammars on a projection path. Each
+projection path can be viewed as a sequence of subgrammar applications preceded
+by a basic expression. The order of
+subgrammars on projection path {\bf P} can be specified by means of the 
+following context free production rule. \\ 
+
+P ::  SG$_{1}$ $\ldots$ SG$_{n}$ BE\\ 
+
+The context free grammar will contain production rules for each projection path 
+defined by the M-grammar.
+
+For the definition of the next subset of context free production rules
+we use the definition of a control expression as given in \cite{Appelo}.
+In that paper a control expression {\bf ce} belonging to subgrammar {\bf SG} is 
+defined as follows:\\
+ce = A$_{0} \bullet $A$_{1} \bullet \ldots \bullet $A$_{n}$\\
+where each A$_{i}$ is a rule class, either a meaningful rule class or a
+transformation class.
+Analogous to this definition of a control expression we will introduce 
+for each subgrammar {\bf SG} a 
+context free production rule as follows:\\ 
+
+SG :: A$_{0}$ A$_{1}$ $\ldots$ A$_{n}$\\ 
+
+Next, the definition of a control expression says that a rule class A$_{i}$ may 
+be
+\begin{description}
+\item[-] obligatory: written as ( R$_{1} \mid \ldots \mid $R$_{k}$ ), where 
+ the R$_{i}$ are either meaningful rules or transformations.
+\item[-] recursive: written as \{ R$_{1} \mid \ldots \mid $R$_{k}$ \} or
+\item[-] optional: written as [ R$_{1} \mid \ldots \mid $R$_{k}$ ].
+\end{description}
+Using a more compact notation a rule class A$_{i}$ can be 
+written as \{ R$_{1} \mid \ldots \mid $R$_{k}$ \}$^{p\leq n\leq q}$, where
+\begin{description}
+\item[-] \{ R$_{1} \mid \ldots \mid $R$_{k}$ \}$^{1\leq n\leq 1}$ means obligatory,
+\item[-] \{ R$_{1} \mid \ldots \mid $R$_{k}$ \}$^{0\leq n\leq\infty}$ means recursive,
+\item[-] \{ R$_{1} \mid \ldots \mid $R$_{k}$ \}$^{0\leq n\leq 1}$ means optional
+\end{description}
+In accordance with this we can now introduce a CF production rule for each
+rule or transformation class A:\\ 
+
+A :: \{ R$_{1} \mid \ldots \mid $R$_{k}$ \}$^{p\leq n\leq q}$\\ 
+
+In the Rosetta3 M-grammar we have the convention that the first argument of
+an M-rule is the head. The control expression defines the order
+of the M-rules that can be applied on the head S-tree. The other arguments of
+an M-rule will be the result of evaluation of complete subgrammars. This
+is specified in our M-rule notation as follows:\\
+
+R : C$_{2}$,SG$_{2}$ + $\ldots$ + C$_{n}$,SG$_{n}$ \\
+
+which means that rule R is a n-ary rule, of which the first argument is the
+head and of which the other arguments have categories C$_{2}$, $\ldots$
+,C$_{n}$ coming from subgrammars SG$_{2}$, $\ldots$ ,SG$_{n}$ respectively.
+
+We will use this specification to add the last set of production rules to our
+context free control grammar. Because of the introduction of the notion
+projection path in our CF grammar it is more convenient to use 
+an argument specification
+in which not the pairs category,subgrammar are specified but the projection 
+paths. The above  specification of the arguments
+of M-rule R then corresponds to the following production rule in our CF grammar:\\
+
+R :: P$_{2}$ $\ldots$ P$_{n}$ \\
+
+Note that unary rules and transformations don't have a 
+corresponding production rule. In stead, for each 
+unary rule or transformation the CF grammar will have a corresponding terminal.
+
+Basic expressions of the M-grammar will be treated in a special subgrammar 
+called {\bf BE}. 
+This subgrammar contains one obligatory rule class. For each basic expression 
+B$_{i}$ in the lexicon BLEX the subgrammar contains exactly one (unary) rule. 
+There 
+will be also be one rule for each type of variable. In a production rule notation this 
+looks as follows:\\
+
+BE :: \{ B$_{1} \mid \ldots \mid $B$_{k}$ \}$^{1\leq n\leq 1}$\\ \\
+Summarizing, we have introduced the following kind of rules:
+\begin{itemize}
+\item rules which specify the ordering of rule classes within a subgrammar:\\
+      SG :: A$_{0}$ A$_{1}$ $\ldots$ A$_{n}$
+\item rules that specify the ordering of M-rules within a rule class:\\
+      A :: \{ R$_{1} \mid \ldots \mid $R$_{k}$ \}$^{p\leq n\leq q}$
+\item rules that specify the non-head arguments of an M-rule:\\
+      R :: P$_{1}$ $\ldots$ P$_{n}$ 
+\item rules that specify the ordering of subgrammars on a projection path:\\
+      P ::  SG$_{1}$ $\ldots$ SG$_{n}$
+\item a rule that specifies the treatment of basic expressions:\\
+      BE :: \{ B$_{1} \mid \ldots \mid $B$_{k}$ \}$^{1\leq n\leq 1}$\\ 
+\end{itemize}
+--The set of nonterminals of the grammar consists of the names of the projection
+paths, the names of the subgrammars, the names of the transformation and
+rule classes and the names of rules with more than one argument.
+In principle, the grammar is ambiguous, that is, a nonterminal symbol will
+have more than one rewriting rule. \\
+--The set of terminals consists of the names
+of all the unary rules and transformations. \\
+
+In order to get an idea of the difference between the parse trees\footnote{With 
+parse tree I mean a tree which contains a complete history of the derivation
+process, including transformations}
+defined by an ordinary M-grammar and those defined by the newly defined CF 
+grammar, I will give some examples.
+The first example is a parse tree for the sentence "the man walks" 
+using the usual derivation tree geometry.
+\small
+\begin{verbatim}
+
+             CLtoSent
+                      Rmood
+                      
+                      Rsubst
+      
+             XPPtoCL              NPsg
+                      Rtime              Rdef
+
+                      Rclform     
+                                         RbnTOn
+             VPPform
+                      Rvoice      BLEX
+                                         man
+                      Rstart
+
+             Vderiv               VAR
+                      RbvTOv             NPVAR(i)
+
+             BLEX
+                      walk
+                     
+\end{verbatim}
+\normalsize
+The second example shows a parse tree according to the new context
+free grammar.
+\footnotesize
+\begin{verbatim}
+
+                             PPsent
+
+     CLtoSent         XPPtoCL         VPPform          Vderiv   BE
+
+  RCmood  RCsubst RCtime  RCclform  RCvoice  RCstart   bvTOsv   Bwalk
+
+  Rmood   Rsubst  Rtime   Rclform   Rvoice   Rstart    RbvTOsv 
+
+           PPnp                               PPbe
+        
+       NtoNP          BE                      BE
+
+   RCidef  RCbnTOn   Bman                    NPVAR
+
+    Rdef    RbnTOn   
+
+\end{verbatim}
+\normalsize
+It will be obvious that it is not possible to construct
+a bijective map between the set of parse trees defined by the 
+M-grammar 
+and the set of parse trees defined by the CF grammar. That is because the CF 
+grammar overgenerates; for each well-formed parse tree there is one
+corresponding CF parse tree. However, not for each CF parse tree 
+there is a well formed parse tree.
+In the next section we will enrich the CF grammar with attributes and
+conditions on attributes, in order to make a bijective map possible. 
+
+\section{The attribute grammar}
+In the introduction I mentioned that the notion attribute grammar will be
+used as defined in \cite{Hemerik}. Hemerik uses its attribute grammar for language 
+definition. For that purpose he is not interested in evaluation strategies,
+"inherited" or "synthesized" classification of attributes or parsing methods.
+His opinion is that the only things that matter for language definition are 
+the relations that hold between attributes of adjacent nodes.
+We will see that this approach is very well suited for a grammar definition
+which can be interpreted both analytical and generative.
+
+Below, I will show how the different types of production rules can be labelled
+with attributes. These attributes define the way in which S-trees are passed
+from one rule to another, from one subgrammar to another etc. In fact they
+have the same function for the attribute grammar as the definition of M-Parser
+and M-generator has for the M-grammar. As I've mentioned before, attributes are 
+not synthesized or inherited. Consequently, the attribute evaluation will
+have no direction. The grammar just defines a set of well-formed attributed
+parse trees.
+Moreover, the attribute grammar can be used to define the set T$_{M}$ of 
+well-formed S-trees. 
+
+In the next chapter I will
+show that the attribute grammar defines the way in which an S-trees can be 
+constructed by applying M-rules recursively, starting from basic expressions,
+if we distinguish synthesized and inherited attributes. By
+changing the attribute sets, that is, all synthesized attributes become 
+inherited attributes and vice versa, we will see that the attribute grammar defines
+the reverse process. All the attributes which will be defined in this
+chapter have the same domain: the set {\bf T} of all possible S-trees. 
+
+
+In the previous chapter we saw that there are five types of context free 
+production rules. Each of these rule types
+will now be enriched with attributes. I will first introduce the attributed
+production rules without any further comment. In the next chapter, in which the 
+analytical and generative version of the attributed production rules is given 
+I will try to explain the idea behind the rule attributes.\\
+{\samepage
+\begin{tabbing}
+1. Rule type P ::=  SG$_{1}$ $\ldots$ SG$_{n}$BE will have the following attributed form:\\ \\
+P$<i>$ ::=  SG$_{0}<i_{0},o_{0}>$ $\ldots$ SG$_{n}<i_{n},o_{n}>$ BE$<o>$ $\odot$\\
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+\>$i_{0}=i$ \\
+\>$o_{n}=o$ \\
+\>$(\forall j:  Nat \mid 1\leq j\leq n \mid i_{j}=o_{j-1})$ \\
+\end{tabbing}
+}
+
+{\samepage
+\begin{tabbing}
+2. Rule type SG ::= A$_{0}$ $\ldots$ A$_{n}$ will have the following attributed form:\\ \\
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+SG$<i,o>$ ::=  A$_{0}<i_{0},o_{0}>$ $\ldots$ A$_{n}<i_{n},o_{n}>$ $\odot$\\
+\>$i_{0}=i$ \\
+\>$o_{n}=o$ \\
+\>$(\forall j: Nat \mid 1\leq j\leq n \mid i_{j}=o_{j-1})$ \\ 
+\end{tabbing}
+}
+
+{\samepage
+\begin{tabbing}
+3. Rule type A ::= \{ R$_{1} \mid \ldots \mid $R$_{k}$ \}$^{p\leq n\leq q}$ will have the following attributed form: \\ \\
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+A$<i,o>$ ::= \{ R$_{1}<i_{1}^{j},o_{1}^{j}> \mid \ldots \mid $R$_{k}<i_{k}^{j},o_{k}^{j}>$ \}$_{1\leq j\leq n}^{p\leq n\leq q}$ $\od
+ot$\\
+\>($\exists T_{p}\ldots T_{n} \mid T_{p}=i \wedge T_{n}=o  \wedge$ \\
+\>\>$(\forall j: Nat \mid 1\leq j\leq n \mid$ ($\exists x: Nat \mid1\leq x \leq k \mid i_{x}^{j}=T_{j-1} \wedge o_{x}^{j}=T_{j}$ )))
+ \\
+\end{tabbing}
+}
+
+{\samepage
+\begin{tabbing}
+4. Rule type R ::= P$_{0}$ $\ldots$ P$_{n}$ will have the following attributed form: \\ \\
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+R$<i,o>$ ::= P$_{0}<i_{0}>$ $\ldots$ P$_{n}<i_{n}>$ $\odot$\\
+\>$i_{0}=i$ \\
+\>$i \ {\cal R} \ <o,i_{0},\ldots ,i_{n}>$ \\ \\
+\>Here, we use the fact that an M-rule R defines a relation ${\cal R}$ \\
+\>between S-trees and tuples of S-trees.\\
+\end{tabbing}
+}
+
+{\samepage
+\begin{tabbing}
+5. Rule type BE ::= \{ B$_{1} \mid \ldots \mid $B$_{k}$ \}$^{1\leq n\leq 1}$ will have the following attributed form: \\ \\
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+BE$<i>$ ::= \{ B$_{1}<i_{1}> \mid \ldots \mid $B$_{k}<i_{k}>$ \}$^{1\leq n\leq 1}$ $\odot$\\
+\>$(\exists j: Nat \mid 1\leq j\leq k \mid i_{j}=i )$ \\
+\end{tabbing}
+}
+
+Our attribute grammar will also contain attributed terminals. We distinguish 
+three kind of terminals, one type corresponds to unary M-rules and 
+transformations, the second type corresponds to basic expression and the
+third type corresponds to variables. The terminals
+can be specified as:\\
+
+{\samepage
+\begin{tabbing}
+6. The terminals corresponding to M-rules will have the following attributed form: \\ \\
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+R$<i,o>$ $\odot$\\
+\>$i \ {\cal R} \ o$ \\
+Here too, we use the definition of an M-rule R as a relation ${\cal R}$ between S-trees and tuples \\
+of S-trees.
+\end{tabbing}
+}
+
+{\samepage
+\begin{tabbing}
+7. The terminals corresponding to basic expressions will have the following attributed form: \\ \\
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+B$<i>$ $\odot$\\
+\>$<B, i> \in $BLEX \\
+\end{tabbing}
+}
+
+{\samepage
+\begin{tabbing}
+8. The terminals corresponding to variables will have the following attributed form: \\ \\
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+B$<i>$ $\odot$\\
+\>$\underline{i} = B$ \\
+\end{tabbing}
+}
+
+The attribute grammar derived from the M-grammar specification in this way 
+defines exactly the same set of S-trees and derivation trees. Using some of the 
+predicates defined in \cite{Hemerik} for attribute grammars of this kind it is
+possible to show in which way the attribute grammar defines the set T$_{M}$.
+Also, a pair of functions can be defined which are equivalent with M-Parser 
+and M-Generator. \\
+
+Let AD(d, P$<$t$>$) be a predicate which is true if d is an attributed derivation
+tree with root P, attributed with S-tree t (cf. \cite{Hemerik}, p.29]). 
+Using this predicate we can define the set T$_{M}$ of well-formed S-trees
+as follows:\\
+
+T$_{M}$ = \{ t $\mid \exists$ d, P : AD(d, P$<$t$>$) \}\\
+
+The set of attributed derivation trees corresponding
+to an S-tree t ( which is the equivalent definition of M-Parser )
+can be defined as : \\
+
+M-P(t) = \{ d $\mid \exists$ P : AD(d, P$<$t$>$) \} \\
+
+Finally, the set of S-trees corresponding to an attributed derivation tree
+( analogous to M-Generator ) can be defined as: \\
+
+M-G(d) = \{ t $\mid \exists$ P : AD(d, P$<$t$>$) \} \\
+
+What is elegant about the approach is the fact that the M-grammar is 
+completely formulated in terms of an attribute grammar. Consequently, 
+the literature which is available about attribute grammars can also be useful
+for this special case of an attribute M-grammar. Furthermore, we can look at
+the current definitions of M-Parser and M-Generator as being tailor-made 
+attribute evaluation strategies for M-grammars. From that perspective one can 
+imagine that it could be very useful to investigate other evaluation
+strategies like for instance the {\em lazy evaluation } technique which is
+used in ELEGANT (cf. \cite{Augustijn}).
+
+\section{Analytical and generative version of the rules}
+
+As I've already mentioned, the attribute grammar presented in the previous chapter 
+is very well suited for language definition. Ultimately, however, we are also 
+interested in the construction of a parser or a generator for that language.
+For that reason one can classify the attributes as either \underline{inherited}
+or \underline{synthesized}. In the presentation of the attribute grammar this 
+can be indicated by a '$\uparrow$' for synthesized and a '$\downarrow$' for
+inherited. For instance, the rule form for a projection path which first appeared as
+\begin{tabbing}
+P$<i>$ ::=  SG$_{0}<i_{0},o_{0}>$ $\ldots$ SG$_{n}<i_{n},o_{n}>$ BE$<o>$ $\odot$\\
+\end{tabbing}
+then appears ( for analytical purposes ) as
+\begin{tabbing}
+P$<\da i>$ ::=  SG$_{0}<\da i_{0},\ua o_{0}>$ $\ldots$ SG$_{n}<\da i_{n},\ua o_{n}>$ BE$<\da o>$ $\odot$\\
+\end{tabbing}
+The corresponding rule condition can be transformed to an attribute evaluation
+rule by writing it as :
+\begin{tabbing}
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+\>$i_{0} : (i_{0} = i)$ \\
+\>$o : (o_{n} = o)$ \\
+\>$i_{1}, \ldots ,i_{n} : (\forall j:  Nat \mid 1\leq j\leq n \mid i_{j} = o_{j-1})$ \\
+\end{tabbing}
+which is to be interpreted as : 
+"determine $i_{0}$ such that $(i_{0} = i)$ holds",
+"determine $o$ such that $(o_{n} = o)$ holds" and 
+"determine $i_{1}, \ldots ,i_{n}$ such that 
+$(\forall j:  Nat \mid 1\leq j\leq n \mid i_{j} = o_{j-1})$ holds".
+
+Generally we see that the synthesized attributes of the left-hand part and the
+inherited attributes of the right-hand part must be computed from the other
+attributes. This means that before the ':' symbol in the evaluation rule only 
+synthesized attributes of the left-hand part or 
+inherited attributes of the right-hand part can appear.
+
+Informally, the rule must be interpreted as follows. First, the Stree
+$i$ is passed to the rule. This is ( in the analytical version ) the Stree to 
+which all M-rules in a projection path must be applied. For that purpose
+the S-tree $i_{0}$, which is identical to $i$, is passed to the first 
+subgrammar SG$_{0}$. Application of this subgrammar results in the S-tree 
+$o_{0}$. Next, the S-tree $i_{1}$, which is identical to $o_{0}$, is passed
+to subgrammar SG$_{1}$. Again, this subgrammar is applied to the input S-tree
+$i_{1}$ etc.. If all subgrammars have been applied successfully, attribute
+$o_{n}$ is the resulting S-tree. The final action is then to pass this 
+attribute to the basic expression subgrammar which checks if $o_{n}$ is a
+correct basic expression.
+
+The generative version of the rule is:
+\begin{tabbing}
+P$<\ua i>$ ::=  SG$_{0}<\ua i_{0},\da o_{0}>$ $\ldots$ SG$_{n}<\ua i_{n},\da o_{n}>$ BE$<\ua o>$ $\odot$\\
+\end{tabbing}
+The only difference with the analytical version of the rules is the fact that
+inherited attributes have become syntheseized attributes and vice-versa.
+Consequently, the attribute evaluation part should be altered with respect to
+the attributes which appear before the ':' symbol.
+The corresponding rule condition can be transformed to an attribute evaluation
+which corresponds with a generative interpretation of the attribute grammar
+by writing it as :
+\begin{tabbing}
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+\>$i : (i_{0} = i)$ \\
+\>$o_{n} : (o_{n} = o)$ \\
+\>$o_{0}, \ldots ,o_{n-1} : (\forall j:  Nat \mid 1\leq j\leq n \mid i_{j} = o_{j-1})$ \\
+\end{tabbing}
+This generative version of the attributed rule can be intepreted as the 
+process which takes place in M-Generator. We start with the subgrammar BE for 
+basic expressions. This subgrammar delivers the basic expression $o$. Then,
+subgrammar SG$_{n}$ is applied to the S-tree $o_{n}$, which is identical to $o$.
+The resulting S-tree $i_{n}$ is input for subgrammar SG$_{n-1}$, etc.. Finally,
+S-tree i$_{0}$ is the result of application of subgrammar SG$_{1}$. This S-tree
+$i$ ( $= i_{0}$ )is also the resulting S-tree of application of the projection path rule P.
+
+I will now give the analytical version of each production rule.
+The generative version of the rules and the evaluation rule parts will be left 
+out because they follow
+immediately from the rule conditions described in the previous chapter and the 
+partitioning of the attributes into inherited and synthesized.
+
+\begin{enumerate}
+\item P$<\da i>$ ::=  SG$_{0}<\da i_{0},\ua o_{0}>$ $\ldots$ SG$_{n}<\da i_{n},\ua o_{n}>$ BE$<\da o>$ $\odot$\\
+\item SG$<\da i,\ua o>$ ::=  A$_{0}<\da i_{0},\ua o_{0}>$ $\ldots$ A$_{n}<\da i_{n},\ua o_{n}>$ $\odot$\\
+\item A$<\da i,\ua o>$ ::= \{ R$_{1}<\da i_{1}^{j},\ua o_{1}^{j}> \mid \ldots \mid $R$_{k}<\da i_{k}^{j},\ua o_{k}^{j}>$ \}$_{1\leq 
+j\leq n}^{p\leq n\leq q}$ $\odot$\\
+\item R$<\da i,\ua o>$ ::= P$_{0}<\da i_{0}>$ $\ldots$ P$_{n}<\da i_{n}>$ $\odot$\\
+\item BE$<\da i>$ ::= \{ B$_{1}<\da i_{1}> \mid \ldots \mid $B$_{k}<\da i_{k}>$ \}$^{1\leq n\leq 1}$ $\odot$\\
+\item Attributed terminal: R$<\da i,\ua o>$ $\odot$\\
+\item Attributes terminal: B$<\da i>$ $\odot$\\
+\end{enumerate}
+
+\section{The pre-action technique}
+In general we can say that the (theoretical) strategy which is used for the 
+treatment of syntactic variables is to create a number of ambiguities
+during the translation of a logical variable in G-Transfer. Next, during the 
+generation process in M-Generator, the wrong variable translations 
+are filtered out. There is, however, a gap between theory and implementation
+of the M-Generator.
+On can say that in the implementation the set of possible variables is reduced
+by using information about the S-tree which is going to be substituted for the variable.
+
+The attribute grammar approach offers an alternative solution, in which there
+will be no gap between implementation and theory with respect to the
+treatment of syntactic variables. In the solution a new attribute ( to be 
+called the substituent set ) is defined
+which will contain a set of pairs $<i, t>$, where $i$ is the index of
+a substitution rule and $t$ is the substituent S-tree. This attribute is passed
+within a projection path from subgrammar to subgrammar, within a subgrammar
+from rule class to rule class, within a rule class from M-rule to M-rule and,
+finally, within an M-rule to all arguments of the M-rule. If an M-rule is
+a substitution rule it adds a pair $<$index, S-tree$>$ to the substituent set, 
+otherwise it passes the set unchanged. As we will see, the evaluation 
+conditions will automatically impose an evaluation order in which the substituent is 
+evaluated before the substituee.
+
+The idea is that the substituent set is available when an
+M-rule is being evaluated. The M-rule can then use the information which is 
+present in the substituent set, that is, the indices and corresponding 
+substituent S-trees.
+
+If we enrich a substitution rule, which has rule type 4, with the substituent 
+set attribute, we get the following form:\\
+\begin{tabbing}
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+R$<i,o,v,w>$ ::= P$_{0}<i_{0},v_{0}>$ $\odot$\\
+\>$i_{0}=i$ \\
+\>$(\exists j : Nat \mid <i, <o,i_{0}>, v, j>\in {\cal R} \wedge w = v\cup\{<j, i_{0}>\})$ \\
+\>$v_{0}=v$ 
+\end{tabbing}
+Here, $j$ is the index of the substitution rule, v is the substituent set 
+without substituent and the index of the M-rule and w is the
+substituent set containing also the index-substituent pair. An M-rule is 
+considered to be a 4-ary relation ${\cal R}$ between S-trees, tuples of Strees,
+substituent sets and indices.
+
+If we look at the generative version of the rule, we see that in the evaluation 
+rule the value of $w$ depends on the value of $i_{0}$. Therefore the evaluation
+rule imposes an evaluation ordering in which the substituent is evaluated
+before the substituee.
+\begin{tabbing}
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+R$<\ua i,\da o,\da v,\ua w>$ ::= P$_{0}<\ua i_{0},\da v_{0}>$ $\odot$\\
+\>$i : i_{0}=i$ \\
+\>$w : (\exists j : Nat \mid <i, <o,i_{0}>, v, j>\in {\cal R} \wedge w = v\cup\{<j, i_{0}>\})$ \\
+\>$v_{0} : v_{0}=v$ 
+\end{tabbing}
+However, there are also substitution rules where the substituent is the first
+M-rule argument. In those cases the generative version of the rule looks like:
+\begin{tabbing}
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+R$<\ua i,\da o,\da v,\ua w>$ ::= P$_{0}<\ua i_{0},\da v_{0}>$ $\odot$\\
+\>$i : i_{0}=i$ \\
+\>$v_{0} : (\exists j : Nat \mid <i, <o,i_{0}>, v, j>\in {\cal R} \wedge v_{0} = v\cup\{<j, o>\})$ \\
+\>$w : w=v$ 
+\end{tabbing}
+Here, we see that attribute value $v_{0}$ depends on the value of attribute
+$o$, which contains the head S-tree. Therefore, the head of the rule must be 
+evaluated first.
+
+Summarizing, we see that the evaluation order of the arguments of substitution
+rules, which is currently implicitely performed by the pre-action, 
+is automatically imposed by the dependencies between attributes in the 
+evaluation rules. This implies that an evaluation strategy like {\em lazy
+evaluation} would \underline{automatically} choose the correct evaluation
+order on the basis of the rules in the attribute grammar.
+
+As a final remark, I should mention here that I realize that the attribute
+grammar approach might be in conflict with the compositionality principle as 
+described in \cite{Janssen}. At the moment, however, there is no time for
+an intensive study with respect to this problem.
+
+\section{Extensions}
+\subsection{Other attributes}
+Apart from the question whether it is linguistically neccessary, one can
+also imagine that other attributes are defined which can be used to transport
+information from one branch of the derivation tree to another. Theoretically,
+there are no objections to this approach. From a more pragmatic point of 
+view, however, there are several difficulties. It will be extremely difficult
+for the linguist who is writing the rules and who will also be responsible for
+the attribute definitions to guarantee the absence of cycles in the evaluation
+order of the rules. This problem becomes even more complicated because
+the attributes which are introduced in chapter 3, the S-trees which are
+passes from rule to rule, have a different analytical and generative 
+interpretation. An inherited attribute of this kind in analysis will be a 
+synthesized attribute in generation and a analytical synthesized attribute
+will become a inherited attribute in generation. On the other hand, the type 
+of all other attributes is the same in analysis and generation.
+Therefore a rule definition which is correct in analysis might introduce
+cycles in generation and vice versa. Although algorithms which verify the
+absence of cycles do exist \cite{Knuth} this seems not to be an ideal way
+to write a grammar.
+
+In my opinion the introduction of extra attributes is only feasible if 
+at the same time restrictions are imposed on the evaluation rules of
+these attributes ( cf. \cite{Oerlemans},\\
+\cite{Haan-den}). These restrictions have to 
+guarantee that no cycles can be introduced by the grammar rules.
+It might be quite possible, however, that these restrictions have 
+to be so severe that one cannot think of a useful application anymore.
+\subsection{Semantic derivation trees}
+It is common practice in the field of programming language definition to
+express the semantics of a language in attributes of an attribute grammar
+\cite{Knuth}. Often the meaning of a programming language sentence is considered
+to be the assembler code which is to be generated for that sentence. In the
+case of M-grammars the semantic derivation tree expresses the meaning of a
+sentence. It is obvious to add an attribute to the grammar (cf. chapter 
+3) in which the semantic derivation tree is constructed. Suppose we call this
+attribute $s$, then, for instance, a rule of type 4 would get the following form:\\
+\begin{tabbing}
+aaa\=aaa\=aaaaaaa\= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\= \kill
+4. R$<i,o,p,s>$ ::= P$_{0}<i_{0},s_{0}>$ $\ldots$ P$_{n}<i_{n},s_{n}>$ $\odot$\\
+\>$i_{0}=i$ \\
+\>$i \ {\cal R} \ <o,i_{0},\ldots ,i_{n}>$ \\
+\>$(\exists m \mid m \ {\cal M} \ $R$ \ \wedge \ s = m<p,s_{0}\ldots s_{n}>)$\\
+\end{tabbing}
+Here, $m$ expresses the meaning of M-rule R. The meaning of M-rules is defined 
+by the relation ${\cal M}$. The top node of the new semantic derivation tree 
+will be labeled with $m$, the sons come from the meaning attributes of all 
+other M-rule arguments. The S-trees $i$ and $o$ have as corresponding semantic 
+derivation trees $s$ and $p$ respectively.
+
+As pointed out in \cite{Fellinger}, the usage of both syntactic and semantic 
+attributes in the rules of the grammar should be treated with utmost care.
+There should always be a clear separation between the two types of attributes.
+Moreover, the grammar from which all meaning attributes and conditions are 
+removed should define exactly the same language as the original attribute 
+grammar.
+
+\begin{thebibliography}{Landsbergen}
+\bibitem[Appelo]{Appelo} Appelo, L., Fellinger C. and Landsbergen, J. (1987),
+{\em Subgrammars, Rule Classes and Control in the Rosetta Translation
+System}, In: ACL-Proceedings, 1-3 april 1987, pp.118-133, University of
+Copenhagen, Copenhagen, Denmark.
+\bibitem[Augustijn]{Augustijn} Augustijn L, ESPRIT project 415A doc. no. 238,
+Philps Research laboratories, Eindhoven, The Netherlands.
+\bibitem[Fellinger]{Fellinger} Fellinger C., {\em On the surface-rule compiler,
+a compiler-compiler developed for Rosetta}, Thesis at the IHBO , Eindhoven, 
+1986.
+\bibitem[Haan den]{Haan-den} Haan den P.A.M., {\em An attribute grammar for a 
+POOL-T to C translation}, ESPRIT project 415A doc. no. 245, Philips Research 
+Laboratories, Eindhoven, The Netherlands, May 1986.
+\bibitem[Hemerik]{Hemerik} Hemerik C., {\em Formal definitions of
+programming languages as a basis for compiler construction}, Doctoral Thesis,
+Technical University of Eindhoven, 1984.
+\bibitem[Janssen]{Janssen} Janssen T.M.V., {\em Foundations and applications
+of Montague Grammar}, Doctoral Thesis, University of Amsterdam, 1983.
+\bibitem[Knuth]{Knuth} Knuth D.E., {\em Semantics of context-free languages},
+Math. Syst. Theory 2 (1968), pp. 127-145.
+\bibitem[Landsbergen]{Landsbergen} Landsbergen S.P.J., {\em Control 
+expressions}, Rosetta Project doc. nr. 101, July 1986.
+\bibitem[Oerlemans]{Oerlemans} Oerlemans H., {\em An attribute grammar for
+POOL-T}, ESPRIT Project 415A doc.no. 100, Philips Research Laboratories,
+Eindhoven, the Netherlands, September 1985.
+\bibitem[Rous]{Rous} Rous J.H.G., {\em CF Control grammars: Definition of
+M-Parser and M-Generator}, Rosetta Project doc. nr. 180, March 1987.
+\end{thebibliography}
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

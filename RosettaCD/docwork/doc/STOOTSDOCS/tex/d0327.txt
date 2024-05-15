@@ -1,0 +1,1484 @@
+R327.tex
+
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.linguistics}
+   \RosTitle{Modals in Rosetta3}
+   \RosAuthor{Lisette Appelo, Jan Odijk}
+   \RosDocNr{327}
+   \RosDate{June 1, 1990}
+   \RosStatus{approved}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Modal verb, modality}
+   \MakeRosTitle
+%
+%
+\setlength{\parindent}{0 in}
+\setlength{\unitlength} {1 em}
+\input{definitions}
+
+\section{Introduction}
+
+This document describes how modals are translated in Rosetta3.
+Modal verbs need special attention in a machine translation system because they 
+have special characteristics that do not correspond over languages.
+
+\begin{itemize}
+\item {\bf Morphology: defective paradigm}\\
+One of the most urgent problems is the lack of a full tense paradigm in some 
+languages as e.g.\ in English. Most English modal verbs do not have an 
+infinitive or past participle form. Some of them neither have a past tense form 
+(e.g.\ {\em may}) or a present tense form (e.g.\ {\em might}). The 
+corresponding verbs in other languages such as Dutch and Spanish behave more 
+like `full' verbs. This causes the following type of translation problem as in 
+example (1):\\
+
+\begin{lxam}
+&D&&Hij zei dat hij om 3 uur had kunnen komen\\
+&E&*&He said that he had `could' come at 3 o'clock\\
+&S&&Dijo que hab\'{\i}a podido venir a las tres
+\end{lxam}
+
+An acceptable translation into English would be:\\
+\begin{lxam}
+&&& He said that he had been able to come at 3 o'clock
+\end{lxam}
+or\\
+\begin{lxam}
+&&&He said that it had been possible for him to come at 3 o'clock
+\end{lxam}
+
+This means that {\em kunnen} and {\em poder} 
+sometimes have to be translated into {\em be 
+able} and {\em be possible}, i.e.\ the auxiliary verb {\em be} and an adjective
+, which is possible thanks to the isomorphic subgrammar approach in Rosetta3.
+This kind of escape exists for most of the English modal verbs. 
+
+\item {\bf Syntax: main verb or auxiliary verb?}\\
+Another problem is that the modal verbs in Dutch and Spanish behave as main 
+verbs and the English ones as auxiliaries, i.e. they occur at different 
+positions. The question that is related to this 
+problem is whether these verbs should be basic expressions or inserted 
+syncategorematically into the 
+clause  by special rules. 
+One reason for dealing with modal verbs as basic expressions is the fact
+that some of them impose selectional restrictions on some of their arguments.
+(cf. {\em  it can rain} does not mean {\em  it is able to rain}). Imposing
+such selectional restrictions is  simple if these verbs are considered
+to be basic expressions, but it is more complicated if they are not.\\
+In Rosetta3 we have chosen for 
+basic expressions that have an argument structure. All of them have at least 
+one propositional argument. In English, these verbs get their syntactic 
+auxiliary status at the moment their propositional argument is substituted.
+This is done in RmodalComplSentSubst1 and RmodalComplSentSubst2.
+
+\item {\bf Irrealis constructions}\\
+Some past tense forms of modal verbs in English have an irrealis interpretation
+ as is illustrated by the following examples:\\
+
+\begin{lxam}
+&E&&If he could come,...\\
+&D&&Als hij zou kunnen komen,...\\
+&S&&Si pudiera venir,..
+\end{lxam}
+
+\begin{lxam}
+&E&&He should come\\
+&D&&Hij zou moeten komen\\
+&S&&Deber\'{\i}a venir
+\end{lxam}
+
+Past tense forms of other verbs do not have this interpretation. 
+\item {\bf Condicionalis}\\
+In Dutch 
+the o.v.t. forms of verbs can  have a similar interpretation:\\
+
+\begin{lxam}
+&&&Hij zou het alleen doen, als ik hem zou helpen\\
+&&&Hij deed het alleen, als ik hem hielp\\
+&&&Hij deed het niet, tenzij ik hem hielp
+\end{lxam}
+
+In Spanish indicative 
+(non-future) past tense forms do not have an irrealis interpretation, 
+except for the `imperfecto' in main clauses in informal speech.\\
+It is necessary to keep this irrealis meaning apart from the past meaning. Some 
+special rules were needed to account for these phenomena (see section 
+\ref{remarks}).
+
+\item {\bf Modal + have problem}\\
+The translation into Dutch of the English example
+(\ref{exam1}) is (\ref{exam2}a), (\ref{exam2}b) or 
+(\ref{exam3}).\\
+
+\begin{lxam}
+\label{exam1}
+&&&He could have come
+\end{lxam}
+
+\begin{lxam}
+\label{exam2}
+&a&&Hij had kunnen komen\\
+&b&&Hij zou hebben kunnen komen
+\end{lxam}
+
+\begin{lxam}
+\label{exam3}
+&&&Hij zou gekomen kunnen zijn
+\end{lxam}
+
+(\ref{exam2}a) and (\ref{exam2}b) can be considered paraphrases, but 
+(\ref{exam2}) is not synonymous with (\ref{exam3}). A regular compositional 
+translation of 
+(\ref{exam1}) would be (\ref{exam3}) and not (\ref{exam2}a) or (\ref{exam2}b).
+(\ref{exam2}a) would be translated regularly into the impossible (\ref{exam4}) 
+and (\ref{exam2}b) into (\ref{exam5}):\\
+
+\begin{lxam}
+\label{exam4}
+&&*& He had `could' come
+\end{lxam}
+
+\begin{lxam}
+\label{exam5}
+&&*&He would have `could' come
+\end{lxam}
+We needed some special rules to account for this problem as will be explained 
+in section \ref{remarks}.
+\end{itemize}
+
+In the next section the modal `meanings' or topics
+ we want to distinguish will be summed up 
+and illustrated with examples of Dutch, English and Spanish. If a modal topic
+has not been implemented in Rosetta3, this will be indicated. In section 
+\ref{trans} the translation relations as implemented in Rosetta3 
+will be 
+given in a table. This section will be followed by a section with remarks on 
+that translation scheme. Section \ref{special}
+will contain a summary of all special rules that 
+have been written or that still have to be written
+to be able to translate modals.
+
+\section{The Modal Expressions of Rosetta3}
+\label{modals}
+\subsection{Modality}
+\label{modality}
+We distinguished the following modal `meanings' or topics:
+\begin{enumerate}
+\item volition
+\item ability
+\item obligation
+\item possibility
+\item necessity
+\item permission
+\item future
+\item tendency
+\item concession
+\item reported speech
+\item irrealis
+\item condition
+\end{enumerate}
+
+We will give examples of each of them for all languages in the order 
+Dutch-English-Spanish below. Because of the defective paradigms of the English
+modal verbs, an example of the `escape solution' also will be given.
+\begin{enumerate}
+\item volition:\\
+\begin{lxam}
+&&&Hij {\em wil} komen\\
+&&&He {\em wants} to come\\
+&&&{\em Quiere} venir
+\end{lxam}
+
+\item ability:\\
+\begin{lxam}
+&&&Hij {\em kan} komen\\
+&&&He {\em can} come/ He {\em is able} to come\\
+&&&{\em Puede} venir
+\end{lxam}
+
+\item obligation:
+\begin{enumerate}
+\item no restriction on scope of negation:\\
+\begin{lxam}
+&&&Hij {\em moet} komen\\
+&&&He {\em must} come/He {\em has} to come/He {\em is obliged} to come\\
+&&&{\em Debe} venir/{\em tiene que} venir
+\end{lxam}
+\item obligatory in scope of negation:\\
+\begin{lxam}
+&&&Hij {\em hoeft} niet te komen\\
+&&&He {\em need} not come/He does not {\em need} to come\\
+&&&No {\em debe} venir/no {\em tiene que} venir
+\end{lxam}
+\end{enumerate}
+
+\item possibility:\\
+\begin{lxam}
+&&&Hij {\em kan} komen\\
+&&&He {\em can} come/ He {\em may} come/it {\em is possible} for him to come\\
+&&&{\em Puede} venir
+\end{lxam}
+
+\begin{lxam}
+&&&Hij komt {\em misschien}\\
+&&&He {\em might} come/he {\em may} come\\
+&&&{\em Quiz\'{a}s} venga
+\end{lxam}
+
+\item necessity:
+\begin{enumerate}
+\item no restriction on scope of negation:\\
+\begin{lxam}
+&&&Hij {\em moet} komen\\
+&&&He {\em must} come/He {\em has} to come/It {\em is} 
+ {\em necessary} for him to come\\
+&&&{\em Debe} venir/{\em tiene que} venir
+\end{lxam}
+\item obligatorily in scope of negation:\\
+\begin{lxam}
+&&&Hij {\em hoeft} niet te komen\\
+&&&He {\em need} not come/He does not {\em need} to come\\
+&&&No {\em debe} venir/no {\em tiene que} venir
+\end{lxam}
+\end{enumerate}
+
+\item permission:\\
+\begin{lxam}
+&&&Hij {\em mag} komen\\
+&&&He {\em can} come/he {\em may} come/he {\em is allowed} to come\\
+&&&{\em Puede} venir
+\end{lxam}
+
+\item future:\\
+\begin{lxam}
+&&&Hij {\em zal} komen\\
+&&&He {\em will} come\\
+&&&Ven{\em dr\'{a}}
+\end{lxam}
+
+\item tendency:\\
+\begin{lxam}
+&&&Het {\em wil} maar niet regenen\\
+&&&It does not want to rain???\\
+&&&???
+\end{lxam}
+It appears that this use of the verb {\em  willen} requires the presence of
+the word {\em  maar} and the presence of negation.
+
+\item concession:\\
+\begin{lxam}
+&&&Het {\em mag} dan regenen,..\\
+&&&Rain though it might???\\
+&&&???
+\end{lxam}
+It seems that the word {\em dan} is required.
+
+\item reported speech:\\
+\begin{lxam}
+&&&Hij {\em zou} dan komen...\\
+&&&???\\
+&&&???
+\end{lxam}
+
+\item irrealis:
+\begin{lxam}
+&&&Als hij {\em zou kunnen} komen\\
+&&&If he {\em could} come\\
+&&&Si {\em podr\'{\i}a} venir
+\end{lxam}
+\begin{lxam}
+&&&Hij {\em zou moeten} komen\\
+&&&He {\em should} come\\
+&&&{\em Deber\'{\i}a} venir
+\end{lxam}
+
+\item condition:
+\begin{lxam}
+&&&Als hij  proberen {\em zou} te komen/als hij probeer{\em de} te komen\\
+&&&If he {\em would} try to come\\
+&&&Si tratar{\em \'{\i}a} de venir
+\end{lxam}
+\end{enumerate}
+
+{\bf Tendency, concessive} and {\bf reported speech} have not been implemented 
+in Rosetta3, because more research is needed here. 
+Concession and condition can probably be treated best by assuming a special 
+substitution 
+rule for concessive 
+adverbial subordinate sentences, that turns a structure of e.g.\
+the form [hoewel....V] into [.... mogen...dan...V] when substituting it, in a manner
+resembling the method used for
+introducing conditional verb-initial subordinate clauses  ({\em {\bf 
+Komt hij op tijd,} 
+dan halen we het nog}).\\
+Rules for {\bf irrealis} 
+with modal verbs have been written, but have not been tested yet. Rules for
+conditional sentences have not been written yet.
+
+\subsection{The modal expressions of Dutch}
+\label{modalsdutch}
+The modal expressions of Dutch can be listed in the following table. Their 
+modal `meaning' or topic is indicated.\\
+
+\begin{tabular}{|l|l|}
+\hline
+expression  &  topic\\
+\hline
+willen      &  volition\\
+kunnen (2x)      &  ability, possibility\\
+moeten (2x)      &  obligation, necessity (no restriction on scope of negation)\\
+hoeven (2x)      &  obligation, necessity (obligatorily in scope of negation)\\
+mogen       &  permission\\
+zullen      &  future\\
+\hline
+misschien   &  possiblity\\
+\hline
+zou         &  irrealis, condition\\
+zou kunnen (2x)  &  irrealis + possibility, ability\\
+zou moeten (2x)  &  irrealis + necessity, obligation\\
+\hline
+\end{tabular}
+\ \\
+
+Remarks:
+\begin{itemize}
+\item
+{\em Zou kunnen} and {\em zou moeten} are regular irrealis forms in Dutch. They 
+are listed here because of the English translation. They are made by special 
+deixis rules.
+
+\item 
+There is a special transformation, called {\em  Tmodalswitch1} 
+(in file dutch:tc\_modalswitch.mrule, mrules13.mrule) that accounts 
+for
+the fact that in Dutch certain modal verbs allow two orders when they are 
+finite and combined with some infinitive, cf. {\em  ..omdat hij moet komen 
+} vs. {\em  omdat hij komen moet}. This special transformation applies
+in analysis only and turns a structure where a finite modal verb taking
+an infinitive without {\em  te} follows this infinitive into a structure
+where the modal verb precedes the infinitive.
+
+\item 
+There is special transformation, called {\em  Tgaandeletion}
+(in file dutch:tc\_modalswitch.mrule, mrules13.mrule),
+that performs the following tasks:
+If a modal verb has the pattern {\em  synDIROPENPREPPPROP}, and it has
+the infinitive {\em  gaan} in its infinitival complement, and if there is
+a directional argument ({\em  dirargrel}), then {\em  gaan} is deleted.
+
+This transformation applies in analysis only. It is intended to account for 
+such translation relations as {\em  hij wil naar school} - {\em  he wants to go 
+to school}.
+
+The following rules are still to be added:
+\begin{enumerate}
+  \item a transformation dealing with slightly more complex cases, e.g.
+{\em  hij heeft naar school gewild} cannot be dealt with adequately yet
+(it should be turned into {\em  hij heeft naar school willen gaan})
+  \item an obligatory transformation or filter should filter all occurrences
+of modal verbs that have  been subject to the transformations mentioned 
+above (so it should precede these transformations), in order to stop the
+derivations of these sentences as normal  directional argument taking 
+verbs. This is necessary, because otherwise the grammar of English
+will attempt to derive {\em  he wants to school}, in which it
+will not succeed, so that the isomorphy requirement is violated.
+\end{enumerate}
+
+
+Also a similar transformation should be added (for certain modal verbs)
+to deal with {\em  doen}-deletion
+for such cases as {\em  hij kan het, mag het}  (cf. {\em  he can, may do it}
+and perhaps for {\em  hebben}-deletion (cf. {\em  Hij wil het, hij moet het}
+and {\em  he wants to have it, he must have it} etc.
+
+A question that arose when dealing with these and similar examples, is which 
+grammar should contain special rules to deal with such cases as these. 
+It can be argued
+that for cases such as these the grammar of English should contain
+special rules. For motivation, see doc R0???.
+
+\end{itemize}
+
+\subsection{The modal expressions of English}
+\label{modalsenglish}
+The modal expressions of English can be listed in the following table. Their 
+modal `meaning' or topic and syntactic category are indicated.\\
+
+\begin{tabular}{|l|l|l|}
+\hline
+syn. cat. & expression  &  topic\\
+\hline
+verb      & want        & volition\\
+          & can (3x)         & ability, possibility, permission\\
+          & could (2x)       & ability, possibility,\\
+          &             & irrealis + ability, possibility\\
+          & may (2x)         & possibility, permission\\
+          & might       & possibility\\
+          & must (2x)        & obligation, necessity (no restriction on scope 
+of negation)\\
+          & have to (2x)    & obligation, necessity (no restriction on scope ofnegation)\\
+          & to be to (2x)    & obligation, necessity (no restriction on scope ofnegation)\\
+          & ought to (2x)    & ?\\
+          & need(mod) (2x)   & obligation, necessity (no obligatorily in scope of negation)\\
+          & need(main) (2x)  & obligation, necessity (no obligatorily in scope of  negation)\\
+          & will        & future\\
+          & would (2x)       & future, irrealis, condition\\
+          & shall       & future\\
+          & should (2x)      & irrealis + necessity, obligation\\
+          & dare             & ?\\
+\hline
+adj       & able        & ability\\
+          & possible    & possibility\\
+          & obliged     & obligation\\
+          & necessary   & necessity\\
+          & allowed     & permission\\
+\hline  
+\end{tabular}
+\ \\
+
+Remarks:
+\begin{itemize}
+  \item {\bf shall} should be considered as a variant of {\em will} in case of a 
+               first person (singular) subject. It will be introduced (only
+               in analysis) as a variant of {\em will} in cases of first 
+               person, by exchanging it syncategorematically. 
+This special transformation applies after the
+mood rules and before NegAuxAdapt.
+
+  \item {\bf Auxiliary status}:\\
+The auxiliary status of English modal verbs is accounted for in 
+RmodalComplSentSubst1 + 2.\\
+The modal is inserted in aux position in its argument. These rules are
+`subgrammar switch' rules of the kind also needed for {\em graag/like}-cases.
+
+  \item There are some problems superdeixis adaptation and subgrammar switch
+in general that also apply to the treatment of English modals, cf. Rdoc.\ 320. 
+\end{itemize}
+
+\subsection{Modal expressions of Spanish}
+\label{modalsspanish}
+The modal expressions of Spanish can be listed in the following table. Their 
+modal `meaning' or topic is indicated.\\
+
+\begin{tabular}{|l|l|}
+\hline
+expression  &  topic\\
+\hline
+querer      & volition\\
+poder (2x)       & ability, possibility, permission\\
+deber (4x)      & necessity, obligation (+/- restriction negation)\\
+tener que (4x)  & necessity, obligation (+/- restriction negation)\\
+hay que (2x)    & necessity, obligation\\
+`abstract future verb' & future\\
+\hline
+quiz\'{a}s & possibility\\
+\hline
+`subjuntivo del pasado', `condicional' & irrealis, condition\\
+pudiera, podr\'{\i}a (2x)   & irrealis + possibility, ability\\
+debiera, deber\'{\i}a (2x)  & irrealis + necessity, obligation\\
+\hline
+\end{tabular}
+\ \\
+Remarks:
+\begin{itemize}
+  \item {\bf Future}:\\
+The `abstract future verb' is spelled out as the `futuro' or 
+`condicional' of the main verb in the deixis rules.
+  \item {\bf irrealis}:\\
+{\em Pudiera, podr\'{\i}a, deber\'{\i}a}
+ and {\em debiera} are regular irrealis forms in Spanish. 
+They are listed here because of the translation into English. They are made by 
+special deixis rules. Those for subjuntivo have not been written yet.\\
+In an adverbial irrealis clause with the conjunction {\em si} the subjuntivo 
+del pasado should be used. In main clauses the condicional is used, but in the 
+perfect tenses the subjuntivo del pasado also can be used.\\
+\begin{lxam}
+&&&Ik had het gedaan, als jij me geholpen had.\\
+&&&Lo habr\'{\i}a/hubiera hecho si me hubieras ayudado t\'{u}.
+\end{lxam}
+\item {\bf Hay que}:\\
+{\em Hay} is an impersonal verb. The basis  is the verb {\em haber} and the 
+rule Tyinsertion (+ filter) accounts for the insertion of {\em -y} in the 
+appropriate cases. We use this verb not only for the existential {\em hay}
+({\em  haberkey}) but also for the modal {\em hay que} ({\em haberque010key, 
+haberque120key}).
+It is assumed that {\em  haberque120} is a normal personal verb. A special
+rule (cf. Se-spelling rules: Thaberquesubjdel + filter) 
+check whether the subject of this verb
+equals a specific EMPTY-category, and if so it deletes
+ it. The structure is filtered
+out otherwise. The specific EMPTY is either the SE-empty-key, corresponding to 
+the Dutch {\em men}, or a special one
+which is mapped onto {\em  wij/we}, and which can occur only in this 
+construction, but for this case no rules have been written yet. (See also doc.\
+398 on Spanish SE). 
+\item {\bf Tense raising for epistemic modals}:\\
+The epistemic modals (possibility and necessity, thetavp 010) in Spanish have a 
+special characteristic: if their argument sentence has a {\em Pr\'{e}terito} 
+or {\em Imperfecto}, this tense is raised to the modal verb. This does not 
+hold for the {\em Perfecto}!\\
+So we have to translate:\\
+\begin{lxam}
+&&& Dat moet Jan gisteren geweest zijn
+\end{lxam}
+into\\
+\begin{lxam}
+\label{exam30}
+&&& Tuvo que ser Jan ayer
+\end{lxam}
+but\\
+\begin{lxam}
+&&& Ik kan hem verkeerd begrepen hebben
+\end{lxam}
+into\\
+\begin{lxam}
+&&& Puedo haberle comprendido mal
+\end{lxam}
+It has not been possible yet to implement this tense raising phenomenon , 
+because modal verbs only allow for infinite sentence arguments
+, in which case it is not possible anymore to see if it was an imperfective or 
+a perfective sentence because the attribute {\em aspecto} 
+already has been set to {\em 
+omegaaspecto} on behalf of the surface parser. We also assumed in Rosetta3 that 
+infinitives except for {\em hebben/zijn, have, haber} are temporally dependent, 
+so it will be impossible to have a present tense in the main sentence and a 
+past infinitive in the complement sentence. The only possibility seems to be to 
+derive (\ref{exam30}) from {\em Tiene que haber sido Jan ayer} by deleting {\em 
+haber}, giving {\em ser} an infinitive form and {\em tener} the Pret\'{e}rito.
+But now we never will derive an imperfecto, as {\em haber sido} should be 
+interpreted here as perfective. The question is whether that is necessary, because 
+this Imperfecto maybe has an habitual meaning and in Rosetta3 habituality
+has not been 
+accounted for yet. Because of the problematic status, the rules 
+for this kind of tense raising have not been written. 
+\end{itemize}
+\newpage
+\section{Translation of modal expressions}
+\label{trans}
+The following table contains the translation relations between the modal 
+expressions of Dutch, English and Spanish.\\
+
+\def\lra{$\leftrightarrow$}
+\def\ra{$\rightarrow$}
+\addtolength{\oddsidemargin}{-.5\oddsidemargin}
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+Topic       &  IL             & Args& Dutch       & English    & Spanish\\
+\hline
+\hline
+Volition    & m\_wilwantquerer2 & 120 &  \lra willen    &  \lra want      &  \lra querer\\
+\hline
+Ability     & m\_kancanpoder2   & 120 &  \lra kunnen    &  \lra can       &  \lra poder\\
+            &                  &     &                 &  \ra able       & \\
+            &                 & 120 & \lra zou kunnen  &  \lra could     &  \lra podr\'{\i}a\\ 
+            &                 &     &                  &                 & \lra pudiera\\
+\hline
+Obligation  & m\_moetmustdeber2 & 120 &  \lra moeten    &  \lra must      &  \lra deber\\
+            &                 &      &                 &  \lra have to   & \lra tener que\\
+            &                 &      &                 &  \ra obliged    & \lra hay que \\
+            &                 &      & \lra zou moeten & \lra should     & \lra deber\'{\i}a\\
+            &                 &      &                 &                 & \lra debiera\\
+            & m\_hoevenneeddeber2  & 120 &  \lra hoeven    &  \lra need (mod)&  \lra deber\\
+            &                     &     &                 &  \lra need(main)  &  \lra tener que\\
+\hline
+Possibility & m\_kancanpoder1   & 010 &  \lra kunnen    &  \lra can       &  \lra poder\\
+            &                  &     &                 &  \ra possible   & \\
+            &                  &     &                 &  \lra may      & \\
+            & m\_msmightquizas & 010 &  \lra misschien &  \lra may       & \lra quiz\'{a}(s)\\
+            &                  &     &                 &  \lra might     & \\
+            &                  &     & \lra zou kunnen & \lra could      & \lra podr\'{\i}a\\
+            &                  &      &                &                 & \lra pudiera\\
+\hline
+Necessity   & m\_moetmustdeber1 & 010 &  \lra moeten    &  \lra must      &  \lra deber\\
+            &                 &      &                 &  \lra have to   & \lra tener que\\
+            &                 &      &                 &  \ra necessary  & \lra hay que\\
+            &                 &      & \lra zou moeten & \lra should         & \lra deber\'{\i}a\\
+            &                 &      &                 &                 &\lra debiera\\
+            & m\_hoevenneeddeber1  & 010 &  \lra hoeven    &  \lra need (mod)& \lra deber\\
+            &                 &      &                 & \lra need(main)    & \lra hay que\\
+\hline
+Permission  & m\_mogencanpoder2 & 120 &  \lra mogen     &  \lra can       &  \lra poder\\
+            &                 &      &  \lra kunnen     &  \ra allowed    & \\
+            &                 &      &                 &  \lra may      & \\
+\hline
+Future      & m\_zalwillfuturo & 010 &  \lra zullen    &  \lra will      &  \lra futurobverbkey\\
+            &                 &      &                 & (shall)         & \\
+\hline
+Tendency?   & ??              & 010  &  \lra willen    &  ??              & ??\\
+\hline
+Concessive? & ??              & 010  &  \lra mogen     &  ??         & ??\\
+\hline
+Reported Sp. & ??             &      &  \lra zou       &  ??         & ??\\
+\hline
+Irrealis     & ??             & 010  &  \lra zou       & \lra would       & ??\\
+\hline
+Condition    & ??             & 010  &  \lra zou, o.v.t. &\lra would & \lra condicional\\
+\hline
+\end{tabular}
+\newpage
+The first column contains the modal topics. The second column contains the 
+IL-expression that consists of {\em m\_} + the Dutch, the English and the 
+Spanish expression + an indication of the number of arguments (1 or 2). In the 
+third column the thetavp is indicated. The fourth, the fifth and the sixth 
+column contain the Dutch, English and Spanish expressions respectively with an 
+indication of the translation relation direction into or from the interlingua.
+\begin{description}
+  \item[\lra] means that this word is to be translated both in generation and in analysis into the
+              ILkey that it corresponds with (the ILkey in the same or higher line).
+  \item[\ra] idem, only in generation
+\end{description}
+
+To the table above should be added in the future:\\
+
+\def\lra{$\leftrightarrow$}
+\def\ra{$\rightarrow$}
+\addtolength{\oddsidemargin}{-.5\oddsidemargin}
+\begin{tabular}{|l|l|l|l|l|l|}
+\hline
+audacity & m\_aV\_0001\_durf & 120 & \lra durven & \lra dare & \lra atreverse\\
+\hline
+?? & "m\_behoren1" & 010 & \lra behoren & ?? & \lra hay que\\
+   &              &     & \lra horen   &    &   \\
+   & "m\_behoren2" & 120 & \lra bhoren  & \lra should & \lra tener que\\
+   &              &     & \lra horen   & \lra to be to & \lra deber de\\
+   &              &     &              &             & \lra deber\\ 
+\hline
+\end{tabular}
+
+\section{Remarks}
+\label{remarks}
+\begin{description}
+  \item[hoeven,moeten] Originally {\em hoeven} was also translated into
+{\em  have to}. This has been dropped because we want to keep the difference in
+meaning between e.g. {\em  hij moet dit niet doen} vs. {\em  hij hoeft dit niet 
+te doen}, or  between e.g. {\em  Moet hij dit niet doen?} and {\em  Hoeft hij 
+dit niet te doen?}. For this reason {\em  hoeven} will be translated into
+{\em  need} (modal and main) only.\\
+In order to maintain isomorphy it is required to distinguish in Spanish two
+verbs {\em  deber}, one negatively polar, and one not. The reason for this 
+is the following. Suppose we would not distinguish these two verbs in Spanish.
+In that case the following mapping would be required (for modals expressing
+obligation):\\
+
+\begin{tabular}{|c|c|c|}
+\hline
+Dutch & Interlingua &Spanish\\
+\hline
+hoeven & hoevenneeddeber2 & deber2\\
+\hline
+moeten & moetenmustdeber2 & deber2\\
+\hline
+\end{tabular}
+\ \\
+
+If this mapping is assumed the following problem will arise. Suppose some
+Spanish sentence (e.g. {\em  Debe hacerlo})
+ contains the verb {\em deber} but no negation. This sentence
+will be accepted, and one possible IL-representation is a semantic derivation 
+tree containing the basic meaning {\em  hoevenneeddeber2}. This semantic 
+derivation tree will now be translated into Dutch, yielding a syntactic 
+derivation tree containing the basic expression {\em  hoeven}. This syntactic
+derivation tree, however, does not yield any Dutch expression, because it 
+contains the verb {\em  hoeven}, but no negation at all( cf. * {\em  hij hoeft 
+het te doen}). In this situation 
+there is no isomorphy. Distinguishing two verbs {\em  deber}, one which is
+negatively polar and translates into Dutch {\em hoeven}, and one which
+is not negatively polar and translates into Dutch {\em  moeten} solves this
+situation. 
+An alternative would be to define polarity restrictions on IL-trees, but this
+will yield unnatural analysis of {\em  iemand} vs. {\em  someone} and {\em  
+anyone}.
+
+
+  \item[defective paradigm]:\\
+\begin{description}
+  \item[may, might] We translate {\em he might come}(Paste tense?) into 
+      {\em hij komt misschien} (Present Tense). We assume that {\em  misschien}
+translates into an abstract verb. This abstract verb is turned into {\em  may}
+or {\em  might}, depending on the deixis. If {\em  would} is present (e.g.
+{\em hij zou misschien komen}) this abstract verb is turned into {\em  might}, and
+{\em would} is deleted. This approach implies that {\em  hij kwam misschien} is 
+translated into {\em  he might come}. If someone has some idea why
+{\em  hij kwam misschien} sounds strange, we can perhaps exclude it.
+Because this case is still problematic, the special rules have not been written 
+yet.
+  \item[deixis] We can account for the difference between:
+{\em  Er had gedanst kunnen worden} vs. {\em *Er heeft gedanst kunnen worden}
+by assuming that the finite perfect tense of epistemic modal verbs cannot be formed, en
+by deriving {\em  Er had gedanst kunnen worden} from {\em  Er zou gedanst 
+hebben kunnen worden}, i.e. {\em  zou} + {\em  hebben/zijn} $\leftarrow$ 
+{\em  had, was}? (See below).\\
+But these conditions might be too restrictive, because it will then be 
+impossible to derive:\\
+\begin{lxam}
+&&& Hij heeft daar altijd goed kunnen dansen
+\end{lxam}
+which is a correct sentence for some people. Note that {\em kunnen} is a 
+two-place-verb here. 
+In the Dutch special past deixis rule 
+the perfect tense is not generated for modal verbs, but it is allowed in 
+analysis, cf for example:\\
+\begin{lxam}
+&&&Hij heeft daar gisteren goed kunnen dansen
+\end{lxam}
+In English the perfect tense for modal verbs is impossible. The Spanish case is 
+not clear yet. Because of these problems, the conditions have not been added to 
+the retro rules yet.\\
+
+Maybe these examples can be accounted for by assuming that {\em  kunnen} is
+in fact even more ambiguous. Suppose that two-place {\em  kunnen} is ambigous
+between {\em  in staat zijn} and (something like) 
+{\em  in staat gesteld worden}. Then, the generalization that
+epistemic modal {\em  kunnen}, meaning {\em  mogelijk zijn} cannot appear in
+perfect tenses can perhaps be maintained, though two-place {\em  kunnen}
+can appear in perfect tenses. The latter two examples would then be examples
+where the reading {\em  in staat gesteld worden} is possible, and this
+fact gives one the impression that epistemic {\em  kunnen} can occur here.
+Clearly, this requires further investigation.
+
+\end{description}
+
+  \item[Irrealis]:\\
+\begin{description}
+  \item[could, should] 
+We translate these into {\em  zou kunnen, zou moeten} and 
+{\em  podr\'{\i}a/pudiera, deber\'{\i}a/debiera} respectively, by a special 
+deixisrule that 
+introduces {\em zou} in Dutch, puts {\em  deber, poder} in the past future or 
+past subjuntivo in
+Spanish , and
+ turns {\em  can, must} into {\em  could, should} in English. These special
+deixisrules are RFinIrrmodaldeixis and RFinIrrmodalsuperdeixis.
+The subjuntivo variant in Spanish has not been written yet, because this also 
+depends on the treatment of irrealis conditional sentences.
+
+\item[zou +V] In main clauses {\em  zou} + V is rewritten as the past tense
+of V if this V is followed by more verbs, e.g. {\em  hij zou proberen te komen}
+is turned into {\em  hij probeerde te komen}. Perhaps this must be done if and 
+only if an irreal conditional sentence is present.
+
+In subordinate clauses (conditional only?) {\em  zou} + V is rewritten
+as the past tense of V. All this is optional. These transformations apply
+after the mood rules, but have not been written yet.
+\end{description}
+
+\item[modal + have]:\\
+{\em  hij had kunnen komen}, {\em  hij zou gekomen kunnen
+zijn}, {\em  hij zou hebben kunnen komen} will be accounted for in the 
+following way: {\em  Hij had kunnen komen} is considered to be variant of
+{\em  hij zou hebben kunnen komen}. This will be achieved by the rule 
+mentioned immediately above. 
+
+The sentences {\em  hij had kunnen komen} and {\em  hij zou gekomen kunnen zijn}
+are not considered to be paraphrases of each other, but both must be translated
+into English: {\em  he could have come}. For this purpose a special Retro rule
+(Rretrospec) has been
+ written in English that introduces {\em  have} before {\em  can} (which is
+normally not allowed, of course). The normal deixis rules apply, and after
+the deixis rules the combination of {\em  had} + {\em  can} is turned into
+{\em  could} + {\em  have} (provided no {\em  have} is present already). 
+Other combinations of {\em  have} ({\em  have, has}) + {\em  can} 
+are filtered out here. A similar story holds for {\em  have} + 
+{\em  must} (turned  into {\em  should have}) or
+{\em  have + may} (turned into {\em  might have}). This transformation and 
+filter are called Thavemodaladaptation and Fhavemodaladaptation and induce 
+lowering of bonus. They have not been tested yet.
+
+In a schema:
+
+\begin{tabular}{|l|l|l|}
+\hline
+DUTCH                  & ENGLISH\\
+\hline
+hij had kunnen komen   & he would have been able  to come\\
+                       & it would have been possible for him to come\\
+                       & he could have come \\
+                       &  (from: {\em he had can come})\\
+hij zou gekomen kunnen zijn & he could have come\\
+hij zou hebben kunnen komen & he would have been able to come\\
+                            & it would have been possible for him to come\\
+\hline
+\end{tabular}
+
+\end{description}
+
+\section{Special Rules}
+\label{special}
+
+The rules that have been written are:\\
+
+\begin{tabular}{|l|l|l|}
+\hline
+languages & rule & tested\\
+\hline
+all       & RFinIrrmodaldeixis & no\\
+          & RFinIrrmodalsuperdeixis & no\\
+Dutch     & TModalswitch1        & yes\\
+          & Tgaandeletion        & yes\\
+English   & Rretrospec           & no\\
+          & Thavemodaladaptation & no\\
+          & Fhavemodaladaptation & no\\
+          & RmodalComplSentSubst1        & yes\\
+          & RmodalComplSentSubst2        & yes\\
+Spanish   & Rfinfutpresdeixis    & yes\\
+          & Rfinfutpressuperdeixis & yes\\
+          & Rfinfutpastdeixis      & yes\\
+          & Rfinfutpastsuperdeixis & yes\\
+          & Thaberquesubjdel       & no\\
+          & Fhaberquesubjdel       & no\\
+\hline
+\end{tabular}
+\ \\
+
+The rules that still have to be written:\\
+
+\begin{tabular}{|l|l|l|}
+\hline
+languages & rule & writer\\
+\hline
+all       & irrealis rules & Jan O.?\\
+Dutch     & zou + V $\rightarrow$ o.v.t. & Jan O.\\
+          & Perfect tense epistemic modals & Lisette\\
+          & transformations w.r.t. gaandeletion & Jan O.\\
+English   & may/might-problem  & Lisette\\
+          & Twillshall        & Margreet\\
+Spanish   & Subjuntivo modal irrealis deixis rules & Lisette\\
+          & Perfect tense epistemic modals & Lisette\\
+          & Tense-to-modal raising     & Lisette\\
+          & extension Tyinsertion      & Elly\\
+          & extension Fyinsertion      & Elly\\
+\hline
+\end{tabular}
+
+\section*{References}
+\begin{description}
+\item [] Neyt, A. (1984), {\em Modality}, in: EUROTRA REPORT ETL-4-NL/B. 
+\item [] Palmer, F.R. (1986), {\em Mood and Modality}, Cambridge University 
+Press, Cambridge.
+\item [] Quirk, R., S.\ Greenbaum, G.\ Leech and J.\ Svartik (1972),
+{\em A Grammar of Contemporary English}, Longman Group Ltd, Harlow, Essex.
+\item [] Slager, E. (1987), {\em Grammatica Spaans},  Prisma Pocket 
+2585, Spectrum BV, Utrecht.
+\item [] Geerts, J. W.\ Haeseryn, J.\ de Rooij en M.C.\ van den Toorn (red.)
+(1984), {\em Algemene Nederlandse Spraakkunst}, Wolters-Noordhoff bv., 
+Groningen. 
+\end{description}
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1 (RWR-102-RO-90#1-RO)}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

@@ -1,0 +1,940 @@
+R0198.tex
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{General}
+   \RosTitle{RESIDE proposal}
+   \RosAuthor{Jeroen Medema}
+   \RosDocNr{198}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Software, Jan Landsbergen}
+   \RosClearance{Project}
+   \RosKeywords{System, Development, Environment}
+   \MakeRosTitle
+
+\setlength{\parskip}{2mm}
+\setlength{\parindent}{0mm}
+
+\section{Introduction}
+This small report discusses motivation for, terminology and requirements of, 
+and a proposal for the extending of the current source management system RBS to 
+a real software developement environment.
+\subsection{Motivation}
+To cope with the many software (source) problems a large software project has, 
+a system development environment is needed to control these problems. Within 
+the Rosetta project, RBS was built for this reason. However, although RBS isn't 
+complete yet, it performs less than sufficient and takes to much time for it.
+Also, RBS only covers parts of an environment as needed. Therefore, a new 
+environment is needed.
+\subsection{Terminology}
+Definitions of used terms:
+\begin{itemize} 
+  \item {\bf system:} the total of systems which are developed (and/or 
+        generated).
+  \item {\bf source:} part of system (generated or hand-written) in a language 
+        supported by the environment.
+  \item {\bf genuine source:} hand-written source (e.g. program-module, 
+        m-rule file, etcetera).
+  \item {\bf target:} out of source generated part of the system (which can be a 
+        source too!).
+  \item {\bf genuine target:} generated part of the system (which is not a 
+        source).
+  \item {\bf compiler:} automatic source(s) to target(s) converter.
+  \item {\bf environment:} the source development environment in which the 
+        system is developed.
+  \item {\bf root:} $\alpha$ is a root of $\beta$ when $\beta$ is dependent of 
+        $\alpha$ ($\beta$ uses one or more parts of the definition of $\alpha$,
+        either direct or indirect).
+\end{itemize}
+
+\section{Requirements}
+The requirements for a complete environment for Rosetta -or the succeeding 
+project- can be divided in three parts: general, source management, and 
+documentation management. These three parts have, however, certain links!
+\subsection{General}
+Most requirements mentioned below do hold for RBS. There are some (like 
+multilinguality) which are not as strictly defined in RBS as wanted.
+Also the user-friendlyness of RBS can be under discussion here.
+ \begin{itemize}
+   \item The environment should be multi-user. It should support the use 
+         by more than one user at the same time.
+   \item It should be multilingual (formal languages; user-definable). This
+         multilinguality applies for the sources. It should support the use of 
+         more of these defined languages at the same time.
+   \item Several software engineering principles should be supported. This
+         implies full support while editing sources and building targets and
+         probably support for testing, debugging, and interpretation. See, for 
+         example, \cite{som:se}.
+   \item It should have a main archive and user-archives all with a history to 
+         go back in time (to previous versions of sources). All these archives 
+         together should be consistent. Current systems for version control 
+         are, for example, CMS for VMS (\cite{dec:cms}) and RCS for UNIX 
+         (\cite{tich:rcs}), but these do not guarantee the consistency of the 
+         archives.
+   \item It should be extendable (e.g., adding formal languages).
+   \item With the aid of the knowledge in Rosetta, it should be possible here 
+         to generate better (clear and fine) messages (like ``There is 
+         one error.'' instead of ``There are 1 errors.'') in more languages -a 
+         multilingual system in more than one way- by storing the message 
+         parts as d-trees. This is more than only user-friendlyness, because, 
+         due to the complexity of the environment, there is a great variety of 
+         messages which can be given to the user. Further, these messages 
+         can be put together of parts of sentences (for which Rosetta certainly 
+         can be used).
+   \item The environment should be user-friendly, and, also after 
+         modifications, stay so.
+ \end{itemize}
+\subsection{Source Management}
+ The management of source can be divided into three parts: intramodule 
+ dependencies management, intermodule dependencies management and compilation 
+ dependencies management. The first two are, under RBS, checked. Only for the 
+ latter of the three RBS is the manager. For none of these three there are any
+ tools to help the user.
+ \begin{itemize}
+   \item Intramodule Dependencies\\
+    These dependencies within one module ought to be checked too. This are 
+    dependencies which, generally, can be detected by a source checker 
+    according to an attribute grammar for the language involved. There can be 
+    syntactical and semantical errors which both must be discovered. Nowadays, 
+    compilers are used for checking these kind of dependencies. Examples 
+    of intramodule dependencies are: used variables have to be declared, 
+    variables have to be initialized, etcetera.
+   \item Intermodule Dependencies\\
+    These dependencies consist of export- and import-lists of sources. This 
+    means, for example, that when changing a procedure interface, new 
+    inconsistencies should be detected and stored for retrieval by the user. 
+    The storing should be done by a kind of assistent of the user for aiding 
+    him/her, e.g., changing the dependent calls of the changed procedure. 
+    Therefore, 
+    dependencies between sources of the system should be detected and stored 
+    automatically. This, however, is only possible within languages which 
+    specify those dependencies. Sources in other languages should be supported 
+    by dependencies given by the user. When changing optional dependencies 
+    (like default parameters in Ada, any parameters in C) the user should only 
+    be {\em recommended}\/ changing the dependants as well. The help of the 
+    assistant to the user to make the system consistent, can be given in three 
+    ways:
+    \begin{itemize}
+      \item Execute no consistency checks (leave those to the compiler).
+            This means that the compiler is used for intermodule checking,
+            and code generation. This is the help one usually gets when 
+            developing software systems. 
+      \item Execute consistency checks, but don't make automatic 
+            modifications. That means: warn user when the system is not 
+            consistent but let the user make the system consistent (with, of 
+            course, the aid of the environment). When the user, for example, 
+            asks the environment to run program which, because of changed 
+            roots, ought to be remade, he should be warned. Here, the compiler 
+            is only a {\em code generator}\/ because the sources are 
+            ``correct''.
+      \item Make the system automatically (as so far as possible) consistent 
+            (Artificial Intelligence). When not possible, help the user as 
+            much as possible to make it consistent (see also previous item). 
+    \end{itemize}
+   \item Compilation Dependencies\\
+    These dependencies are needed when building a new target. It should be 
+    known (for efficiency reasons) which parts of the system should be compiled 
+    and which parts should not. When a root of a source is changed, the root 
+    and the source itself should be recompiled. Current programs that help 
+    achieving this building, are MMS for VMS (\cite{dec:mms} and Make for UNIX
+    (\cite{fel:make}). The requirements for compilation management are:
+    \begin{itemize} 
+      \item Several sources can be needed to make one target. For example, in a 
+            program one can have the need to use both the external modules for
+            files and windows management.
+      \item A source can be used to make more than one target. More programs 
+            can (and, generally, will) make use of the predefined general 
+            modules.
+      \item Dependencies may occur on a multilingual level (i.e. compilers may 
+            convert source in a target language which is supported by the 
+            environment).
+      \item Generating targets (e.g., executeables) of the system must be 
+            done automatically when needed (and, of course, when possible).
+            This according to the lazy evaluation method.
+      \item During the development of the system there is an increasing use of 
+            program generators (compilers). Because of that, files which first 
+            were genuine source may become a target of the system.
+      \item The above mentioned dependencies often can be formalized and 
+            checked. Sometimes update actions can be defined (some to be 
+            checked automatically, some to be checked by the users). This 
+            together can give a gradual change from source to target.
+    \end{itemize}
+ \end{itemize}
+\subsection{Documentation Management}
+ There are two kinds of documentation made during system development: source 
+ documentation which describes (genuine) sources and policy documentation which 
+ more or less gives motivation for chosen policy.
+ \begin{itemize}
+   \item {\bf Source Documentation}\\
+         Source documentation and sources should be 
+         coupled in a way; a source should be dependent of the documentation 
+         which describes it (but optional so only recommendations can be given).
+         A source should {\em not}\/ be compiled because of a documentation 
+         change. This kind of dependency is comparable with the optional 
+         dependencies within sources.
+
+         The best is to integrate both documentation and source totally in the 
+         environment. Then, special functions are needed to extract the text for
+         documents and to extract sources for the compilers.
+   \item {\bf Policy Documentation}\\
+         This can be managed the same way as under 
+         RBS: no link with the sources.
+ \end{itemize}
+\section{Inconsistenies And Recoveries}
+This section is made to make clear that there is quite a range of possible 
+recoveries of inconsistencies. This also depends on the kind of inconsistency:
+\begin{itemize}
+  \item {\bf Obliged} This are inconsistencies which have to be recovered. 
+        Examples are: missing declaration of used variable, type of actual 
+        parameter does not match formal parameter, etc. There are three ways 
+        the environment can take care of these inconsistencies:
+    \begin{enumerate}
+      \item The environment itself makes the system consistent. This is 
+            possible in cases like compulsary recompilation because of changed 
+            implementation of used source(s).
+      \item The environment gives hints to the user of how to deal with these
+            inconsistencies which the user can confirm. These can appear in 
+            cases like a forgotten variable declaration (one of the proposed 
+            actions: add variable at innermost declaration level).
+      \item The environment hasn't got the slightest idea how to deal with the
+            inconsistencies. This could be possible in cases where too much 
+            of them appear.
+    \end{enumerate}
+  \item {\bf Optional} This are inconsistencies which don't have to be 
+        recovered (at once). Examples are: missing default parameter, not 
+        needed recompilation because user wants to run unchanged target. There
+        are two ways the environment can react on these inconsitencies:
+    \begin{itemize}
+      \item Give the user hints to recover the consistency (which actually is
+            destroyed). Examples here are recompilation to targets which is 
+            actually not wanted by the user. 
+      \item Gives user hints how to react on these optional inconsistencies.
+            This is possible in cases like adding default parameters in Ada 
+            (one of the proposed actions: do nothing)
+    \end{itemize}
+\end{itemize}
+\section{Proposal}
+The previous mentioned requirements can be achieved by building a new system 
+from scratch (with the experience of RBS). It is, however, also possible to
+upgrade RBS (the current version) to a new system (named, e.g., RESIDE -- 
+Rosetta Extendable Source Integration Development Environment) by extending and 
+improving it. This can be done in several phases, for example, as described 
+below.
+\begin{itemize}
+  \item {\bf RESIDE1} Make RBS transferable to other operating systems and more 
+        efficient by programming it in either Modula-2, C, or Rosetta-Pascal 
+        (which is an {\em extension} of ISO-Pascal, so not recommended). Make 
+        it one integrated environment where only RESIDE commands can be entered.
+  \item {\bf RESIDE2} Develop own version of MMS or Make to control compilation 
+        dependencies (with, e.g., database). When possible (which depends of 
+        used language), generate compilation dependecies automatically.
+  \item {\bf RESIDE3} Make smarter compilation programs to minimize
+        recompilation. Here, the grain of compilation in, e.g., a programming 
+        language system can be reduced to procedure instead of module level.
+        There are two alternatives for implemention: 
+   \begin{enumerate}
+     \item {\bf Integrated Structure Editor}\\
+           examples of integrated structure editors can be found in 
+           \cite{acm:proc,bss:ipe}. What are the most important advantages of 
+           such a structure editor:
+       \begin{itemize}
+         \item During an edit-session parts of building a target are already 
+               executed. For example, the recompilation graph can be made while
+               editing. This can be done because in an editor there is time 
+               left for these actions. It is useful because it should not be 
+               allowed to edit and build targets at the same moment. Which 
+               means, the more time the build takes, the less time left for 
+               editing.
+         \item Consistency checks are made and stored during editing. This 
+               means that in the editor the consequences of a change can be 
+               viewed instantly. 
+         \item It enforces the user to program syntactical (and perhaps 
+               semantical) correct. This enforcement is given instantly. This 
+               means, because of better programs, less time for the 
+               editing-recompilation-linking cycle.
+       \end{itemize}
+           Of course, there are also several disadvantages using a structure 
+           editor. First, the user is conservative and is only used to use a 
+           screen editor. Secondly, an {\em integrated}\/ structure editor will 
+           take quite a lot of time to make.
+     \item {\bf Separate Check Programs}\\
+           examples of separate check programs can be found in \cite{acm:proc}.
+           What are the most important advantages of such separate check 
+           programs:
+       \begin{itemize}
+         \item They are not very difficult to write.
+         \item A screen editor can still be used.
+       \end{itemize}
+           Of course, there are also several disadvantages using separate check
+           programs. First, information about dependencies and inconsistencies 
+           should be retrieved 
+           after the editing session, which will give noticeable overhead. 
+           Secondly, messages will not be given instantly because of the 
+           checking afterwards.
+   \end{enumerate}
+  \item {\bf RESIDE4} Integrate sources and source documentation. Depending of 
+        the two alternatives of RESIDE3, there are two possibilities: 
+     \begin{enumerate}
+       \item Expand the structure editor with the following mechanism: in the 
+             editor the user should also be able to give a description of 
+             several statements. This is a kind of stepwise refinement and 
+             should be allowed nested.
+       \item It is more difficult to integrate source documentation and sources 
+             here. The possible solution is to make them both sources with 
+             optional dependency.
+     \end{enumerate}
+  \item {\bf RESIDE5} Use formal specifications as source documentation and to 
+         check several dependencies of source documentation and sources. When 
+         using formal specifications several aspects of programs can be checked 
+         when a documentation (specification) change occurs. This is, again, 
+         easiest to integrate when using a structure editor.
+\end{itemize}
+
+The parts of the environment implementation can be totally {\em integrated}\/ in
+one modular (object-oriented) system. That means, for example, for the user 
+that he/she always remains in an editor where every RESIDE command can be 
+entered (e.g. retrieval of documentation, editing sources, running targets). 
+This is like the DCL-level of RBS. 
+However, more convenient than with DCL, one really can edit the commands (or 
+add several). All the entered commands are remembered (it {\em is}\/ an editor) 
+until they are explicitly deleted (by means of an editor command). Execution of 
+statements is done by means of a special editor command. Within this operating 
+system level editor, modules in any defined language can be, for instance, 
+modified by calling their edit-method (object-oriented methodology) which 
+activates the appropriate program(s).
+
+\begin{thebibliography}{MMM99m}
+ \bibitem[ACM87]{acm:proc} {\bf Proceedings of the ACM SIGSOFT/SIGPLAN Software 
+  Engineering Symposium on Practical Software Development Environments}, {\em 
+  SIGPLAN Notices,}\/ Volume~22~No.~1, 1987.
+ \bibitem[BSS86]{bss:ipe} D.R.Barstow \& H.E.Shrobe \& E.Sandewall, 
+  {\bf Interactive Programming Environments}, {\em McGraw-Hill,}\/ 1986.
+ \bibitem[DEC84a]{dec:cms} {\bf Code Management System}, {\em Digital 
+  Equipment Company,}\/ Document No. AA-L372B-TE, 1984.
+ \bibitem[DEC84b]{dec:mms} {\bf Module Management System}, {\em Digital 
+  Equipment Company,}\/ Document No. AA-P119B-TE, 1984.
+ \bibitem[FEL79]{fel:make} S.I.Feldman, {\bf Make -- a program for maintaining 
+  computer programs}, {\em Software -- Practice and Experience,}\/ 1979.
+ \bibitem[SOM85]{som:se} I.Sommerville, {\bf Software Engineering}, 
+  International Computer Science Series, {\em Addison-Wesley,}\/ 1985.
+ \bibitem[TIC85]{tich:rcs} W.F.Tichy, {\bf RCS -- A System for Version Control},
+  {\em Software -- Practice and Experience,}\/ 1985.
+\end{thebibliography}
+
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.3 - released  feb-1987}
+% feb-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1987 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

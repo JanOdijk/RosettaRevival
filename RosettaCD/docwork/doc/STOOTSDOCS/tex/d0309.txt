@@ -1,0 +1,2384 @@
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.formalism}
+   \RosTitle{Formal Specification of the Rosetta3 Morphological components}
+   \RosAuthor{Joep Rous}
+   \RosDocNr{309}
+   \RosDate{June 6, 1989}
+   \RosStatus{concept}
+   \RosSupersedes{210}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Morphology, segmentation, dictionary}
+   \MakeRosTitle
+\section{ Preface}
+In this paper I will give a specification of the theoretical definitions
+of the morphological components of the Rosetta3 system (A-MORPH and G-MORPH).
+The description of
+the Rosetta2 morphological components has served as a starting point for
+the design of the Rosetta3 components. For this reason parts of 
+document R0008 have been copied wherever possible. On a global level the 
+strategy during
+morphological analysis and generation remains the same. On a more detailed
+level, however, there are some major changes.
+
+Although I've  tried to write this paper in such a way 
+that it can be read independently from R008, I recommend reading document 
+R008 (on the Rosetta2 morphological components) first.
+
+The paper consists of five sections. Section 2 gives an
+informal introduction to the subject. Section 3 gives the formal
+definitions of the morphological components. In Section 4 is specified
+which kind of language specific information is needed for the the morphological
+components. In Section 5 some examples are given of different
+kinds of morphological rules. Finally, in Section 6 the problems 
+which Jan Landsbergen mentioned in chapter 3 of document R008 are discussed.
+
+The morphological components of Rosetta3 make use of several kinds of 
+morphological rules. For each of these rule types we have designed a specialized
+language. The definitions of these languages are outside the scope of this
+document, they will be given in a separate paper.
+
+\section{ Informal introduction}
+
+\subsection{ A simplified version of the morphological components}
+
+The morphological components have the task to define the relation between
+words (strings of symbols) and lexical S-trees. Because it is also the task
+of the morphological components to define what should be considered a word
+the matter is somewhat more complicated, but in this subsection I will
+neglect this complication.
+
+In this simplified version A-MORPH is applied to a string and delivers
+a set of lexical S-trees; G-MORPH is applied to a lexical S-tree and
+delivers a set of strings.
+
+A-MORPH and G-MORPH are - in principle - 
+each other's reverse. They are based on the same 
+- reversible - rules. I will first discuss the rules of A-MORPH, mainly
+by means of examples, and then G-MORPH will be discussed briefly.
+
+If we ignore complicating details, A-MORPH consists of three parts:
+\begin{enumerate}
+   \item segmentation phase
+   \item dictionary phase
+   \item W-parser phase
+\end{enumerate}
+The segmentation phase divides a word into a stem and - possibly - affixes.
+The dictionary gives for each stem the 
+corresponding S-tree(s). The W-parser combines the S-tree for the stem
+and the affixes to the lexical S-tree for the complete word.\\
+       
+{\bf Phase 1. Segmentation}\\
+
+The segmentation phase tries to apply segmentation rules to the input strings
+recursively and presents the results (including the original string) to the
+dictionary phase.
+A segmentation rule divides a string into a new string and an affix key.
+E.g. for the suffix "en" :
+\begin{verbatim}
+    "vertellen" --> "vertel" + SFKen
+\end{verbatim}
+The affix serves to indicate which kind of segmentation rules have been 
+applied. In principle there is a lot of freedom in
+choosing the set of affix keys. E.g. we may use one affix key
+for all "regular ways" of forming the infinitive, including both
+"vertel" - "vertellen" and "loop" - "lopen".
+The segmentation rules are applied in all possible ways to the input string
+and to the results of segmentation rules that have been applied already. The
+whole set of results, including the original input string, is sent to phase 2.
+
+The segmentation phase has in general an ambiguous result, e.g.:
+\begin{verbatim}
+    "vertellen" ---->"vertellen"
+                     "vertel" + SFKen
+\end{verbatim}
+Only after the tentative stems have been looked up in the dictionary it can
+be decided which segmentations are correct, in this example the second one.
+Other examples of the application of segmentation rules for the suffix "en":
+\begin{verbatim}
+    "aarzelen" --> "aarzel" + SFKen
+\end{verbatim}
+but also:
+\begin{verbatim}
+    "bevelen"  --> "beveel"  + SFKetoee
+    "aarzelen" --> "aarzeel" + SFKetoee
+\end{verbatim}
+
+{\bf Phase 2. Dictionary}\\
+
+The strings that are produced by the segmentation rules as possible stems
+(including the original string) are looked up in the dictionary. This is done
+in two steps.
+\begin{enumerate}
+   \item First the strings are looked up in AMDICT. AMDICT is the analytical 
+       morphological dictionary, which gives for each string a (possibly empty)
+       set of keys.
+ 
+   \item Next, these keys, are looked up in B-LEX, which gives for each key
+       the corresponding S-tree.
+\end{enumerate}
+
+{\bf ad 1.} Let us assume that AMDICT gives the following keys for the 
+above-mentioned examples:
+\begin{verbatim}
+    "vertel" --> K1
+    "aarzel" --> K2
+    "bevel"  --> K3
+    "beveel" --> K4
+    "aarzeel" --> *  (not in dictionary)
+\end{verbatim}
+The segmentation of "aarzelen" into "aarzeel" + "en" is rejected here,
+because there is no stem "aarzeel" in the dictionary.\\
+
+{\bf ad 2.} B-LEX gives for each key the corresponding basic S-tree.
+\begin{verbatim}
+    K1 --> BVERB{key: K1, form: stemform}
+    K2 --> BVERB{key: K2, form: stemform}
+    K3 --> BNOUN{key: K3, number: singular}
+    K4 --> BVERB{key: K4, form: stemform}
+\end{verbatim}
+So, one of the results of applying the dictionary phase to the 
+beforementioned examples is:
+\begin{verbatim}
+        BVERB{key: K1, .....} + SFKen
+\end{verbatim}
+
+{\bf Phase 3. W-parser phase}\\
+
+The W-parser phase has the task to combine a segmented word to one S-tree:
+the lexical S-tree for that word. The result of the dictionary phase
+may already be a lexical S-tree, but otherwise rules ( to be called W-rules )
+have to be applied. They operate on the segmented string in
+which the stems are replaced by the corresponding basic S-trees. Only if
+the W-rules perform their task successfully, the original string
+is considered as a correct word.
+
+Example of the application of a W-rule:
+\begin{verbatim}
+BVERB{key:K1, form: stemform} + SFKen  ===>
+
+ VERB{...,form:inf,...} 
+\end{verbatim}
+ By means of this rule a lexical S-tree is constructed for one of the
+possible segmentations of "vertellen".
+
+
+G-MORPH is the mirror image of A-MORPH. Because in G-MORPH the dictionary
+information is available right from the start (in the lexical S-tree to
+which G-MORPH is applied), G-MORPH can operate in practice in 
+a more deterministic way than A-MORPH. (there may be ambiguities, but false
+paths are rare)
+The three phases of G-MORPH are:
+\begin{enumerate}
+   \item. W-generator phase. The lexical S-tree is converted into rows
+of basic S-trees, affixes by means of generative
+W-rules.
+  \item. The string corresponding to the basic S-tree is looked up in the
+dictionary. As the key of the basic S-tree is already in the S-tree itself,
+only the transition from key to string requires an explicit look-up, 
+in GMDICT (the generative morphological dictionary).
+  \item The generative segmentation rules join the stem and the affixes
+to one word.
+\end{enumerate}
+\begin{verbatim}
+Example:
+Phase 1.
+  VERB{key: K1, form: inf} ===>
+  BVERB{key: K1, form: stemform} + SFKen
+
+Phase 2.
+  K1 ===> "vertel"
+
+Phase 3.
+  "vertel" + SFKen ===> "vertellen"
+\end{verbatim}
+
+\newpage
+\subsection{ Complications}
+
+In subsection 1.1 I sketched the main parts of the morphological components.
+However there are a number of phenomena that require a refinement of this
+framework. I will sum up a number of complications here, in terms of A-MORPH.
+Always the mirror image of these cases can be found in G-MORPH.
+\begin{enumerate}
+\item A-MORPH is applied to a sequence of words. But an input sentence is a
+sequence of symbols, including spaces, carriage returns etc. Before words can
+be segmented it must be decided what the candidate words are. This is done
+in two steps by the so-called lay-out components. First the Sentence Layout
+Component generates a sequence of words from which spaces, TAB symbols, 
+and Carriage Return symbols are removed. Next, the Word Layout Component is
+applied to each individual word. A typical action performed by this component
+is a change from uppercase to lowercase of the first letter of the first word.
+It may also separate the "." character from the last word of the sentence.
+An example of the way the lay-out components may operate: 
+
+\begin{verbatim}
+        Sentence Layout Component:
+           "Ik loop."  ===>    "Ik" + "loop."
+
+        Word Layout Component:
+           "Ik" + "loop." ===> "Ik" + "loop" + "."
+                               "Ik" + "loop." + "."
+                               "ik" + "loop."
+                               "ik" + "loop" + "."
+                               "ik" + "loop."+ "."
+\end{verbatim}
+
+("Ik" may have a capital either because "Ik" is a proper noun or 
+because "ik" is
+the beginning of the sentence; "loop." might be an abbreviation.)
+
+\item Sometimes a sequence of words must be considered to be one word.
+There is a special dictionary for this kind of idioms. (N.B. 
+In Rosetta3 various kinds of idioms are distinguished. Only one kind,
+idioms consisting of a fixed sequence of words and called "fixed
+idioms", is handled by the morphological components.)
+For example, the Sentence Layout Component gives:\\
+\begin{verbatim}
+          "op" + "en" + "top" 
+\end{verbatim}
+Next, the idiomatic dictionary tells that these three words should also be 
+treated as one word:\\
+\begin{verbatim}
+          "op" + "en" + "top" ===> "op en top"
+                                   "op" + "en" + "top"
+\end{verbatim}
+Notice that it is not necessary to use this idiomatic dictionary in the 
+generation component too. In generation application of the dictionary would 
+result in:
+\begin{verbatim}
+          "op en top" ===> "op" + "en" + "top"
+\end{verbatim}
+Next, the generative Sentence Layout Component would apply the reverse operation
+to this sequence of words, as follows:
+\begin{verbatim}
+          "op" + "en" + "top" ===> "op en top"
+\end{verbatim}
+\item Splitting. Sometimes a string that looks like one word, must be split up
+into two words.
+For example,\\
+ in Spanish: "d\'{a}melo" ===> "da" + GLUE + "me" + GLUE + "lo" \\
+ in Dutch: "weglopen"===> "weg" + GLUE + "lopen"\\
+The GLUE serves to retain the information that the words were glued together.
+In the syntactic component it will be checked whether this was correct.
+E.g.:  \\
+*"Je mag niet op de weglopen" \\
+"Je mag niet weglopen"\\
+
+\item Context conditions.
+Some words can have different forms, depending on the context.
+E.g., in English: "a" or "an".
+
+These phenomena are handled by making AMDICT more complex. Two types of
+information have been added to the dictionary. Phonetical information about
+the string and a condition which determines
+the (phonetical) context in which a string can occur.
+At the end of the segmentation phase it is checked whether the context 
+conditions are compatible with the phonetic information corresponding with
+the (right) neighbour strings.
+
+\item Phonetical rules.
+In the previous examples we have seen that "vertellen" is segmented as
+"vertel" + SFKen. The most feasible way to prevent segmentation 
+of the string "aarzellen" into "aarzel" + SFKen by the same rule is on
+the basis of phonetical information about the resulting word ("aarzel").
+E.g. the segmentation rule which transforms 
+"vertellen" into "vertel" + SFKen is only applicable if the result ("vertel")
+does not end on a 'sjwa' sound. Therefore the rule will not be applicable to 
+"aarzel" 
+because it has a 'sjwa' ending. However, in order to be able to perform these
+kind of checks, the phonetical information of the stems must be available
+in the MDICT dictionary.
+\end{enumerate}
+
+\section{ The morphological components}
+
+\subsection{ Overview. A-MORPH and G-MORPH.}
+
+The analytical morphological component (A-MORPH) has the task to convert a
+sentence into a sequence of lexical S-trees; more precisely: a set of
+such sequences (because of the possibility of ambiguities). The generative
+morphological component (G-MORPH) converts a sequence of lexical S-trees
+into a set of sentences. (The set T$_{L}$ of lexical S-trees is defined
+as the set of S-trees that belong to sequences that are accepted
+by G-MORPH, and therefore generated by A-MORPH. The set of syntactic
+categories of these lexical S-trees is called LEXCATS, a subset of SYNCATS).
+
+Each analytical dictionary, each set of segmentation rules and each set of
+W-rules has a generative counterpart. Only if these dictionaries and 
+rule sets in analysis and generation are each others reverse ( if they
+both satisfy the symmetry condition ), function G-MORPH will be the reverse of 
+AMORPH.
+
+A-MORPH and G-MORPH are respectively preceded and followed by a
+"lay-out component". This component does not belong to the formal system
+Rosetta3; it is concerned with writing conventions such as the way in
+which the words of a sentence are separated (spaces, punctuation marks,
+carriage returns). The lay-out component will be discussed in more detail in 
+subsection 3.2.2.
+
+Thanks to the lay-out component the input of A-MORPH is a 
+sequence of words
+\(    w_{1}, w_{2},\ldots , w_{n} \)
+where a word $w_{i}$ is a string without spaces or carriage returns. Note
+that in our notation the comma is a meta-symbol; it is used as a word 
+delimiter; a comma that belongs to the original sentence is treated as a word 
+$w_{i}$. \\
+The output of A-MORPH is a set of sequences of lexical S-trees
+    \( t_{1}, t_{2},\ldots, t_{m} \).  (NB: m may be different for different sequences)
+ 
+The input of G-MORPH is a sequence of lexical S-trees
+    \( t_{1}, t_{2}, \ldots , t_{m} \)
+The output of G-MORPH is a set of sequences of words, where each
+sequence has the form
+    \( w_{1}, w_{2}, . . . , w_{n}. \)
+
+N.B. What is to be considered a "word", may differ before and after
+application of a morphological component. There is no one-to-one
+mapping between the strings $w_{i}$ and the lexical S-trees $t_{i}$, because
+of fixed idiomatic expressions and splitting rules. If A-MORPH is applied to
+a sentence $w_{1}, \ldots , w_{n}$, the result may be a sequence of lexical
+S-trees $t_{1}, \ldots , t_{m}$ with m$<>$n.
+
+In mathematical terms, A-MORPH is a function from the set 
+of sequences of words to the set of
+sets of sequences of lexical S-trees. We will adopt the notational
+convention to characterize the range and the domain of a function by
+means of its "type": \\
+    A-MORPH: sequence of words $\rightarrow$ set of sequences of lexical S-trees.\\
+    G-MORPH: sequence of lexical S-trees $\rightarrow$  set of sequences of words.\\
+
+A-MORPH and G-MORPH are both defined in terms of three other functions.\\
+
+
+    A-SEGMENTATION: sequence of words $\rightarrow$  set of sequences of rows of 
+                                             segment keys\\
+    A-LEX: sequence of rows of segment keys $\rightarrow$  set of sequences of rows
+                                                   of segment S-trees\\
+    W-PARSER: sequence of rows of segment S-trees $\rightarrow$  set of sequences
+                                                      of lexical S-trees\\
+    W-GENERATOR: sequence of lexical S-trees $\rightarrow$  set of sequences of rows
+                                                   of segment S-trees\\
+    G-LEX: sequence of rows of segment S-trees $\rightarrow$  set of sequences of rows
+                                                   of segment keys\\
+    G-SEGMENTATION: sequence of rows of segment keys $\rightarrow$  set of sequences 
+                                                            of words\\
+
+
+There is no formal difference between a sequence and a row, but we will use
+the term sequence for lists of words or lists of other objects that correspond
+to words. The term row will be used here for lists of segments of words. 
+In sequences of words we will use the comma (,) as a separator, in rows of 
+segments the + sign will be the separator.
+A segment key is the key of a segment, e.g. the key of a word stem or the
+key of an affix. A segment S-tree is the S-tree corresponding to a segment 
+key.
+
+The definitions are as follows:
+
+\begin{tabbing}
+aaaaaaaaaaaaaa \= aaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-MORPH$(s)$ \> $=_{def}$ \> $\{ l \mid \exists r, q: r \in $A-SEGMENTATION$(s)$ \\
+  \> \>        $\wedge q \in $A-LEX$(r) \wedge l \in $W-PARSER$(q)  \}$ \\
+\end{tabbing}
+
+    Here $s$ : sequence of words without blanks, \\
+         $r$ : sequence of rows of segment keys,\\
+         $q$ : sequence of rows of segment S-trees, \\
+         $l$ : sequence of lexical S-trees. \\
+
+\begin{tabbing}
+aaaaaaaaaaaaaa \= aaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-MORPH$(l)$ \> $=_{def}$ \>  $\{ s \mid \exists r, q:  q \in $W-GENERATOR$(l)$ \\
+\> \> $\wedge r \in $G-LEX$(q) \wedge s \in $G-SEGMENTATION$(r) \}$ \\
+\end{tabbing}
+ 
+    Here $l$ : sequence of lexical S-trees, \\
+         $q$ : sequence of rows of segment S-trees, \\
+         $r$ : sequence of rows of segment keys, \\
+         
+
+{\bf An example}:\\
+s = "de","kersen" \\
+r = K$_{de}$, K$_{kers}$ + SFKregPlur\\
+q = ART$\{\ldots\}$, BNOUN$\{\ldots$ , getal:omegagetal, $\ldots\}$ + 
+    SFKCAT$\{$key: SFKen$\}$ \\
+l = ART$\{\ldots\}$, NOUN$\{\ldots$ , getal:meervoud, $\ldots\}$[$\ldots$]$\}$\\
+
+Note that the definitions of A-MORPH and G-MORPH are symmetric. If 
+A-SEGMENTATION and G-SEGMENTATION, A-LEX and G-LEX, W-PARSER and 
+W-GENERATOR are pairs of reverse functions, it follows immediately from the 
+definitions that A-MORPH and G-MORPH are each other's reverse.
+More precisely:\\
+{\bf If} \\
+$r\in $A-SEGMENTATION$(s) \longleftrightarrow s \in $G-SEGMENTATION$(r),$\\
+$q\in $A-LEX$(r) \longleftrightarrow  r \in $G-LEX$(q)$\\
+$l\in $W-PARSER$(q) \longleftrightarrow  q \in $W-GENERATOR$(l)$\\
+{\bf then}\\
+$l\in  $A-MORPH$(s) \longleftrightarrow  s \in $G-MORPH$(l)$\\
+
+In subsections 3.3 - 3.5 the newly introduced functions 
+will be defined. Here a brief overview is given
+
+\begin{description}
+\item[A-SEGMENTATION] applies word-layout rules, splitting rules and 
+segmentation rules to the words of the
+sentence, it looks up the remaining stems in the dictionary MDICT and
+replaces them by keys in the way this dictionary prescribes. It also
+takes context-conditions into account. The final result is a sequence
+ of segmented words, where each segmented word is a row 
+consisting of keys of stems and affixes. I will refer to these keys as 
+"segment keys".
+
+\item[G-SEGMENTATION] is applied to a sequence of rows of segment keys. First the 
+keys are replaced by strings, according to dictionary GMDICT. Then
+reverse segmentation rules and splitting rules are applied. The result is a 
+sequence of words.
+
+\item[A-LEX] replaces the segment keys by the S-trees they denote, according to
+dictionary B-LEX. Keys of affixes are also replaced by S-trees (N.B.: Because
+some of the affixes are only relevant within the morphological components,
+their correponding S-trees do not belong to the domain T of S-tree.
+These affixes are replaced by S-trees for the sake of normalization).
+I will use the term "segment S-trees" for all these S-trees.
+
+\item[G-LEX] replaces segment S-trees by segment 
+keys.
+
+\item[W-PARSER] tries to reduce 
+a row of segment S-trees to one lexical S-tree,
+by application of analytical W-rules.
+
+\item[W-GENERATOR] converts a lexical S-tree into a row of segment 
+S-trees (for stems and affixes) by application of generative W-rules. 
+\end{description}
+
+The functions have been described here as though they deliver
+one result, but in fact they all deliver a set of results. All functions
+may involve an ambiguity (more than one result) or act as a filter (an empty
+set of results). In Chapter 3 the precise definitions of the functions will 
+be given.
+
+N.B. The definitions given in this document are the theoretical definitions, 
+of the pure system, without additions for robustness.
+\newpage
+
+\subsection{ Layout and segmentation .}
+
+\subsubsection{ The outermost level.}
+
+On the outermost level the segmentation function A-SEGMENTATION is defined
+in terms of A-WLAYOUT and A-GLUE$^{+}$. A-SEGMENTATION applies A-WLAYOUT to
+each word of the input sequence. The result of this application is a set of
+word sequences (cf. 3.2.2.1). Next, A-GLUE$^{+}$ is applied to each sequence
+of words which corresponds with the complete sentence.
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+    A-SEGMENTATION$(s)$ \> \>$=_{def}$  \\
+\>$\{ <r_{1},\ldots ,r_{n}>\mid \exists s_{1},\ldots ,s_{n}, 
+       w_{1},\ldots ,w_{n}, F, L:$\\
+\> \>$w_{1},\ldots,w_{n} \in $FIXIDS$(s) \wedge$\\
+\> \>$(\forall i: 1\leq i\leq n: s_{i} \in $A-WLAYOUT$(w_{i},F(i,1),L(i,n))
+             \wedge$  \\
+\> \>$<r_{1},\ldots,r_{n}> \in $A-GLUE$^{+}(<s_{1},...,s_{n}>) \}$ \\
+\end{tabbing}
+
+    Here $s$  : sequence of words without blanks,\\
+         $s_{i}$ : sequence of words without blanks,\\
+         $r_{i}$ : row of segment keys,\\
+         $w_{i}$ : word without blanks,\\
+         $F$    : function that is TRUE if i=1 otherwise FALSE\\
+         $L$    : function that is TRUE if i=n otherwise FALSE\\
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+    G-SEGMENTATION$(r)$ \> \> $=_{def}$ \\ 
+\>$\{ s \mid \exists w_{1},\ldots,w_{n}, s_{1},\ldots,s_{n}, F, L :$\\
+\>\>$s = w_{1},\ldots,w_{n} \wedge$\\
+\>\>$(\forall i: 1\leq i\leq n: w_{i} \in $G-WLAYOUT$(s_{i},F(i,1),L(i,n))
+             \wedge$ \\
+\>\>$ <s_{1},\ldots,s_{n}> \in $G-GLUE$^{+}(r) \}$\\
+\end{tabbing}
+ 
+    Here $r$  : sequence of rows of segment keys,\\
+         $s_{i}$ : sequence of words without blanks,\\
+         $s$  : sequence of words,\\
+         $w_{i}$ : word\\
+         $F$    : function that is TRUE if i=1 otherwise FALSE\\
+         $L$    : function that is TRUE if i=n otherwise FALSE\\
+
+\subsubsection{ The lay-out components}
+
+In Rosetta3 we distinguish two lay-out components: the sentence lay-out
+component and the word lay-out component. The analytical and the generative 
+sentence lay-out component are outside the scope of
+Rosetta as a formal translation system because it is not possible, or not
+desirable to describe them with reversible rules. Examples are the handling
+of the spaces between the words, the carriage returns etc.. 
+In analysis we want to allow an arbitrary number of spaces between words, but 
+it makes no sense to generate an infinite set of translations only differing 
+in the number of spaces.
+In the word lay-out component reversible rules will never cause infinite sets.
+For this reason we could incorporate a formal definition of this function 
+on the description of the morphological components of Rosetta3.
+In practice, however, we don't want that each analytical word layout rule
+has a generative reverse counterpart because they would create superfluous
+ambiguities. Therefore, we will not give a complete formal specification 
+of the word layout components and restrict ourselves to the specification of the
+function interface ( cf. section 3.2.1, the definition of A-SEGMENTATION and 
+G-SEGMENTATION) together with an informal description of the components.
+
+\subsubsection{ The word lay-out components. A-WLAYOUT and G-WLAYOUT}
+The input for A-WLAYOUT is a word as it is typed, consisting of letters, 
+ciphers and punctuation marks but without spaces and carriage returns. By 
+means of application of lay-out rules the input string is being transformed 
+into a sequence of strings.
+In many cases a local ambiguity arises in the lay-out component. E.g., a
+period at the end of a word may indicate the end of the sentence, but the
+word may also be an abbreviation (or both!). Another example: the capital
+at the beginning of the sentence; the first word may be a word with a
+capital (a proper noun, or the English word "I") or not. 
+In most cases this ambiguity will be solved during the dictionary look-up in 
+A-MORPH.
+In the generative lay-out component the same phenomena are handled
+as in analysis. However, in order to avoid useless ambiguities during
+generation it may be desirable in some cases to give up the reversibility 
+requirement and to omit some generative rules.
+\newpage
+\subsubsection{ Overview. A-GLUE$^{+}$ and G-GLUE$^{+}$}
+
+In A-GLUE$^{+}$ three kinds of actions take place:
+\begin{enumerate}
+\item Glue rules try out whether the words can be split up into
+other words. If a glue rule is successful, the result is a pair of words
+separated by a GLUE marker. For example, in Spanish: \\
+    "damelo" $\Rightarrow$ "da" , GLUE, "me", GLUE, "lo"
+\item Segmentation rules divide each word into stems and affixes, represented
+by affix-keys. For example:\\
+    "lopen" $\Rightarrow$ "loop" + SFKen
+
+\item The stems are looked up in the dictionary MDICT (analytical
+ morphological
+dictionary) and if they are found they are replaced by the corresponding 
+triple(s) of key, context-condition and phonetical information.
+Note that for stems and affixes (both strings) the difference with keys is 
+relevant.
+Finally, this condition must be applied to the right context of the string.
+The right context is the phonetical information of the string to the right of 
+the string under consideration. 
+E.g., the context-conditions of the English "a" and "an"
+require respectively a consonant and a vowel in the right context.
+( The treatment of context-conditions is still a complicating factor in the
+morphological components, while on the other hand they are rarely used.)
+
+In G-GLUE$^{+}$ the same things happen 'in the reverse order'. The dictionary
+MDICT (generative morphological dictionary) 
+delivers for a key the corresponding string(s), with a context-condition and
+phonetical information. After this the generative versions of segmentation
+rules and splitting rules are applied. Finally, the context conditions are 
+applied to the generated context(s).
+
+The morphological functions as defined here always operate on one expression
+and give a set of results. One of the reasons that the implementation of
+the morphological components is complicated is, that it has been 
+tried to create
+and maintain efficient representations of these sets, in order to prevent
+that there are many duplicates of the same expressions to which the same 
+rules are applied many times. Note that the notion of right context in
+such a representation is a difficult one.
+
+A-GLUE$^{+}$ and G-GLUE$^{+}$ operate on the sentence as a whole. They are 
+defined
+in terms of functions A-GLUE and G-GLUE which operate on individual words.
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \= aaaaaaaaaaa\= \kill
+A-GLUE: $<$word$>$ $\rightarrow$ set of triples \> $<$sequence of rows of segment keys, \\
+                                  \> phon. info., context condition$>$ \\
+G-GLUE: $<$sequence of rows of segment keys$>$ $\rightarrow$ \>\> set of 
+triples \\
+\>\><word, phon. info., \\
+\>\>context condition$>$\\
+\end{tabbing}
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-GLUE$^{+}(<w_{1},\ldots,w_{n}>) =_{def}$\\ 
+\>$\{ <r_{1},\ldots,r_{n}> \mid \exists CC_{1},\ldots,CC_{n}, 
+                            f_{1},\ldots,f_{n} :$\\
+\>\>$(\forall i: 1\leq i\leq n: $"$r_{i}$ has the form W.{GLUE.W}" $\wedge$ \\
+\>\>$<r_{i}, f_{i}, CC_{i}> \in $A-GLUE$(w_{i}) ) \wedge$\\
+\>\>$(\forall i: 1\leq i\leq n-1: CC_{i}(f_{i+1}) ) \wedge$\\
+\>\>$CC_{n}($FONtrailer$)    \}$\\
+\end{tabbing}
+
+Here $w_{i}$ : word,\\
+     $r_{i}$ : row of segment keys,\\
+     $CC_{i}$: context condition,\\
+     $f_{i}$ : phonetic information.\\
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-GLUE$^{+}(r) =_{def}$\\
+\>$\{ <w_{1},\ldots,w_{n}> \mid \exists r_{1},\ldots,r_{n}:$\\
+\>\>$\exists CC_{1},\ldots,CC_{n}, f_{i},\ldots,f_{n}: $\\
+\>\>$r = r_{1},\ldots,r_{n} \wedge$\\
+\>\>$(\forall i: 1\leq i\leq  n: $"$r_{i}$ has the form W.{GLUE.W}" $\wedge$\\
+\>\>$<w_{i}, f_{i}, CC_{i}> in $G-GLUE$(r_{i}) ) \wedge $\\
+\>\>$(\forall i: 1\leq i\leq n-1: CC_{i}(f_{i+1})  ) \wedge $\\
+\>\>$CC_{n}($FONtrailer$)          \}$\\
+\end{tabbing}
+
+Here $r$  : sequence of rows of segment keys,\\
+     $CC_{i}$: context condition,\\
+     $w_{i}$ : word without blanks,\\
+     $r_{i}$ : row of segment keys,\\
+     $r$  : sequence of rows of segment keys,\\
+     $f_{i}$ : phonetic information\\
+
+
+It is obvious from these definitions that G-GLUE$^{+}$ is the reverse of 
+A-GLUE$^{+}$. In the Rosetta2 definitions this was not the case because the
+context conditions in analysis and generation were handled differently. The
+Rosetta2 formalism had to be altered at this point because we felt that
+context conditions are not conditions on a string but rather on phonetical 
+information of this string.
+A context condition $CC_{i}$ is a boolean function with one argument
+containing phonetical information. Notice
+that the last word of a sentence has no right context. Therefore the context
+condition of the last word is applied to the fixed phonetical information 
+marker "FONtrailer". Application of a context condition to FONtrailer will in 
+general yield the value "TRUE", unless the word under consideration may not 
+appear as the last word in a sentence.
+
+\subsubsection{ A-GLUE and G-GLUE.}
+
+The definition of this part of the system is completely different from the
+Rosetta2 definition. In the Rosetta3 proposal there are 3 kinds of glue
+rules:
+
+\begin{itemize}
+\item left glue (LGLUE) rules, used by the function A-LGLUE and G-LGLUE
+\item right glue (RGLUE) rules, used by the function A-RGLUE and G-RGLUE
+\item middle glue (MGLUE) rules, used by the function A-MGLUE 
+\end{itemize}
+
+The next section contains a description of the different rule types. The
+functions A-GLUE and G-GLUE are defined in terms of these functions as follows:
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-GLUE$(a) =_{def}$ \\ 
+\>$\{ <r, f, CC> \mid $ \\ 
+\>\>$\exists q_{1},...,q_{M}, f_{1},...,f_{M}, r_{1},...,r_{M} :$\\
+\>\>$<q_{1},...,q_{M}> \in ( $A-LGLUE$(a) + $A-RGLUE$(a) + $A-MGLUE$(a)) \wedge$ \\
+\>\>$(\forall i: 1\leq i\leq M-1: <r_{i}, f_{i}, CC_{0}> \in $A-LSEGM$(q_{i})) \wedge $\\
+\>\>$<r_{M}, f_{M}, CC> \in $A-LSEGM$(q_{M}) \wedge $ \\
+\>\>$r = r_{1},$GLUE$,\ldots ,$GLUE$,r_{M-1},$GLUE$,r_{M} \wedge $\\
+\>\>$f = f_{1} \} $ \\
+\>\\
+\>$ + $A-LSEGM$(a) $ 
+\end{tabbing}
+
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-GLUE$(r) =_{def}$ \\
+\>$\{ <a, f, CC> \mid $ \\ 
+\>\>$ \exists q_{1},...,q_{M}, f_{1},...,f_{M}, r_{1},...,r_{M}:$\\
+\>\>$a \in ($G-LGLUE$(M, <q_{1},...,q_{M}>) +$ \\
+\>\>\>G-RGLUE$(M, <q_{1},...,q_{M}>) + $ \\
+\>\>\>G-MGLUE$(M, <q_{1},...,q_{M}>)) \wedge $\\
+\>\>$(\forall i: 1\leq i\leq M-1: <q_{i}, f_{i}, CC_{0}> \in $G-LSEGM$(r_{i})) \wedge $ \\
+\>\>$<q_{M}, f_{M}, CC> \in $G-LSEGM$(r_{M}) \wedge $ \\ 
+\>\>$r = r_{1},$GLUE$,...,$GLUE$,r_{M-1},$GLUE$,r_{M}  \wedge $ \\
+\>\>$f = f_{1}      \}$ \\
+\>\\
+\>$          + $G-LSEGM$(r)$ \\
+\end{tabbing}
+
+Here $a$  : word,\\
+     $M$  : number,\\
+     $q_{i}$ : string,\\
+     $r_{i}$ : row of segment keys,\\
+     $r$  : sequence of rows of segment keys,\\
+     $CC, CC_{0}$ : context condition,\\
+     $f, f_{i}$ : phonetic information\\
+
+
+After application of the glue rules, A-GLUE applies A-LSEGM to the resulting
+string. A-GLUE requires that the context-conditions of all results of 
+A-LSEGM($q_{i}$) is $CC_{0}$, except for A-LSEGM($q_{M}$). $CC_{0}$ is the
+empty context condition which is in fact a constant function with the value
+"true". The context condition and the phonetical information of the final 
+result of A-GLUE are taken from the result of segmentation of the last
+word and the first word respectively.
+The GLUE is introduced by A-GLUE between the parts of a splitted word
+in order to have an indication in the subsequent components of the grammar 
+that a splitting rule has been applied.
+In generation the GLUE is created by the M-rules in order to indicate
+to the morphological component that a reverse glue rule must be applied.
+
+One of the major differences between the Rosetta2 and the Rosetta3 definition
+is the lack of recursion in the Rosetta3 version of A-GLUE and G-GLUE. In stead
+the "arity" of the glue rules may be more than 2. The reason for this is 
+entirely empirical. Some phenomena could not be described in one single
+two-place rule. Handling one phenomenon in more than one rule, however, seemed
+a bad solution. Consequently, we created the possibility to have n-place glue
+rules. The power of n-place glue rules appeared to be strong enough for
+the Rosetta3 languages and recursively applicable glue rules were no longer
+needed.
+
+\subsubsection{ The Glue Rules.}
+
+As mentioned before there are three types of glue rules: left, right and
+middle glue rules. The Rosetta3 rules are very simple compared to the
+Rosetta2 rules. The rules types are the same for analysis and generation.
+The interpretation, however, differs. A left glue rule is defined as 
+follows:
+\[
+ LGR_{i} =_{def} <M, q_{1},...,q_{M}, p>
+\]
+The analytical interpretation of the rule application $LGR_{i}(a)$ is as 
+follows:
+If a string $a$ is equal to string $p$ appended with a string $b$ then the 
+result of the application are the strings $q_{1},..,q_{M-1}$ together with the 
+string $q_{M}$ to which $b$ has been appended.
+
+The set of all analytical left glue rules is called A-LGLUE-TABLE. The 
+analytical left glue rules are interpreted and applied by means of the 
+function A-LGLUE.
+This function is defined as:
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-LGLUE$(a) =_{def} $ \\
+\>$\{ <a_{1},...,a_{M}> \mid\exists q_{1},...,q_{M}, p, b : $ \\
+\>\>$< M, q_{1},...,q_{M}, p > \in $A-LGLUE-TABLE$ \wedge $ \\
+\>\>$a_{M} = q_{M}\cdot b \wedge $ \\
+\>\>$a = p\cdot b \wedge $ \\
+\>\>$(\forall i: 1 \leq i \leq M-1: a_{i} = q_{i} ) \} $ \\
+\end{tabbing}
+
+Here $a, a_{i}, q_{i}, p, b$ : string,\\
+     $M$  : number\\
+
+In generation the rules are interpreted by means of the function G-LGLUE,
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-LGLUE$(<a_{1},...,a_{M}> ) =_{def} $ \\
+\>$\{ a \mid\exists q_{1},...,q_{M}, p, b : $ \\
+\>\>$< M, q_{1},...,q_{M}, p > \in $G-LGLUE-TABLE$ \wedge $ \\
+\>\>$a_{M} = q_{M}\cdot b \wedge $ \\
+\>\>$a = p\cdot b \wedge $ \\
+\>\>$(\forall i: 1 \leq i \leq M-1: a_{i} = q_{i} ) \} $ \\
+\end{tabbing}
+
+Here $a, a_{i}, q_{i}, p, b$ : string,\\
+     $M$  : number\\
+
+in which a rule application is to be interpreted as:
+If the sequence of input strings $a_{1},\ldots ,a_{M-1}$ is equal to 
+$q_{1},\ldots ,q_{M-1}$
+and if $a_{M}$ is equal to the concatenation of $q_{M}$ and an arbitrary 
+string $b$ then
+the result is the string $p$ to which $b$ has been appended.
+
+If the set of analytical rules A-LGLUE-TABLE is equal to the set of
+generative rules G-LGLUE-TABLE then it is obvious that A-LGLUE is the reverse
+of G-LGLUE. Notice furthermore that it is not necessary anymore for the rules 
+to obey a measure condition (R0008 page 17) and that the symmetry condition is
+always satisfied (if A-LGLUE-TABLE = G-LGLUE-TABLE) by the way A-LGLUE and 
+G-LGLUE are defined.
+
+Because the functions A-RGLUE, A-MGLUE, G-RGLUE and G-MGLUE are very similar
+to A-LGLUE and G-LGLUE, I will give just their definitions without any comment.
+
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-RGLUE$(a) =_{def} $ \\
+\>$\{ <a_{1},...,a_{M}> \mid \exists q_{1},...,q_{M}, p, b : $ \\
+\>\>$< M, q_{1},...,q_{M}, p > \in $A-RGLUE-TABLE$ \wedge $ \\
+\>\>$a_{1} = b\cdot q_{1} \wedge $ \\
+\>\>$a = b\cdot p \wedge $ \\
+\>\>$(\forall i: 2\leq i \leq M: a_{i} = q_{i} ) \}$ \\
+\end{tabbing}
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-MGLUE$(a) =_{def}  $ \\
+\>$\{ <a_{1},...,a_{M}> \mid < M, a_{1},...,a_{M}, a > \in $A-MGLUE-TABLE$ \}$  \\
+\end{tabbing}
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-RGLUE$(M, <a_{1},...,a_{M}> ) =_{def} $ \\
+\>$\{ a \mid\exists q_{1},...,q_{M}, p, b : $ \\
+\>\>$< M, q_{1},...,q_{M}, p > \in $G-RGLUE-TABLE$  \wedge $ \\
+\>\>$a_{1} = b\cdot q_{1} \wedge $ \\
+\>\>$a = b\cdot p \wedge $ \\
+\>\>$(\forall i: 2\leq i\leq M: a_{i} = q_{i} ) \} $ \\
+\end{tabbing}
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-MGLUE$(M, <a_{1},...,a_{M}> ) =_{def} $ \\
+\>$\{ a \mid < M, a_{1},...,a_{M}, a > \in $G-MGLUE-TABLE$ \} $ \\
+\end{tabbing}
+
+Here $a$  : word,\\
+     $M$  : number,\\
+     $a_{i}, q_{i}, p, b$ : string,\\
+
+
+
+\subsubsection{ Segmentation. A-SEGM and G-SEGM.}
+
+The task of the analytical segmentation is to transform a word (a string
+without spaces) into a segmented word (a row of keys of stems and affixes; we 
+will refer to them as segment keys) together with a context condition and
+phonetical information about the word. We will use the + as the
+separator between the segments.
+The task of the generative (reverse) segmentation is to transform a
+segmented word (more generally: a sequence of segment keys) into a string
+with its phonetical information and a right context condition.
+ 
+In the segmentation two kinds of segmentation rules are used: prefix
+rules and suffix rules. Prefix rules handle the prefixes,
+suffix rules handle the suffixes and the "internal changes"
+in words. 
+The set of analystical prefix and suffix rules rules is called A-RPREFIX-TABLE
+and A-RSUFFIX-TABLE respectively. The generative rules are called 
+G-RPREFIX-TABLE and G-RSUFFIX-TABLE.
+
+
+\subsubsection{ Prefix rules}
+
+A {\em prefix rule} is a 4-tuple consisting of strings $p$ and $q$,
+a prefix key PF-K and a phonetical rule FON.
+We write this as:  $<$ PF-K, $q$, $p$, FON $>$.
+In analysis the rule (being applied to string $x$) should be interpreted as 
+follows:
+String $p$ must be eliminated from the left part of string $x$ and 
+it must be replaced by the string $q$.  However, the rule is only successful if
+the phonetical information of the newly created string $y$ satisfies the
+phonetical rule FON. The prefix key serves to "remember" what kind of 
+prefix rule has been performed.
+
+In generation things are the other way round; first it is tested whether
+the phonetical information of the input string $y$ satisfies the phonetical 
+rule FON. After that, the string $q$ in the left part of the input string 
+must be replaced by string $p$.
+
+From the definition of the functions A-LSEGM and G-LSEGM which apply the 
+prefix rules it will follow that the Symmetry Condition can only be satisfied 
+if:
+
+            A-RPREFIX-TABLE = G-RPREFIX-TABLE
+
+
+\subsubsection{ Suffix rules}
+
+A {\em suffix rule} is a 4-tuple consisting of strings $p$ and $q$,
+a suffix key SF-K, a phonetical rule FON and a Context Condition.
+We write this as:  $<$ $q$, SF-K, $p$, FON, CC $>$.
+The interpretation of these rules is analogous to the interpretation of the 
+prefix rules, except for the fact that string $p$ ( c.q. $q$ ) 
+must match with the right part of the argument string.
+
+\subsubsection{ Some remarks}
+
+For reasons of clarity we will introduce the definition of the segmentation
+functions in two steps. In the first step we will use the prefix and suffix
+rules in a recursive way, that is, first all prefix rules are applied, on
+the results of this application again all prefix rules are applied etc.. If
+no prefix rules are applicable anymore, the suffix rules are applied in the 
+same way. It 
+will be obvious that in order to avoid infinite recursion the set of rules 
+must obey some measurement conditions. Another way to avoid infinite looping
+is to define an ordering on the set of rules. In the second step we will 
+introduce such an ordering in the formalism.
+
+\subsubsection{ The function A-LSEGM, Step 1.}
+
+A-LSEGM is a function from strings to segmented words. It is defined in 
+terms of:
+\begin{enumerate}
+\item segmentation rules
+\item composita rules
+\item the dictionary MDICT, which is a set of tuples of the form:
+     $<$ stem, stem-key, phon. info., context condition, entrytype $>$
+     More about this in section 2.4.1. 
+\end{enumerate}
+
+For efficiency reasons we have ordered the application 
+of prefix and suffix rules such that prefix rules are applied first.
+It is assumed that application of
+a prefix rule can never influence the applicability of a suffix rule,
+and vice versa. Under this assumption this ordering is not
+a real restriction, but only a way to avoid superfluous ambiguities.
+The complete ordering (forced by the way the functions are defined)
+is as follows:
+\begin{enumerate}
+\item prefix rules (in AL-SEGM),
+\item analysis of composite words (AM-SEGM),
+\item suffix rules (AR-SEGM),
+\item dictionary (AD-SEGM).
+\end{enumerate}
+
+{\bf Definition of A-LSEGM}
+
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-LSEGM$(a) =_{def} $ \\
+\>$\{ <r, f, CC> \mid $ \\
+\>\>$\exists a_{1}, f_{1}, r_{1}, b : $ \\
+\>\>$\exists < $PF-K$, q, p, $FON$ > \in $A-RPREFIX-TABLE$ : $ \\
+\>\>$a = p\cdot  b \wedge $ \\
+\>\>$a_{1} = q\cdot b \wedge $ \\
+\>\>$<r_{1}, f_{1}, CC> \in $A-LSEGM$(a_{1}) \wedge $ \\
+\>\>$r = $PF-K$ + r_{1} \wedge $ \\
+\>\>$\{f\} = $FON$(f_{1})          \}$ \\
+\>\\
+\>$+  A-MSEGM(a) $ \\
+\end{tabbing}
+
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-MSEGM$(a) =_{def} $ \\
+\>$\{ <r, f, CC> \mid $ \\ 
+\>\>$\exists a_{1}, a_{2}, f_{1}, f_{2}, r_{1}, r_{2} : $ \\
+\>\>$\exists$ an. comp. rule $<COMP^{an}, $COM-K$> \in $A-COMP-RULES$:$ \\
+\>\>$<a_{1}, a_{2}, $FON$> \in COMP^{an}(a) \wedge $ \\
+\>\>$<r_{1}, f_{1}, CC_{0}> \in $A-RSEGM$(a_{1}) \wedge $ \\
+\>\>$<r_{2}, f_{2}, CC> \in $A-LSEGM$(a_{2}) \wedge $ \\
+\>\>$PW(a_{1}) \wedge PWS(a_{2}) \wedge $ \\
+\>\>$r = r_{1} + $COM-K$ + r_{2} \wedge $ \\
+\>\>$\{f\} = $FON$(f_{1},f_{2})            \} $ \\
+\>\\
+\>$         +  $A-RSEGM$(a) $ \\
+\end{tabbing}
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-RSEGM$(a) =_{def} $ \\
+\>$\{ <r, f, CC> \mid $ \\ 
+\>\>$\exists a_{1}, f_{1}, r_{1}, b : $ \\
+\>\>$\exists < q, $SF-K$, p, $FON$ > \in $A-RSUFFIX-TABLE$ : $ \\
+\>\>$a = b\cdot p    \wedge $ \\
+\>\>$a_{1} = b\cdot q \wedge $ \\
+\>\>$<r_{1}, f_{1}, CC> \in $A-RSEGM$(a_{1}) \wedge $ \\
+\>\>$r = r_{1} + $SF-K$ \wedge $ \\
+\>\>$\{f\} = $FON$(f_{1})          \} $ \\
+\> \\
+\>$+  $A-DSEGM$(a) $ \\
+\end{tabbing}
+
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-DSEGM$(a) =_{def}  $ \\
+\>$\{ <r, f, CC> \mid \exists e: <a, r, f, CC, e> \in $MDICT$ \wedge $ \\
+\>\>$"An" \in e \} $ \\
+\end{tabbing}
+
+Here $a, a_{i}$  : string, \\
+     $q, p, b$: string,\\
+     $r, r_{i}$ : row of segment keys,\\
+     $CC$ : context condition,\\
+     $f, f_{i}$ : phonetic information\\
+     FON: phonetical condition,\\
+     SF-K : suffix key,\\
+     PF-K : prefix key\\
+     PW(a) is a test whether a string might be a word. It serves only for 
+     efficiency in the case that there are composita rules. In Dutch PW
+     might be: contains a vowel.
+
+Note that the order in which the segmentation rules are applied does not
+have to be the "logical" order, in contrast with the 
+application of the W-rules. This can be illustrated by an (unrealistic)
+example of the application of 
+A-LSEGM to a composite word:
+\begin{verbatim}
+    ontevredenheidsbetuigingen
+              |
+              | A-LSEGM
+              |
+    on + tevredenheidsbetuigingen
+              | 
+              | A-LSEGM, A-MSEGM
+              |
+         tevredenheids + betuigingen
+            |                  | 
+            | A-RSEGM          | A-LSEGM, A-MSEGM, A-RSEGM
+            |                  |
+        tevredenheid + s    betuiging + en
+            |                  |
+            | A-RSEGM          | A-RSEGM
+            |                  |
+     tevreden + heid         betuig + ing
+        |                      |
+        | A-RSEGM, A-DSEGM     | A-RSEGM, A-DSEGM
+        |                      |
+       K_{i}                     K_{j}
+\end{verbatim}
+
+{\bf Definition of G-LSEGM}
+
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-LSEGM$(r) =_{def} $ \\
+\>$\{ <a, f, CC> \mid $ \\
+\>\>$\exists a_{1}, f_{1}, r_{1}, b : $ \\
+\>\>$\exists <$PF-K$, q, p, $FON$> \in $G-RPREFIX-TABLE$ :$ \\
+\>\>$a = p\cdot b \wedge $ \\
+\>\>$a_{1} = q\cdot b \wedge $ \\
+\>\>$<a_{1}, f_{1}, CC> \in $G-LSEGM$(r_{1}) \wedge $ \\
+\>\>$r = $PF-K$ + r_{1}  \wedge $ \\
+\>\>$\{f\} = $FON$(f_{1})            \} $ \\
+\>\\
+\>$         +  $G-MSEGM$(r) $ \\
+\end{tabbing}
+
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-MSEGM$(r) =_{def} $ \\
+\>$\{ <a, f, CC> \mid $ \\
+\>\>$\exists a_{1}, a_{2}, f_{1}, f_{2}, r_{1}, r_{2} : $ \\
+\>\>$\exists gen. comp. rule <COMP^{gen}, $COM-K$> \in $G-COM-RULES$:$ \\
+\>\>$<a, $FON$> \in COMP^{gen}(a_{1},a_{2}) \wedge $ \\
+\>\>$<a_{1}, f_{1}, CC_{0}> \in $G-RSEGM$(r_{1}) \wedge $ \\
+\>\>$<a_{2}, f_{2}, CC> \in $G-LSEGM$(r_{2}) \wedge $ \\
+\>\>$PCWS(r_{1}) \wedge PWS(r_{2}) \wedge $ \\
+\>\>$r = r_{1} + $COM-K$ + r_{2}  \wedge $ \\
+\>\>$\{f\} = $FON$(f_{1},f_{2})        \} $ \\
+\>\\
+\>$         +  $G-RSEGM$(r)$ \\ 
+\end{tabbing}
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-RSEGM$(r) =_{def} $ \\
+\>$\{ <a, f, CC> \mid $ \\ 
+\>\>$\exists a_{1}, f_{1}, r_{1}, b  : $ \\
+\>\>$\exists <q, $SF-K$, p, $FON$> \in $G-RSUFFIX-TABLE$ : $ \\
+\>\>$a = b\cdot p \wedge $ \\
+\>\>$a_{1} = b\cdot q \wedge $ \\
+\>\>$<a_{1}, f_{1}, CC> \in $G-RSEGM$(r_{1}) \wedge $ \\
+\>\>$r = r_{1} + $SF-K$  \wedge $ \\
+\>\>$\{f\} = $FON$(f_{1})            \} $ \\
+\> \\
+\>$+  $G-DSEGM$(r) $ \\
+\end{tabbing}
+
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-DSEGM$(r) =_{def} $ \\
+\>$\{ <a, f, CC> \mid\exists e: <a, r, f, CC, e> \in $GMDICT$ \wedge $ \\
+\>\>$"gen" \in e \} $ \\
+\end{tabbing}
+
+Here $a, a_{i}  $: word, \\
+     $q, p, b$: string, \\
+     $r, r_{i} $: row of segment keys, \\
+     $CC$ : context condition, \\
+     $f, f_{i} $: phonetic information \\
+     FON: phonetical condition, \\
+     SF-K : suffix key,\\
+     PF-K : prefix key\\
+
+
+The condition PWS$(v_{1})$ in the definition of GM-SEGM tests whether 
+$v_{1}$ is a possible segmented word, for a non-composite word. Taking into
+account the context in which GM-SEGM is called, this condition is that
+$v_{1}$ must consist of one stem-key followed by a number of suffix keys.
+The condition PCWS$(v_{2})$ tests whether $v_{2}$ is a possible segmented
+word, for a composite or non-composite word. It is sufficient if PCWS
+tests whether $v_{2}$ begins with a stem-key or a prefix key.
+PWS and PCWS are not strictly necessary, but they improve the efficiency.
+Other possible efficiency measures are:
+\begin{itemize}
+\item G-LSEGM calls G-MSEGM only if v does not begin with a prefix key.
+\item G-RSEGM calls G-DSEGM only if v does not end with a suffix key.
+\end{itemize}
+
+\newpage
+\subsubsection{ The function A-LSEGM, Step 2.}
+
+In the informal introduction we already described that in the last phase
+of the analytical morphology , the W-parser phase, a segmented word is
+combined to an S-tree by applying W-rules. In fact the W-grammar
+defines a language over the alphabet consisting of all possible segment 
+S-trees. A sentence of this language therefore consists of a sequence
+of segment S-trees. Furthermore, each sequence of segment S-trees corresponds
+with one unique sequence of keys.
+Because the W-grammar ultimately defines what a correct lexical S-tree 
+is, A-LSEGM must be able to generate each sequence of keys 
+that is accepted by the W-grammar. By closely examining the W-rules
+it is possible to define a regular expression over the set of keys such 
+that the language defined by the W-grammar is a subset of the language
+defined by this regular expression ( apart from complications caused by 
+composita rules ). This regular expression is closely 
+related to the order in which the segmentation rules of A-LSEGM have to be 
+applied.
+Let us therefore compare the sentences of the W-grammar language
+with the sequences of segmentation rule applications. \\
+
+A sentence of the language defined by the W-grammar has the form: \\
+ PF-K$_{1}$,...,PF-K$_{n}$,Stem,SF-K$_{1}$,...,SF-K$_{n}$\\
+
+This sequence can be generated by the A-LSEGM component by means of the
+following rule sequence ( we use the affix key to identify a set of 
+segmentation rules ): \\
+ PF-K$_{1}$,...,PF-K$_{n}$,SF-K$_{n}$,...,SF-K$_{1}$,Stem\\
+ 
+It will be obvious that the regular expression that describes the 
+segmentation-rule sequences which generate correct key sequences can be 
+directly derived from the regular expression which describes the language
+defined by the W-grammar. This regular expression can be used in
+A-LSEGM not only to prevent infinite recursion but also to improve the 
+efficiency
+of the algorithm. For this purpose we use the ordering which is defined 
+by the regular expression on the set of keys. Each key in the regular
+expression has a uniquely defined set of successor keys. We define
+a function SUCC that gives for each key its set of successors. Furthermore,
+we define the function FIRST that gives the set of keys that can appear
+as leftmost key in the sentences of the W-grammar language. 
+Now, we can redefine the function A-GLUE and A-LSEGM as follows:
+
+{\bf Definition of A-GLUE: }
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-GLUE$(a) =_{def} $ \\ 
+\>$\{ <r, f, CC> \mid\exists q_{1},\ldots,q_{M}, f_{1},\ldots,f_{M}, r_{1},\ldots,r_{M} : $ \\
+\>\>$<q_{1},...,q_{M}> \in ( $A-LGLUE$(a) + $ \\
+\>\>\>A-RGLUE$(a) + $ \\
+\>\>\>A-MGLUE$(a)) \wedge $ \\
+\>\>$(\forall i: 1\leq i\leq M-1: <r_{i}, f_{i}, CC_{0}> \in $A-LSEGM$(q_{i}, $FIRST$)) \wedge $ \\
+\>\>$<r_{M}, f_{M}, CC> \in $A-LSEGM$(q_{M}) \wedge $ \\
+\>\>$r = r_{1},$GLUE$,\ldots,$GLUE$,r_{M-1},$GLUE$,r_{M}  \wedge $ \\
+\>\>$f = f_{1}   \} $ \\
+\> \\
+\>$+ $A-LSEGM$(a, $FIRST$) $ \\
+\end{tabbing}
+
+
+{\bf Definition of A-LSEGM: }
+
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-LSEGM$(a, S) =_{def} $ \\
+\>$\{ <r, f, CC> \mid $ \\
+\>\>$\exists a_{1}, f_{1}, r_{1}, b : $ \\
+\>\>$\exists < $PF-K$, q, p, $FON$ > \in $A-RPREFIX-TABLE$ :$ \\
+\>\>$a = p\cdot b \wedge $ \\
+\>\>$a_{1} = q\cdot b \wedge $ \\
+\>\>$<r_{1}, f_{1}, CC> \in $A-LSEGM$(a_{1}, $SUCC$($PF-K$)) \wedge $ \\
+\>\>$r = $PF-K$ + r_{1}  \wedge $ \\
+\>\>PF-K$ \in S \wedge $ \\
+\>\>$\{f\} = $FON$(f_{1})          \} $ \\
+\>\\
+\>$+  $A-MSEGM$(a, S) $ \\
+\end{tabbing}
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-MSEGM$(a, S) =_{def} $ \\
+\>$\{ <r, f, CC> \mid $ \\
+\>\>$\exists a_{1}, a_{2}, f_{1}, f_{2}, r_{1}, r_{2} : $ \\
+\>\>$\exists an. comp. rule <COMP^{an}, $COM-K$> \in $A-COMP-RULES$:$ \\
+\>\>$<a_{1}, a_{2}, $FON$> \in COMP^{an}(a) \wedge $ \\
+\>\>$<r_{1}, f_{1}, CC_{0}> \in $A-RSEGM$(a_{1}, $SUCC$($COM-K$)) \wedge $ \\
+\>\>$<r_{2}, f_{2}, CC> \in $A-LSEGM$(a_{2}, $FIRST$) \wedge $ \\
+\>\>$PW(a_{1}) \wedge PWS(a_{2}) \wedge $ \\
+\>\>$r = r_{1} + $COM-K$ + r_{2}  \wedge $ \\
+\>\>COM-K$ \in S \wedge $ \\
+\>\>$\{f\} = $FON$(f_{1},f_{2})             \} $ \\
+\>\\
+\>$+  $A-RSEGM$(a, S)$ \\
+\end{tabbing}
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-RSEGM$(a, S) =_{def} $ \\
+\>$\{ <r, f, CC> \mid $ \\
+\>\>$\exists a_{1}, f_{1}, r_{1}, b : $ \\
+\>\>$\exists < q, $SF-K$, p, $FON$ > \in $A-RSUFFIX-TABLE$ :$ \\
+\>\>$a = b\cdot p  \wedge $ \\
+\>\>$a_{1} = b\cdot q \wedge $ \\
+\>\>$<r_{1}, f_{1}, CC> \in $A-RSEGM$(a_{1}, $SUCC$($SF-K$)) \wedge $ \\
+\>\>$r = r_{1} + $SF-K$ \wedge $ \\
+\>\>$$SF-K$ \in S \wedge  $ \\
+\>\>$\{f\} = $FON$(f_{1})          \} $ \\
+\> \\
+\>$+  $A-DSEGM$(a, S) $ \\
+\end{tabbing}
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-DSEGM$(a, S) =_{def} $ \\
+\>$\{ <r, f, CC> \mid\exists <a, r, f, CC, e> \in $MDICT$ \wedge $ \\
+\>\>$"an" \in e \wedge  $ \\
+\>\>$S_{0} \in S \} $ \\
+\end{tabbing}
+
+Here $a, a_{i} $ : string,\\
+     $q, p, b$: string, \\
+     $r, r_{i} $: row of segment keys, \\
+     $CC$ : context condition,\\
+     $f, f_{i}$ : phonetic information,\\
+     FON: phonetical condition,\\
+     SF-K : suffix key\\
+     PF-K : prefix key\\
+     S    : set of affix keys\\
+     PW(a) is a test whether a string might be a word. It serves only for 
+     efficiency in the case that there are composita rules. In Dutch PW
+     might be: contains a vowel.\\
+     As an abbreviation of the specification in the regular expression of all 
+     possible stem keys, we use the key S$_{0}$, denoting that the following 
+     key should be a stem key. 
+
+
+Unfortunately, we did not get completely rid of the phantom of infinite
+recursion. The regular expression may contain sub-expressions of the form
+$\{$ E $\}$. Each sub-expression of this form must obey a measure condition, e.g.
+the rules of the expression E applied to an arbitrary string should deliver
+always a smaller string.
+Notice that the use of this regular expression does not alter the power of 
+the analytical morphological component as a whole, it still defines the same 
+lexical S-trees as it did before. The only reasons for introducing it are 
+infinite recursion and efficiency. Because we have no problems with infinite
+recursion in the generative segmentation component (each rule application
+diminishes the number of segments) we don't have to use the regular expression
+there too.
+\newpage
+\subsection{ A-LEX and G-LEX}
+
+The input of A-LEX is a sentence of which the words have been splitted and
+segmented, i.e. a sequence of which the elements are segmented words or GLUEs,
+where the segmented words consist of stem-keys and affix keys. The stem-keys
+need some extra explanation. In the previous chapters we saw that there are
+two dictionaries involved in the morphological components: MDICT and B-LEX.
+MDICT can be viewed as a set of tuples $<$stem, key,...$>$, BLEX is a set of
+tuples $<$key, S-tree$>$ where a key is the unique identification of the tuple. In
+Rosetta2 the key of an MDICT tuple corresponded with one tuple in BLEX. This 
+implies that MDICT contained several entries with the same stem with the
+same morphological behaviour. E.g. the verbs "lopen", "aflopen", "oplopen",
+etc. had distinct BLEX entries and therefore also distinct MDICT entries, 
+although these verbs had the same stem (namely "loop"). 
+This resulted in a number of ambiguities
+during the segmentation phase. In Rosetta3 we distinguish two kind of keys,
+we call the MDICT keys "fkeys" and the BLEX keys "skeys". Moreover there is
+a lexicon, SDICT, which defines the relation between fkeys ans skeys. This 
+lexicon
+is used for the translation of fkeys into skeys (during analysis) and
+vice versa ( during geneation). SDICT contains also a ( possibly empty )
+sequence of fkeys that
+have to be part of the sentence under consideration in order to make
+a meaningful translation from fkey to skey. This condition is only relevant
+during analysis, during generation the M-grammar guarantees that the
+condition is satisfied.
+The translation by ALEX of a sequence of fkeys into a sequence of 
+segment S-trees takes place in two steps, first a translation from fkey to
+skey and next a translation from skey to S-tree, as follows:
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-LEX$(r) =_{def} $ \\
+\>$\{ q \mid \exists r_{1}: $ \\
+\>\>$r_{1} \in $A-Fkey-To-Skey$(r, r) \wedge $ \\
+\>\>$q \in $A-Skey-To-Stree$(r_{1}) \} $ \\
+\end{tabbing}
+
+Here $q$ : sequence of rows of segment S-trees,\\
+     $r$ : sequence of rows of segment keys,\\
+     $r_{1}$ : sequence of rows of segment keys.\\
+
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-Fkey-To-Skey$(r, p) =_{def} $ \\
+\>$\{ q \mid\exists r_{1}, r_{2}, K, K_{1},...,K_{n}, k: $ \\
+\>\>$r = K, r_{1} \wedge $ \\
+\>\>$<K, K_{1},...,K_{n}, k> \in $SDICT$ \wedge $ \\
+\>\>$( \forall j: 1\leq j\leq n: $PRESENT$(p, K_{j}) ) \wedge $ \\
+\>\>\>$r_{2} \in $A-Fkey-To-Skey$(r_{1}, p>)  \wedge $ \\
+\>\>\>$q = k, r_{2} \} $ \\
+\> \\
+\>$+   \{ q \mid\exists K, K_{1},...,K_{n}, k: $ \\
+\>\>$r = K \wedge $ \\
+\>\>$<K, K_{1},...,K_{n}, k> \in $SDICT$ \wedge $ \\
+\>\>$( \forall j: 1\leq j\leq n: $PRESENT$(p, K_{j}) ) \wedge  $ \\
+\>\>$ q = k \}$ \\
+\end{tabbing}
+
+Here $q, r, p, r_{1}, r_{2}$ : sequence of rows of segment keys \\
+     $k, K, K_{1},...,K_{n}$ : keys \\
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-Skey-To-Stree$(r) =_{def} $ \\
+\>$\{ q \mid \exists v_{1},...,v_{n}, u_{1},...,u_{n} : $ \\
+\>\>$q = u_{1},...,u_{n} \wedge $ \\
+\>\>$( \forall i: 1\leq i\leq n: u_{i} = $A-WLEX$(v_{i}) ) \wedge $ \\
+\>\>$r = v_{1},...,v_{n} \} $ \\
+\end{tabbing}
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-WLEX$(v) =_{def} $ \\
+\>$\{ u \mid\exists k_{1},...,k_{n}, t_{1},...,t_{n} : $ \\
+\>\>$u = t_{1} +...+ t_{n} \wedge $ \\
+\>\>$( \forall i: 1\leq i\leq n: t_{i} = $A-KLEX$(k_{i}) ) \wedge $ \\
+\>\>$v = k_{1} +...+ k_{n} \} $ \\
+\end{tabbing}
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+A-KLEX$(k) =_{def} $ \\
+\>$\{ t \mid ( $BASIC-KEY$(k) \wedge  <k,t> \in $B-LEX$ ) \vee $ \\
+\>\>$( $PREFIX-KEY$(k) \wedge t = $PFCAT$\{$KEY$ = k\} ) \vee $ \\
+\>\>$( $SUFFIX-KEY$(k) \wedge t = $SFCAT$\{$KEY$ = k\} ) \vee $ \\
+\>\>$( $S-AFFIX-KEY$(k) \wedge <k,t> \in $B-LEX$ ) \vee $ \\
+\>\>$( $GLUE-KEY$(k) \wedge t = $GLUE$[] \} $ \\
+\end{tabbing}
+
+Here $q$  : sequence of rows of segment S-trees,\\
+     $u, u_{i}$ : row of segment S-trees,\\
+     $t, t_{i}$ : segment S-tree,\\
+     $k, k_{i}$ : segment key,\\
+     $v, v_{i}$ : row of segment keys,\\
+     $r$ : sequence of rows of segment keys.\\
+
+A-Skey-To-Stree translates sequences of rows of segment keys into 
+sequences of rows of
+segment S-trees. A-WLEX translates rows of segment keys into rows of
+segment S-trees and finally, A-KLEX translates segment keys into segment 
+S-trees. In A-KLEX four different kinds of keys are distinguished, of
+which basic and glue keys need no further explanation. The affix keys can be 
+divided into two classes: one class containing prefix keys and suffix keys and
+the other class containing s-affix keys. Prefix and suffix keys are only used 
+within the morphological components, whereas s-affix keys can also occur in the 
+syntactical components (e.g. derivational affixes). Consequently, s-affix keys
+must be looked up in B-LEX, whereas prefix keys and suffix keys correspond with 
+fixed S-trees that only differ with respect to the key attribute.
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-LEX$(q) =_{def} $ \\
+\>$\{ r \mid\exists r_{1}:  $ \\
+\>\>$r \in $G-Skey-To-Fkey$(r_{1}) \wedge $ \\
+\>\>$r_{1} \in $G-Stree-To-Skey$(q) \} $ \\
+\end{tabbing}
+
+Here $q$  : sequence of rows of segment S-trees, \\
+     $r$  : sequence of rows of segment keys,\\
+     $r_{1}$: sequence of rows of segment keys. \\
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-Sey-To-Fkey$(q) =_{def} $ \\
+\>$\{ r \mid\exists r_{1}, r_{2}, K, K_{1},...,K_{n}, k:$ \\
+\>\>$r = K, r_{1} \wedge $ \\
+\>\>$<K, K_{1},...,K_{n}, k> \in $SDICT$ \wedge $ \\
+\>\>$r_{1} \in $G-Skey-To-Fkey$(r_{2})  \wedge $ \\
+\>\>$q = k, r_{2} \} $ \\
+\> \\
+\>$+   \{ r \mid\exists K, K_{1},...,K_{n}, k: $ \\
+\>\>$r = K \wedge $ \\
+\>\>$<K, K_{1},...,K_{n}, k> \in $SDICT$ \wedge  $ \\
+\>\>$q = k \} $ \\
+\end{tabbing}
+
+Here $q, r, p, r_{1}, r_{2}$ : sequence of rows of segment keys \\
+     $k, K, K_{1},...,K_{n}$ : keys\\
+
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+G-Stree-To-Skey$(q) =_{def} $ \\
+\>$\{ r \mid\exists v_{1},...,v_{n}, u_{1},...,u_{n} : $ \\
+\>\>$q = u_{1},...,u_{n} \wedge  $ \\
+\>\>$( \forall i: 1\leq i\leq n: v_{i} = $G-WLEX$(u_{i}) ) \wedge $ \\
+\>\>$r = v_{1},...,v_{n} \} $ \\
+\> \\
+G-WLEX$(u) =_{def} $ \\
+\>$\{ v \mid\exists k_{1},...,k_{n}, t_{1},...,t_{n} : $ \\
+\>\>$u = t_{1} +...+ t_{n} \wedge $ \\
+\>\>$( \forall i: 1\leq i\leq n: k_{i} = $G-KLEX$(t_{i}) ) \wedge $ \\
+\>\>$v = k_{1} +...+ k_{n} \} $ \\
+\> \\
+G-KLEX$(t) =_{def} $ \\
+\>$\{ k \mid ( $BLEXCAT$(t) \wedge <k,t> \in $B-LEX$ ) \vee $ \\
+\>\>$( t = $PFCAT$\{$KEY$ = k\} ) \vee $ \\
+\>\>$( t = $SFCAT$\{$KEY$ = k\} ) \vee $ \\
+\>\>$( $S-AFFIXCAT$(t) \wedge <k,t> \in $B-LEX$ ) \vee $ \\
+\>\>\>$( t = $GLUE$[] \wedge $GLUE-KEY$(k)) \} $ \\
+\end{tabbing}
+
+Here $q$  : sequence of rows of segment S-trees,\\
+     $u, u_{i}$ : row of segment S-trees,\\
+     $t, t_{i}$ : segment S-tree,\\
+     $k, k_{i}$ : segment key,\\
+     $v, v_{i}$ : row of segment keys,\\
+     $r$  : sequence of rows of segment keys.\\
+
+\newpage
+
+\subsection{ W-PARSER and W-GENERATOR}
+ 
+W-PARSER is a function from sequences of rows of segment S-trees
+to sets of sequences of lexical S-trees.
+W-PARSER applies W-PARSER$^{-}$ to each row of segment S-trees in the
+input sequence. If
+W-PARSER$^{-}$ is applicable to a row, the result is a lexical S-tree, i.e.
+the row is considered a correct word.
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+W-PARSER$(v_{1},\ldots, v_{n}) =_{def}$ \\
+\>$\{ t_{1}, \ldots, t_{n} \mid\forall i: t_{i} \in $W-PARSER$^{-}(v_{i})\} $\\
+\end{tabbing}
+
+Here $v_{i}$ is a row of segment S-trees,\\
+ $t_{i}$ is an S-tree \\
+
+W-GENERATOR is a function from sequences of lexical S-trees to sequences
+of rows of segment S-trees.
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+W-GENERATOR$(t_{1},\ldots, t_{n}) =_{def} $ \\
+\>$\{ v_{1}, \ldots, v_{n} \mid\forall i: v_{i} \in $W-GENERATOR${-}(t_{i})\} $\\
+\end{tabbing} 
+
+W-PARSER$^{-}$ and W-GENERATOR$^{-}$ are defined in terms of analytical and 
+generative W- rules. In principle these are rather powerful rules, which 
+replace a
+row of segment S-trees by an S-tree (in analysis) or vice versa (in generation)
+.
+There is a one-to-one correspondence between analytical W-rules and
+generative W-rules. The corresponding rules should be each other's 
+reverse ( document R0119 gives a syntax description of the W-rule 
+notation ).
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+W-PARSER$^{-}(v) =_{def} $ \\
+\>$\{ u \mid\exists v_{1}, v_{2}, t_{1},\ldots,t_{m}, t: $ \\
+\>\>$\exists $an. W-rule$ LT^{an}: $ \\
+\>\>$v = v_{1} + t_{1} +\ldots + t_{m} + v_{2} \wedge $ \\
+\>\>$( $PREFIX-CAT$(t_{1}) \vee\neg $AFFIXCAT$(t_{1}) ) \wedge  $ \\
+\>\>$t \in LT^{an}(t_{1},...,t_{m}) \wedge  $ \\
+\>\>$u \in $W-PARSER$^{-}(<v_{1} + t + v_{2}>) \} $  \\
+\>\\
+\>$+ \{ v \mid $LEXCAT$(v) \} $ \\
+\end{tabbing}
+
+Here $v, v_{i}$ : row of segment S-trees, \\
+     $u, t, t_{i}$ : S-tree, \\
+     
+
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+W-GENERATOR$^{-}(u) =_{def}  $ \\
+\>$\{ v \mid\exists v_{1}, v_{2}, t_{1},...,t_{m}, t : $ \\
+\>\>$\exists $gen. W-rule $LT^{gen} : $ \\
+\>\>$u = v_{1} + t + v_{2}  \wedge  $ \\
+\>\>NON-AFFIXCAT$(t) \wedge $ \\
+\>\>$<t_{1},...,t_{m}> \in LT^{gen}(t) \wedge $ \\
+\>\>$v \in $W-GENERATOR$^{-}(<v_{1} + t_{1} +\ldots+ t_{m} + v_{2}>) \} $ \\
+\>\\
+\>$+ \{ u \mid\forall v_{1},v_{2},t: u=v_{1}+t+v_{2} \rightarrow ( $BLEXCAT$(t) \vee $ \\
+\>\>\>AFFIXCAT$(t) \vee $ \\
+\>\>\>GLUECAT$(t) )\} $ \\
+\end{tabbing}
+
+Here $v, v_{i} $: row of segment S-trees,\\
+     $u, t, t_{i}$ : S-tree,\\
+
+
+W-PARSER has a final condition: the row of segment S-trees must have
+been reduced to one S-tree with a category from LEXCATS. Other S-trees or 
+rows of S-trees are not allowed as a final result. In fact W-PARSER
+has also a pre-condition, viz. all segment S-trees of the first input sequence
+must have a category of BLEXCAT, AFFIXCAT or GLUECAT. This condition is not 
+explicitly stated here
+because this is guaranteed by the way A-LEX has been defined.
+
+As the definition shows, W-GENERATOR generates only sequences containing 
+S-trees with a category in BLEXCAT, AFFIXCAT or GLUECAT. The M-grammar should 
+guarantee that W-GENERATOR will only be applied to an S-tree with a category in 
+LEXCATS.
+
+In W-PARSER as well as W-GENERATOR infinite recursion must be avoided. This
+can be achieved by defining an adequate measure on rows of S-trees. For the
+current rules no explicit measures have been formulated, but this seems
+to be rather simple (e.g. a measure in terms of (i) the length of rows and
+(ii) categories of S-trees).
+
+\section{ Overview of morphological language-specific information.}
+
+\subsection{ Dictionaries}
+
+In theory the same morphological dictionaries can be used for both 
+analysis and generation. To make the definitions more general, however, I used 
+different names for the analytical and generative version of each dictionary.
+\begin{itemize}
+\item MDICT(morph. dictionary):  a set of 4-tuples $<$ a, K, CC, f, e$>$, where 
+       a is a string, K a key, CC a context condition, f is phonetical
+       information about the string and e is the entry type, indicating
+       whether the entry is present in AMDICT, GMDICT or in both.
+\item B-LEX (morphological lexicon): a set of pairs $<$ K, t $>$, where K is a 
+       key and t is an S-tree. 
+       B-LEX (basic lexicon) is in principle the same as the set B of basic
+       expressions, but now implemented as a set of pairs $<$ K, t $>$ in which 
+       K is the key of t, in such a way that it can be implemented efficiently
+       as a function from basic keys to basic expressions (e.g. ordered 
+       w.r.t. the keys). (Notice that there are words, e.g. particles or
+       reflexive pronouns, which must be represented in B-LEX as used in the
+       morphological component, but which are not really basic expressions 
+       and therefore not needed in the B-LEX used in the transfer components.
+       However, in transfer these extra entries do no harm; they are even
+       useful in some cases, for robustness reasons.)
+       For the reverse of the function B-LEX we do not need tables, as each
+       basic S-tree contains its own key.  
+\item  FIXED-IDLEX(idiom lexicon): a set of 
+       tuples of strings $<$ s$_{1}$, . . . , s$_{n}$ $>$, where each tuple corresponds
+       with an idiom and where s$_{1}$, . . . , s$_{n}$
+       are the words of the idiom.
+\item  SDICT: a set of triples $<$f, $<$k$_{1}$,...k$_{n}>$, b$>$, where f and b are the
+       corresponding fkey and bkey and where $<$k$_{1}$,...k$_{n}>$ specifies the
+       context in which a translation of f in to b may occur.
+\end{itemize}
+\subsection{ Morphological Rules}
+
+As I have pointed out before, G-MORPH and A-MORPH can only be each others
+reverse if the symmetry condition is satisfied by each rule. In some cases
+this implies that in analysis and generation, in principle, the same set of 
+rules can be used. In order to have a more general formalism, however, which 
+allows deviations from this symmetry condition, I have chosen different names 
+for the analytical and generative version of the rules.
+
+\begin{itemize}
+\item A-LGLUE-TABLE, G-LGLUE-TABLE, A-RGLUE-TABLE, G-RGLUE-TABLE 
+       (left and right glue rules): set op tuples of the form 
+        $<$M,q$_{1}$,...,q$_{M}$,p$>$, where M indicates that it is an M-ary 
+       rule and where q$_{1}$,...,q$_{M}$,p are strings. 
+\item A-MGLUE-TABLE, G-MGLUE-TABLE (middle glue rules): set of triples of the form 
+       $<$a$_{1}$,a$_{2}$,a$>$, where a$_{1}$, a$_{2}$ and a are strings. 
+\item A-RPREFIX-TABLE, G-RPREFIX-TABLE, (prefix rules): 
+       set of four-tuples $<$PF-K, q, p, FON$>$,
+       PF-K is a prefix key, q and p are strings and FON is the name of a 
+       phonetical condition.
+\item A-RSUFFIX-TABLE, G-RSUFFIX-TABLE, (suffix rules): 
+       set of five-tuples $<$PF-K, q, p, FON, CC$>$,
+       PF-K is a suffix key, q and p are strings, FON is the name of a 
+       phonetical condition and CC is the name of a context condition.
+\item A-COMP-RULES, G-COMP-RULES (composita rules): set of names of composita rules.
+\item A-W-RULES, G-W-RULES (W-rules): set of names of W-rules.
+\item FON-CONDITIONS: set of phonetical conditions.
+\item CC-CONDITIONS: set of context conditions.
+\end{itemize}
+\subsection{ Miscellaneous}
+
+Besides the dictionaries and the rules a number of language specific
+functions are needed.
+\begin{itemize}
+\item LEXCAT          : function from S-trees to truth-values, yields "true" if
+                   the argument S-tree has a lexical category.
+\item BLEXCAT         : function from S-trees to truth-values, yields "true" if
+                   the category of the argument S-tree can occur in B-LEX.
+\item S-AFFIXCAT      : function from S-trees to truth-values, yields "true" if
+                   the argument S-tree is an S-tree with a S-AFFIXCAT. 
+\end{itemize}
+\newpage
+\section{ Examples}
+\subsection{ Glue rules}
+
+-Example of a number of Dutch left glue rules:\\
+\begin{verbatim}
+aan       + * :: aan*;
+aaneen    + * :: aaneen*;      {aaneenschakelen}
+achter    + * :: achter*;      {achterhouden}
+achteraan + * :: achteraan*;   {achteraangaan}
+achterna  + * :: achterna*;    {achternalopen}
+achterom  + * :: achterom*;    {achteromkijken}
+achterop  + * :: achterop*;    {achteropkomen}
+achterover + * :: achterover*;  {achteroverdrukken}
+achteruit + * :: achteruit*;   {achteruitgaan}
+adem      + * :: adem*;        {ademhalen}
+ader      + * :: ader*;        {aderlaten}
+af        + * :: af*;
+auto      + * :: auto*;        {autorijden}
+\end{verbatim}
+
+\subsection{ Segmentation rules}
+\subsubsection{ Prefix rules}
+
+-Some Spanish prefix rules:\\
+\begin{verbatim}
+PFKanti    +    *  ::   anti* ;
+PFKex      +    *  ::   ex-* ;
+PFKhiper   +    *  ::   hiper* ;
+PFKpro     +    *  ::   pro-* ;
+PFKre      +    *  ::   re* ;
+PFKvice    +    *  ::   vice* ;
+\end{verbatim}
+\subsubsection{ Suffix rules}
+
+-A number of Dutch suffix rules:\\
+\begin{verbatim}
+*or  + SFKlat  :: *ores;   {conquistador, pastor, 
+                            quaestor, junior, imperator}
+*aur + SFKlat  :: *auri;   {centaur}
+*uur + SFKlat  :: *ures;   {censuur, paruur, cultuur
+                            (compare: sinecure, vacature)}
+*as  + SFKlat  :: *ates;   {civitas}
+*is  + SFKlat  :: *es;     {thesis, dosis, basis, crisis, 
+                            fortis, tenuis, arsis}
+*ns  + SFKlat  :: *ntia;   {presens, deponens, detergens}
+*os  + SFKlat  :: *oi;     {topos}
+*ps  + SFKlat  :: *pora;   {corps}
+*rs  + SFKlat  :: *rtes;   {pars}
+*us  + SFKlat  :: *i;      {cyclus, academicus, internuntius, 
+                            baccalaureus}
+\end{verbatim}
+
+\subsection{ W-rules}
+
+An example of the Dutch W-rule for 2th , 3th, 4th and 5th person 
+singular OTT. The "comp" part is used during analysis, the "decomp" part
+during generation.
+
+\begin{verbatim}
+VerbOttEnk2
+
+m1:   SUBVERB{SUBVERBrec1}
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}]
+
+comp:        
+   C: (SUBVERBrec1.conjclasses * [3,4,5,6,7,8,9,10,
+                                  11,12,13,15,16] 
+       <> [])
+       and (SFCATrec1.key = SFKt)
+   A: VERBrec1          := copysubverbtoverb(SUBVERBrec1);
+      VERBrec1.tijd     := ott;
+      VERBrec1.number   := singular;
+      VERBrec1.persons  := [2,3,4,5]
+
+decomp:      
+   C: (VERBrec1.conjclasses * [3,4,5,6,7,8,9,10,
+                               11,12,13,15,16] 
+       <> []) 
+       and (VERBrec1.tijd  = ott) and 
+       (VERBrec1.number = singular) and
+       ((2 in VERBrec1.persons) or (3 in VERBrec1.persons) or
+       (4 in VERBrec1.persons) or (5 in VERBrec1.persons))
+   A: SFCATrec1.key  := SFKt
+
+\end{verbatim}
+
+\section{ Discussion}
+
+In chapter 3 of document R0008 Jan Landsbergen discusses some problem areas
+of the Rosetta2 morphological components. The definition of the Rosetta3
+formalism offers a solution to some of these problem areas. In the next section
+I will discuss these problem areas in the same order as they occur in chapter 3
+of R0008.
+\begin{enumerate}
+\item In contrast to the design period of Rosetta2 there are now a number of
+linguists working in the project who have been frequently consulted during 
+the design of the Rosetta3 morphological components. This interaction, however,
+caused no dramatic changes in the global design of the components.
+
+\item The proposal of Koskenniemi(1983,1984) has been looked at very 
+superficially. His approach is based on a lexicon that contains phonological
+representations of stems together with their possible inflectional endings.
+Furthermore there are rules that relate the phonological form and the surface
+form to each other. In contrast to other work in morphology Koskenniemi's
+rules can act as analytical and as generative rules. The result of 
+Koskenniemi's morphological analysis is a sequence of stems and affixes 
+augmented with some features. This means that we only could replace the
+Rosetta3 segmentation component by the KIMMO system, we would still need a
+kind of W-parser component to build the lexical S-trees. Furthermore, the
+KIMMO system has severe problems in dealing with prefixes and with
+some cases in which a word can have several affixes.
+
+\item The interface choice between morphological components and  syntactic
+components does not affect the formalism as described in this
+document, because it is language independent. For Rosetta3, however, the
+linguists have chosen an interface which may contain non-terminal S-trees
+(cf. R0062).
+
+\item The W-rule notation developed for Rosetta3 is very similar to the 
+M-rule notation. In fact Rosetta3 W-rules look like simple M-rules. 
+The W-rules need to be more powerful than surface rules because they
+must be able to perform transformations on trees.
+
+\item The context conditions of Rosetta3 are applied to phonological information.
+This phonological information has been stored into the dictionary. 
+The Rosetta3 morphological formalism, however, has not exaggeratedly been 
+complicated
+by the presence of context conditions. One reason for this is that in
+contrast to Rosetta2 they are now treated in the same way both in analysis 
+and generation.
+The implementation of context conditions may still take
+some doing because context conditions establish a relation between a word
+and its right neighbour word, which makes an efficient implementation of
+a cartesian product very difficult.
+
+\item In Rosetta3 there is no difference between the treatment of regular
+and irregular words. There are segmentation rules which transform the 
+irregular form into the stem and a suffix key, e.g:
+\begin{verbatim}
+   zijn  + SFKis  :: is
+   zijn  + SFKwas :: was
+\end{verbatim}
+In this way the stems and the S-trees corresponding to the irregular word
+stems can be incorporated into the dictionaries M-DICT and B-LEX resp.. 
+Furthermore there is a W-rule which combines the S-trees for "zijn" and
+"SFKis" to one S-tree corresponding to "is".
+
+\item The Rosetta2 spelling markers have disappeared in the Rosetta3 formalism.
+This was made possible by the introduction of phonological rules. In Rosetta2
+the only information available during segmentation was string information. It
+therefore could not be checked during segmentation whether certain spelling
+rules had been applied rightly. A spelling marker served to remember the
+kind of spelling rule that had been applied. Not until the lextree phase it was
+possible to check whether the spelling rule had been applied rightly because
+there was more information available in the form of S-trees.
+Because the segmentation rules are able to check the phonetical information
+corresponding to the word they are applied to, some erroneous segmentations
+can already be detected in the segementation phase.
+
+\item During the design phase I have considered the allomorph approach as
+suggested in R0008 chapter 3. However, a number of disadvantages ( which are
+outside the scope of this document) made this approach unacceptable for the 
+Rosetta system.
+\end{enumerate} 
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1 (RWR-102-RO-90#1-RO)}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

@@ -1,0 +1,956 @@
+
+   \documentstyle{Rosetta}
+   \begin{document}
+      \RosTopic{formalism}
+      \RosTitle{Surface Rule Compiler}
+      \RosAuthor{Ren\'{e} Leermakers}
+      \RosDocNr{0164}
+      \RosDate{4-12-86}
+      \RosStatus{concept}
+      \RosSupersedes{-}
+      \RosDistribution{Project}
+      \RosClearance{Project}
+      \RosKeywords{Surface grammar, notation, compiler}
+      \MakeRosTitle
+\section{Introduction}
+In this section I describe the surface rule compiler. It was devised in order
+to enable the rule-writers to test the rules quickly. In a later stage, Carel
+will implement a more ambitious compiler. This will involve some minor changes
+of notation, as I had to deviate a little from the notation Carel proposed in
+his 'engineeral' thesis.
+
+The present compiler truly compiles only
+the rule regular expressions, and transduces the remaining part of the rule in
+a simple way.
+
+For rule-writers, the main part of this document is the example of section 2.
+Section 3 gives the basis grammar for the regular expressions of surface rules,
+section 4 lists the macros used in the condition/action parts of the rules and
+section 5 displays the output as it is generated from the rule of section 2.
+Lastly the last section gives the attribute grammar actually used in the
+compiler.
+\section{Syntax by Example}
+Because of the transducing part of the compiler, no complete syntax of the
+rule notation can be given. However, the next section contains a description
+that is as formal as possible. Here we give a sample input file, with a
+Rosetta2 surface rule that should contain all relevant features. The file is
+to be called SURFRULES.SUR.
+\begin{verbatim}
+
+%ENGLISH
+&
+
+%PPrule
+RegularExpression:
+  PP=[PREP/1].NP/2.{preporpart}
+  preporpart = PREP/4|PART/3
+ConditionsAndActions:
+  VAR moodvar::moodtype;
+      prepfound::BOOLEAN;
+      exppostpkey::baskeytype;
+      prepkeyvar::baskeytype;
+
+BEGIN
+<*
+ HINIT:BEGIN
+         moodvar:=omegamood;prepfound:=false;exppostpkey:=0;prepkeyvar:=0
+       END;
+ 1    :<*
+        LOCALCONDITION:%PREP.soort in [gewoneprep,splitprep]
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          SYNREL:=headrel;
+                          IF %PREP.soort=splitprep THEN exppostkey:=postpkey;
+                          prepkeyvar:=%PREP.key;
+                          prepfound:=TRUE
+                          END
+       *>
+ 2    :<*
+        LOCALCONDITION: (%NP.soort<>hetpro) AND
+                        (%NP.cases * [dative,accusative] <> [])
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         SYNREL:=objrel;
+                         moodvar:=%NP.mood
+                         END
+       *>
+ 3    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: prepfound AND (exppostpkey = %PART.key)
+                #ACTION: BEGIN
+                         SYNREL:=postpreprel
+                         END
+       *>
+ 4    :<*
+        LOCALCONDITION: (%PREP.soort=postprep)
+        GLOBAL: #CONDITION: not(prepfound)
+                #ACTION: BEGIN
+                         SYNREL:=headrel;
+                         prepkeyvar:=%PREP.key;
+                         prepfound:=true
+                         END
+       *>
+ HFINAL: #CONDITION: prepfound
+         #ACTION: BEGIN
+                  MAKET_PP;
+                  IF moodvar <> omegamood THEN $PP.mood:=moodvar
+                      ELSE $PP.mood:=omegamood;
+                  $PP.advsoort:=anderevar;
+                  $PP.prepkey:=prepkeyvar;
+                  $PP.tense:=omegatense
+                  END
+*>
+END;
+&
+\end{verbatim}
+Some comment is due. The if-then-else construct in the final action makes
+no sense, in this case. It is written to illustrate that the construct may
+be used in the final (or other, but this can always be avoided) action.
+
+The file SURFRULES.SUR has to start with the name of the language between the
+symbols '\%' and '\&'/. These symbols, when they are the first character of a
+line, also signal the beginning and the end of a surface rule.
+
+The attributes of categories appearing in the regular expression are prefixed
+by \%, followed by the category name, followed by a period. A new top node,
+with the category PP in the example, is created by the statement MAKET\_,
+followed by the category name. It attributes are referred to by prefixing them
+by \&, followed by the category name and a period.
+
+\section{Syntax grammar}
+The regular expression part of a rule satisfies a simple syntax, which
+is given here.
+\begin{verbatim}
+utt =rulename."RegularExpression:".ident.'='.graph.{helpgraph}.
+                                                   "ConditionsAndActions:"
+graph = concgraph.{"|".concgraph}
+concgraph = elementarygraph.{".".elementarygraph}
+elementarygraph = "(".graph.")" | "[".graph."]" | "{".graph."}" |
+                   ident | ident."/".number
+helpgraph = ident."=".graph
+number = '1'|'2'| .. |'99'
+\end{verbatim}
+\section{Compilation and transduction}
+In the translation of the conditions and actions, various macros are
+translated as follows:
+\begin{verbatim}
+LOCALCONDITION: -> loccond:assignstatus(
+GLOBAL: -> );globcond: BEGIN
+#CONDITION: -> assignstatus(
+#ACTION: -> );IF status THEN
+HFINAL: -> Hfinal: BEGIN
+*> -> END; END;
+<* -> CASE a OF {the first one} | CASE mode OF {the other ones}
+%'cat'. -> b^.ls^.'cat'field.
+$'cat'. -> top^.ls^.'cat'field.
+MAKET_'cat' -> MAKET_'cat'(top);addnewtop(top)
+:: -> :[STATIC]
+\end{verbatim}
+The translation of these macros takes place in the scanner module of the
+compiler.
+\section{Output files}
+Below I list the output files corresponding to the above rule, just to give an
+idea. Details will change in future of course. First the surface graph
+defining module, which represents the regular expression in binary form.
+\begin{verbatim}
+
+[INHERIT('GENERAL:listree','ENGLISH:lsdomaint','ENGLISH:maket'
+,'ENGLISH:copyt','GENERAL:surfrulesgraphs','ENGLISH:lsstree')]
+MODULE surfrulesgraphs;
+
+{rule:}
+{:PPrule}
+function preporpartgraph:psurfgraph;
+BEGIN
+preporpartgraph:=
+alt(atom(PREP,4),
+    atom(PART,3)
+    )
+END;
+procedure PPrulegraph(i:INTEGER);
+BEGIN
+prod(i,PP,
+    conc(opt(atom(PREP,1)
+            ),
+        conc(atom(NP,2),
+            star(preporpartgraph
+                )
+            )
+        )
+    )
+END;
+{:PPrule}
+[[GLOBAL] procedure SFG(i:INTEGER
+BEGIN
+CASE i OF
+  1:PPrulegraph(  1);
+END
+END;
+END.
+
+\end{verbatim}
+The condition/action parts are contained in another module. As it comes out
+of the compiler, lay-out is terrible, so I edited it somewhat.
+\begin{verbatim}
+
+[INHERIT('GENERAL:listree','ENGLISH:lsdomaint','ENGLISH:maket'
+,'ENGLISH:copyt','GENERAL:surfrules','ENGLISH:lsstree')]
+MODULE surfrules;
+PROCEDURE PPrule(a:nodeid;b:psnode;mode:surfrulemode);
+VAR moodvar:[STATIC]moodtype;
+prepfound:[STATIC]BOOLEAN;
+exppostpkey:[STATIC]baskeytype;
+prepkeyvar:[STATIC]baskeytype;
+BEGIN
+CASE a OF
+HINIT:BEGIN
+      moodvar:=omegamood;prepfound:=false;exppostpkey:=0;prepkeyvar:=0
+      END;
+1 :CASE mode OF
+     loccond:assignstatus(b^.ls^.PREPfield.soort in [gewoneprep,splitprep]
+   );globcond: BEGIN assignstatus( TRUE
+               );IF status THEN BEGIN
+               SYNREL:=headrel;
+               IF b^.ls^.PREPfield.soort=splitprep THEN exppostkey:=postpkey;
+               prepkeyvar:=b^.ls^.PREPfield.key;
+               prepfound:=TRUE
+               END
+               END;
+   END;
+2 :CASE mode OF
+     loccond:assignstatus( (b^.ls^.NPfield.soort<>hetpro) AND
+            (b^.ls^.NPfield.cases * [dative,accusative] <> [])
+   );globcond: BEGIN assignstatus( TRUE
+              );IF status THEN BEGIN
+              SYNREL:=objrel;
+              moodvar:=b^.ls^.NPfield.mood
+              END
+              END;
+   END;
+3 :CASE mode OF
+     loccond:assignstatus( TRUE
+   );globcond: BEGIN assignstatus( prepfound AND (exppostpkey = b^.ls^.PARTfield.key)
+              );IF status THEN BEGIN
+              SYNREL:=postpreprel
+              END
+              END;
+   END;
+4 :CASE mode OF
+     loccond:assignstatus( (b^.ls^.PREPfield.soort=postprep)
+   );globcond: BEGIN assignstatus( not(prepfound)
+             );IF status THEN BEGIN
+               SYNREL:=headrel;
+               prepkeyvar:=b^.ls^.PREPfield.key;
+               prepfound:=true
+               END
+               END;
+  END;
+Hfinal: BEGIN assignstatus( prepfound
+            );IF status THEN BEGIN
+              MAKET_PP(top);addnewtop(top);
+              IF moodvar <> omegamood THEN top^.ls^.PPfield.mood:=moodvar
+                ELSE top^.ls^.PPfield.mood:=omegamood;
+              top^.ls^.PPfield.advsoort:=anderevar;
+              top^.ls^.PPfield.prepkey:=prepkeyvar ;
+              top^.ls^.PPfield.tense:=omegatense
+              END
+        END;
+  END;
+END;
+[GLOBAL] procedure surfrule(rnr:INTEGER;a:nodeid;
+                           b:psnode;mode:surfrulemode);
+BEGIN
+CASE rnr OF
+  1:PPrule(a,b,mode);
+END
+END;
+END.
+
+\end{verbatim}
+\section{Attributed grammar}
+\begin{verbatim}
+1: utt = rulename/1.Regexp/1.ident/1.iscat/1.graph/1.{helpgraph/2}.CAs/1
+parameters:numofhelpgraphs:integer:0
+1:void
+2:local:true
+  global:numofhelpgraphs:=numofhelpgraphs+1;
+Hfinal:mkutt;numofhelpgraphs:=numofhelpgraphs
+
+2: graph = concgraph\2.{vertline\1.concgraph\2}
+parameters:numofconcgraphs:integer:0
+1:void
+2:local:true
+  global:numofconcgraphs:=numofconcgraphs+1;
+Hfinal:mkgraph;numofconcgraphs:=numofconcgraphs
+
+3: concgraph = elementarygraph\2.{dot\1.elementarygraph\2}
+parameters:numofelementarygraphs:integer:0
+1:void
+2:local:true
+  global:numofelementarygraphs:=numofelementarygraphs+1;
+Hfinal:mkgraph;numofelementarygraphs:=numofelementarygraphs
+
+4: elementarygraph = roundopen/2.graph/1.roundclose/1 |
+                  squareopen/3.graph/1.squareclose/1 |
+                  curlyopen/4.graph/1.curlyclose/1 |
+                   ident/5 | ident/1.slash/6.number/1
+parameters:graphtype:(enclosedgraph,optgraph,stargraph,helpgraphident,
+                                              atomgraph):atomgraph
+1:void
+2:local:true
+  global:graphtype:=enclosedgraph
+3:local:true
+  global:graphtype:=optgraph
+4:local:true
+  global:graphtype:=stargraph
+5:local:true
+  global:graphtype:=helpgraphident
+6:local:true
+  global:graphtype:=atomgraph
+Hfinal:mkelementarygraph;graphtype:=graphtype
+
+5: helpgraph = ident\2.iscat\1.graph\1
+parameters:str:string:''
+1:void
+2:local:true
+  global:str:=str
+Hfinal:mkhelpgraph;str:=str
+
+6: number = charstring/1
+1:local:checknumber(str)
+  global:true
+Hfinal:mknumber
+
+7: CAs = charstring/1
+1:local:checkCAs(str)
+  global:true
+Hfinal:mkCAs
+
+8: RegExp = charstring/1
+1:local:checkRegExp(str)
+  global:true
+Hfinal:mkRegExp
+
+9: ident = charstring/1
+parameters:str:string:''
+1:local:true
+  global:str:=str
+Hfinal:mkident;str:=str
+
+\end{verbatim}
+\end{document}
+
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.2 - released  SEP-1986}
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}}
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt}
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.}
+\def\theenumi{\arabic{enumi}}
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}}
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt
+\tabbingsep \labelsep
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth
+      \parfillskip -\@pnumwidth
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@
+   \hrule width .4\columnwidth
+   \kern .6\p@}
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil}
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}}
+      \if@twocolumn \twocolumn[\@maketitle]
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par}
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em}
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}}
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+     \begin{figure}[t]
+        \begin{picture}(405,100)(0,0)
+           \put(0,100){\line(1,0){404}}
+           \put(0,75){Project {\bf Rosetta}}
+           \put(93.5,75){:}
+           \put(108,75){Machine Translation}
+           \put(0,50){Topic}
+           \put(93.5,50){:}
+           \put(108,50){\@RosTopic}
+           \put(0,30){\line(1,0){404}}
+        \end{picture}
+     \end{figure}
+     \bigskip
+     \bigskip
+     \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+             \setlength{\labelwidth}{2.7cm}
+             \setlength{\topsep}{2cm}}
+        \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+        \item [{\rm Author \hfill :}] {\@RosAuthor}
+        \bigskip
+        \bigskip
+        \bigskip
+        \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+        \item [{\rm Date \hfill :}] {\@RosDate}
+        \item [{\rm Status \hfill :}] {\@RosStatus}
+        \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+        \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+        \item [{\rm Clearance \hfill :}] {\@RosClearance}
+        \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+     \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+     \begin{picture}(404,64)(0,0)
+        \put(0,64){\line(1,0){404}}
+        \put(0,-4){\line(1,0){404}}
+        \put(0,59){\line(1,0){42}}
+        \begin{small}
+        \put(3,48){\sf PHILIPS}
+        \end{small}
+        \put(0,23){\line(0,1){36}}
+        \put(42,23){\line(0,1){36}}
+        \put(21,23){\oval(42,42)[bl]}
+        \put(21,23){\oval(42,42)[br]}
+        \put(21,23){\circle{40}}
+        \put(4,33){\line(1,0){10}}
+        \put(9,28){\line(0,1){10}}
+        \put(9,36){\line(1,0){6}}
+        \put(12,33){\line(0,1){6}}
+        \put(29,13){\line(1,0){10}}
+        \put(34,8){\line(0,1){10}}
+        \put(28,10){\line(1,0){6}}
+        \put(31,7){\line(0,1){6}}
+
+        \put(1,21){\line(1,0){0.5}}
+        \put(1.5,21.3){\line(1,0){0.5}}
+        \put(2,21.6){\line(1,0){0.5}}
+        \put(2.5,21.9){\line(1,0){0.5}}
+        \put(3,22.1){\line(1,0){0.5}}
+        \put(3.5,22.3){\line(1,0){0.5}}
+        \put(4,22.5){\line(1,0){0.5}}
+        \put(4.5,22.7){\line(1,0){0.5}}
+        \put(5,22.8){\line(1,0){0.5}}
+        \put(5.5,22.9){\line(1,0){0.5}}
+        \put(6,23){\line(1,0){0.5}}
+        \put(6.5,22.9){\line(1,0){0.5}}
+        \put(7,22.8){\line(1,0){0.5}}
+        \put(7.5,22.7){\line(1,0){0.5}}
+        \put(8,22.5){\line(1,0){0.5}}
+        \put(8.5,22.3){\line(1,0){0.5}}
+        \put(9,22.1){\line(1,0){0.5}}
+        \put(9.5,21.9){\line(1,0){0.5}}
+        \put(10,21.6){\line(1,0){0.5}}
+        \put(10.5,21.3){\line(1,0){0.5}}
+
+        \put(1,23){\line(1,0){0.5}}
+        \put(1.5,23.3){\line(1,0){0.5}}
+        \put(2,23.6){\line(1,0){0.5}}
+        \put(2.5,23.9){\line(1,0){0.5}}
+        \put(3,24.1){\line(1,0){0.5}}
+        \put(3.5,24.3){\line(1,0){0.5}}
+        \put(4,24.5){\line(1,0){0.5}}
+        \put(4.5,24.7){\line(1,0){0.5}}
+        \put(5,24.8){\line(1,0){0.5}}
+        \put(5.5,24.9){\line(1,0){0.5}}
+        \put(6,25){\line(1,0){0.5}}
+        \put(6.5,24.9){\line(1,0){0.5}}
+        \put(7,24.8){\line(1,0){0.5}}
+        \put(7.5,24.7){\line(1,0){0.5}}
+        \put(8,24.5){\line(1,0){0.5}}
+        \put(8.5,24.3){\line(1,0){0.5}}
+        \put(9,24.1){\line(1,0){0.5}}
+        \put(9.5,23.9){\line(1,0){0.5}}
+        \put(10,23.6){\line(1,0){0.5}}
+        \put(10.5,23.3){\line(1,0){0.5}}
+
+        \put(1,25){\line(1,0){0.5}}
+        \put(1.5,25.3){\line(1,0){0.5}}
+        \put(2,25.6){\line(1,0){0.5}}
+        \put(2.5,25.9){\line(1,0){0.5}}
+        \put(3,26.1){\line(1,0){0.5}}
+        \put(3.5,26.3){\line(1,0){0.5}}
+        \put(4,26.5){\line(1,0){0.5}}
+        \put(4.5,26.7){\line(1,0){0.5}}
+        \put(5,26.8){\line(1,0){0.5}}
+        \put(5.5,26.9){\line(1,0){0.5}}
+        \put(6,27){\line(1,0){0.5}}
+        \put(6.5,26.9){\line(1,0){0.5}}
+        \put(7,26.8){\line(1,0){0.5}}
+        \put(7.5,26.7){\line(1,0){0.5}}
+        \put(8,26.5){\line(1,0){0.5}}
+        \put(8.5,26.3){\line(1,0){0.5}}
+        \put(9,26.1){\line(1,0){0.5}}
+        \put(9.5,25.9){\line(1,0){0.5}}
+        \put(10,25.6){\line(1,0){0.5}}
+        \put(10.5,25.3){\line(1,0){0.5}}
+
+        \put(11,21){\line(1,0){0.5}}
+        \put(11.5,20.7){\line(1,0){0.5}}
+        \put(12,20.4){\line(1,0){0.5}}
+        \put(12.5,20.1){\line(1,0){0.5}}
+        \put(13,19.9){\line(1,0){0.5}}
+        \put(13.5,19.7){\line(1,0){0.5}}
+        \put(14,19.5){\line(1,0){0.5}}
+        \put(14.5,19.3){\line(1,0){0.5}}
+        \put(15,19.2){\line(1,0){0.5}}
+        \put(15.5,19.1){\line(1,0){0.5}}
+        \put(16,19){\line(1,0){0.5}}
+        \put(16.5,19.1){\line(1,0){0.5}}
+        \put(17,19.2){\line(1,0){0.5}}
+        \put(17.5,19.3){\line(1,0){0.5}}
+        \put(18,19.5){\line(1,0){0.5}}
+        \put(18.5,19.7){\line(1,0){0.5}}
+        \put(19,19.9){\line(1,0){0.5}}
+        \put(19.5,20.1){\line(1,0){0.5}}
+        \put(20,20.4){\line(1,0){0.5}}
+        \put(20.5,20.7){\line(1,0){0.5}}
+
+        \put(11,23){\line(1,0){0.5}}
+        \put(11.5,22.7){\line(1,0){0.5}}
+        \put(12,22.4){\line(1,0){0.5}}
+        \put(12.5,22.1){\line(1,0){0.5}}
+        \put(13,21.9){\line(1,0){0.5}}
+        \put(13.5,21.7){\line(1,0){0.5}}
+        \put(14,21.5){\line(1,0){0.5}}
+        \put(14.5,21.3){\line(1,0){0.5}}
+        \put(15,21.2){\line(1,0){0.5}}
+        \put(15.5,21.1){\line(1,0){0.5}}
+        \put(16,21){\line(1,0){0.5}}
+        \put(16.5,21.1){\line(1,0){0.5}}
+        \put(17,21.2){\line(1,0){0.5}}
+        \put(17.5,21.3){\line(1,0){0.5}}
+        \put(18,21.5){\line(1,0){0.5}}
+        \put(18.5,21.7){\line(1,0){0.5}}
+        \put(19,21.9){\line(1,0){0.5}}
+        \put(19.5,22.1){\line(1,0){0.5}}
+        \put(20,22.4){\line(1,0){0.5}}
+        \put(20.5,22.7){\line(1,0){0.5}}
+
+        \put(11,25){\line(1,0){0.5}}
+        \put(11.5,24.7){\line(1,0){0.5}}
+        \put(12,24.4){\line(1,0){0.5}}
+        \put(12.5,24.1){\line(1,0){0.5}}
+        \put(13,23.9){\line(1,0){0.5}}
+        \put(13.5,23.7){\line(1,0){0.5}}
+        \put(14,23.5){\line(1,0){0.5}}
+        \put(14.5,23.3){\line(1,0){0.5}}
+        \put(15,23.2){\line(1,0){0.5}}
+        \put(15.5,23.1){\line(1,0){0.5}}
+        \put(16,23){\line(1,0){0.5}}
+        \put(16.5,23.1){\line(1,0){0.5}}
+        \put(17,23.2){\line(1,0){0.5}}
+        \put(17.5,23.3){\line(1,0){0.5}}
+        \put(18,23.5){\line(1,0){0.5}}
+        \put(18.5,23.7){\line(1,0){0.5}}
+        \put(19,23.9){\line(1,0){0.5}}
+        \put(19.5,24.1){\line(1,0){0.5}}
+        \put(20,24.4){\line(1,0){0.5}}
+        \put(20.5,24.7){\line(1,0){0.5}}
+
+        \put(21,21){\line(1,0){0.5}}
+        \put(21.5,21.3){\line(1,0){0.5}}
+        \put(22,21.6){\line(1,0){0.5}}
+        \put(22.5,21.9){\line(1,0){0.5}}
+        \put(23,22.1){\line(1,0){0.5}}
+        \put(23.5,22.3){\line(1,0){0.5}}
+        \put(24,22.5){\line(1,0){0.5}}
+        \put(24.5,22.7){\line(1,0){0.5}}
+        \put(25,22.8){\line(1,0){0.5}}
+        \put(25.5,23.9){\line(1,0){0.5}}
+        \put(26,23){\line(1,0){0.5}}
+        \put(26.5,22.9){\line(1,0){0.5}}
+        \put(27,22.8){\line(1,0){0.5}}
+        \put(27.5,22.7){\line(1,0){0.5}}
+        \put(28,22.5){\line(1,0){0.5}}
+        \put(28.5,22.3){\line(1,0){0.5}}
+        \put(29,22.1){\line(1,0){0.5}}
+        \put(29.5,21.9){\line(1,0){0.5}}
+        \put(30,21.6){\line(1,0){0.5}}
+        \put(30.5,21.3){\line(1,0){0.5}}
+
+        \put(21,23){\line(1,0){0.5}}
+        \put(21.5,23.3){\line(1,0){0.5}}
+        \put(22,23.6){\line(1,0){0.5}}
+        \put(22.5,23.9){\line(1,0){0.5}}
+        \put(23,24.1){\line(1,0){0.5}}
+        \put(23.5,24.3){\line(1,0){0.5}}
+        \put(24,24.5){\line(1,0){0.5}}
+        \put(24.5,24.7){\line(1,0){0.5}}
+        \put(25,24.8){\line(1,0){0.5}}
+        \put(25.5,24.9){\line(1,0){0.5}}
+        \put(26,25){\line(1,0){0.5}}
+        \put(26.5,24.9){\line(1,0){0.5}}
+        \put(27,24.8){\line(1,0){0.5}}
+        \put(27.5,24.7){\line(1,0){0.5}}
+        \put(28,24.5){\line(1,0){0.5}}
+        \put(28.5,24.3){\line(1,0){0.5}}
+        \put(29,24.1){\line(1,0){0.5}}
+        \put(29.5,23.9){\line(1,0){0.5}}
+        \put(30,23.6){\line(1,0){0.5}}
+        \put(30.5,23.3){\line(1,0){0.5}}
+
+        \put(21,25){\line(1,0){0.5}}
+        \put(21.5,25.3){\line(1,0){0.5}}
+        \put(22,25.6){\line(1,0){0.5}}
+        \put(22.5,25.9){\line(1,0){0.5}}
+        \put(23,26.1){\line(1,0){0.5}}
+        \put(23.5,26.3){\line(1,0){0.5}}
+        \put(24,26.5){\line(1,0){0.5}}
+        \put(24.5,26.7){\line(1,0){0.5}}
+        \put(25,26.8){\line(1,0){0.5}}
+        \put(25.5,26.9){\line(1,0){0.5}}
+        \put(26,27){\line(1,0){0.5}}
+        \put(26.5,26.9){\line(1,0){0.5}}
+        \put(27,26.8){\line(1,0){0.5}}
+        \put(27.5,26.7){\line(1,0){0.5}}
+        \put(28,26.5){\line(1,0){0.5}}
+        \put(28.5,26.3){\line(1,0){0.5}}
+        \put(29,26.1){\line(1,0){0.5}}
+        \put(29.5,25.9){\line(1,0){0.5}}
+        \put(30,25.6){\line(1,0){0.5}}
+        \put(30.5,25.3){\line(1,0){0.5}}
+
+        \put(31,21){\line(1,0){0.5}}
+        \put(31.5,20.7){\line(1,0){0.5}}
+        \put(32,20.4){\line(1,0){0.5}}
+        \put(32.5,20.1){\line(1,0){0.5}}
+        \put(33,19.9){\line(1,0){0.5}}
+        \put(33.5,19.7){\line(1,0){0.5}}
+        \put(34,19.5){\line(1,0){0.5}}
+        \put(34.5,19.3){\line(1,0){0.5}}
+        \put(35,19.2){\line(1,0){0.5}}
+        \put(35.5,19.1){\line(1,0){0.5}}
+        \put(36,19){\line(1,0){0.5}}
+        \put(36.5,19.1){\line(1,0){0.5}}
+        \put(37,19.2){\line(1,0){0.5}}
+        \put(37.5,19.3){\line(1,0){0.5}}
+        \put(38,19.5){\line(1,0){0.5}}
+        \put(38.5,19.7){\line(1,0){0.5}}
+        \put(39,19.9){\line(1,0){0.5}}
+        \put(39.5,20.1){\line(1,0){0.5}}
+        \put(40,20.4){\line(1,0){0.5}}
+        \put(40.5,20.7){\line(1,0){0.5}}
+
+        \put(31,23){\line(1,0){0.5}}
+        \put(31.5,22.7){\line(1,0){0.5}}
+        \put(32,22.4){\line(1,0){0.5}}
+        \put(32.5,22.1){\line(1,0){0.5}}
+        \put(33,21.9){\line(1,0){0.5}}
+        \put(33.5,21.7){\line(1,0){0.5}}
+        \put(34,21.5){\line(1,0){0.5}}
+        \put(34.5,21.3){\line(1,0){0.5}}
+        \put(35,21.2){\line(1,0){0.5}}
+        \put(35.5,21.1){\line(1,0){0.5}}
+        \put(36,21){\line(1,0){0.5}}
+        \put(36.5,21.1){\line(1,0){0.5}}
+        \put(37,21.2){\line(1,0){0.5}}
+        \put(37.5,21.3){\line(1,0){0.5}}
+        \put(38,21.5){\line(1,0){0.5}}
+        \put(38.5,21.7){\line(1,0){0.5}}
+        \put(39,21.9){\line(1,0){0.5}}
+        \put(39.5,22.1){\line(1,0){0.5}}
+        \put(40,22.4){\line(1,0){0.5}}
+        \put(40.5,22.7){\line(1,0){0.5}}
+
+        \put(31,25){\line(1,0){0.5}}
+        \put(31.5,24.7){\line(1,0){0.5}}
+        \put(32,24.4){\line(1,0){0.5}}
+        \put(32.5,24.1){\line(1,0){0.5}}
+        \put(33,23.9){\line(1,0){0.5}}
+        \put(33.5,23.7){\line(1,0){0.5}}
+        \put(34,23.5){\line(1,0){0.5}}
+        \put(34.5,23.3){\line(1,0){0.5}}
+        \put(35,23.2){\line(1,0){0.5}}
+        \put(35.5,23.1){\line(1,0){0.5}}
+        \put(36,23){\line(1,0){0.5}}
+        \put(36.5,23.1){\line(1,0){0.5}}
+        \put(37,23.2){\line(1,0){0.5}}
+        \put(37.5,23.3){\line(1,0){0.5}}
+        \put(38,23.5){\line(1,0){0.5}}
+        \put(38.5,23.7){\line(1,0){0.5}}
+        \put(39,23.9){\line(1,0){0.5}}
+        \put(39.5,24.1){\line(1,0){0.5}}
+        \put(40,24.4){\line(1,0){0.5}}
+        \put(40.5,24.7){\line(1,0){0.5}}
+        \begin{large}
+           \put(60,45){Philips Research Laboratories}
+           \put(60,30){\copyright\ 1986 Nederlandse Philips Bedrijven B.V.}
+        \end{large}
+     \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

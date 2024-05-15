@@ -1,0 +1,334 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3.software
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Specification of a minimal Code
+                         Control System for Rosetta
+
+         Author       :  J. Rous
+
+
+
+
+
+
+
+
+         Doc.Nr       :  54
+
+         Date         :  20/01/86
+
+         Status       :  concept
+
+         Supersedes   :  
+
+         Distribution :  software group
+
+         Clearance    :  Philips
+
+         Keywords     :  code control
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 54                      date:20/01/86
+$LD 4
+$NP 1
+$QM
+$C1 Introduction
+$NL 1
+This document describes an environment for the development and
+maintenance of the Rosetta software. Because the Rosetta system
+is developed by a number of software engineers and linguists
+the environment must offer each user a maximum of flexibility
+without disturbing the work of others.
+In the first place the environment must be safe: files may not
+suddenly vanish into nothing, it must be "CONTROL-C"-proof, etc..
+Secondly it must be simple and easy to understand, without
+any "hidden tricks". At each moment during the interaction of the user
+with his environment it must be clear to the user what is happening
+with his files. Thirdly, the environment must be easily extendable.
+$NL
+When writing the specifications of this code control system
+an assumption concerning the future structuring of the Rosetta software
+has been made. The assumption is that the software can be divided into
+language independent and language specific parts ( for the definition
+of these terms see doc. R0018 by Carel Fellinger ). If this turns out
+to be impossible, the specification of the code control system must be
+revised.
+$NL
+In chapter 2 of this document I will describe the infra-structure
+of the environment. After that, in chapter 3, the functions available
+for the user will be described.
+$NP
+$C1 Infra-structure 
+$NL
+The pivot of the code control system is the ARCHIVE. The ARCHIVE is
+a library which should contain only correct and tested code. It is
+desirable to have as soon as possible in the development process
+a running system in the ARCHIVE ( which is in the beginning filled up 
+with stubs ), which is then extended "bit by bit" to the ultimate complete 
+system. 
+$NL
+Furthermore, the development of the software is performed by a number
+of USERs, each of which will have his private development environment.
+Because the ARCHIVE contains not only source files, but also object files
+,include files and executables, the software can be developed
+with the ARCHIVE as a reference.
+$NL
+The ARCHIVE is divided into a number of release-libraries, of which each
+contains the software of that specific release. The release-libraries
+are also divided in a number of sub-libraries, so called COMPONENTs.
+A COMPONENT contains software which logically seen belongs together.
+A natural partitioning of the ROSETTA system are the COMPONENTs DUTCH, ENGLISH,
+SPANISH and GENERAL. Each COMPONENT may contain source files, include
+files, object files and executables. This result in the following picture:
+$UM
+
+                               ARCHIVE
+
+
+
+            ROSETTA3                          ROSETTA4
+
+
+
+GENERAL DUTCH SPANISH ENGLISH       GENERAL DUTCH SPANISH ENGLISH
+
+
+$QM
+Each USER will have the same library structure as the ARCHIVE, however
+the release-libraries which are not relevant for him are left out. 
+For instance, a USER who develops software during
+development of ROSETTA3, will have the following library structure:
+$UM
+$RL 9
+
+                               USER
+
+
+                             ROSETTA3
+
+                            
+                  GENERAL DUTCH SPANISH ENGLISH
+
+$QM
+$NP
+$C1 Commands.
+$NL
+The interactions between USER and ARCHIVE are defined by means of a number
+of functions. Most of these functions will change the status of one or more
+files in the system, some of them will also change the status of the USER. 
+$NL 1
+$HL 16,1. SELECT
+$NL 
+SELECT <component-name>
+$NL
+Before a USER can get started he has to select a specific COMPONENT. After
+the USER has performed a SELECT command, the system will assume that
+files used in other commands reside in the specified component. This command
+will set the state of the USER to "development state".
+$NL 1
+$HL 16,2. INSPECT
+$NL 
+INSPECT <file-name>
+$NL
+The function INSPECT allows the USER to examine the specified file in the
+ARCHIVE. The USER will get only read access, so he is not able to change
+the file. If the specified file cannot be found, the USER will get an 
+error message.
+$NL 1
+$HL 16,3. MODIFY
+$NL 
+MODIFY <file-name>
+$NL
+The function MODIFY allows the USER to edit the specified source file. The file
+must be in his own library ( in the current COMPONENT ). If the file is
+not present it is created in the USER library.
+$NL 1
+$HL 16,4. GRAB
+$NL 
+GRAB <file-name>
+$NL
+The specified source file is copied from the ARCHIVE to the USER library 
+( of the
+current COMPONENT ). Furthermore, the file in the ARCHIVE is reserved
+exclusively for the USER, in order to prevent other USERS from 
+changing the same file. In case the file was grabbed already or in
+case the file did not exist, the USER gets a warning resp. error message.
+$NL 1
+$HL 16,5. FREE
+$NL 
+FREE <file-name>
+$NL
+The FREE command is useful if you accidentally grab the wrong file, or
+if you want to make the original version of the file available for
+other USERS. The FREE command removes the reservation of the file in
+the ARCHIVE and removes the file from the USERS library.
+$NL 1
+$HL 16,6. SAVE
+$NL 
+SAVE <file-name>
+$NL
+The SAVE function transfers the specified file to a library, where it cannot
+interfere with the generation and test of the system.
+$NL 1
+$HL 16,7. WORK
+$NL 
+WORK <file-name>
+$NL
+This function is the counterpart of the SAVE function. It transports
+the specified file back into the USERS working environment.
+$QM
+$NL 2
+Until now we have described commands with which new files can be
+created, existing files can be changed, etc.. No commands for
+storing files in the ARCHIVE have been described yet. Before I describe the 
+commands for that purpose, a few remarks
+have to be made. In the introduction it is said that the ARCHIVE should 
+contain only tested and correct code. The most ideal situation is if testing of
+newly developed code can be performed in an independent environment
+by an independent person. Testing by an independent person is not
+possible within the current organisation of the Rosetta project. Therefore
+this must be done by the USER himself. _For this reason an appeal is made
+on the discipline of the USER not to add files to the ARCHIVE
+without having tested them_. If the environment imposes less discipline, more
+discipline is required from the USER. The other point, the testing in
+an independent environment, is supported by the code control system by
+means of the following functions:
+$NL 1
+$HL 16,8. INTEGRATE
+$NL 
+INTEGRATE
+$NL
+Execution of this command prepares the USER environment for testing purposes.
+The logical name table is cleared, the global symbols are removed and
+object files and executables in all user-components are deleted. 
+These files are deleted to make sure that the system which is generated
+in this phase does not contain any unwanted modules.
+The USER is now in the "integration state". The control system garantuees
+that during the time that a USER is in the "integration state" the
+ARCHIVE will not change. Therefore
+the USER can be sure that the system, which he generates during his 
+integration phase, is consistent. The INTEGRATE command will fail if another
+USER is also in the "integration state". After execution of the 
+INTEGRATE command the
+commands 2. up to 7. are disabled. Only the following commands are possible.
+$NL 1
+$HL 16,9. COMP
+$NL 
+COMP <file-name>
+$NL
+The specified file is compiled. If the file is not present in the USERS 
+environment, the system compiles the file of the ARCHIVE. The resulting object
+file will be placed in the USERS environment, in the current COMPONENT.
+For reasons of computer performance it may become necessary to do all
+compilations in batch mode. In that case the COMP command automatically
+compiles the specified file in batch mode. 
+The code control system will be able to deal with two types of compilable
+files: definition files and implementation files. The type of a
+file is defined by the filename extension. 
+$NL
+The resulting object file will have the same filename
+as the source file, but with a different extension.
+$NL 1
+$HL 16,10. BUILD
+$NL 
+BUILD <optionfile-name> 
+$NL
+The parameter for the BUILD command is the name of an option file. An
+option file is a file containing an exact specification of all object files 
+which have to be linked together into one executable. The specified
+object files will first be searched in the USERS environment. If
+they cannot be found there, the search continues in the ARCHIVE. 
+The resulting
+executable will have the same name as the option file, but with extension
+.EXE . 
+$NL 1
+$HL 16,11. TEST
+$NL 
+TEST <language1> <language2>
+$NL
+The TEST command can be used to run the system. The syntax given here
+is provisional. The command may change because of implementation reasons.
+$NL 1
+$HL 16,12. CONSOLIDATE
+$NL 
+CONSOLIDATE 
+$NL
+The consolidate command can only be used if it is preceded by an 
+INTEGRATE command. 
+$NL
+If no error occurred during compiling, building and testing the files
+can be placed in the ARCHIVE by means of the CONSOLIDATE command. 
+All the object files specified
+in option-files which are used in BUILD commands during the integration
+session are candidates for this operation.
+The CONSOLIDATE command looks whether the specified object files ( the
+definition file object and the implementation file object ) with
+their ( eventual ) source files are present in the USERS environment.
+If that is the case it will replace the version of those files in the ARCHIVE 
+by the ones in the USER library and it will remove them from the USER
+library. The option file and the executable are copied to the ARCHIVE too.
+Furthermore the command will remove the reservation
+of these files which was made by the USER.
+( remember that they were grabbed by him ).
+$NL 1
+Finally the USER is
+asked to specify what he has changed in or added to the system. This
+information is logged into a file. The contents of this file can be inspected
+by means of the command SHLOG.
+$NL
+The CONSOLIDATE commands is also the end of the "integration state", so
+the state is changed back to "development state".
+The commands 2. up to 5. are available again.
+$NL 1
+$HL 16,13. END
+$NL 
+END
+$NL
+This command can only be given during the integration phase.
+The command marks the end of the integration phase. The
+commands 2. up to 7. are available again. 
+The state is changed back to the "development state".
+$QM
+$NL 2
+The commands 9., 10. and 11. may of course also be used outside the
+integration phase. In that case, however, a problem may occur because
+of the fact that it is not guaranteed that the ARCHIVE is not changing.
+Suppose, for example, a USER wants to BUILD an executable consisting of
+a file A in his own library and of files B and C in the ARCHIVE.
+Suppose furthermore that during the building process file B and C are replaced
+by newer versions B' and C'. Then it is possible that the executable will be
+built with files A, B and C' !! For the present the code control system
+will not prevent this kind of situations. _Therefore the USER himself must 
+warn other USERs if he has consolidated sofware in which some interfaces have 
+been changed_. In the future this problem can be solved by a MAKE command
+which generates (compiles and links) a whole system. If the system garantuees
+that for all USERS the MAKE and CONSOLIDATE command are mutually exclusive,
+the generation of an inconsistent system will be impossible.

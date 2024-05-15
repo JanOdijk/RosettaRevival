@@ -1,0 +1,48 @@
+case $# in
+0) echo "Usage: makeactions componentname filename forcemake debug [platform]"; exit ;;
+1) echo "Usage: makeactions componentname filename forcemake debug [platform]"; exit ;;
+2) echo "Usage: makeactions componentname filename forcemake debug [platform]"; exit ;;
+3) ;;
+4) ;;
+5) ;;
+*) echo "Usage: makeactions componentname filename forcemake debug [platform]"; exit ;;
+esac
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+rm -f actions_.rbs
+echo "#! /bin/sh -e" > actions_.rbs
+#
+echo "#build: $1$5:$2" >> actions_.rbs
+#
+if test "$4" = "debug"
+then filename="dbg_$2"
+else filename="$2"
+fi
+buildtarget=`$RBS_DIR/get_fname RBS_logicals $1$5 $filename`
+if test -z "$buildtarget"
+then buildtarget=$1$5/target/$filename
+fi
+#
+#
+#
+#    create makefile if there isn't any. If there is one but
+#    focemake = -, then don't create one.
+#
+     makefile=`$RBS_DIR/get_fname RBS_logicals $RBS_MAKECOMP $RBS_MAKEFILE.rbs`
+     if ( test "$makefile" = "" )
+     then echo "MAKE: Generating new makefiles......" 
+          $RBS_DIR/expandmake $5 $4
+          makefile=`$RBS_DIR/get_fname RBS_logicals $RBS_MAKECOMP $RBS_MAKEFILE.rbs`
+     elif ( test "$3" = "+" )
+     then echo "MAKE: Generating new makefiles......"
+          $RBS_DIR/expandmake $5 $4
+          makefile=`$RBS_DIR/get_fname RBS_logicals $RBS_MAKECOMP $RBS_MAKEFILE.rbs`
+     fi
+     echo "BUILD: inspecting make file....."
+     set -e
+     trap "cd $savedir; exit 1" 0
+     make -n -f $makefile $buildtarget debug=$4 pf=$5 >> actions_.rbs
+#
+cd $savedir
+trap 0

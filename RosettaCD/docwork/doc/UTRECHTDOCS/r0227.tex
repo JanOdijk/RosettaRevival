@@ -1,0 +1,664 @@
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{General}
+   \RosTitle{Description Plural-Form Restructuring}
+   \RosAuthor{J.P. Medema, H.E. Smit}
+   \RosDocNr{227}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Software, Harm Smit}
+   \RosClearance{Project}
+   \RosKeywords{Dutch, Dictionary, Morphology, Plural}
+   \MakeRosTitle
+
+\newcommand{\kw}[1]{{\bf #1}\ }
+\newlength{\Indentation}
+\newlength{\Indentsize}
+\setlength{\Indentsize}{1.3em}
+\newcommand{\Tab}[1]
+   {\addtolength{\Indentation}{#1\Indentsize}\\ \hspace*{\Indentation}}
+\newcommand{\Tabs}[1]
+   {\setlength{\Indentation}{#1\Indentsize}\hspace*{\Indentation}}
+\setlength{\parskip}{2mm}
+\setlength{\parindent}{0mm}
+
+\section{Introduction}
+
+\subsection{Contents}
+
+This report gives a description of how so-called plural codes (as defined in
+\cite{HS:morph}, page 29) are added automatically to a large human-made and 
+human-oriented dictionary (\cite{VD:NN}). This dictionary is a monolingual Dutch
+dictionary. The plural codes define, in context with the morphology, how nouns 
+can be inflected. As a side effect of the program also phonetic information is 
+obtained. 
+
+The report also gives an idea which problems arise doing the restructuring 
+automatically (the transformation from rather unformalized to formalized data).
+It'll show how human-made dictionaries are filled and how they should be filled
+for a better use with automated language systems.
+
+\subsection{Structure}
+
+The report is divided into 6 chapters of which this introduction is the first.
+Chapter two describes (informally) the input of the restructuring program while
+the output of the program is described (informally) in chapter three. The 
+formalization of both the input and the output is given in chapter four. 
+Chapter five decribes the algorithm which was used to restructure the data.
+Some final remarks (including statistics and conclusions) are given in chapter 
+six.
+
+\subsection{Motivation}
+
+The information needed for plural codes is already part of the input 
+dictionary. It can be found in grammatical information which is given in
+human-readable instead of a formal form (i.e. in a string instead of a 
+code). These strings have to be parsed to result in the needed code. Grammatical
+information can consist (for nouns) of plural information --this we use for 
+this program--, diminutive information, and `garbage' --for us it is-- which 
+mostly is comment like ``vaak mv.'' (often in plural form) and ``in bet. 3 
+g.mv.'' (in meaning 3 no plural forming).
+
+The restructuring of information (transforming strings to codes) has been done 
+to be 
+used in the dictionaries of Rosetta (though any other automated language system
+could use the information as well). It is one of the first steps of formalizing 
+the human-oriented dictionaries of Van Dale. This, to make it easier 
+transforming the text-file-oriented dictionaries to the database-oriented 
+dictionaries of Rosetta (for a detailed description of this activity, see
+\cite{MSM:use}).
+
+\newpage
+\section{Input Description}
+
+\subsection{Entry Form}
+
+A global description of the entries of the used dictionary is given in 
+\cite{SME:descr}. The knowledge given there is not quite a prerequisite for 
+reading this section but could be rather useful for understanding certain 
+aspects of it. However, the entries given in this section have, for clarity 
+reasons, been stripped of all codes which aren't needed for the restructuring. 
+This results in an entry syntax as in figure 1.
+
+\begin{figure}[ht]
+ \begin{center}
+  \begin{verbatim}
+                          II ( GR GI { GI }+
+                             | GI { { VV }+ GV }
+                             )
+  \end{verbatim}
+  \caption{Syntax of the input entry}
+ \end{center}
+\end{figure}
+
+As can be seen, the GI-code is used on two different places in the entry.
+The semantics of this code in the two places are not the same. In a `roman' 
+subdivision (i.e. behind an GR-code) it'll give information only for one 
+subdivision of the entry. Otherwise, it gives information for the entire
+entry. The II-code gives the entry-word. The GR-code is used to mark that the 
+entry is a roman entry; the given information applies for the whole entry. A 
+form variant is given with the VV-code whilst the grammatical information for 
+this form variant is given with the following GV-code.
+
+The list below describes the information given with the codes:
+
+\begin{description}
+  \item [\verb+II+] \hspace{3mm}
+             Each entryword is given (when,
+             of course, needed) with a mark for the stress before the sylable 
+             which is stressed. It can also contain special characters needed
+             for the representation of, for example, ``\"{o}'', ``\~{n}'',
+             ``\'{e}'', etc. These characters are all specified in 
+             \cite{JM:retro}.
+  \item [\verb+GI+] \hspace{3mm} 
+             Gives the grammatical code of the (sub-)entry. It can also give 
+             grammatical information which, in case of a roman subdivision,
+             should be different for each sub-entry. The grammatical info can
+             also contain the stress-marker and the special characters which
+             the \verb+II+-code can contain.
+  \item [\verb+GR+] \hspace{3mm}
+             An entryword that has sub-entries with the same main category code
+             (here always noun, i.e. 1) but different sub-categories (e.g., 
+             masculine and/or feminine versus neuter noun) is marked by this 
+             code. The main category of the entryword is always given. Further, 
+             grammatical information which applies for all the sub-entries is 
+             given here too.
+  \item [\verb+VV+] \hspace{3mm} 
+             This code preceeds a form variant of the entryword (a string). 
+             It can also contain the stress-marker and the special characters 
+             which the \verb+II+-code can contain.
+  \item [\verb+GV+] \hspace{3mm} 
+             The grammatical code for the form variant(s) is given with this
+             code. Further, it gives grammatical information for the preceeding 
+             form variant(s) (with, possibly, a stress-marker and special 
+             characters). 
+\end{description}
+
+\subsection{Structure Grammatical Information}
+
+\subsubsection{Partitioning}
+
+The grammatical information can be found behind three codes: GI, GR, and GV.
+If present\footnote{So it {\em can} be a void.}, it has the following structure
+(which follows the grammatical code): first a semi-colon, then, 
+separated by either comma's or semi-colons, the subsequent grammatical 
+information parts.\footnote{Which can be more plural forms, diminutive form(s),
+and comment (`garbage').}
+
+According to our view, it should have been better when comment was always 
+placed behind the second semi-colon. The subsequent plural forms and diminutive 
+forms would have been before that semi-colon and separated by comma's. This 
+would have made automatic parsing an easier task. For it is not known now 
+whether parsing grammatical information or comment, comment parsing results in 
+quite an amount of errors. This is not the case for human (Dutch) users of 
+the dictionary who know enough of the language to distinguish grammatical 
+information from syntactical/semantical comment.
+
+\subsubsection{Part Description}
+
+Of the three kinds of grammatical information parts (plural, diminutive, 
+comment) only the plural part is described here. This plural information 
+consists of a string which is (a part of) the word in plural form. This 
+information can be given in three ways:
+
+\begin{itemize}
+  \item The complete word in plural form. See, for example, ``aas'' (``azen''),
+        ``beer'' (``beren'').
+  \item The ending of the plural form preceeded by a hyphen where the hyphen 
+        represents a {\em part} of the entry word. This is the case at, e.g.,
+        the words ``abri{\em ko}os'' (``-{\em ko}zen'') and ``kool{\em mijn}''
+        (``-{\em mijn}en'').
+  \item The ending of the plural form preceeded by a hyphen where the hyphen 
+        represents the {\em whole} entry word. Cf. ``garde'' (``-s'',``-n''),
+        ``jaagpaard'' (``-en''), etc.
+\end{itemize}
+
+For a human (Dutch) user of the dictionary this is clear (at least, I hope). 
+He/she knows how to use the hyphen: the plural form of ``abrikoos'' is {\em not}
+equal to ``abrikooskozen'', though it could be as it was interpreted as
+defined above (in the third item). So, again, the user of the dictionary (whether 
+born or manufactured) {\em needs} language knowledge.
+
+\subsection{Example Dictionary}
+
+The example dictionary given below is not a complete subset of all the cases 
+that occur in the input dictionary. However, it gives an overview of the 
+global structuring of the information throughout the dictionary:
+
+\begin{verbatim}
+   II#   aas           II#   abri+;koos      II#   +;garde
+   GR#   1             GR#   1; -kozen       GR#   1
+   GI#   13; g.mv.     GI#   14              GI#   14; -s
+   GI#   15; azen      GI#   11              GI#   11; -n
+\end{verbatim}
+
+\begin{verbatim}
+   II#   +;jaagpaard                         II#   +;jongen
+   GI#   13; -en                             GI#   11; -s, jongetje
+\end{verbatim}
+
+\begin{verbatim}
+   II#   +;junior                            II#   +;houtspaander
+   GI#   11; -oren, -ores; meestal mv.       GI#   11; -s
+                                             VV#   +;houtspaan
+                                             GV#   14; -spanen
+\end{verbatim}
+
+As can be seen, the grammatical information is easy to understand; at least 
+when one can understand Dutch so\footnote{This is true by now.} {\em definitely 
+not} when one is a computer program. 
+
+\newpage
+\section{Output Description}
+
+\subsection{Entry Form}
+
+The output entry has the input entry as skeleton. As can be seen in figure 2, 
+the input syntax has been extended with some extra codes for the morphological 
+and the phonetic information. Within an entry that has no roman subdivision 
+the G-code(s) are followed by an M-code. In entries with roman subdivision 
+either the GR-code is followed by an M(R)-code or all the GI-codes are followed 
+by M(I)-code. In both kinds of entries, every M-code {\em can} be followed by 
+an FO-code. 
+
+\begin{figure}[ht]
+ \begin{center}
+  \begin{verbatim}
+                 II ( GR ( MR [ FO ] GI { GI }+
+                         | GI MI [ FO ] { GI MI [ FO ] }+
+                         )
+                    | GI MI [ FO ] { { VV }+ GV MV [ FO ] }
+                    )
+  \end{verbatim}
+  \caption{Syntax of the output entry}
+ \end{center}
+\end{figure}
+
+All codes equal to the input codes have kept their meaning.\footnote{It is
+{\em restructuring} of information.} The new codes are explained below:
+
+\begin{description}
+  \item [\verb+MI+] \hspace{3mm}
+                    The grammatical information is coded here. The line consists
+                    of a number of morphological codes (always two digits) as 
+                    defined in section ?? separated by comma's. The number of
+                    codes is equal to the number of grammatical information 
+                    parts in the GI-code before the MI-Code. 
+  \item [\verb+MR+] \hspace{3mm}
+                    Is the same as MI-code but then applied for an GR-code.
+  \item [\verb+MV+] \hspace{3mm}
+                    Is the same as MI-code but then applied for an GV-code.
+  \item [\verb+FO+] \hspace{3mm}
+                    This code contains the phonetic information found as a side
+                    effect. The form is quite simple. It consists of two 
+                    characters of which the first denotates the `change' and 
+                    the second the `sjwa'. There are three possible values each
+                    character can have. A slash (``/'') means that the phonetic 
+                    attribute has the value `false', a zero (``0'') corresponds
+                    with the value `true', and a one (``1'') means that the 
+                    attribute can have both values (cf. ``spons'' for change).
+                    \\ Formally it is not possible to have both values for 
+                    sjwa (a word either has it or not) but the program can 
+                    give it for words with more plurals (cf. ``aanhangsel'')
+                    for, e.g., an S-plural will never result in a sjwa\footnote{
+                    In this case, from the combination of the entryword and the pluralstring 
+                    nothing can be concluded for the phonetic information; for 
+                    example, ``hotel'' and ``schotel'' both have an 
+                   pluralstring equal to ``-s'' but only the latter has a sjwa.}
+                    while an En-Plural can.
+                    \\ If the FO-code has the value ``//'', it'll be absent in 
+                    the output entry (the ``//'' value is the default value).
+\end{description}
+
+\subsection{Morphological Codes}
+
+Most codes in the output are codes as defined in \cite{HS:morph}. For 
+clarity reasons they're given here too (with examples).
+
+\begin{tabular}{|r|l|l|} \hline
+ Code & Code Description & Example's\\ \hline
+   1  & enPlural         & boeken, appelen, koloni\"{e}n\\
+   2  & sPlural          & etalages, appels, boompjes\\
+   3  & aTOaaPlural      & daken, baden, verdragen\\
+   4  & aTOeePlural      & steden\\
+   5  & eTOeePlural      & bevel, gebrek, weg\\
+   6  & eiTOeePlural     & waarheden, heren\\
+   7  & iTOeePlural      & leden, schepen, smeden\\
+   8  & oTOooPlural      & goden, geboden, motoren\\
+   9  & erenPlural       & goederen, lammeren, liederen\\
+  10  & ienPlural        & vlooien, koeien\\
+  11  & denPlural        & roeden, treden\\
+  12  & nenPlural        & lendenen, redenen\\
+  13  & ieAccentPlural   & knie\"{e}n, antipathie\"{e}n\\
+  14  & luiPlural        & werklui\\
+  15  & liedenPlural     & brandweerlieden\\
+  16  & LatPlural        & schemata, matrices, spectra, bases\\
+  17  & enIrregPlural    & bamboezen\\
+  18  & sIrregPlural     & vlaas, egaas\\
+  19  & LatIrregPlural   & tempora, casus\\
+  20  & NoPlural         & verdriet, heelal\\
+  21  & OnlyPlural       & hersens, onkosten, inkomsten\\ \hline
+\end{tabular}
+
+The other codes which occur in the output are 98 and 99. The code 98 has as 
+meaning that the grammatical information was absent (which, probably, means that 
+the entryword has no plural form at all; this, eventually, will result in a 
+code 20 in the Rosetta dictionary). Code 99 has as meaning that the part of the
+information could not be parsed by the current parser. Often, this is caused by
+an input `error'.
+
+\subsection{Example Dictionary}
+
+The dictionary as given in paragraph ?? should (and in fact does) result in the 
+following output dictionary:
+
+\begin{verbatim}
+   II#   aas           II#   abri+;koos      II#   +;garde
+   GR#   1             GR#   1; -kozen       GR#   1
+   GI#   13; g.mv.     MR#   01              GI#   14; -s
+   MI#   20            FO#   0/              MI#   02
+   GI#   15; azen      GI#   14              GI#   11; -n
+   MI#   01            GI#   11              MI#   01
+   FO#   0/
+\end{verbatim}
+
+\begin{verbatim}
+   II#   +;jaagpaard                         II#   +;jongen
+   GI#   13; -en                             GI#   11; -s, jongetje
+   MI#   01                                  MI#   02,99
+\end{verbatim}
+
+\begin{verbatim}
+   II#   +;junior                            II#   +;houtspaander
+   GI#   11; -oren, -ores; meestal mv.       GI#   11; -s
+   MI#   08,16,99                            MI#   02
+                                             VV#   +;houtspaan
+                                             GV#   14; -spanen
+                                             MI#   01
+\end{verbatim}
+
+Note that ``jongetje'' and ``meestal mv.'' cannot be parsed as pluralform and 
+therefore result the value 99. Both strings, however, are for human (Dutch) 
+users interesting information sources (the first string is the diminutive form 
+while the latter is information on how the word is to be used).
+
+\newpage
+\section{Formalization}
+
+\subsection{Description Treatable Parts}
+
+In this paragraph the parts which can be treated by the program will be 
+described formally. The treating is like a multiple filter system: the word 
+and its plural form will be tested by the first layer; if they don't pass the 
+filter (i.e. they fulfil the requirements for that kind of plural) then the 
+kind of plural form has been found; otherwise the next filter is tried; at the 
+end (when no more filters exist) the erroneous parts remain.
+
+First, a number of sets is defined to make it easier to describe the words and
+grammatical information parts. The set L denotates all the letters; K1 
+denotates all vowels; M2 denotates a subset of all consonants; and M3 denotates 
+all consonants.
+
+\begin{tabular}{lclcl}
+L   & = & \{ a, b, ..., y, z \} & & \\
+K1  & = & \{ a, e, i, o, u \} & & \\
+M2  & = & \{ b, d, f, g, k, l, m, n, p, r, s, t \} & & \\
+M3  & = & M2 $\cup$ \{ c, h, j, q, v, w, x, y, z \} & = & L $\setminus$ K1
+\end{tabular}
+
+The following table describes the first ten filters of the program. The zeroth
+column gives the number of the filter; in the first a kind of variable 
+declaration is done; the second describes the form the entry word must have; 
+the third column describes the form of the grammatical information part; the 
+fourth gives the plural code the word is assigned to if it passes the test;
+the fifth gives the value of the phonetic attributes; the sixth column 
+gives examples which fulfil the test (plain) and which don't (italic).
+
+\begin{tabular}{|r|l|l|l|r|r|l|} \hline
+   N & Domain(s)
+       & Entry
+         & Plural
+           & Cd.
+             & Ph.
+               & Example(s) \\ \hline \hline
+   1 & $\alpha,\beta \in$ L*
+       & $\beta\alpha$
+         & -s, -$\alpha$s, $\beta\alpha$s,
+           & 02
+             & //
+               & broer $\rightarrow$ -s \\
+     &
+       &
+         & -'s, -$\alpha$'s, $\beta\alpha$'s
+           & 
+             & //
+               & vla $\rightarrow  $ -'s \\ \hline
+   2 & $\alpha \in$ L*
+       & $\alpha$
+         & g.mv., g.mv, g.{\leavevmode\hbox{\tt\char`\ }}mv.
+           & 20
+             & //
+               & aanblik $\rightarrow$ g.mv. \\ \hline
+   3 & $\alpha \in$ L*
+       & $\alpha$
+         & mv., mv, g.enk.
+           & 21
+             & //
+               & dii $\rightarrow$ mv. \\ \hline
+   4 & $\alpha,\beta,\gamma \in$ L*
+       & $\beta\alpha$ $\wedge$
+         & -n, -$\alpha$n, $\beta\alpha$n,
+           & 01
+             & //
+               & zieke $\rightarrow$ -n \\
+     & $\delta \in$ M3
+       & $\neg$ ($\gamma\delta\varepsilon\zeta$)
+         & -en, -$\alpha$en, $\beta\alpha$en
+           & 
+             & //
+               & ligfiets $\rightarrow$ -en\\
+     & $\varepsilon \in$ K1
+       &
+         &
+           & 
+             & //
+               & koolmijn $\rightarrow$ mijnen \\
+     & $\zeta \in$ M2
+       &
+         &
+           & 
+             & 
+               & {\em dak $\rightarrow$ -en} \\ \hline
+   5 & $\alpha \in$ L*
+       & $\alpha$ee
+         & -\"{e}n
+           & 01
+             & //
+               & slee $\rightarrow$ -\"{e}n \\
+     & 
+       & 
+         & 
+           & 
+             & //
+               & wee $\rightarrow$ -\"{e}n \\ \hline
+   6 & $\alpha \in$ K1
+       & $\beta\alpha\gamma$
+         & -$\gamma$en, -$\alpha\gamma\gamma$en, 
+           & 01
+             & //
+               & tak $\rightarrow$ -ken \\
+     & $\beta \in$ L*
+       &
+         & $\beta\alpha\gamma\gamma$en
+           & 
+             & //
+               & val $\rightarrow$ -len \\
+     & $\gamma \in$ M2 $\cup$ \{ z \}
+       &
+         &
+           & 
+             & //
+               & kam $\rightarrow$ -men\\ \hline
+   7 & $\alpha,\beta \in$ L*
+       & $\beta\alpha\gamma\gamma\delta$
+         & -$\gamma\delta$en, -$\alpha\gamma\delta$en, 
+           & 01
+             & //
+               & taak $\rightarrow$ taken \\
+     & $\gamma \in$ K1
+       &
+         & $\beta\alpha\gamma\delta$en
+           & 
+             & //
+               & beet $\rightarrow$ beten \\
+     & $\delta \in$ M2
+       &
+         &
+           & 
+             & //
+               & aap $\rightarrow$ apen \\ \hline
+   8 & $\alpha,\beta \in$ L*
+       & $\beta\alpha$ie
+         & -i\"{e}n, -$\alpha$i\"{e}n, 
+           & 01
+             & //
+               & kolonie $\rightarrow$ -ni\"{e}n \\ 
+     &
+       &
+         & $\beta\alpha$i\"{e}n
+           & 
+             & //
+               & orgie $\rightarrow$ orgi\"{e}n\\ \hline
+   9 & $\alpha,\beta,\gamma \in$ L*
+       & $\beta\alpha$f $\wedge$
+         & -ven, -$\alpha$ven,
+           & 01
+             & 0/
+               & korf $\rightarrow$ korven \\ 
+     & $\delta \in$ M3
+       & $\neg$ ($\gamma\delta\varepsilon$f)
+         & $\beta\alpha$ven
+           & 
+             & 0/
+               & lijf $\rightarrow$ lijven \\
+     & $\varepsilon \in$ K1
+       &
+         &
+           & 
+             & 
+               & {\em staf $\rightarrow$ staven} \\ \hline
+  10 & $\alpha,\beta,\gamma \in$ L*
+       & $\beta\alpha$s $\wedge$
+         & -zen, -$\alpha$zen,
+           & 01
+             & 0/
+               & accijns $\rightarrow$ -zen \\ 
+     & $\delta \in$ M3
+       & $\neg$ ($\gamma\delta\varepsilon$s)
+         & $\beta\alpha$zen
+           & 
+             & 0/
+               & kruis $\rightarrow$ kruizen\\
+     & $\varepsilon \in$ K1
+       &
+         &
+           & 
+             & 
+               & {\em glas $\rightarrow$ glazen} \\ \hline
+  11 & $\alpha,\beta \in$ L*
+       & $\beta\alpha\gamma\gamma$f
+         & -$\gamma$ven, -$\alpha\gamma$ven, 
+           & 01
+             & 0/
+               & raaf $\rightarrow$ raven \\
+     & $\gamma \in$ K1
+       &
+         & $\beta\alpha\gamma$ven
+           & 
+             & 0/
+               & zeef $\rightarrow$ zeven \\ \hline
+  12 & $\alpha,\beta \in$ L*
+       & $\beta\alpha\gamma\gamma$s
+         & -$\gamma$zen, -$\alpha\gamma$zen, 
+           & 01
+             & 0/
+               & doos $\rightarrow$ dozen \\
+     & $\gamma \in$ K1
+       &
+         & $\beta\alpha\gamma$zen
+           & 
+             & 0/
+               & baas $\rightarrow$ bazen \\ \hline
+  13 & $\alpha,\beta \in$ L*
+       & $\beta\alpha$ie
+         & -\"{e}n, -$\alpha$ie\"{e}n,
+           & 13
+             & //
+               & knie $\rightarrow$ -\"{e}n\\ 
+     &
+       &
+         & $\beta\alpha$ie\"{e}n
+           & 
+             & //
+               & orgie $\rightarrow$ -\"{e}n \\ \hline
+\end{tabular}
+
+\newpage
+\section{Algorithm}
+
+\subsection{Main Program}
+
+\Tabs{0} i := 1
+\Tab{0}  \kw{while} \kw{still} Nouns \kw{do}
+\Tab{1}   ReadNoun$_i$
+\Tab{0}   j := 1
+\Tab{0}   \kw{while} \kw{still} GCodes$_i$ \kw{do}
+\Tab{1}    \kw{if} GCode$_{i,j}$ \kw{is} Treatable \kw{then}
+\Tab{1}     k := 1
+\Tab{0}     \kw{repeat}
+\Tab{1}      TreatGCodePart$_{i,j,k}$
+\Tab{0}      k := k + 1
+\Tab{-1}    \kw{until} GCode$_{i,j}$ \kw{is} Treated
+\Tab{-1}   \kw{else}
+\Tab{1}     No plural is defined
+\Tab{-1}   \kw{end} \kw{if}
+\Tab{0}    j := j + 1
+\Tab{-1}  \kw{end} \kw{while}
+\Tab{0}   WriteNoun$_i$
+\Tab{0}   i := i + 1
+\Tab{-1} \kw{end} \kw{while}
+
+\subsection{Treat Grammatical Information Part}
+
+\Tabs{0} \kw{proc} TreatGCodePart$_{i,j,k}$ \kw{is}
+\Tab{0}  \kw{begin}
+\Tab{1}   \kw{if} ConditionSplural$_{i,j,k}$ \kw{is} TRUE \kw{then}
+\Tab{1}    Append SPlural to MI Code 
+\Tab{-1}  \kw{elsif} ConditionEnPlural$_{i,j,k}$ \kw{is} TRUE \kw{then}
+\Tab{1}    Append EnPlural to MI Code 
+\Tab{-1}  \kw{elsif} Condition\ldots$_{i,j,k}$ \kw{is} TRUE \kw{then}
+\Tab{1}    \vdots
+\Tab{-1}  \kw{end if}
+\Tab{-1} \kw {end} \kw{proc} 
+
+\subsection{Condition S-Plural}
+
+\Tabs{0} \kw{func} ConditionSPlural$_{i,j,k}$ : Boolean \kw{is}
+\Tab{0}  \kw{begin}
+\Tab{1}   \kw{if} $\neg$ (Headword$_i$End and GCodePart$_{i,j,k}$End Matches) 
+          \kw{then}
+\Tab{1}    b := FALSE
+\Tab{-1}  \kw{else}
+\Tab{1}    b := AlphaBetaOK$_{i,j,k}$
+\Tab{-1}  \kw{end if}
+\Tab{-1} \kw{end} \kw{func}
+
+\subsection{Compare On $\alpha, \beta$}
+
+\Tabs{0} \kw{func} AlphaBetaOK$_{i,j,k}$ : Boolean \kw{is}
+\Tab{1}   \kw{var} b : Boolean
+\Tab{-1} \kw{begin}
+\Tab{1}   \kw{if} Not checked part GCodePart$_{i,j,k}$ \kw{is} `-' \kw{then}
+\Tab{1}    b := TRUE
+\Tab{-1}  \kw{elsif} First Character of GCodePart$_{i,j,k}$ \kw{is} `-' \kw{then}
+\Tab{1}    b := (AlphaPart$_i$ matches AlphaGCodePart$_{i,j,k}$)
+\Tab{-1}  \kw{else}
+\Tab{1}    b := (BetaAlphaPart$_i$ matches BetaAlphaGCodePart$_{i,j,k}$)
+\Tab{-1}  \kw{end if}
+\Tab{0}   \kw{return} b
+\Tab{-1} \kw{end} \kw{func}
+
+\newpage
+\section{Final Remarks}
+
+\begin{itemize}
+ \item All codes can now be generated;
+ \item This is done by means of the list of exceptions found using the program 
+       as described before;
+ \item On an estimated number of 100,000 GCodeParts circa 1,500 of these will 
+       not been `understood' by the program; among these are:
+   \begin{itemize}
+    \item strings as ``meestal mv.'',  ``in bet. 12 -en'', etcetera;
+    \item irregular plurals;
+    \item data errors.
+   \end{itemize}
+\end{itemize}
+
+\begin{thebibliography}{AAA99a}
+ \bibitem[MED87]{JM:retro} J.P. Medema, {\em System To Create Retrograde 
+  Dictionaries}, {\bf Rosetta report 190}, Philips Research labs, 1987
+ \bibitem[MSM87]{MSM:use} J.P. Medema \& H.E. Smit, {\em Using Van
+  Dale For Rosetta}, {\bf Rosetta report 227}, Philips Research labs, 
+  1987
+ \bibitem[SME87]{SME:descr} H.E. Smit \& J.P. Medema, {\em Description Van 
+  Dale dictionary N~--~N}, {\bf Rosetta report 174}, Philips Research labs, 
+  1987
+ \bibitem[SMI86]{HS:morph} H.E. Smit, {\em Rosetta3 Dutch morphology,
+  inflection (comments)}, {\bf Rosetta report 134}, Philips Research labs, 
+  1986
+ \bibitem[STE84]{VD:NN} P.G.J. van Sterkenburg, ed., {\em Groot woordenboek 
+  hedendaags Nederlands}, Van Dale Lexicografie, 1984
+\end{thebibliography}
+
+\end{document}

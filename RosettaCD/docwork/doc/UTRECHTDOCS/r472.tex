@@ -1,0 +1,534 @@
+
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.linguistics.English}
+   \RosTitle{English Surface Rules}
+   \RosAuthor{Petra de Wit}
+   \RosDocNr{472}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Surface Parser, Sentences, English}
+   \MakeRosTitle
+%
+%
+\section{Introduction}
+This documents describes the English surface rules for sentences which can be 
+found in {\em surfrules1.sur} and {\em surfrules4.sur}. 
+For each rule the regular 
+expression as 
+well as the parameters and auxiliary functions used in this rule are 
+described. Second, some special measures having to do with specific syntactic 
+constructions will be explained.\\
+\section{Verb Phrase}
+\subsection{Regular Expression}
+The surface rules VERBPrule describes all possible grammatical orderings of 
+elements within the verb phrase. The regular expression looks as follows:
+\begin{verbatim}
+% VERBPrule
+
+REGULAREXPRESSION:
+
+VERBP = AUXVERBS . [VERB/1] . [NP/3] . [PART/2] . [NP/4] . [PART/2]
+        . [REST] . [PREPP/11] . [SENTENCE/5] . [PREPP/6] . [PREPP/18]
+
+AUXVERBS = [VERB/7] . [VERB/8] . [VERB/9]
+
+REST = PREPP/10 | 
+       PREPP/12 | ADVP/14 |
+       PREPP/13 | ADVP/15 |
+       ADJP/16 |
+       NP/17 |
+       PREPP/19 |
+       VERBP/20 |
+       PROSENT/21
+\end{verbatim}
+where the numbered boxes represent the following grammatical relations:\\
+\newline
+\begin{tabular}{|r|l|l|} \hline
+\#&relation&example\\ \hline
+1&head&He {\em left}\\ \hline
+2&partrel&He called {\em up} the man\\ \hline
+&&He called the man {\em up}\\ \hline
+3&indobjrel&He gave {\em her} a book\\ \hline
+4&objrel&He loathed {\em her}\\ \hline
+5&complrel&He wants {\em to leave}\\ \hline
+&&He knows {\em she is ill}\\ \hline
+&&I don't know {\em what to do}\\ \hline
+6&prepobjrel&He seems ill{\em to me}\\ \hline
+7&auxrel&The bridge might {\em have} been being built\\ \hline
+8&progauxrel&The bridge might have {\em been} being built\\ \hline
+9&passauxrel&The bridge might have been {\em being} built\\ \hline
+10&prepobjrel&They talked {\em to her} about the new car\\ \hline
+11&prepobjrel&They talked to her {\em about the new car}\\ \hline
+12&locargrel&He lives {\em in Eindhoven}\\ \hline
+13&dirargrel&They went {\em to Eindhoven}\\ \hline
+14&locargrel&He lives {\em there}\\ \hline
+15&dirargrel&He went {\em there}\\ \hline
+16&predrel&He painted the floor {\em green}\\ \hline
+17&predrel&They called him {\em a liar}\\ \hline
+18&byobjrel&He was caught {\em by the police}\\ \hline
+19&predrel&He cut the onion {\em into pieces}\\ \hline
+20&predrel&He had a house {\em built}\\ \hline
+21&predrel&I hope {\em so}\\ \hline
+\end{tabular}
+\subsection{Parameters}
+The Surface Grammar uses parameters in analyzing verb phrases. These 
+parameters are used to percolate attribute values to a 
+higher X-bar level (e.g from the verb to the verb phrase), 
+to check the computed structure and values at a 
+specific point in the analysis and to compute the value of some attributes in 
+sepcial functions or the rule itself. 
+Below a list is given of all parameters used , their 
+type and their function:\\
+\begin{description}
+\item [ADJPpredfound      ] BOOLEAN\\
+records whether an ADJP bearing the relation predrel has been found.
+\item [adjunctsvar        ] adjunctSETtype\\
+records the number of adjuncts a verb may select.
+\item [adjunctsefsvar     ] adjunctSETtype\\
+recors the number of adjuncts actually found.
+\item [adjvpefsvar        ] synpatterneffSETtype\\
+records the adjpatterns of an adjective phrase in predrel
+\item [asifcomplfound     ] BOOLEAN\\
+records whether a complement clause starting with {\em as if} has been found.
+\item [auxfound           ] BOOLEAN \\ 
+records whether an auxiliary has been found.
+\item [auxverbfound       ] BOOLEAN \\
+records whether an auxiliary verb has been found.
+\item [byobjfound         ] BOOLEAN\\
+records whether a by-phrase bearing the relation objrel has been found.
+\item [caseassignervar    ] BOOLEAN\\
+records the value caseassigner of the verb.
+\item [classesvar         ] classSETtype\\
+records the class of the verb bearing the relation head.
+\item [complfound         ] BOOLEAN\\
+records whether complement has been found.
+\item [complinfvar        ] inftype\\
+records the infsort of a complement sentence.
+\item [complmodusvar      ] modustype\\
+records the modus of a complement sentence.
+\item [complmoodvar       ] moodtype\\
+records the mood of a complement sentence.
+\item [complprosubjectvar ] BOOLEAN\\
+records whether the complement sentence contains a PRO subject.
+\item [dirargfound        ] BOOLEAN\\
+records whether a directional argument has been found.
+\item [envvar             ] polarityeffsettype\\
+??
+\item [foundauxesvar      ] auxSETtype\\
+records which auxiliaries have been found.
+\item [headfound          ] BOOLEAN\\
+records whether the VP contains a head verb.
+\item [headmodusvar       ] modustype\\
+records the modus of the verb bearing the relation head.
+\item [indobjfound        ] BOOLEAN\\
+records whether an indirect object has been found.
+\item [locargfound        ] BOOLEAN\\
+records whether a locative argument has been found.
+\item [modusvar           ] modustype\\
+records the modus of the first auxiliary found.
+\item [NPpredfound        ] BOOLEAN\\
+records whether an NP bearing the relation predrel has been found.
+\item [objfound           ] BOOLEAN\\
+records whether an object has been found.
+\item [partfound          ] BOOLEAN\\
+records whether a particle has been found.
+\item [passauxfound       ] BOOLEAN\\
+records whether a passive auxiliary has been found.
+\item [particlevar        ] keytype\\
+records the key of the particle
+\item [possvoicesvar      ] voiceSETtype\\
+records the value of the attribute possvoices of the verb bearing the relation head.
+\item [predfound          ] BOOLEAN\\
+records whether an XP bearing the relation predrel has been found.
+\item [prepkeyvar1        ] keytype\\
+records the key of the PREPP the verb bearing the relation head selects
+\item [prepkeyvar2        ] keytype\\
+records the key of a second PREPP the verb bearing the relation head selects
+\item [prepobjfound       ] BOOLEAN\\
+records whether a prepositional object has been found.
+\item [prepobj2found      ] BOOLEAN\\
+records whether a second prepositional object has been found.
+\item [PREPPpredfound     ] BOOLEAN\\
+records whether a PREPP bearing the relation predrel has been found.
+\item [progauxfound       ] BOOLEAN\\
+records whether a progressive auxiliary has been found.
+\item [reflexivityvar     ] reflexivetype\\
+records the reflexivetype of the verb bearing the relation head.
+\item [reqvar             ] polarityeffsettype\\
+??
+\item [SENTcomplfound     ] BOOLEAN\\
+records whether a sentence bearing the relation complrel has been found.
+\item [strandedPPfound    ] BOOLEAN\\
+records whether a stranded prepositional phrase has been found.
+\item [synvpefsvar        ] synpatterneffsettype\\
+records the actual patterns used in the sentence analysed.
+\item [synvpsvar          ] synpatternsettype\\
+records the value of the attribute synvps of the verb bearing the relation head.
+\item [tensevar           ] tensetype\\
+records the tense of the verb bearing the relatio head.
+\item [thetavpvar         ] thetavptype\\
+records the thetavp value of the verb bearing the relation head.
+\item [verbnumbersvar     ] numbersettype\\
+records the number of the verb bearing the relation head.
+\item [verbpersonsvar     ] personSETtype\\
+records the person of the verb bearing the relation head.
+\item [VERBPcomplfound    ] BOOLEAN\\
+record whether a verb phrase bearing the relation predrel has been found.
+\item [voicevar           ] voicetype\\
+records the voice of the verb.
+\end{description}
+\subsection{Auxiliary Functions and Procedures}
+\section{Verb Negation}
+\subsection{Regular Expression}
+There is a special regular expression for negative verbs which looks as 
+follows:\\
+\begin{verbatim}
+%VERBNEGrule
+
+REGULAREXPRESSION:
+
+VERB = (VERB/1 . GLUE/2 . NEG/3)   
+\end{verbatim}
+where the numbered boxes represent the following grammatical relations:\\
+\newline
+\begin{tabular}{|r|l|l|} \hline
+\#&relation&example\\ \hline
+1&head&do\\ \hline
+2&gluerel&\\ \hline
+3&negrel&not\\ \hline
+\end{tabular}
+\subsection{Parameters}
+The following parameters are used :
+\begin{itemize}
+\item   reqvar           
+\item   envvar           
+\item   conjclassesvar   
+\item   ingformvar       
+\item   sformvar         
+\item   affixvar         
+\item   modusvar         
+\item   tensevar         
+\item   personsvar       
+\item   numbersvar       
+\item   particlevar      
+\item   possvoicesvar    
+\item   reflexivityvar   
+\item   synvpsvar        
+\item   thetavpvar       
+\item   CaseAssignervar  
+\item   oblcontrolvar    
+\item   prepkey1var      
+\item   prepkey2var      
+\item   controllervar    
+\item   classesvar       
+\item   thatdelvar       
+\end{itemize}
+\subsection{Auxiliary Functions and Procedures}
+No auxiliary functions and procedures are needed.
+\section{Sentence}
+\subsection{Regular Expression}
+The regular expression for sentences looks as follows:
+\begin{verbatim}
+% SENTENCE1rule
+
+REGULAREXPRESSION:
+ 
+SENTENCE = [LDL] . [SH] . [CPOS] . [GLUE/33] . [NP/2 | POSSADJ/32]  . [ADVP/25] 
+           . [VERB/3] . [NEG/6] . [TOCAT/31] . [ADVP/26] . [VERBP/4]
+           . ADVS . EXTRA . [[PUNC/7] . SENTENCE/23] . [PUNC/5]
+
+LDL = (SENTENCE/14 .[PUNC/7]) | (SENTENCE/15 .[PUNC/7]) |(ADVP/35.[PUNC/7])|
+      NP/27 | PREPP/28 | ADVP/29 | ADJP/30
+
+SH = NP/9 | PREPP/10 | ADVP/11 | ADJP/12 | RELPRO/13
+
+CPOS = VERB/1 | CONJ/8 | PREP/34
+
+ADVS = LOCADVS . TEMPADVS . SENTADVS
+
+LOCADVS = {ADVP/16 | PREPP/17}
+
+TEMPADVS = {ADVP/18 | PREPP/19 | NP/22}
+
+SENTADVS = {ADVP/20 | PREPP/21 }
+
+EXTRA = [[PUNC/7] .SENTENCE/24]
+\end{verbatim}
+where the numbered boxes represent the following grammatical relations:\\
+\begin{tabular}{|r|l|l|} \hline
+1&conjrel&{\em Do} you love me ?\\ \hline
+2&subjrel&Do {\em you} love me ?\\ \hline
+3&auxrel&The bridge {\em might} have been being built\\ \hline
+4&predrel&He {\em told her to leave}\\ \hline
+5&puncrel&I wonder{\em .}\\ \hline
+6&negrel&He does {\em not} want to leave \\ \hline
+7&puncrel&Unfortunately{\em ,} this rule is never used.\\ \hline
+8&conjrel&He knew {\em that} you were ill\\ \hline
+9&shiftrel&{\em Who} did you talk to ?\\ \hline
+10&shiftrel&{\em To whom} did you talk \\ \hline
+11&shiftrel&{\em Where} does he live\\ \hline
+12&shiftrel&{\em How ill} is he\\ \hline
+13&shiftrel&The man {\em who} came to dinner\\ \hline
+14&leftdislocrel&{\em Although he had never seen her}, ..\\ \hline
+15&leftdislocrel&{\em How the book will sell} depends on the author\\ \hline
+16&locadvrel&I saw her {\em there} today\\ \hline
+17&locadvrel&I saw her {\em in church} today\\ \hline
+18&tempadvrel&I saw her {\em daily}\\ \hline
+19&tempadvrel&I saw him {\em during the concert}\\ \hline
+20&sentadvrel&He didn't like me {\em apparently}\\ \hline
+21&sentadvrel&I met him {\em thanks to her}\\ \hline
+22&tempadvrel&I saw him {\em the day before yesterday}\\ \hline
+23&postsentadvrel&He was in time {\em although the train was late}\\ \hline
+24&extraposrel&It is time {\em to go home}\\ \hline
+25&modrel&He {\em probably} does not like her\\ \hline
+26&modrel&He promised to {\em always} love her\\ \hline
+27&leftdislocrel&{\em His face} I am not fond of\\ \hline
+28&leftdislocrel&{\em With great skill} he hit the ball\\ \hline
+29&leftdislocrel&{\em Probably, he left}\\ \hline
+30&leftdislocrel&{\em Rich} I may be\\ \hline
+31&torel&He wants {\em to} leave\\ \hline
+32&subjrel&Let'{\em s} swim\\ \hline
+33&gluerel&Let's swim\\ \hline
+34&conjrel&{\em Before he left}, he drank some wine\\ \hline
+\end{tabular}
+\subsection{Parameters}
+To correctly analyze and compute the value of different attributes the 
+following parameters are used:\\
+\begin{description}
+\item [accsubjfound       ] BOOLEAN\\
+records whether an accusative NP bearing the relation subjrel has been found. 
+\item [adjunctsvar        ] adjunctSETtype\\
+??
+\item [adjpinshiftfound   ] BOOLEAN\\
+records whether an ADJP bearing the relation shiftrel has been found.
+\item [adjppredrelfound   ] BOOLEAN\\
+records whether an ADJP bearing the relation predrel has been found.
+\item [adverbialvar       ] BOOLEAN\\
+records whether an adverbial has been found.
+\item [advfound           ] BOOLEAN\\
+records whether an adverb has been found.
+\item [advpinshiftfound   ] BOOLEAN\\
+records whether an ADVP bearing the relation shiftrel has been found.
+\item [asifcomplfound     ] BOOLEAN\\
+records whether a complement clause starting with {\em as if} has been found.
+\item [auxfound           ] BOOLEAN\\
+records whether an auxiliary has been found.
+\item [classesvar         ] classSETtype\\
+records the value of the attribute classes
+\item [conjaspectvar      ] aspecttype\\
+\item [conjclassvar       ] timeadvclasstype\\
+\item [CONJconjfound      ] BOOLEAN\\
+\item [conjdeixisvar      ] deixistype\\
+\item [conjfound          ] BOOLEAN\\
+\item [conjkeyvar         ] keytype\\
+\item [conjpatternsvar    ] synpatternEFFSETtype\\
+\item [conjretrovar       ] retrotype\\
+\item [deixisvar          ] deixistype\\
+\item [deixisvarvar       ] deixistype\\
+\item [dirargrelfound     ] BOOLEAN\\
+\item [envvar             ] polarityEFFSETtype\\
+\item [extraposfound      ] BOOLEAN\\
+\item [extraposinfsortvar ] inftype\\
+\item [extraposmoodvar    ] moodtype\\
+\item [extraposmodusvar   ] modustype\\
+\item [extraposok         ] BOOLEAN\\
+\item [extraposprosubjectvar ] prosubjecttype\\
+\item [finalpuncfound     ] BOOLEAN\\
+\item [finitenessvar      ] finitenesstype\\
+\item [finitenessvarvar   ] finitenesstype\\
+\item [gensubjfound       ] BOOLEAN\\
+\item [indobjrelfound     ] BOOLEAN\\
+\item [infdoinconjfound   ] BOOLEAN\\
+\item [infsortreset       ] BOOLEAN\\
+\item [infsortvar         ] inftype\\
+\item [infsortvarvar      ] inftype\\
+\item [inversfound        ] BOOLEAN\\
+\item [leftdislocfound    ] BOOLEAN\\
+\item [letinconjfound     ] BOOLEAN\\
+\item [letusgluefound     ] BOOLEAN\\
+\item [locargrelfound     ]  BOOLEAN\\
+\item [modusvar           ] modustype\\
+\item [modusvarvar        ] modustype\\
+\item [moodvar            ] moodtype\\
+\item [negfound           ] BOOLEAN\\
+\item [nomsubjfound       ] BOOLEAN\\
+\item [notinauxfound      ] BOOLEAN\\
+\item [npinshiftfound     ] BOOLEAN\\
+\item [nppredrelfound     ]  BOOLEAN\\
+\item [objrelfound        ] BOOLEAN\\
+\item [onlyaccsubjfound   ] BOOLEAN \\
+\item [onlynomsubjfound   ] BOOLEAN \\
+\item [particlekey        ] keytype\\
+\item [prepkeyvar1        ] keytype\\
+\item [prepkeyvar2        ] keytype\\
+\item [prepobjrelfound    ] BOOLEAN\\
+\item [prepobj2relfound   ] BOOLEAN\\
+\item [preppinshiftfound  ] BOOLEAN\\
+\item [prepppredrelfound  ] BOOLEAN\\
+\item [prosubjectvar      ] BOOLEAN\\
+\item [RELPROfound        ] BOOLEAN\\
+\item [reqvar             ] polarityEFFSETtype\\
+\item [scomplrelfound     ] BOOLEAN\\
+\item [senttypevar        ] senttypetype\\
+\item [shiftcases         ] casesettype\\
+\item [shiftfound         ] BOOLEAN\\
+\item [shiftnumbervar     ] numbertype\\
+\item [shiftpersonvar     ] persontype\\
+\item [shiftsexes         ] sexSETtype\\
+\item [shiftxpmoodvar     ] xpmoodtype\\
+\item [Sinldlfound        ] BOOLEAN\\
+\item [strandedrelfound   ] BOOLEAN\\
+\item [subjNPhead         ] NPheadtype\\
+\item [subjnumbervar      ] numbertype\\
+\item [subjpersonvar      ] persontype\\
+\item [subjfound          ] BOOLEAN\\
+\item [synvpefsvar        ] synpatternEFFsettype\\
+\item [temporalvar        ] BOOLEAN\\
+\item [tensevar           ] tensetype\\
+\item [therenpfound       ] BOOLEAN\\
+\item [thetavpvar         ] thetavptype\\
+\item [tofound            ] BOOLEAN\\
+\item [VERBconjfound      ] BOOLEAN\\
+\item [verbpersonsvar     ] personSETtype\\
+\item [verbnumbersvar     ] numberSETtype\\
+\item [verbpfound         ] BOOLEAN\\
+\item [verbprepkeyvar1    ] keytype\\
+\item [verbprepkeyvar2    ] keytype\\
+\item [verbsubcvar        ] verbsubctype\\
+\item [verbsynvpsvar      ] synpatternSETtype\\
+\item [verbthetavpvar     ] thetavptype\\
+\item [voicevar           ] voicetype\\
+\item [XPinldlfound       ] BOOLEAN\\
+\end{description}
+\subsection{auxiliary functions and procedures}
+The function {\bf argspresent} checks whether the arguments that the verb 
+selects are really present. First, the function searches for the argument 
+within verb phrase. If the argument is not present, it may be moved out of the 
+verb phrase by means of wh-movement or NP-movement. Wh-movement to the first 
+local spec-CP is only allowed 
+if:
+\begin{itemize}
+\item moodvar = whinterrogative 
+\item moodvar = declarative AND senttypevar = mainclause
+\item moodvar = relative AND finitenessvar = finite.\\
+This accounts for the ungrammaticality of {\em *The book which to buy}
+\end{itemize}      
+Wh-movement out of the CP to a higher spec-CP position is only allowed if 
+\begin{itemize}
+  \item moodvar = declarative AND
+                      (senttypevar = subordinateclause) AND
+                      ((finitenessvar = finite) OR
+                       (infsortvar IN [toinf, inf])
+                      );
+\end{itemize}
+Hiddenshift is only allowed in relatives
+\begin{itemize}
+\item  hiddenshiftallowed := (moodvar = relative);
+
+\item  subjshiftallowed := ((moodvar = whinterrogative) AND
+                       (senttypevar = mainclause))             OR
+                      ((moodvar = whinterrogative) AND
+                       (senttypevar = subordinateclause) AND
+                       (conjfound = FALSE))                    OR
+                      ((moodvar = relative) AND 
+                       (relprofound OR npinshiftfound)   AND
+                       (finitenessvar = finite));
+
+\end{itemize}
+\section{Utterance}
+\subsection{Regular Expression}
+The Utterance Rule {\tt UTT} makes utterances out of Noun Phrases, 
+Prepositional Phrases, Adjective Phrases and Sentences:
+\begin{verbatim}
+%UTT
+
+REGULAREXPRESSION:
+
+UTT = NP/1  | PREPP/3 | SENTENCE/2 | ADJP/4
+\end{verbatim}
+The only conditions for a sentence to become an utterance are that it should be 
+finite and have sentencetype {\tt mainclause}.
+\subsection{Parameters}
+This rule has no parameters
+\subsection{auxiliary functions and procedures}
+This rule requires no auxiliary functions and procedures
+\section{Special effects}
+For a number of syntactic constructions, some special measures have been taken 
+within the surface rules either because of economical reasons or due to 
+limitations of M-parser or S-parser. The following 
+subsections describe these measures per phenomena.
+\subsection{Relatives}
+Within Rosetta, all relative pronouns are of the category RELPRO, except for 
+the relative pronoun {\em who}. This pronoun is treated as a WHPRO even in 
+relative constructions since it is able to inflect for case as in {\em whom}. 
+Since the category RELPRO has no attributes of its own, this case inflection 
+can only be dealt with if {\em who} is a WHPRO. \\
+
+The strange thing is that in the M-rules, only one occurence of {\em who}, 
+namely the {\em masculine, singular} entry doubles as a relative pronoun. That 
+is, in CNMODRELSENT the {\em masculine, singular who } is inserted regardless 
+the number and the gender of the head noun:
+\begin{quote}
+The man who left\\
+The woman who left\\
+The men who left\\
+The women who left
+\end{quote}
+At first, the solutions seemed to be easy. In the mooddetermination functions
+the mood {\em relative } was also assigned to wh-phrases headed by the {\em  
+masculine, singular who}. Since English hardly shows any inflectional 
+morphology and M-parser (incorrectly!) didn't distinguish between number and 
+gender either, at least in relatives, this seemed the most economical solution. However, 
+it leaves us with one case of relatives which cannot be correctly analyzed, 
+namely present tense plural relatives:
+\begin{quote}
+The women who swim\\
+The man who swim
+\end{quote}
+Since the VP either receives {\em plural, [1,2,3]} or {\em singular, [1,2]} for 
+number and person, {\em masculine,singular, [3] who } is never accepted as 
+subject of the wh-sentence, hence the value {\em relative } for mood is never 
+assigned. There now seem to be a number of options:
+\begin{itemize}
+  \item Still use a WHPRO in relative sentences, but add subrules in M-grammar 
+to WHMODRELSENT and assign to every wh-sentence, regardless of the features of 
+the wh-element, the value {\em relative } for mood. This, however, creates a lot 
+of intermediate extra parses in S-parser.
+  \item More principled, perhaps, the category RELPRO should be assigned the 
+attribute whcase, indicating whether it can show overt case. 
+  \item Relax the restrictions on number-agreement
+\end{itemize}
+We have chosen for the last option. This means that in case of a sentence such 
+as {\em Who is swimming} the wh-element is parsed as both singular and plural.
+In all other cases, this was already happening anyway due to the deflective 
+nature of English inflection.
+\subsection{Be}
+\subsection{Extraposed Sentences}
+\section{Relevant Literature}
+\section{supertree}
+\begin{verbatim}
+
+-leftdislocrel --> Probably,
+-shiftrel
+-conjrel
+-meltnegrel
+-subjrel           He   |-auxrel
+-adjunctrel             |-adjunctrel
+-auxrel                 |-progauxrel
+-adjunctrel             |-passauxrel
+-negrel                 |-adjunctrel
+-posrel                 |-partrel 
+-torel                  |-indobjrel
+-predrel/VP-------------|-objrel
+-locadvrel              |-adjunctrel
+-tempadvrel             |-prepobjrel/predrel/complrel/locargrel/dirargrel
+-extraposrel            |-adjunctrel
+-postsentadvrel         |-byobjrel
+
+
+\end{verbatim}
+\end{document}

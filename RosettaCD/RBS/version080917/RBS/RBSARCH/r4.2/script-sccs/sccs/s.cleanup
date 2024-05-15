@@ -1,0 +1,92 @@
+h51751
+s 00071/00001/00000
+d D 1.2 95/10/17 11:07:03 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 95/10/17 08:59:10 rous 1 0
+c date and time created 95/10/17 08:59:10 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+#! /bin/sh
+#set -x
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+rm -f contents.rbs
+#
+#if ( test -s $RBS_USER_ROOT$RBS_RELEASE/lock.rbs ) 
+#then echo "CLEAR: No clearing allowed during integrate"
+#     exit
+#fi
+#
+wrongo=""
+directs=`ls -d *`
+for i in $directs; do
+   if ( test -d $i ) 
+   then 
+       if ( test "$i" = "doc" )
+       then echo "CLEAR: skipping component $i"
+       elif ( test "$i" = "actions" )
+            then echo "CLEAR: clearing directory $i"
+             rm -f $i/*% $i/*~ $i/.[BC]* $i/.emacs_* $i/warnings
+             if (test -d $i/sccs )
+             then
+                chmod 777 $i/sccs 
+                rmdir $i/sccs
+             fi
+             cd actions
+             for j in `ls` ; do
+                k=`basename $j`
+                { test -s $RBS_ARCHIVE$RBS_RELEASE/$i/sccs/s.$k ; } || \
+                { echo "CLEAR: Strange file $k in directory $i"; wrongo="$k"; }
+                { test -s $RBS_ARCHIVE$RBS_RELEASE/$i/sccs/p.$k ; } || \
+                { echo "CLEAR: File $k in directory $i not grabbed!"; wrongo="$k"; }
+             done
+#             sccs -d$RBS_ARCHIVE$RBS_RELEASE/$i -psccs clean > /dev/null
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+        else echo "CLEAR: clearing directory $i/source"
+             rm -f $i/source/*% $i/source/*~ $i/source/.[BC]* $i/source/.emacs_* $i/source/warnings
+             if (test -d $i/source/sccs )
+             then 
+                rmdir $i/source/sccs
+             fi
+             cd $i/source
+             for j in `ls` ; do
+                k=`basename $j`
+                { test -s $RBS_ARCHIVE$RBS_RELEASE/$i/sccs/s.$k ; } || \
+                { echo "CLEAR: Strange file $k in directory $i/source"; wrongo="$k"; }
+                { test -s $RBS_ARCHIVE$RBS_RELEASE/$i/sccs/p.$k ; } || \
+                { echo "CLEAR: File $k in directory $i/source not grabbed!"; wrongo="$k"; }
+                touch $k
+             done
+#             sccs -d$RBS_ARCHIVE$RBS_RELEASE/$i -psccs clean > /dev/null
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/$i/target
+             echo "CLEAR: clearing directory $i/target"
+             for targetf in `ls`; do
+                echo "CLEAR: removing file $targetf"
+                rm -f $targetf
+             done
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+         fi
+   fi
+done
+#
+cd $savedir
+#
+if ( test -z "$wrongo" )
+then echo "CLEAR: Cleaning up finished"
+else echo "CLEAR: Found at least one illegal file: integrate aborted"
+     exit 1
+fi
+E 2
+E 1

@@ -1,0 +1,4506 @@
+%DUTCH
+&
+
+!(*
+The following attributes of sentence have to be computed:
+
+req            :  } by a general req/env computation strategy
+env            :  }
+mood           : to be computed
+senttype       :  to be determined      
+voice          :
+PROsubject     :
+synvpefs       :
+thetavp        :
+modus          :
+aktionsarts    :
+aspect         : omegaaspect
+deixis         :
+retro          : false
+finiteness     :
+infsort        :
+superdeixis    :omegadeixis
+VRcompl        :false
+
+
+Also : conjkey:keytype!
+
+Aspect: It never distinguishes forms in Dutch, so after the application of time rules
+it is set to omegaaspect
+
+Retro: there is no direct connection between tense, auxiliaries and retro.
+It is always false in surface structures.
+
+superdeixis: it is assumed that upon substitution the attribute superdeixis
+is always set to omegadeixis, and the attribute deixis to present or past.
+
+VRcompl: the value true is only relevant in pruned sentences, hence it will
+only occur with the value false  in surface structures. 
+
+I decided to have RADVs always dominated by RADVP, to keep track of
+the kindefs, and not to have ADVPs dominating them.
+Originally kindefs was taken care of in RADV itself, but that is not
+correct, since RADV is also a basic category.
+
+RADVP has a RADVPrecord with the following attributes:
+
+headkey: keytype:0
+mood   : xpmoodtype:declxpmood
+kindefs: kindeffSETtype: []
+
+
+*)
+
+% SENTENCEsrule
+REGULAREXPRESSION:
+ 
+SENTENCE = [COORD/79] .[PREP/62 | PREP/71]. [LDL] .[SH] .[CPOS] .[NP/10] .M1 
+             .(VERBP/11 | NOVERBP) 
+            .EXTRA .[SENTENCE/76] .[ [PUNC/2] . SENTENCE/44 ] .[PUNC/75]
+
+LDL = (SENTENCE/1. [PUNC/2])  | (SENTENCE/46 . [PUNC/15])
+
+SH = NP/3 | PREPP/4 | ADVP/5 | ADJP/6 | RADVP/7 | RELPRO/13 | RADVP/42
+
+CPOS = CONJ/8 | VERB/9
+
+M1 = CLITICS .{ STADV   | ERPOS | REFLPRO/25  | ([PUNC/15] . SENTENCE/43) }
+
+     .{ LOCADV | QADV | NEG/29 | POS/30  }
+ 
+
+ERPOS = (RADVP/26. [GLUE/48]) | PREPP/27 | RADVP/28 | RADVP/47 
+
+
+CLITICS = [PERSPRO/22] . [PERSPRO/23] . [PERSPRO/24] 
+
+
+STADV =  ADVP/31       | PREPP/32                        |
+
+         ADVP/33     | PREPP/34     | NP/35              |
+
+         NP/45       |  NP/36       |  NP/37             |
+
+         QADV                                            |
+          
+         ADVP/14        
+
+LOCADV = ADVP/38     | PREPP/39    | RADVP/40             
+
+
+QADV =   ADVP/41
+
+
+EXTRA = { PREPP/12} . [ [PUNC/15] .SENTENCE/17] .[ [PUNC/15]. SENTENCE/16 ] 
+        .[ THANP/18 | ASP/19 ] . [ [PUNC/20] . SENTENCE/21 ]
+
+
+
+NOVERBP = SVPADVS . SCOMPLS . [PART/65 | PREP/74] . SPOSTPPS
+
+
+SVPADVS = {PREPP/69 | ADVP/70 |  ADVP/72 }
+
+SCOMPLS = ([SIO] . [SDO] . [SREST] )
+
+SIO     = NP/49 | PREPP/50 | PREPP/51 | PREPP/66
+
+SDO     = NP/52 | PROSENT/78
+
+SREST   = ( SREST1  . [ PREPP/63 | PREPP/64] ) |
+         ( ( PREPP/63 | PREPP/64 ). SPPS )
+
+SREST1  = ( SPPS  | ADVP/55 | ADVP/57 | ADVP/59 | 
+            NP/60 | ADJP/61 | NP/73   | VERBP/77)
+
+SPPS    = (PREPP/53 | PREPP/54 | PREPP/56 | PREPP/58)
+
+SPOSTPPS = {PREPP/67} . {PREPP/68}
+
+
+CONDITIONSANDACTIONS:
+
+                            !(* erposrel,26,27 *)     !(*locadvrel,def, 28*)
+!(* effect  stadv  . [RADVP/26 | PREPP/27] . RADVP/29 .stadv  *)
+
+!(*'t,22*)          !(*iocl,23*)       !(*docl,24*)      !(*reflrel,25*)
+           !(*'t,22*)          !(*iocl,23*)       !(*docl,24*)      !(*reflrel,25*)
+         !(*sentadv,31 *)    !(*sentadv,32 *)             !(*tempadv,33*)   
+!(*tempadv,34*)    !(*tempadv,35 *)           
+!(*postsubj,45*) !(*preadv,io,36*)    !(*preadv,do,37 *)
+         !(*locadv,38 *)   !(*locadv,39 *)   !(*locadv, indef,40 *)   
+      !(* attrib q = true,e.g. opzettelijk, 41 *)        !(*postverb,14*) 
+            !(*relsent,17*)  !(*extraposrel,16*) 
+          !(* thanp,asp,18,19 *)        !(* resultrel,21 *)
+!(* relative clause and complement clause do not exclude each other; *)
+!(*47  errel *)
+
+
+
+
+VAR
+
+      teller             : INTEGER;
+      aanobjrelfound     ::BOOLEAN;
+      accobjfound        ::BOOLEAN;
+      adhortfound        ::BOOLEAN;
+      adjpinshiftfound   ::BOOLEAN;
+      adjppredrelfound   :::BOOLEAN;
+      adjunctsvar        ::adjunctSETtype;
+      adjvpefsvar        ::synpatternEFFSETtype;
+      adverbialvar       ::BOOLEAN;      
+      advfound           ::BOOLEAN;
+      advldlfound        :::BOOLEAN;
+      advpinshiftfound   ::BOOLEAN;
+      advppredrelfound   :::BOOLEAN;
+      advprepfound       :::BOOLEAN;
+      alsofcomplfound    ::BOOLEAN;
+      classesvar         ::classSETtype;
+      conjaspectvar      ::aspecttype;
+      conjclassvar       ::timeadvclasstype;
+      conjdeixisvar      ::deixistype;
+      conjkeyvar         ::keytype;
+      conjpatternsvar    ::synpatternEFFSETtype;
+      conjrelfound       :::BOOLEAN;
+      conjretrovar       ::retrotype;
+      conjsentinm1found  :::BOOLEAN;
+      coordfound         ::BOOLEAN;
+      countennpfound     ::BOOLEAN;
+      defradvrelfound    :::BOOLEAN;
+      deixisvar          ::deixistype;
+      dirargNPfound      :::BOOLEAN;
+      dirargrelfound     :::BOOLEAN;
+      dirprepfound       ::BOOLEAN;
+      secondclrelfound   ::BOOLEAN;
+      envvar             ::polarityEFFSETtype;
+      erinerposrelfound  :::BOOLEAN;
+      erinshiftfound     :::BOOLEAN;
+      erposrelfound      :::BOOLEAN;
+      erqrelfound        :::BOOLEAN;
+      expparticle        :::keytype;
+      extracanbeadjsubjvar ::BOOLEAN;
+      extraposmodus      ::modustype;
+      extraposmoodvar    ::moodtype;
+      extraposrelfound   ::BOOLEAN;
+      finalpuncfound     ::BOOLEAN;
+      finitenessvar      ::finitenesstype;
+      gelievefound       ::BOOLEAN;
+      hetclrelfound      :::BOOLEAN;
+      hierdaarinRposfound:::BOOLEAN;
+      indobjrelfound     :::BOOLEAN;
+      infsortvar         ::inftype;
+      firstclrelfound    :::BOOLEAN;
+      leftdislocpuncfound::BOOLEAN;
+      leftdislocrelfound :::BOOLEAN;
+      locargrelfound     :::BOOLEAN;
+      modusvar           ::modustype;
+      moodvar            ::moodtype;
+      negorposfound      :::BOOLEAN;
+      nodetnpfound       :: BOOLEAN;
+      nodetnpfound2      :: BOOLEAN;
+      nodetNPidvps       :: synpatternEFFSETtype;
+      nodetNPidvps2      :: synpatternEFFSETtype;
+      nppredrelfound     :::BOOLEAN;
+      objrelfound        :::BOOLEAN;
+      origsynvpefsvar    ::synpatternEFFSETtype;
+      particlekey        :::keytype;
+      postsubjnodetNPfound::BOOLEAN;
+      postsubjpersonvar  ::persontype;
+      postsubjnumbervar  ::numbertype;
+      postsubjrelfound   :::BOOLEAN;
+      postvporelfound    :::BOOLEAN;
+      postvrelfound      :::BOOLEAN;
+      ppinshiftfound     ::BOOLEAN;
+      preadvandclfound   ::BOOLEAN;
+      preadvok           ::BOOLEAN;
+      preadvok2          ::BOOLEAN;
+      preadvrel2found    :::BOOLEAN;
+      preadvrelfound     :::BOOLEAN;
+      predadjfound       ::BOOLEAN;
+      prepkeyvar1        ::keytype;
+      prepkeyvar2        ::keytype;
+      prepobjrelfound    :::BOOLEAN;
+      prepobj1found      :::BOOLEAN;
+      prepobj2found      :::BOOLEAN;
+      preprepobjrelfound :::BOOLEAN;
+      prepppredrelfound  :::BOOLEAN;
+      prepsynppsvar      ::synpatternSETtype;
+      prosentfound       ::BOOLEAN;
+      radvgluefound      ::BOOLEAN;
+      reflafterNPfound   ::BOOLEAN;
+      reflexivityvar     ::reflexivetype;
+      reflrelfound       :::BOOLEAN;
+      relprofound        ::BOOLEAN;
+      reqvar             ::polarityEFFSETtype;
+      resultpuncrelfound :::BOOLEAN;
+      retrovar           ::retrotype;
+      Rinshiftfound      ::BOOLEAN;
+      senttypevar        ::senttypetype;
+      shiftnodetNPfound  ::BOOLEAN;
+      shiftNPhead        ::NPheadtype;
+      shiftnptemporal    ::BOOLEAN;
+      shiftnumbervar     ::numbertype;
+      shiftpersonvar     ::persontype;
+      shiftrelcases      ::caseSETtype;
+      shiftrelfound      :::BOOLEAN;
+      shiftxpmoodvar     ::xpmoodtype;
+      stadvfound         :::BOOLEAN;
+      strandedPPfound    :::BOOLEAN;
+      strandedrelfound   :::BOOLEAN;
+      subjnodetNPfound   ::BOOLEAN;
+      subjNPhead         ::NPheadtype;
+      subjnumbervar      ::numbertype;
+      subjpersonvar      ::persontype;
+      subjrelfound       :::BOOLEAN;
+      synvpefsvar        ::synpatternEFFsettype;
+      synvpefsvar2       ::synpatternEFFsettype;
+      temporalvar        ::BOOLEAN;
+      tensevar           ::tensetype;
+      thetavpvar         ::thetavptype;
+      unreducedvpsvar    ::synpatternEFFSETtype;
+      v2adjuncts         :::adjunctSETtype;
+      v2classesvar       ::classSETtype;
+      v2found            :::BOOLEAN;
+      v2modusvar         ::modustype;
+      v2subcvar          :::verbsubctype;
+      v2synvpefsvar      :::synpatternEFFSETtype;
+      v2thetavpvar       ::thetavptype;
+      verbadjuncts       ::adjunctSETtype;
+      verbpersonsvar     ::personSETtype;
+      verbnumbervar      ::numbertype;
+      verbpfound         :::BOOLEAN;
+      verbprepkeyvar1    ::keytype;
+      verbprepkeyvar2    ::keytype;
+      voicevar           ::voicetype;
+      voorobjrelfound    ::BOOLEAN;
+      Vmatrixheadvar     ::BOOLEAN;
+      vpadjuncts         ::adjunctSETtype;
+      vpclassesvar       ::classSETtype;
+      vpcomplrelfound    ::BOOLEAN;
+      vpinfsortvar       ::inftype;
+      vpmodusvar         ::modustype;
+      vpsynvpefsvar      ::synpatternEFFSETtype;
+      vpthetavpvar       ::thetavptype;
+      vrfound            ::BOOLEAN;
+      anterelativeok     ::BOOLEAN;
+
+
+
+?
+HELP
+
+FUNCTION IMPLIES(p,q : BOOLEAN):BOOLEAN;
+BEGIN
+IMPLIES :=
+((NOT p) OR q);
+END !(*IMPLIES*);
+
+
+FUNCTION onlysubjraisingfound(th::thetavptype; vps::synpatterneffSETtype):BOOLEAN;
+BEGIN
+  onlysubjraisingfound := (th IN [vp010,vp012]) AND (vps <= AUX_closedsentvps);
+END;
+
+FUNCTION nosubjraisingfound(th::thetavptype; vps::synpatterneffSETtype):BOOLEAN;
+BEGIN
+  nosubjraisingfound := (th IN [vp010,vp012]) <= (vps * AUX_closedsentvps=[]);
+END;
+
+FUNCTION nodetNP(t:LSSTREE_pStree):BOOLEAN;
+!(* 
+pre: t=NP<NPrec1>[mu1] & mu1<>[]
+post: nodetNP(t) <=>
+(NPrec1.number = singular) AND
+(NPrec1.actcomas = [count]) AND
+(NPrec1.NPhead = otherNP)  AND
+(EXIST(mu1, [head/CN<>[mu]]) AND
+(NOT EXIST(mu1, [detrel/..])
+*)
+VAR result, detfound, cnfound : BOOLEAN;
+    sonlist :LSSTREE_pRelnode;
+BEGIN
+  result := ((t^.ls^.NPfield^.number=singular) AND
+             (t^.ls^.NPfield^.actcomas=[count]) AND
+             (t^.ls^.NPfield^.NPhead=otherNP)
+            );
+  IF result THEN BEGIN
+     sonlist:= t^.sons;
+     detfound := false;
+     cnfound := false;
+     WHILE (sonlist<>NIL) AND ((NOT detfound) OR (NOT cnfound)) DO BEGIN
+        IF (NOT detfound) THEN detfound := (sonlist^.relation=detrel);
+        IF (NOT cnfound)  THEN cnfound := (sonlist^.relation=head) AND
+                                          (sonlist^.node^.ls^.cat=CN);
+        sonlist:=sonlist^.brother
+     END;
+  END;
+
+  nodetNP := result AND cnfound AND (NOT detfound);
+END !(*nodetNPok*);
+
+
+
+FUNCTION specialNP(nph::NPheadtype):BOOLEAN;
+BEGIN
+specialNP :=
+  (nph IN [hetNP, ditNP, datNP]);
+END !(*specialNP*);
+
+
+FUNCTION activeauxok:BOOLEAN;
+BEGIN
+activeauxok:=
+( VERBPfound AND V2found AND
+  (voicevar =active) AND
+  (V2subcvar <> wordenaux )
+);                                         
+!(*
+If VERBPfound and V2found, and voicevar = active, then V2subcvar is not allowed
+to be the auxiliary worden.
+*)
+END !(*activeauxok*);
+
+
+
+FUNCTION advsok:BOOLEAN;
+BEGIN
+ advsok := (preadvok          OR 
+            preadvrelfound    OR
+            erposrelfound     OR
+            defRadvrelfound   OR
+            erqrelfound       OR
+            hetclrelfound     OR
+            firstclrelfound   OR
+            reflrelfound      OR
+            stadvfound        OR
+            advfound          OR
+            negorposfound     OR
+            conjsentinm1found);
+END !(*advsok*);
+
+
+PROCEDURE computeaktarts(     classes::classSETtype; 
+                          VAR aktarts::aktionsartEFFSETtype
+                        );
+!(*
+The procedure yields a set, aktarts (by means of a VAR variable)
+representing the aktionsarts that are compatible with the verbclass
+*)
+
+BEGIN
+ aktarts := [];
+ IF   (stativeclass IN classes)
+ THEN aktarts := aktarts + [stative];
+ IF   (movementclass IN classes)
+ THEN aktarts := aktarts + [stative, activity, accomplishment];
+ IF   (durativeclass IN classes)
+ THEN aktarts := aktarts + [stative, activity, accomplishment];
+ IF   (momentaryclass IN classes)
+ THEN aktarts := aktarts + [stative, achievement];
+ IF   (iterativeclass IN classes)
+ THEN aktarts := aktarts + [stative, activity];
+END !(*computeaktarts*);
+
+
+FUNCTION allpreadvsok:BOOLEAN;
+BEGIN
+allpreadvsok :=
+( (NOT preadvrelfound) OR preadvok
+)                                                    AND
+( (NOT preadvrel2found) OR preadvok2
+)                                                   
+
+END !(*allpreadvsok*);
+
+
+FUNCTION anterelativeconds:BOOLEAN;
+BEGIN
+anterelativeconds:=
+(
+ (NOT subjrelfound) AND (NOT postsubjrelfound) AND 
+ ( IMPLIES( (modusvar =pastpart)                                   , 
+            (((voicevar = passive) OR 
+              (thetavpvar IN [vp010, vp012])
+             )                                                AND
+             (NOT objrelfound)                                AND
+             (NOT preadvrel2found)                            AND
+             (NOT hetclrelfound)                              AND
+             (NOT secondclrelfound)                           AND
+             (IMPLIES( (preadvrelfound OR firstclrelfound),
+                       (synvpefsvar * AUX_indobjvps <> [])
+                     )
+             )
+            )
+          )
+ )
+);
+END !(*anterelativeconds*);
+
+FUNCTION extracanbeadjsubj:BOOLEAN;
+BEGIN
+  extracanbeadjsubj := (adjppredrelfound                            AND
+                        IMPLIES(subjrelfound, (subjNphead=hetNP))   AND
+                        IMPLIES((shiftrelfound and (NOT subjrelfound)
+                                ),
+                                ((shiftNPhead=hetNP) OR (shiftrelcases=[]))
+                               )
+                       )
+END !(*extracanbeadjsubj*);
+
+!(*
+the extraposrel can be interpreted as a subject to an adjective if
+a predicative adjp has been found, and
+the subject if present = het , and
+the shiftrel if present if no subject is present = het, or is no NP
+-this function is called in checkpredadj
+-The function allows absence of any real subject,and also, implicitly,
+the presence of er in erposrel, or in shiftrel.
+*)
+
+
+
+PROCEDURE checkpredadj(VAR aps::synpatternEFFSETTYPE);
+BEGIN
+IF (NOT extracanbeadjsubjvar) THEN BEGIN
+  IF    extraposrelfound 
+  THEN  aps := aps * AUX_extraposvps;
+  IF    (extraposmoodvar = declarative) 
+  THEN  aps := aps * AUX_declcomplvps;
+  IF    (extraposmoodvar IN [whinterrogative, yesnointerrogative]) 
+  THEN  aps := aps * AUX_qcomplvps;
+  IF    (extraposmodus = infinitive) AND 
+        (extraposmoodvar = declarative) 
+  THEN  aps := aps * AUX_teinfcomplvps;
+  IF    (extraposmodus = indicative) AND
+        (extraposmoodvar = declarative) 
+  THEN  aps := aps * AUX_findeclcomplvps;
+END
+END !(*checkpredadj*);
+
+
+FUNCTION conjandprepok:BOOLEAN;
+BEGIN
+  conjandprepok :=
+(
+ IMPLIES(advprepfound, ( (conjkeyvar = 0)              OR
+                         (conjkeyvar = KEY_datconjkey)
+                       )
+        )
+ 
+);
+
+!(*
+This function checks whether the found prep and the conjunction found, if any
+are compatible
+*)
+END !(*conjandprepok*);
+
+
+FUNCTION countenok:BOOLEAN;
+BEGIN
+  countenok := IMPLIES(countennpfound, (erqrelfound OR erinerposrelfound));
+
+!(*
+*)
+END !(*countenok*);
+
+
+!(*POSTVPOOK moved to LSSURFQUO:
+
+FUNCTION postvpook:BOOLEAN;
+BEGIN
+ postvpook := (adjppredrelfound     OR 
+               advppredrelfound     OR
+               nppredrelfound       OR
+               prepppredrelfound    OR
+               (particlekey <> 0)   OR 
+               strandedrelfound     OR 
+               prepobjrelfound      OR
+               locargrelfound       OR
+               dirargrelfound
+              );
+END; postvpook*)
+
+
+!(*POSTVOK moved to LSSURFQUO:
+FUNCTION postvok(objrelfound,indobjrelfound:BOOLEAN):BOOLEAN;
+BEGIN
+ postvok := (postvpook       OR
+             objrelfound     OR
+             indobjrelfound  
+            );
+END; postvok*)
+
+
+!(*EXTRAPPOK moved to LSSURFQUO
+FUNCTION extrappok:BOOLEAN;
+BEGIN
+  extrappok := (verbpfound OR postvok(objrelfound,indobjrelfound) OR postvporelfound OR postvrelfound  );
+END; extrappok*)
+
+
+
+FUNCTION existconf(vps::synpatternEFFSETtype):BOOLEAN;
+BEGIN
+  existconf := ((rinshiftfound or erposrelfound) AND (synzijn IN vps));
+END !(*existconf*);
+
+
+
+FUNCTION prepandfinok:BOOLEAN;
+BEGIN
+  prepandfinok :=
+      (NOT advprepfound)                             OR
+      (IMPLIES((synTHATSENT IN prepsynppsvar),
+               (modusvar = indicative)
+              )                                
+      )                                        AND
+      (IMPLIES((synOPENTESENT IN prepsynppsvar),
+               (modusvar = infinitive)
+              )                               
+      );
+!(*
+This function checks whether the found prep and the modus of the
+sentence are compatible
+*)
+END !(*conjandprepok*);
+
+
+FUNCTION argspresent:BOOLEAN;
+VAR
+shiftused, preadv1used, fclused, supershiftused, postvpoused, erposused,
+prepobjused, defRadvused, hetclused,
+shiftallowed, supershiftallowed, hiddenshiftallowed, hiddenshiftused,
+subjok, objok, indobjok, dirargok, locargok, nppredok, adjppredok,
+advppredok, prepppredok, prepobjok, aanobjok, voorobjok, strandedok,
+synzijnok, VRok, extraok, prosentok, vpcomplok,
+npinshiftfound, soprosentok,
+result
+
+
+                                     :BOOLEAN;
+
+BEGIN
+
+subjok          := true; 
+objok           := true; 
+indobjok        := true;
+dirargok        := true; 
+locargok        := true; 
+nppredok        := true; 
+adjppredok      := true;
+advppredok      := true; 
+prepppredok     := true; 
+prepobjok       := true; 
+aanobjok        := true; 
+voorobjok       := true; 
+strandedok      := true;
+synzijnok       := true; 
+VRok            := true;
+extraok         := true; 
+prosentok       := true;
+vpcomplok       := true;
+npinshiftfound  := true; 
+soprosentok     := true;
+
+ result         := true;
+ shiftused      := false;
+ preadv1used    := false;
+ fclused        := false;
+ hetclused      := false;
+ erposused      := false;
+ defRadvused    := false;
+ prepobjused    := false;
+ postvpoused    := false;
+ strandedok     := false;
+ supershiftused := false;
+ hiddenshiftused:= false;
+
+ npinshiftfound := (shiftrelfound AND (shiftrelcases <> [])) OR
+                   relprofound; 
+ 
+ shiftallowed := (moodvar = whinterrogative)      OR
+                 ((moodvar = relative)     AND
+                  (finitenessvar = finite)
+                 )                                OR
+                 ((moodvar = declarative)  AND
+                  (senttypevar = mainclause)
+                 ); 
+ supershiftallowed := (moodvar = declarative)           AND
+                      (senttypevar = subordinateclause) AND
+                      (adverbialvar = false)            AND
+                      ((finitenessvar = finite) OR
+                       (infsortvar = teinf)
+                      );
+
+hiddenshiftallowed := (moodvar = relative)              AND
+                      (finitenessvar = infinite);
+
+!(*BEGIN indobj*)
+ IF (synvpefsvar * AUX_indobjvps <> []) THEN BEGIN
+   indobjok := indobjrelfound;
+   IF (NOT indobjok) THEN BEGIN
+      IF preadvrel2found AND (NOT preadv1used) THEN BEGIN 
+        indobjok := true; preadv1used := true; 
+      END;
+   END !(*NOT indobjok*);
+   IF (NOT indobjok) THEN BEGIN
+      IF (secondclrelfound OR hetclrelfound OR extraposrelfound) AND 
+         (NOT fclused) AND firstclrelfound THEN BEGIN 
+       indobjok := true; fclused := true; 
+      END
+   END;
+   IF (NOT indobjok) THEN BEGIN
+      IF (hetclrelfound OR extraposrelfound) AND (NOT preadv1used) AND 
+         preadvrelfound THEN BEGIN
+         indobjok := true; preadv1used := true
+      END
+   END;
+   IF (NOT indobjok) THEN BEGIN
+      IF (NOT preadv1used) AND preadvrelfound THEN BEGIN
+         indobjok := true; preadv1used := true
+      END
+   END;
+
+   IF (NOT indobjok) THEN BEGIN
+      IF (NOT fclused) AND firstclrelfound THEN BEGIN
+        IF (synvpefsvar - AUX_emptyindobjvps = []) THEN BEGIN 
+           indobjok := true; fclused := true
+        END
+      END;
+      IF (synvpefsvar - AUX_emptyindobjvps <> []) THEN BEGIN     
+         indobjok := true;
+      END;
+
+   END;
+   IF (NOT indobjok) AND shiftallowed THEN BEGIN
+     IF (synvpefsvar - AUX_emptyindobjvps = []) THEN BEGIN 
+        IF npinshiftfound AND (NOT shiftused) THEN BEGIN
+           indobjok := true; shiftused := true;
+        END!(*shiftrelfound*)
+     END;
+     IF (synvpefsvar - AUX_emptyindobjvps <> []) THEN BEGIN     
+        indobjok := true;
+     END;
+   END;
+
+   IF (NOT indobjok) AND supershiftallowed THEN BEGIN
+     IF (synvpefsvar - AUX_emptyindobjvps = []) THEN BEGIN 
+       IF npinshiftfound AND (NOT shiftused) THEN BEGIN
+          indobjok := true; shiftused := true;
+       END!(*npinshiftfound*)
+     END;
+     IF (synvpefsvar - AUX_emptyindobjvps <> []) THEN BEGIN     
+        indobjok := true;
+     END;
+   END!(*supershiftallowed*);
+
+   IF (NOT indobjok) AND hiddenshiftallowed THEN BEGIN
+     IF (synvpefsvar - AUX_emptyindobjvps = []) THEN BEGIN 
+       IF (NOT hiddenshiftused) THEN BEGIN
+          indobjok := true; hiddenshiftused := true;
+       END;
+     END;
+     IF (synvpefsvar - AUX_emptyindobjvps <> []) THEN BEGIN     
+        indobjok := true;
+     END;
+   END;
+   IF (NOT indobjok) THEN BEGIN
+     synvpefsvar := synvpefsvar - AUX_indobjvps;
+     indobjok := true;
+   END
+ END !(** AUX_indobjvps*)
+ ELSE indobjok := true;
+ result := result AND indobjok;
+
+
+ !(*BEGIN subj*)
+IF result THEN BEGIN
+ IF (finitenessvar = finite) AND (moodvar <> imperativemood) THEN BEGIN
+  subjok := subjrelfound OR erposrelfound OR extraposrelfound           OR
+	    postsubjrelfound                                            OR 
+	    (leftdislocrelfound AND (NOT advldlfound))                  OR
+	    ((thetavpvar = vp012) AND (synvpefsvar * AUX_indobjvps <> []))   OR 
+	    ((voicevar = passive) AND (synvpefsvar * AUX_indobjvps <> []))   OR
+            ((voicevar = passive) AND shiftallowed and ppinshiftfound);
+  IF ((NOT subjok) AND shiftallowed) THEN BEGIN
+     IF ((npinshiftfound OR ppinshiftfound OR Rinshiftfound) AND 
+	 (NOT shiftused)) THEN BEGIN
+	subjok := true; shiftused := true;
+     END;
+  END;
+  IF ((NOT subjok) AND supershiftallowed AND (NOT supershiftused)) THEN BEGIN
+    subjok := true; supershiftused := true;
+  END !(*not subjok and supershiftallowed*);
+ END!(*finitenessvar = finite*)
+ ELSE subjok := true;
+ result := result AND subjok;
+END !(*SUBJ*);
+
+
+ !(*BEGIN obj*)
+IF result THEN BEGIN
+ IF ((synvpefsvar * (AUX_objvps-[synzijn]) <> []) AND 
+     (voicevar = active)              AND
+     (thetavpvar IN [vp120,vp123])) THEN BEGIN
+  objok := objrelfound OR secondclrelfound OR preadvrel2found;
+
+  IF (NOT objok) THEN BEGIN
+    IF (hetclrelfound AND (NOT hetclused)) THEN BEGIN
+      hetclused := true; objok := true
+    END;
+  END;
+
+
+  IF (NOT objok) THEN BEGIN
+    IF (preadvrelfound AND (NOT preadv1used)) THEN BEGIN
+      preadv1used := true; objok := true
+    END;
+  END;
+  IF (NOT objok) THEN BEGIN
+    IF (firstclrelfound AND (NOT fclused)) THEN BEGIN
+      fclused := true; objok := true
+    END;
+  END;
+  IF ((NOT objok) AND shiftallowed )THEN BEGIN
+    IF (npinshiftfound AND (NOT shiftused)) THEN BEGIN
+      shiftused := true; objok := true
+    END;
+  END;
+
+  IF ((NOT objok) AND supershiftallowed )THEN BEGIN
+    IF (NOT supershiftused) THEN BEGIN
+      supershiftused := true; objok := true
+    END;
+  END;
+ 
+   IF (NOT objok) AND hiddenshiftallowed THEN BEGIN
+     IF (NOT hiddenshiftused) THEN BEGIN
+       objok := true; hiddenshiftused := true;
+     END; 
+   END;
+
+  IF (NOT objok) THEN BEGIN
+     synvpefsvar := synvpefsvar - AUX_objvps;
+     objok := true;
+  END;
+
+ END !(*objvps*)
+ ELSE objok := true;
+ result := result AND objok;
+END !(*obj*);
+
+!(*BEGIN dirarg*)
+IF result THEN BEGIN
+ IF (synvpefsvar * AUX_dirargvps <> []) THEN BEGIN
+   dirargok := dirargrelfound;
+   IF ((NOT dirargok) AND shiftallowed) THEN BEGIN
+      IF  ((ppinshiftfound OR advpinshiftfound) AND (NOT shiftused)) THEN BEGIN
+          shiftused := true; dirargok :=true;
+      END;
+   END;
+   IF ((NOT dirargok) AND supershiftallowed) THEN BEGIN
+      IF  (NOT supershiftused) THEN BEGIN
+          supershiftused := true; dirargok :=true;
+      END;
+   END;
+
+   IF (NOT dirargok) THEN BEGIN
+      synvpefsvar := synvpefsvar - AUX_dirargvps;
+      dirargok := true;
+   END;
+ END !(*dirargvps*)
+ ELSE dirargok := true;
+ result := result AND dirargok;
+END !(*dirarg*);
+
+!(*BEGIN locarg*)
+IF result THEN BEGIN
+ IF (synvpefsvar * AUX_locargvps <> []) THEN BEGIN
+   locargok := locargrelfound;
+
+   IF (NOT locargok) THEN BEGIN
+      IF (NOT erposused) AND erposrelfound THEN BEGIN
+         locargok := true; erposused := true
+      END
+   END;
+
+   IF (NOT locargok) THEN BEGIN
+      IF (NOT defRadvused) AND defRadvrelfound THEN BEGIN
+         locargok := true; defRadvused := true
+      END
+   END;
+
+   
+   IF ((NOT locargok) AND shiftallowed) THEN BEGIN
+      IF  ((ppinshiftfound OR advpinshiftfound) AND (NOT shiftused)) THEN BEGIN
+          shiftused := true; locargok :=true;
+      END;
+   END;
+   IF ((NOT locargok) AND supershiftallowed) THEN BEGIN
+      IF  (NOT supershiftused) THEN BEGIN
+          supershiftused := true; locargok :=true;
+      END;
+   END;
+
+   IF (NOT locargok) AND hiddenshiftallowed THEN BEGIN
+     IF (NOT hiddenshiftused) THEN BEGIN
+       locargok := true; hiddenshiftused := true;
+     END; 
+   END;
+
+   IF (NOT locargok) THEN BEGIN
+      synvpefsvar := synvpefsvar - AUX_locargvps;
+      locargok := true;
+   END;
+ END !(*locargvps*)
+ ELSE locargok := true;
+ result := result AND locargok;
+END !(*locarg*);
+
+!(*BEGIN prepobj*)
+IF result THEN BEGIN
+ IF (synvpefsvar * AUX_prepobjvps <> []) THEN BEGIN
+   prepobjok := prepobjrelfound;
+
+   IF (NOT prepobjok) THEN BEGIN
+      IF  (postvporelfound AND (NOT postvpoused)) THEN BEGIN
+          postvpoused := true; prepobjok :=true;
+      END;
+   END;
+   
+   IF ((NOT prepobjok) AND shiftallowed) THEN BEGIN
+      IF  (ppinshiftfound AND (NOT shiftused)) THEN BEGIN
+          shiftused := true; prepobjok :=true;
+      END;
+   END;
+   IF ((NOT prepobjok) AND supershiftallowed) THEN BEGIN
+      IF  (NOT supershiftused) THEN BEGIN
+          supershiftused := true; prepobjok :=true;
+      END;
+   END;
+
+   IF (NOT prepobjok) THEN BEGIN
+      synvpefsvar := synvpefsvar - AUX_prepobjvps;
+      prepobjok := true;
+   END;
+ END !(*prepobjvps*)
+ ELSE prepobjok := true;
+ result := result AND prepobjok;
+END !(*prepobj*);
+
+!(*BEGIN aanobj*)
+IF result THEN BEGIN
+ IF (synvpefsvar * AUX_aanobjvps <> []) THEN BEGIN
+   aanobjok := aanobjrelfound;
+
+
+   IF (NOT aanobjok) THEN BEGIN
+      IF  (prepobjrelfound AND (NOT prepobjused)) THEN BEGIN
+          prepobjused := true; aanobjok :=true;
+      END;
+   END;
+
+   IF (NOT aanobjok) THEN BEGIN
+      IF  (postvporelfound AND (NOT postvpoused)) THEN BEGIN
+          postvpoused := true; aanobjok :=true;
+      END;
+   END;
+   
+   IF ((NOT aanobjok) AND shiftallowed) THEN BEGIN
+      IF  (ppinshiftfound AND (NOT shiftused)) THEN BEGIN
+          shiftused := true; aanobjok :=true;
+      END;
+   END;
+   IF ((NOT aanobjok) AND supershiftallowed) THEN BEGIN
+      IF  (NOT supershiftused) THEN BEGIN
+          supershiftused := true; aanobjok :=true;
+      END;
+   END;
+
+   IF (NOT aanobjok) THEN BEGIN
+      synvpefsvar := synvpefsvar - AUX_aanobjvps;
+      aanobjok := true;
+   END;
+ END !(*aanobjvps*)
+ ELSE aanobjok := true;
+ result := result AND aanobjok;
+END !(*aanobj*);
+
+!(*BEGIN voorobj*)
+IF result THEN BEGIN
+ IF (synvpefsvar * AUX_voorobjvps <> []) THEN BEGIN
+   voorobjok := voorobjrelfound;
+
+
+   IF (NOT voorobjok) THEN BEGIN
+      IF  (prepobjrelfound AND (NOT prepobjused)) THEN BEGIN
+          prepobjused := true; voorobjok :=true;
+      END;
+   END;
+
+   IF (NOT voorobjok) THEN BEGIN
+      IF  (postvporelfound AND (NOT postvpoused)) THEN BEGIN
+          postvpoused := true; voorobjok :=true;
+      END;
+   END;
+   
+   IF ((NOT voorobjok) AND shiftallowed) THEN BEGIN
+      IF  (ppinshiftfound AND (NOT shiftused)) THEN BEGIN
+          shiftused := true; voorobjok :=true;
+      END;
+   END;
+   IF ((NOT voorobjok) AND supershiftallowed) THEN BEGIN
+      IF  (NOT supershiftused) THEN BEGIN
+          supershiftused := true; voorobjok :=true;
+      END;
+   END;
+
+   IF (NOT voorobjok) THEN BEGIN
+      synvpefsvar := synvpefsvar - AUX_voorobjvps;
+      voorobjok := true;
+   END;
+ END !(*voorobjvps*)
+ ELSE voorobjok := true;
+ result := result AND voorobjok;
+END !(*voorobj*);
+
+!(*BEGIN adjppred*)
+IF result THEN BEGIN
+ IF (synvpefsvar * (AUX_adjppredvps-[synzijn]) <> []) THEN BEGIN
+   adjppredok := adjppredrelfound;
+
+   IF ((NOT adjppredok) AND shiftallowed) THEN BEGIN
+      IF  (adjpinshiftfound AND (NOT shiftused)) THEN BEGIN
+          shiftused := true; adjppredok :=true;
+      END;
+   END;
+   IF ((NOT adjppredok) AND supershiftallowed) THEN BEGIN
+      IF  (NOT supershiftused) THEN BEGIN
+          supershiftused := true; adjppredok :=true;
+      END;
+   END;
+
+   IF (NOT adjppredok) THEN BEGIN
+      synvpefsvar := synvpefsvar - AUX_adjppredvps;
+      adjppredok := true;
+   END;
+ END !(*adjppredvps*)
+ ELSE adjppredok := true;
+ result := result AND adjppredok;
+END !(*adjppred*);
+
+!(*BEGIN nppred*)
+IF result THEN BEGIN
+ IF (synvpefsvar * (AUX_nppredvps-[synzijn]) <> []) THEN BEGIN
+   nppredok := nppredrelfound;
+
+
+   IF ((NOT nppredok) AND shiftallowed) THEN BEGIN
+      IF  (npinshiftfound AND (NOT shiftused)) THEN BEGIN
+          shiftused := true; nppredok :=true;
+      END;
+   END;
+   IF ((NOT nppredok) AND supershiftallowed) THEN BEGIN
+      IF  (NOT supershiftused) THEN BEGIN
+          supershiftused := true; nppredok :=true;
+      END;
+   END;
+
+   IF (NOT nppredok) AND hiddenshiftallowed THEN BEGIN
+     IF (NOT hiddenshiftused) THEN BEGIN
+       nppredok := true; hiddenshiftused := true;
+     END; 
+   END;
+
+   IF (NOT nppredok) THEN BEGIN
+      synvpefsvar := synvpefsvar - AUX_nppredvps;
+      nppredok := true;
+   END;
+ END !(*nppredvps*)
+ ELSE nppredok := true;
+ result := result AND nppredok;
+END !(*nppred*);
+
+!(*BEGIN prepppred*)
+IF result THEN BEGIN
+ IF (synvpefsvar * (AUX_prepppredvps-[synzijn]) <> []) THEN BEGIN
+   prepppredok := prepppredrelfound;
+
+
+   IF ((NOT prepppredok) AND shiftallowed) THEN BEGIN
+      IF  (ppinshiftfound AND (NOT shiftused)) THEN BEGIN
+          shiftused := true; prepppredok :=true;
+      END;
+   END;
+   IF ((NOT prepppredok) AND supershiftallowed) THEN BEGIN
+      IF  (NOT supershiftused) THEN BEGIN
+          supershiftused := true; prepppredok :=true;
+      END;
+   END;
+
+   IF (NOT prepppredok) THEN BEGIN
+      synvpefsvar := synvpefsvar - AUX_prepppredvps;
+      prepppredok := true;
+   END;
+ END !(*prepppredvps*)
+ ELSE prepppredok := true;
+ result := result AND prepppredok;
+END !(*prepppred*);
+
+!(*BEGIN advppred*)
+IF result THEN BEGIN
+ IF (synvpefsvar * (AUX_advppredvps-[synzijn]) <> []) THEN BEGIN
+   advppredok := advppredrelfound ;
+
+
+   IF ((NOT advppredok) AND shiftallowed) THEN BEGIN
+      IF  (advpinshiftfound AND (NOT shiftused)) THEN BEGIN
+          shiftused := true; advppredok :=true;
+      END;
+   END;
+   IF ((NOT advppredok) AND supershiftallowed) THEN BEGIN
+      IF  (NOT supershiftused) THEN BEGIN
+          supershiftused := true; advppredok :=true;
+      END;
+   END;
+
+   IF (NOT advppredok) THEN BEGIN
+      synvpefsvar := synvpefsvar - AUX_advppredvps;
+      advppredok := true;
+   END;
+ END !(*advppredvps*)
+ ELSE advppredok := true;
+ result := result AND advppredok;
+END !(*advppred*);
+
+!(*BEGIN vpcomplok*)
+IF result THEN BEGIN
+ IF (synvpefsvar * AUX_vpcomplvps <> []) THEN BEGIN
+   vpcomplok := vpcomplrelfound;
+
+   IF (NOT vpcomplok) THEN BEGIN
+      synvpefsvar := synvpefsvar - AUX_vpcomplvps;
+      vpcomplok := true;
+   END;
+ END !(*vpcomplvps*)
+ ELSE vpcomplok := true;
+ result := result AND vpcomplok;
+END !(*vpcompl*);
+
+
+!(*BEGIN soprosentok*)
+IF result THEN BEGIN
+ IF (synvpefsvar * AUX_soprosentvps <> []) THEN BEGIN
+   soprosentok := prosentfound OR verbpfound;
+
+   IF (NOT soprosentok) THEN BEGIN
+      synvpefsvar := synvpefsvar - AUX_soprosentvps;
+      soprosentok := true;
+   END;
+ END !(*soprosentvps*)
+ ELSE soprosentok := true;
+ result := result AND soprosentok;
+END !(*soprosentok*);
+
+
+
+
+!(*BEGIN stranded*)
+IF result THEN BEGIN
+ IF strandedPPfound THEN BEGIN
+
+  IF (NOT strandedok) THEN BEGIN
+    IF (NOT erposused) AND (erposrelfound) THEN BEGIN
+      erposused := true; strandedok := true;
+    END
+  END;
+
+  IF ((NOT strandedok) AND shiftallowed) THEN BEGIN
+    IF  (shiftrelfound AND (NOT shiftused)) THEN BEGIN
+      shiftused := true; strandedok :=true;
+    END;
+  END;
+  IF ((NOT strandedok) AND supershiftallowed) THEN BEGIN
+     IF  (NOT supershiftused) THEN BEGIN
+         supershiftused := true; strandedok :=true;
+     END;
+  END;
+
+  IF ((NOT strandedok) AND hiddenshiftallowed) THEN BEGIN
+     IF  (NOT hiddenshiftused) THEN BEGIN
+         hiddenshiftused := true; strandedok :=true;
+     END;
+  END;
+
+  IF (NOT strandedok) THEN BEGIN
+     synvpefsvar := synvpefsvar - (AUX_locargvps +
+                                   AUX_dirargvps +
+                                   AUX_aanobjvps +
+                                   AUX_voorobjvps +
+                                   AUX_prepobjvps +
+                                   AUX_prepppredvps
+                                  );
+     strandedok := true;
+  END;
+
+ END
+ ELSE strandedok := true;
+ result := result AND strandedok;
+END !(*stranded*);
+
+!(*BEGIN synzijn*)
+IF result THEN BEGIN
+  IF (synvpefsvar * [synzijn] <> []) THEN BEGIN
+     synzijnok := adjppredrelfound OR nppredrelfound    OR
+                  advppredrelfound OR prepppredrelfound OR
+                  objrelfound ;
+
+     IF (NOT synzijnok) THEN BEGIN
+        IF (NOT fclused) AND firstclrelfound THEN BEGIN
+           fclused := true; synzijnok := true;
+        END
+     END;
+
+     IF (NOT synzijnok) THEN BEGIN
+        IF (NOT hetclused) AND hetclrelfound THEN BEGIN
+           hetclused := true; synzijnok := true;
+        END
+     END;
+
+     IF (NOT synzijnok) AND shiftallowed THEN BEGIN
+        IF (NOT shiftused) AND shiftrelfound THEN BEGIN
+           shiftused := true; synzijnok := true;
+        END
+     END;
+     IF (NOT synzijnok) AND supershiftallowed THEN BEGIN
+        IF (NOT supershiftused) THEN BEGIN
+           supershiftused := true; synzijnok := true;
+        END
+     END;
+
+     IF (NOT synzijnok) AND hiddenshiftallowed THEN BEGIN
+        IF (NOT hiddenshiftused) THEN BEGIN
+           hiddenshiftused := true; synzijnok := true;
+        END
+     END;
+     
+     IF (NOT synzijnok) THEN BEGIN
+        synvpefsvar := synvpefsvar - [synzijn]; synzijnok := true;
+     END
+
+  END
+  ELSE synzijnok := true;
+  result := result AND synzijnok;
+END !(*synzijn*);
+
+!(*BEGIN extrapos*)
+IF result THEN BEGIN
+  IF (synvpefsvar * (AUX_extraposvps-AUX_VRvps) <> []) THEN BEGIN
+     extraok := extraposrelfound;
+
+     IF (NOT extraok) THEN BEGIN
+        synvpefsvar := synvpefsvar - (AUX_extraposvps-AUX_VRvps); 
+        extraok:= true;
+     END
+
+  END
+  ELSE extraok := true;
+  result := result AND extraok;
+END !(*extrapos*);
+
+!(*BEGIN VR*)
+IF result THEN BEGIN
+  IF (synvpefsvar * AUX_oblVRvps <> []) THEN BEGIN
+     VRok := VERBPfound;
+
+     IF (NOT VRok) THEN BEGIN
+        synvpefsvar := synvpefsvar - AUX_oblVRvps; VRok:= true;
+     END
+
+  END
+  ELSE VRok := true;
+  result := result AND VRok;
+END !(*VR*);
+
+!(*BEGIN PROSENTvps*)
+IF result THEN BEGIN
+  IF synvpefsvar * AUX_prosentvps <> [] THEN BEGIN
+     IF hetclrelfound AND (NOT hetclused) THEN BEGIN
+        prosentok := true; hetclused := true;
+     END;
+
+     IF (NOT prosentok) THEN BEGIN
+       synvpefsvar := synvpefsvar - AUX_prosentvps;
+       prosentok := true;
+     END
+  END
+  ELSE prosentok := true;
+  result := result AND prosentok;
+END !(*synPROSENT*);
+                          
+
+argspresent := result AND (synvpefsvar <> []);
+
+END !(*argspresent*);
+
+
+
+
+
+FUNCTION conjandverbok:BOOLEAN;
+BEGIN
+conjandverbok:=
+
+( 
+  (NOT 
+      (conjrelfound AND (NOT V2found)
+      )
+  )                                    OR
+  (
+   ( (conjpatternsvar * [synTHATSENT, synQSENT] <> []) AND
+     (finitenessvar = finite) 
+   )                                                          OR
+   ( (conjpatternsvar * [synOPENTESENT] <> [])         AND
+     (finitenessvar = infinite)                        AND
+     (infsortvar = teinf)
+   )
+  )                                         
+);
+!(*Checks whether the found CONJ, if any, and finiteness
+are  compatible*)                                                    
+END !(*conjandverbok*);
+
+
+
+
+
+PROCEDURE detargstrANDclasses( 
+           VAR thetavpvar    :: thetavptype;
+           VAR vpsynvpefsvar ::synpatternEFFSETtype;
+           VAR classesvar    ::classSETtype;
+           VAR verbadjuncts  ::adjunctSETtype;
+           VAR adjunctsvar   ::adjunctSETtype
+                             );
+BEGIN
+
+   IF   V2found
+   THEN BEGIN
+    IF   verbpfound
+    THEN BEGIN
+      IF ((V2subcvar IN [hebbenaux, zijnaux])      AND
+	  (VPmodusvar IN [pastpart, infinitive])   AND
+          (voicevar = active) 
+	 )                                                 
+	     !(* is .. beginnen te werken;aanhetV !
+		heeft... moeten werken ;*)
+                                                            OR
+         ( (V2subcvar IN [zijnaux, wordenaux])     AND
+           (VPmodusvar = pastpart)                 AND
+           (voicevar = passive)
+         )                                                  OR
+         ( (V2subcvar = latenverb)                 AND
+           (VPmodusvar =infinitive)                AND
+           adhortfound
+         )
+      THEN BEGIN 
+        IF    Vmatrixheadvar
+        THEN BEGIN
+	   thetavpvar   := VPthetavpvar;
+	   synvpefsvar  := VPsynvpefsvar;
+	   classesvar   := VPclassesvar;
+           verbadjuncts := VPadjuncts;
+           adjunctsvar  := VPadjuncts;
+        END !(*Vmatrixheadvar*)
+      END !(*V2subcvar IN THEN*)
+      ELSE BEGIN
+        IF  (NOT Vmatrixheadvar)
+        THEN BEGIN
+	   thetavpvar   := V2thetavpvar;
+	   synvpefsvar  := V2synvpefsvar;
+	   classesvar   := V2classesvar;
+           verbadjuncts := VPadjuncts;
+           adjunctsvar  := VPadjuncts;
+        END !(*NOT Vmatrixheadvar*)
+      END !(*else V2subcvar ELSE*)
+    END!(* IF verbpfound THEN*)
+    ELSE BEGIN
+       thetavpvar   := V2thetavpvar;
+       synvpefsvar  := V2synvpefsvar;
+       classesvar   := V2classesvar;
+       verbadjuncts := V2adjuncts;
+    END !(*IF verbpfound ELSE*)
+   END !(*V2found THEN*)
+   ELSE BEGIN
+     IF   (verbpfound AND Vmatrixheadvar)
+     THEN BEGIN
+       thetavpvar   := VPthetavpvar;
+       synvpefsvar  := VPsynvpefsvar;
+       classesvar   := VPclassesvar;
+       verbadjuncts := VPadjuncts;
+       adjunctsvar  := VPadjuncts;
+     END !(*Vmatrixheadvar*)
+     ELSE IF ((NOT verbpfound) AND adjppredrelfound) 
+          THEN BEGIN
+            thetavpvar  := thetavpaux;
+            synvpefsvar := [synzijn];
+            classesvar  := [stativeclass];
+            verbadjuncts := [];
+            adjunctsvar := [];
+          END
+   END !(*V2found ELSE*); 
+END !(*detargstrANDclasses*);
+
+
+FUNCTION yesnoconds:BOOLEAN;
+BEGIN
+  yesnoconds :=
+   ( (NOT leftdislocrelfound) AND
+     (
+      subjrelfound     OR
+      postsubjrelfound OR
+      erposrelfound    OR
+      indobjrelfound
+     )
+   );
+END !(*yesnoconds*);
+
+
+
+
+PROCEDURE determinemood16(VAR moodvar    ::moodtype; 
+                          VAR senttypevar::senttypetype
+                         );
+BEGIN
+ IF    (NOT shiftrelfound) AND (NOT adhortfound)
+ THEN BEGIN
+   IF   (NOT conjrelfound)
+   THEN BEGIN
+     IF   ((modusvar = infinitive) AND
+           ( NOT subjrelfound )
+          )
+     THEN BEGIN
+             moodvar     := declarative;                  !(*1*)
+             senttypevar := subordinateclause;
+     END;
+     IF   (modusvar IN [omegamodus, prespart, pastpart]) AND
+	  (anterelativeok)                   AND
+	  anterelativeconds                  
+     THEN BEGIN
+             moodvar     := anterelative;                 !(*2*)
+             senttypevar := subordinateclause;
+     END
+   END !(*IF (NOT conjrelfound THEN)*)
+   ELSE BEGIN
+     IF   (NOT V2found)
+     THEN BEGIN
+       IF    (synTHATSENT IN conjpatternsvar)
+       THEN BEGIN
+               moodvar := declarative;                    !(*4*)
+               senttypevar := subordinateclause;               
+       END
+       ELSE BEGIN
+              IF  ( synQsent  in conjpatternsvar )
+              THEN BEGIN
+                 moodvar := yesnointerrogative;             !(*3*)
+                 senttypevar := subordinateclause;
+              END 
+              ELSE BEGIN
+		     IF    (conjkeyvar = KEY_omCONJkey )
+		     THEN BEGIN
+			    moodvar := declarative;                    !(*omteinf*)
+			    senttypevar := subordinateclause;               
+                            infsortvar := omteinf;
+		     END;
+                     
+                     IF gelievefound             AND
+                        (modusvar = infinitive)  AND
+                        (infsortvar = teinf)     AND
+                        (NOT subjrelfound)       AND
+                        (NOT postsubjrelfound)   AND
+                        (NOT leftdislocrelfound) AND
+                        (NOT shiftrelfound)
+                     THEN BEGIN
+			    moodvar := imperativemood;  !(*gelieve dit te doen*)
+			    senttypevar := mainclause;               
+                     END
+
+              END               
+       END
+     END !(*IF (not v2found)*)
+     ELSE BEGIN
+       IF ( 
+           (modusvar = imperative)             AND
+           (NOT postsubjrelfound)              AND
+	   ((NOT subjrelfound)              OR 
+	    ((subjpersonvar IN [2,4]) AND
+             (subjnumbervar = singular)
+            )
+	   )
+          )
+       THEN BEGIN
+              moodvar := imperativemood;             !(*5*)
+              senttypevar := mainclause;
+       END;
+       IF   (modusvar = indicative)  AND
+            yesnoconds
+       THEN BEGIN
+               moodvar := yesnointerrogative ;        !(*6*)
+               senttypevar := mainclause;
+       END
+     END !(*IF NOT v2found ELSE*)
+   END !(*IF (NOT conjrelfound ELSE)*)
+ END !(*IF (NOT shiftrelfound) THEN*)   
+
+END !(*determinemood16*);
+
+
+
+PROCEDURE determinemood7(VAR moodvar    ::moodtype; 
+                          VAR senttypevar::senttypetype
+                         );
+BEGIN
+ IF   (NOT shiftrelfound) AND
+      (conjrelfound)
+ THEN BEGIN
+   IF   (V2found) AND (subjrelfound) AND adhortfound
+   THEN IF (V2subcvar = latenverb) AND
+	   ( subjpersonvar = 1) AND
+	   (subjnumbervar = plural)
+	THEN BEGIN
+                moodvar     := latenmood;                   !(*7*)
+                senttypevar := mainclause
+        END;
+
+   IF V2found AND subjrelfound AND (NOT adhortfound)
+   THEN IF (modusvar = indicative)  AND
+           (subjpersonvar = 2)      AND
+           (subjnumbervar = plural) 
+        THEN BEGIN
+               moodvar     := imperativemood;  !(*Komen jullie binnen!*)
+               senttypevar := mainclause;
+        END;
+ END !(*IF   (NOT shiftrelfound) AND
+	   (conjrelfound) THEN *)
+
+END !(*determinemood7*);
+
+
+
+PROCEDURE determinemood8(VAR moodvar    ::moodtype; 
+                          VAR senttypevar::senttypetype
+                         );
+BEGIN
+ IF   (shiftrelfound)     AND
+      (NOT conjrelfound)  AND
+      (NOT adhortfound)
+ THEN BEGIN
+   IF (
+       (
+        (relprofound)        OR
+        (shiftxpmoodvar = wh)
+       )                         AND
+       (modusvar = indicative)
+      )
+   THEN BEGIN
+           moodvar     := relative;                        !(*8*) 
+           senttypevar := subordinateclause;
+   END
+ END !(*IF (shiftrelfound) AND (NOT conjrelfound) THEN*)
+END !(*determinemood8*);
+
+
+PROCEDURE determinemood914(VAR moodvar    ::moodtype; 
+                           VAR senttypevar::senttypetype
+                          );
+BEGIN
+IF (NOT adhortfound) THEN BEGIN
+ IF  (shiftrelfound) 
+ THEN BEGIN
+   IF  (NOT conjrelfound)
+   THEN BEGIN
+     IF   (shiftxpmoodvar = wh)
+     THEN BEGIN
+       IF (modusvar = indicative) 
+       THEN BEGIN
+                  !(* wat hij deed *)
+               moodvar     := whinterrogative;                   !(*9a*)
+               senttypevar := subordinateclause;
+       END !(* IF (modusvar = indicative) THEN*)
+       ELSE BEGIN
+         IF  (modusvar = infinitive)   AND
+             (infsortvar = teinf)
+         THEN BEGIN
+                    !(* wat te doen *)
+               moodvar     := whinterrogative;                   !(*9b*)
+               senttypevar := subordinateclause;
+         END
+       END !(* IF (modusvar = indicative) ELSE*)
+     END !(*if shiftxpmoodvar = wh THEN*)     
+   END !(*NOT conjrelfound THEN*)
+   ELSE BEGIN
+     IF  (shiftxpmoodvar = wh)
+     THEN BEGIN
+       IF   V2found
+       THEN BEGIN
+             !(* wat deed hij *)
+         IF   (modusvar = indicative)   
+         THEN BEGIN
+               moodvar     := whinterrogative;                  !(*10*)
+               senttypevar := mainclause;
+         END
+       END
+       ELSE BEGIN
+          !(* wat of hij deed *)
+         IF (modusvar = indicative)      
+         THEN BEGIN
+               moodvar     := whinterrogative;                  !(*11*)
+               senttypevar := subordinateclause;
+         END
+       END
+     END;
+
+     IF  (shiftxpmoodvar = declxpmood) AND
+	 (V2found)                     AND
+         (NOT RELPROfound)
+     THEN BEGIN
+             IF   (modusvar = indicative)
+             THEN BEGIN
+		moodvar := declarative;                             !(*12*)
+		senttypevar := mainclause;
+             END
+     END
+   END !(*NOT conjrelfound ELSE*)
+ END !(*if shiftrelfound THEN*)
+ ELSE BEGIN
+   IF  (conjrelfound)
+   THEN BEGIN
+     IF   leftdislocrelfound      AND
+          (modusvar = indicative)
+     THEN BEGIN
+            moodvar := declarative;                       !(*13*)
+            senttypevar := mainclause;
+     END;
+     IF   (conjkeyvar = KEY_omCONJkey)
+     THEN BEGIN
+             moodvar := relative;                          !(*14*)
+             senttypevar := subordinateclause;
+             infsortvar := omteinf;
+     END
+   END !(*IF conjrelfound THEN*)
+ END !(*if shiftrelfound ELSE*)
+END !(*IF NOT adhortfound*)
+END !(*determinemood914*);
+
+
+
+PROCEDURE determinemood15ff(VAR moodvar    ::moodtype; 
+                            VAR senttypevar::senttypetype
+                           );
+BEGIN
+  IF  ((NOT shiftrelfound) AND
+       (NOT adhortfound) 
+      )
+  THEN BEGIN
+          IF    (V2found) AND (modusvar = indicative)
+          THEN BEGIN
+	     moodvar      := conditional;                      !(*15*)
+	     senttypevar  := subordinateclause;
+             adverbialvar := true;
+          END
+!(* for: Komt hij op tijd, (dan halen we het nog)  *)
+  END
+  ELSE BEGIN
+         IF ((shiftxpmoodvar = wh)   AND
+             (modusvar = infinitive) AND 
+             (infsortvar = teinf)
+            )
+         THEN BEGIN
+                 moodvar     := whinterrogative;               !(*16*)
+                 senttypevar := mainclause;
+         END 
+  END
+
+END !(*determinemood15*);
+
+
+PROCEDURE determinemoodadv( VAR moodvar    ::moodtype; 
+                            VAR senttypevar::senttypetype
+                          );
+BEGIN
+  IF     (NOT shiftrelfound) AND
+         conjandprepok       AND
+         prepandfinok        AND
+         (NOT adhortfound)
+  THEN BEGIN
+    moodvar     := declarative;
+    senttypevar := subordinateclause;
+  END;
+END !(*determinemoodadv*);
+
+FUNCTION dirargnpok:BOOLEAN;
+BEGIN
+  dirargnpok := ( ( NOT dirargnpfound)         OR
+                  (dirprepfound OR verbpfound)
+                );
+END !(*dirargnpok*);
+
+
+
+PROCEDURE EXTreducevps(VAR vps::synpatternEFFSETtype);
+BEGIN
+
+IF    (reflafterNPfound)
+THEN  vps := vps * AUX_VRvps;
+IF    extraposrelfound                     AND 
+      (adjvpefsvar * AUX_extraposvps = []) AND
+      (NOT extracanbeadjsubjvar)
+THEN  vps := vps * AUX_extraposvps;
+IF    alsofcomplfound
+THEN  vps := vps * AUX_alsofcomplvps;
+IF    (NOT alsofcomplfound)
+THEN  vps := vps - AUX_alsofcomplvps;
+IF    (extraposmoodvar = declarative) AND 
+      (adjvpefsvar * AUX_extraposvps = []) AND
+      (NOT extracanbeadjsubjvar)
+THEN  vps := vps * AUX_declcomplvps;
+IF    (extraposmoodvar IN [whinterrogative, yesnointerrogative]) AND 
+      (adjvpefsvar * AUX_extraposvps = []) AND
+      (NOT extracanbeadjsubjvar)
+THEN  vps := vps * AUX_qcomplvps;
+IF    (extraposmodus = infinitive) AND 
+      (extraposmoodvar = declarative) AND 
+      (adjvpefsvar * AUX_extraposvps = []) AND
+      (NOT extracanbeadjsubjvar)
+THEN  vps := vps * AUX_teinfcomplvps;
+IF    (extraposmodus = indicative) AND
+      (extraposmoodvar = declarative) AND 
+      (adjvpefsvar * AUX_extraposvps = []) AND
+      (NOT extracanbeadjsubjvar)
+THEN  vps := vps * AUX_findeclcomplvps;
+IF    ((NOT hetclrelfound) AND (shiftNPhead <> hetNP) AND (subjNPhead <> hetNP))
+THEN  vps := vps - AUX_hetcomplvps;
+
+!(*
+This procedure reduce vps on the basis of information from outside the VERBP,
+or from information that would be outside VERBP, if there were one. 
+These reductions can apply even if VRfound = true
+*)
+
+END!(*EXTreducevps*);
+
+
+PROCEDURE INTreducevps(VAR vps::synpatternEFFSETtype);
+BEGIN
+   IF    ((VERBPfound) AND
+	  (Vmatrixheadvar = false)
+	 )
+   THEN BEGIN
+        vps := vps * AUX_VRvps;
+        IF   (VPinfsortvar = teinf) 
+        THEN vps := vps * AUX_teinfcomplvps;
+   END;
+   IF indobjrelfound   AND
+      ([benfactNP] * verbadjuncts = [])
+   THEN vps := vps * AUX_indobjvps;
+   IF indobjrelfound AND
+      (benfactNP IN verbadjuncts)
+   THEN adjunctsvar := adjunctsvar + [benfactNP];
+   IF objrelfound AND (NOT existconf(vps)) 
+   THEN vps := vps * AUX_objvps;
+   IF objrelfound AND (existconf(vps)) 
+   THEN vps := vps * (AUX_objvps + [synzijn]);
+   IF accobjfound
+   THEN vps := vps * AUX_accobjvps;
+   IF   prosentfound
+   THEN vps := vps * AUX_soprosentvps;
+   IF  (NOT VRfound)
+   THEN BEGIN
+      IF    preadvrelfound AND ([benfactNP] * verbadjuncts = [])
+      THEN  vps := vps * (AUX_objvps + AUX_indobjvps);
+      IF    preadvrelfound AND ([benfactNP] * verbadjuncts <> [])
+      THEN  vps := vps * AUX_objvps ;
+      IF firstclrelfound AND (adjvpefsvar * (AUX_objvps + AUX_adjindobjvps) <> [])
+      THEN  vps := vps * AUX_adjppredvps;
+      IF firstclrelfound                                      AND 
+         (adjvpefsvar * (AUX_objvps + AUX_adjindobjvps) = []) AND
+         ([benfactNP] * verbadjuncts = [])
+      THEN  vps := vps * (AUX_objvps + AUX_indobjvps + AUX_nppredvps);
+
+      IF firstclrelfound                                      AND 
+         (adjvpefsvar * (AUX_objvps + AUX_adjindobjvps) = []) AND
+         ([benfactNP] * verbadjuncts <> [])
+      THEN  vps := vps * (AUX_objvps +  AUX_nppredvps);
+      
+      preadvandclfound := (
+                           (preadvrel2found OR secondclrelfound)   OR
+	                   (preadvrelfound AND firstclrelfound)    OR
+                           (firstclrelfound AND objrelfound)       OR
+                           (preadvrelfound AND hetclrelfound)
+                          );
+
+      IF    (preadvandclfound  AND (adjvpefsvar = [])) AND
+            ([benfactNP] * verbadjuncts = [])
+      THEN  vps := vps * (AUX_indobjvps * AUX_objandhetvps);
+
+      IF    (preadvandclfound  AND (adjvpefsvar = [])) AND
+            ([benfactNP] * verbadjuncts <> [])
+      THEN  vps := vps * AUX_objandhetvps;
+
+      IF    (preadvandclfound  AND (adjvpefsvar <> [])) THEN BEGIN
+        IF    (adjvpefsvar * (AUX_adjindobjvps + AUX_objandhetvps) = []) AND
+              ([benfactNP] * verbadjuncts = [])
+        THEN  vps := vps * (AUX_indobjvps * AUX_objandhetvps * AUX_adjppredvps);
+        IF    (adjvpefsvar * (AUX_adjindobjvps + AUX_objandhetvps) = []) AND
+              ([benfactNP] * verbadjuncts <> [])
+        THEN  vps := vps * (AUX_objandhetvps * AUX_adjppredvps);
+
+        IF    (adjvpefsvar * AUX_adjindobjvps  = []) AND
+              ([benfactNP] * verbadjuncts = [])
+        THEN  vps := vps * (AUX_indobjvps * AUX_adjppredvps);
+        IF    (adjvpefsvar * AUX_adjindobjvps  = []) AND
+              ([benfactNP] * verbadjuncts <> [])
+        THEN  vps := vps *  AUX_adjppredvps;
+
+        IF    (adjvpefsvar * AUX_objandhetvps = [])
+        THEN  vps := vps * (AUX_adjppredvps * AUX_objandhetvps);
+        IF    (adjvpefsvar * (AUX_adjindobjvps * AUX_objandhetvps) <> [])
+        THEN  vps := vps * AUX_adjppredvps;
+      END;
+
+      IF (firstclrelfound AND hetclrelfound AND (adjvpefsvar = [])) AND
+          ([benfactNP] * verbadjuncts = [])
+      THEN vps := vps * (AUX_indobjvps * AUX_objandhetvps);
+
+      IF (firstclrelfound AND hetclrelfound AND (adjvpefsvar = [])) AND
+          ([benfactNP] * verbadjuncts <> [])
+      THEN vps := vps *  AUX_objandhetvps;
+
+      IF (firstclrelfound AND hetclrelfound AND (adjvpefsvar <> [])) THEN BEGIN 
+        IF    (adjvpefsvar * (AUX_adjindobjvps + AUX_objandhetvps) = []) AND
+              ([benfactNP] * verbadjuncts = [])
+        THEN  vps := vps * (AUX_indobjvps * AUX_objandhetvps * AUX_adjppredvps);
+
+        IF    (adjvpefsvar * (AUX_adjindobjvps + AUX_objandhetvps) = []) AND
+              ([benfactNP] * verbadjuncts <> [])
+        THEN  vps := vps * (AUX_objandhetvps * AUX_adjppredvps);
+
+        IF    (adjvpefsvar * AUX_adjindobjvps  = []) AND
+              ([benfactNP] * verbadjuncts = [])
+        THEN  vps := vps * (AUX_indobjvps * AUX_adjppredvps);
+        IF    (adjvpefsvar * AUX_adjindobjvps  = []) AND
+              ([benfactNP] * verbadjuncts <> [])
+        THEN  vps := vps * AUX_adjppredvps;
+
+        IF    (adjvpefsvar * AUX_objandhetvps = [])
+        THEN  vps := vps * (AUX_adjppredvps * AUX_objandhetvps);
+        IF    (adjvpefsvar * (AUX_adjindobjvps * AUX_objandhetvps) <> [])
+        THEN  vps := vps * AUX_adjppredvps;
+      END;
+
+   END;
+
+   IF    (NOT VERBPfound)
+   THEN BEGIN
+      IF aanobjrelfound
+      THEN vps := vps * AUX_aanobjvps;
+      IF voorobjrelfound  AND
+      ([benfactPP] * verbadjuncts = [])
+      THEN vps := vps * AUX_voorobjvps;
+      IF voorobjrelfound AND
+         (benfactPP IN verbadjuncts)
+      THEN adjunctsvar := adjunctsvar + [benfactPP];
+      IF preprepobjrelfound
+      THEN vps := vps * AUX_preprepobjvps;
+      IF prepobjrelfound OR 
+	 postvporelfound
+      THEN BEGIN
+	IF  ((prepkeyvar1 = KEY_aanioprepkey) OR
+	     (prepkeyvar2 = KEY_aanioprepkey)
+	    )                                            AND
+	    (NOT aanobjrelfound AND NOT voorobjrelfound)
+	THEN vps := vps * (AUX_prepobjvps + AUX_aanobjvps)
+	ELSE IF   ((prepkeyvar1 = KEY_voorioprepkey) OR
+		   (prepkeyvar2 = KEY_voorioprepkey)
+		  )                                            AND
+		  (NOT aanobjrelfound AND NOT voorobjrelfound) 
+             THEN IF   ([benfactPP] * verbadjuncts = [])
+	          THEN vps := vps * (AUX_prepobjvps + AUX_voorobjvps)
+	          ELSE adjunctsvar := adjunctsvar + [benfactPP]
+             ELSE vps := vps * AUX_prepobjvps
+      END;
+      IF locargrelfound AND
+         ([locadjunct] * verbadjuncts = [])
+      THEN vps := vps * AUX_locargvps;
+      IF locargrelfound AND
+         (locadjunct IN verbadjuncts)
+      THEN verbadjuncts := verbadjuncts + [locadjunct];
+      IF dirargrelfound AND
+         ([diradjunct] * verbadjuncts = [])
+      THEN vps := vps * AUX_dirargvps;
+      IF dirargrelfound AND
+         (diradjunct IN verbadjuncts)
+      THEN adjunctsvar := adjunctsvar + [diradjunct];
+      IF dirprepfound AND
+         ([diradjunct] * verbadjuncts = [])
+      THEN vps := vps * AUX_dirargvps;
+      IF dirprepfound AND
+         (diradjunct IN verbadjuncts)
+      THEN adjunctsvar := adjunctsvar + [diradjunct];
+      IF advppredrelfound  
+      THEN vps := vps * AUX_advppredvps;
+      IF adjppredrelfound AND
+         ([resAP] * verbadjuncts = [])
+      THEN vps := vps * AUX_adjppredvps;
+      IF adjppredrelfound AND
+         (resAP IN verbadjuncts)
+      THEN adjunctsvar := adjunctsvar + [resAP];
+      IF nppredrelfound  AND
+         ([resNP] * verbadjuncts = [])
+      THEN vps := vps  * AUX_nppredvps;
+      IF nppredrelfound AND
+         (resNP IN verbadjuncts)
+      THEN adjunctsvar := adjunctsvar + [resNP];
+      IF prepppredrelfound    AND
+         ([resPP] * verbadjuncts = []) 
+      THEN vps := vps * AUX_prepppredvps;
+      IF prepppredrelfound AND
+         (resPP IN verbadjuncts)
+      THEN adjunctsvar := adjunctsvar + [resPP];
+      IF vpcomplrelfound 
+      THEN vps := vps * AUX_vpcomplvps;
+      IF prepobj2found
+      THEN vps := vps * AUX_twoprepobjvps;
+   END !(*if not verbpfound then*)
+
+!(*
+This procedure reduces vps on the basis of information internal to VP and
+on the basis of information outside the VP that can be used only if not VRfound
+It is partially identical to reducematrixvps from the Vprule
+*)
+END !(*INTreducevps*);
+
+
+FUNCTION infok:BOOLEAN;
+BEGIN
+  infok := 
+   (
+    (NOT (finitenessvar = infinite))  OR
+    ( (NOT subjrelfound)     AND
+      (NOT postsubjrelfound)
+    )
+   ); 
+!(*
+This function guarantees that no subject or postsubject is present in nonfinite
+sentences
+*)
+END !(*infok*);
+
+
+
+FUNCTION measureadjundernp(t1:LSSTREE_pstree):BOOLEAN;
+     VAR result, CNfound,ADJPfound:BOOLEAN;
+         sonlist:LSSTREE_prelnode;
+BEGIN
+   result :=false; CNfound := false; ADJPfound := false;
+   sonlist:=t1^.sons;               
+   IF sonlist <> NIL THEN BEGIN
+      CNfound := (sonlist^.node^.cat = CN);
+      WHILE (NOT CNfound) AND (sonlist^.brother<>NIL) DO BEGIN
+	 sonlist := sonlist^.brother;
+	 CNfound := (sonlist^.node^.cat = CN);
+      END;
+   END;
+   IF CNfound THEN BEGIN
+     sonlist:=sonlist^.node^.sons;               
+     IF sonlist <> NIL THEN BEGIN
+	ADJPfound := (sonlist^.node^.cat = ADJP);
+        IF   ADJPfound 
+        THEN result := (measureadj IN sonlist^.node^.ls^.ADJPfield^.actsubcefs);
+	WHILE (NOT result) AND (sonlist^.brother<>NIL) DO BEGIN
+	   sonlist := sonlist^.brother;
+	   ADJPfound := (sonlist^.node^.cat = ADJP);
+           IF   ADJPfound 
+           THEN result := (measureadj IN sonlist^.node^.ls^.ADJPfield^.actsubcefs);
+	END;
+     END;
+   END;
+   measureadjundernp := result;
+END {measureadjundernp};
+
+!(*
+yields true if the structures is: NP[...head/CN[...ADJP<measure>[...]...]...]
+*)
+
+
+
+FUNCTION watunderdetp(t1:LSSTREE_pstree):BOOLEAN;
+     VAR result:BOOLEAN;
+         sonlist:LSSTREE_prelnode;
+     BEGIN
+     result:=FALSE;
+     sonlist:=t1^.sons;                {sonlist=../DETP}
+     IF sonlist <> NIL THEN
+       IF sonlist^.brother=NIL THEN
+         IF sonlist^.node^.cat = DETP  THEN BEGIN
+            sonlist := sonlist^.node^.sons;               {sonlist=../QP}
+            IF sonlist <> NIL THEN BEGIN
+               sonlist := sonlist^.node^.sons;            {sonlist=../Q}
+               IF sonlist <> NIL THEN
+                 IF sonlist^.node^.cat = Q THEN
+                 result := (sonlist^.node^.ls^.Qfield^.key = KEY_s_hq_wat);
+            END
+         END;
+     watunderdetp:=result;
+END; !(*watunderdetp*)
+
+{This function yields true if the structure is   NP
+                                                 |
+                                                DETP
+                                                 |
+                                                 QP
+                                                 |
+                                                 Q,key=s_hq_wat
+ 
+
+}
+
+
+
+
+FUNCTION noofargsok:BOOLEAN;
+BEGIN
+  noofargsok :=
+    (
+     (IMPLIES(preadvrelfound, (NOT indobjrelfound)       )) AND
+     (IMPLIES(preadvrel2found,( (NOT indobjrelfound) AND
+                                (NOT objrelfound)    AND
+                                (NOT secondclrelfound)
+                              ) 
+             )
+     )                                                      AND
+     (IMPLIES(firstclrelfound, (NOT indobjrelfound)      )) AND 
+     (IMPLIES(secondclrelfound,( (NOT indobjrelfound) AND
+                                 (NOT objrelfound)    AND
+                                 (NOT preadvrel2found)
+                               )
+             )
+     )                                                      AND
+     (IMPLIES((firstclrelfound AND 
+               preadvrelfound
+              ),
+              ((NOT indobjrelfound) AND
+               (NOT objrelfound)
+              )
+             )
+     )                                                      AND
+     (IMPLIES(hetclrelfound, (NOT secondclrelfound)     ))  AND
+     (IMPLIES(hetclrelfound, (NOT objrelfound     )     ))
+    );
+END !(*noofargsok*);
+
+
+FUNCTION NOplural45(ps::personSETtype;n::numbertype):BOOLEAN;
+BEGIN
+  Noplural45 :=
+   ( NOT ( ( (ps = [4]) OR
+             (ps = [5]) OR
+             (ps = [4,5])
+           )                                       AND
+           (n = plural)
+         )
+   );
+!(*
+This function is true if the verb form is not only 
+fourth or fifth person plural
+*)
+END !(*NOplural45*);
+
+
+
+FUNCTION passiveauxok:BOOLEAN;
+BEGIN
+passiveauxok :=
+( VERBPfound AND V2found                 AND 
+  (voicevar=passive)                     AND
+  (V2subcvar IN [wordenaux, zijnaux])
+);                                        
+!(*
+If VERBP has been found and V2 has been found and voicevar is passive
+THEN V2subcvar must be wordenaux OR zijnaux 
+*) 
+END !(*passiveauxok*);
+
+
+FUNCTION postsubjok:BOOLEAN;
+BEGIN
+postsubjok := IMPLIES(postsubjrelfound, (erposrelfound  OR 
+                                         ppinshiftfound OR 
+                                         Rinshiftfound
+                                        )
+                     );
+!(*
+A postsubjrel requirs the presence of an RADV in shiftrel or in ereposrel
+or a PREPP in shiftrel
+*) 
+END !(*postsubjok*);
+
+
+FUNCTION prepkeyok(vpk,pk::keytype):BOOLEAN;
+BEGIN
+  prepkeyok := ((pk = vpk)                                               OR
+                ((vpk = KEY_totprepkey) AND (pk = KEY_toeprepkey))       OR
+                ((vpk = KEY_metprepkey) AND (pk = KEY_meeprepkey))
+               );
+END!(*prepkeyok*);
+
+
+
+FUNCTION aanvoorprepobjok:BOOLEAN;
+BEGIN
+aanvoorprepobjok :=
+(
+   ( (prepkeyvar1 = KEY_aanioprepkey)          AND
+     (NOT aanobjrelfound)                      AND
+     ((synvpefsvar  * AUX_aanobjvps <> []) OR
+      (synvpefsvar2 * AUX_aanobjvps <> [])
+     )                                         AND
+     (objrelfound )
+   )                                                    OR
+   ( (prepkeyvar1 = KEY_voorioprepkey)          AND
+     (NOT voorobjrelfound)                      AND
+     ((synvpefsvar  * AUX_voorobjvps <> []) OR
+      (synvpefsvar2 * AUX_voorobjvps <> []) OR
+      (benfactPP IN verbadjuncts)
+     )                                         AND
+     (objrelfound )
+   )                                                   
+)
+END !(*aanvoorprepobjok*);
+
+
+FUNCTION prepobjok:BOOLEAN;
+BEGIN
+  prepobjok := false;
+  IF  (NOT prepobj1found)
+  THEN BEGIN
+    prepobjok := true;
+  END !(*  IF  (NOT prepobj1found) THEN*)
+  ELSE BEGIN
+    IF   (NOT prepobj2found)
+    THEN BEGIN 
+      IF  prepkeyok(verbprepkeyvar1, prepkeyvar1) OR
+          prepkeyok(verbprepkeyvar2, prepkeyvar1) OR
+          aanvoorprepobjok  
+      THEN BEGIN
+        prepobjok := true;
+      END !(*  IF prepkeyok.. THEN
+          *)
+      ELSE BEGIN
+        prepobjok := false;
+      END !(* IF prepkeyok ..
+          *);
+    END !(* IF   (NOT prepobj2found) THEN*)
+    ELSE BEGIN
+      IF  (                                                 !(*1*)
+            ( prepkeyok(verbprepkeyvar1, prepkeyvar1) AND 
+              prepkeyok(verbprepkeyvar2, prepkeyvar2)
+            )                                      OR
+            ( prepkeyok(verbprepkeyvar2, prepkeyvar1) AND
+              prepkeyok(verbprepkeyvar1, prepkeyvar2)
+            )
+          )
+      THEN BEGIN
+        prepobjok := true;
+      END !(* IF 1 THEN*)
+      ELSE BEGIN
+        prepobjok := false;
+      END !(* IF 1 ELSE*);
+    END; !(* IF   (NOT prepobj2found) ELSE *)
+  END; !(*  IF  (NOT prepobj1found) ELSE*)
+END !(*function prepobjok*);
+
+
+
+FUNCTION preporconjfound :BOOLEAN;
+BEGIN
+  preporconjfound :=
+   ( advprepfound        OR
+     ( conjrelfound  AND
+       (NOT V2found)
+     )
+   );
+!(*
+This function is true if either an adverbial prep is found, or
+a conjunction has been found, or both have been found
+*)
+END;
+
+
+
+FUNCTION reflexivesok:BOOLEAN;
+BEGIN
+  reflexivesok :=
+(
+ (IMPLIES( (reflexivityvar = reflexive),
+           reflrelfound
+         )
+ )                                             AND
+ (IMPLIES( (NOT VRfound),
+           (IMPLIES( reflrelfound,
+                     (reflexivityvar = reflexive)
+                   )
+           )
+         )
+ )
+);
+END !(*reflexivesok*);
+
+
+FUNCTION Sunderadjp(t1:LSSTREE_pstree):BOOLEAN;
+VAR result:BOOLEAN;
+    sonlist:LSSTREE_prelnode;
+BEGIN
+  result:=FALSE;
+  sonlist:=t1^.sons;
+  IF sonlist <> NIL THEN BEGIN
+     result := ( sonlist^.node^.cat IN [SENTENCE,NEG,POS]) OR
+               (sonlist^.relation IN 
+                    [reflrel, erposrel,postadjrel,omtemodrel, resultrel,
+                     sentadvrel, tempadvrel, locadvrel, agvpadvrel
+                    ]
+               );
+     sonlist:=sonlist^.brother;
+  END;
+  WHILE (NOT result) AND (sonlist<>NIL) DO BEGIN
+       result := ( sonlist^.node^.cat IN [SENTENCE,NEG,POS]) OR
+               (sonlist^.relation IN 
+                    [reflrel, erposrel,postadjrel,omtemodrel, resultrel,
+                     sentadvrel, tempadvrel, locadvrel, agvpadvrel
+                    ]
+               );
+       sonlist:=sonlist^.brother
+  END;
+  Sunderadjp:=result;
+END !(*Sunderadjp*);
+!(*This function checks whether an Special elements occur under ADJP*)
+
+
+
+FUNCTION subordcondsok:BOOLEAN;
+BEGIN
+  subordcondsok :=
+  ( (NOT (senttypevar = subordinateclause) OR (NOT finalpuncfound)) AND
+    ((senttypevar = subordinateclause) <= (NOT coordfound))         AND
+   ( (NOT(senttypevar = subordinateclause))       OR
+     ( (NOT (leftdislocrelfound))             AND
+       ( (NOT shiftrelfound)               OR
+         (NOT (shiftxpmoodvar =declxpmood))OR
+         relprofound 
+       )
+     )
+   )
+  );
+END !(*subordcondsok*);
+
+
+
+!(* ********************************************* *)
+FUNCTION SVAOK:BOOLEAN;
+
+   VAR inversionfound: BOOLEAN;
+
+   FUNCTION SVANomshiftok:BOOLEAN;
+   BEGIN
+      SVANomshiftok :=
+	       (IMPLIES( ( 
+			  ((shiftrelcases = [Nominative]) AND
+			   (NOT specialNP(shiftNPhead))
+                          )                                   OR
+                          (shiftNPhead = jegenNP)
+			 ),
+			 (
+			  (shiftpersonvar IN verbpersonsvar) AND
+			  (shiftnumbervar = verbnumbervar)
+			 )
+		       )
+	       );                                                     
+   END !(*SVANomshiftok*);
+
+
+
+   FUNCTION SVAspecNomshiftok:BOOLEAN;
+   BEGIN
+     SVAspecNomshiftok :=
+	    (IMPLIES( ( 
+		       (shiftrelcases = [Nominative]) AND
+		       (specialNP(shiftNPhead))
+		      ),
+		      (
+		       (3 IN verbpersonsvar) 
+		      )
+		    )
+	    );                                                     
+   END !(*SVAspecNomshiftok*);
+
+
+
+   FUNCTION SVAerok:BOOLEAN;
+   BEGIN
+     SVAerok :=
+	    (IMPLIES( (
+		       erinshiftfound
+		      ),
+		      (
+		       (3 IN verbpersonsvar)
+		      )
+		    )
+	    );                                                     
+   END !(*SVAerok*);
+
+
+
+   FUNCTION SVArelprook:BOOLEAN;
+   BEGIN
+      SVArelprook :=
+	    (IMPLIES( (relprofound AND (NOT subjrelfound)),
+		      (3 IN verbpersonsvar)
+		    )                                              
+	    ); 
+   END !(*SVArelprook*);
+
+
+   FUNCTION shiftetcetera:BOOLEAN;          !(*inside SVAOK*)
+   BEGIN
+     shiftetcetera :=
+     (
+      SVANomshiftok     AND
+      SVAspecNomshiftok AND
+      SVAerok           AND
+      SVArelprook
+     );
+   END !(*shiftetcetera*); !(* Function inside SVAOK*)
+
+
+
+
+
+   FUNCTION SVAinvok:BOOLEAN;
+   BEGIN
+     SVAinvok :=
+       (IMPLIES( (
+		  subjrelfound  AND
+		  inversionfound
+		 ), 
+		 (
+		  (0 IN verbpersonsvar     ) AND
+		  (verbnumbervar = singular)
+		 )
+	       )
+       );                                                    
+   END !(*SVAinok*);
+
+
+
+   FUNCTION SVAnormsubjok:BOOLEAN;
+   BEGIN
+      SVAnormsubjok :=
+       (IMPLIES( (
+		   subjrelfound         AND
+		   (NOT inversionfound) AND
+		   (NOT specialNP(subjNPhead))
+		 ),
+		 (
+		  (subjpersonvar IN verbpersonsvar) AND
+		  (subjnumbervar = verbnumbervar)
+		 )
+	       )
+       );
+   END !(*SVAnormsubjok*);
+
+
+
+   FUNCTION SVAspecsubjok:BOOLEAN;
+   BEGIN
+     SVAspecsubjok :=
+       (IMPLIES( (
+		   subjrelfound         AND
+		   (NOT inversionfound) AND
+		   (specialNP(subjNPhead))
+		 ),
+		 (
+		  ( 3 IN verbpersonsvar) 
+		 )
+	       )
+       );
+   END !(*SVAspecsubjok*);
+
+
+
+   FUNCTION SVApostsubjok:BOOLEAN;
+   BEGIN
+     SVApostsubjok :=
+       (IMPLIES( ((NOT subjrelfound)    AND
+		  (postsubjrelfound)
+		 ),
+		 (
+		  (postsubjpersonvar IN verbpersonsvar)AND
+		  (postsubjnumbervar = verbnumbervar)
+		 )
+	       )
+       );
+   END !(*SVApostsubjok*);
+
+
+
+
+   FUNCTION SVAshiftok:BOOLEAN;
+   BEGIN
+     SVAshiftok :=
+       (IMPLIES( (
+		  (NOT subjrelfound)     AND
+		  (NOT postsubjrelfound) AND
+		  (shiftrelfound)
+		 ),
+		 (
+		  shiftetcetera
+		 )
+	       )
+       );
+   END !(*SVAshiftok*);
+
+
+
+   FUNCTION SVAelseok:BOOLEAN;
+   BEGIN
+     SVAelseok :=
+       (IMPLIES( (
+		  (NOT subjrelfound)          AND
+		  (NOT postsubjrelfound)      AND
+		  (
+		   (NOT shiftrelfound)     OR
+		   (
+                    (NOT erinshiftfound) AND        
+		    (shiftrelcases 
+                        <> [Nominative]) AND 
+		    (NOT relprofound)    AND
+                    (shiftnphead <> jegenNP)
+                   )
+		  )
+		 ),
+		 (
+		   3 IN verbpersonsvar
+		 )
+	       )
+       );
+   END !(*SVAelseok*);
+
+
+
+
+
+BEGIN  !(*SVAOK*)
+!(* check on finitenessvar *)
+IF    (finitenessvar = infinite)  THEN  SVAOK := true
+ELSE IF (V2modusvar = imperative) 
+      THEN  BEGIN
+           IF   ((not subjrelfound)    OR 
+                 (subjpersonvar IN [2,4])
+                ) 
+           THEN SVAOK := true
+      END
+ELSE BEGIN
+   inversionfound := 
+    ( (subjpersonvar = 2) AND  (subjnumbervar = singular) AND 
+      V2found             AND  (tensevar=presenttense)
+    );
+
+   SVAOK :=
+   ( SVAinvok       AND
+     SVAnormsubjok  AND
+     SVAspecsubjok  AND
+     SVApostsubjok  AND
+     SVAshiftok     AND
+     SVAelseok
+   );
+
+END !(*ELSE*); 
+!(*This function checks subject verb agreement*)
+END !(*SVAok*);
+
+
+FUNCTION synvpsok:BOOLEAN;
+BEGIN
+  synvpsok :=
+    ( (synvpefsvar <> [])                         AND
+      IMPLIES(VRfound,      (synvpefsvar2 <> [])) AND
+      IMPLIES(predadjfound, (adjvpefsvar <> [] ))
+    );
+END !(*synvpsok*);
+
+
+FUNCTION temporalNPok(t:LSSTREE_pStree):BOOLEAN;
+(*
+pre: t=T & T.cat=NP & T.sons<>nil
+post: temporalNP(t) <=>
+t<> NP[head/CN[head/NOUN<sg>]] AND
+t<> NP[detrel/DETP<def>[head/ART],head/CN[head/NOUN]]
+*)
+VAR rt,frt:LSSTREE_pRelnode;
+    wrongtree:BOOLEAN;
+BEGIN
+  wrongtree:=true;
+  frt:= t^.sons;
+  wrongtree := frt^.relation IN [head,detrel];
+  IF   wrongtree THEN BEGIN
+    IF frt^.relation=head THEN BEGIN
+      wrongtree:= (frt^.node^.cat=CN) AND (frt^.brother=nil);
+      IF wrongtree THEN BEGIN
+        rt:=frt^.node^.sons;
+        wrongtree:= (rt^.node^.cat=NOUN) AND (rt^.brother=NIL);
+        IF wrongtree THEN  wrongtree:=(rt^.node^.ls^.NOUNfield^.number=singular);
+      END; 
+    END
+    ELSE BEGIN
+      wrongtree:=(frt^.node^.cat=DETP) AND (frt^.brother<>NIL);
+      IF wrongtree THEN wrongtree:=(frt^.node^.ls^.DETPfield^.definite=def);
+      IF wrongtree THEN BEGIN
+         rt:=frt^.node^.sons;
+         wrongtree:= (rt^.node^.cat=ART) AND (rt^.brother=NIL);
+      END;
+      IF wrongtree THEN BEGIN
+         rt:=frt^.brother;
+         wrongtree:= (rt^.node^.cat=CN) AND (rt^.brother=NIL)
+      END;   
+      IF wrongtree THEN rt:=rt^.node^.sons;
+      IF wrongtree THEN wrongtree:=(rt^.node^.cat=NOUN) AND (rt^.brother=NIL)
+    END;
+  END;
+  temporalNPok := (NOT wrongtree);
+END {temporalNPok};
+
+
+
+
+
+
+FUNCTION thetacondsok:BOOLEAN;
+BEGIN
+thetacondsok := 
+(
+ (IMPLIES( postsubjrelfound,
+           ( (thetavpvar IN [vp100, vp120, vp123]) OR
+             ((thetavpvar IN [vp010, vp012]) AND 
+              VRfound
+             )
+           )
+         )
+ )                                                               AND
+ (NOT ( (thetavpvar =vp010)          AND
+        (objrelfound)                AND
+        (NOT subjrelfound)           AND
+        (shiftNPhead <> hetNP)       AND
+        (NOT ( erinerposrelfound OR
+               erinshiftfound
+             )
+        )
+      )
+ )
+);
+
+!(*
+A postsubjrel can appear only with real intransitives, transitives, 
+ditransitives;
+The argument of an 1-place ergative verb as an object requires the 
+presence of (expletive) er in erposrel or in shiftrel.
+!!
+This is wrong: Daar kwam een man aan! (So any RADV in shift, erposrel will do)
+It also must hold for passives!
+
+or het is in shiftrel (e.g. het regent bakstenen)
+*)
+END !(*thetacondsok*); 
+
+
+
+FUNCTION VPandV2ok:BOOLEAN;
+BEGIN
+VPandV2ok :=
+(VERBPfound OR V2found OR (adjppredrelfound AND advsok)) AND
+((V2subcvar IN [hebbenaux, zijnaux, wordenaux]) <= (VPinfsortvar <> teinf)) AND
+( ( (NOT VERBPfound) AND (voicevar=active) ) OR
+    passiveauxok                             OR
+    activeauxok                              OR
+    (VERBPfound AND (NOT V2found)
+  )
+);
+!(*
+Checks whether the found combination of VERBP and V2, if any is correct
+*)                                                   
+END !(*VPandV2ok*);
+
+
+?
+
+
+
+
+<*
+HINIT: BEGIN
+
+         teller             := 0;
+         aanobjrelfound     := false;
+	 accobjfound        := false;
+         adhortfound        := false;
+         adjpinshiftfound   := false;
+         adjppredrelfound   := false;
+         adjunctsvar        := [];
+         adjvpefsvar        := [];
+         adverbialvar       := false;
+         advfound           := false;
+         advldlfound        := false;
+         advpinshiftfound   := false;
+         advppredrelfound   := false;
+         advprepfound       := false;
+         alsofcomplfound    := false;
+	 classesvar         := [];
+         conjaspectvar      := omegaaspect;
+         conjclassvar       := omegaTimeadvclass;
+         conjdeixisvar      := omegadeixis;
+	 conjkeyvar         := 0;
+	 conjpatternsvar    :=[];
+	 conjrelfound       := false;
+         conjretrovar       := false;
+	 conjsentinm1found  := false;
+         coordfound         := false;
+         countennpfound     := false;
+	 defradvrelfound    := false;
+	 deixisvar          := omegadeixis;
+         dirargNPfound      := false;
+         dirargrelfound     := false;
+         dirprepfound       := false;
+	 secondclrelfound   := false;
+	 envvar             := [pospol, negpol, omegapol];
+	 erinerposrelfound  := false;
+	 erinshiftfound     := false;
+	 erposrelfound      := false;
+	 erqrelfound        := false;
+         expparticle        := 0;
+         extracanbeadjsubjvar := FALSE;
+	 extraposmodus      := omegamodus;
+	 extraposmoodvar    := omegamood;
+	 extraposrelfound   := false;
+         finalpuncfound     := false;
+	 finitenessvar      := omegafin;
+         gelievefound       := false;
+	 hetclrelfound      := false;
+	 hierdaarinRposfound:= false;
+	 indobjrelfound     := false;
+	 infsortvar         := omegainf;
+	 firstclrelfound    := false;
+	 leftdislocpuncfound:= false;
+	 leftdislocrelfound := false;
+         locargrelfound     := false;
+	 modusvar           := omegamodus;
+	 moodvar            := omegamood;
+	 negorposfound      := false;
+         nodetnpfound2      := false;
+         nodetnpfound       := false;
+         nodetNPidvps       := AUX_nodetNPidvps;
+         nodetNPidvps2      := AUX_nodetNPidvps;
+         nppredrelfound     := false;
+	 objrelfound        := false;
+         origsynvpefsvar    := [];
+         particlekey        := 0;
+         postsubjnodetNPfound  := false;
+	 postsubjnumbervar  := omeganumber;
+	 postsubjpersonvar  := 3;   
+	 postsubjrelfound   := false;
+         postvporelfound    := false;
+         postvrelfound      := false;
+         ppinshiftfound     := false;
+         preadvandclfound   := false;
+	 preadvok           := false;
+	 preadvok2          := false;
+	 preadvrel2found    := false;
+	 preadvrelfound     := false;
+         predadjfound       := false;
+         prepkeyvar1        := 0;
+         prepkeyvar2        := 0;
+         prepobjrelfound    := false;
+         prepobj1found      := false;
+         prepobj2found      := false;
+         prepppredrelfound  := false;
+         preprepobjrelfound := false;
+         prepsynppsvar      := [];
+         prosentfound       := false;
+	 radvgluefound      := false;
+	 reflafterNPfound   := false;
+	 reflexivityvar     := notreflexive;
+	 reflrelfound       := false;
+	 relprofound        := false;
+	 reqvar             := [pospol, negpol, omegapol];
+	 resultpuncrelfound := false;
+	 retrovar           := false;
+         Rinshiftfound      := false;
+	 senttypevar        := omegaclause;
+	 shiftNPhead        := otherNP;
+         shiftnptemporal    := false;
+	 shiftpersonvar     := 0;
+         shiftnodetNPfound  := false;
+	 shiftnumbervar     := omeganumber;
+	 shiftrelcases      := [];
+	 shiftrelfound      := false;
+	 shiftxpmoodvar     := declxpmood;
+	 stadvfound         := false;
+         strandedppfound    := false;
+         strandedrelfound   := false;
+         subjnodetNPfound   := false;
+	 subjNPhead         := otherNP;
+	 subjnumbervar      := omeganumber;
+	 subjpersonvar      := 0;
+	 subjrelfound       := false;
+	 synvpefsvar        := [];
+	 synvpefsvar2       := [];
+         temporalvar        := false;
+	 tensevar           := omegatense;
+	 thetavpvar         := omegathetavp;
+	 unreducedvpsvar    := [];
+         v2adjuncts         := [];
+	 v2classesvar       := [];      
+	 v2found            := false;
+	 v2modusvar         := omegamodus;
+	 v2subcvar          := mainverb;                          !(*!!*)
+	 v2synvpefsvar      := [];
+	 v2thetavpvar       := omegathetavp;
+         verbadjuncts       := [];
+	 verbpersonsvar     := [];
+	 verbnumbervar      := omeganumber;
+         verbprepkeyvar1    := 0;
+         verbprepkeyvar2    := 0;
+	 verbpfound         := false;
+         Vmatrixheadvar     := false;
+	 voicevar           := active;
+         voorobjrelfound    := false;
+         vpadjuncts         := [];
+	 vpclassesvar       := [];      
+         vpcomplrelfound    := false;
+	 vpinfsortvar       := omegainf;
+	 vpmodusvar         := omegamodus;
+	 vpsynvpefsvar      := [];
+	 vpthetavpvar       := omegathetavp;
+	 vrfound            := false;
+	 anterelativeok     := true;
+       END !(*hinit*);
+
+
+
+1: 
+       <*
+         LOCALCONDITION: ( %SENTENCE.adverbial = false)                  AND
+                         ( %SENTENCE.senttype = subordinateclause
+                         )                                               AND
+                         (
+			  ((%SENTENCE.finiteness = finite) AND
+			   (%SENTENCE.conjkey <> 0)
+			  )                                          OR
+			  ( (%SENTENCE.modus = infinitive) AND
+			    (%SENTENCE.infsort = inf)
+			  )
+                         )
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := leftdislocrel;
+                              leftdislocrelfound := true;
+                            END
+       *>
+
+
+2: 
+       <*
+         LOCALCONDITION: (%PUNC.key = KEY_kommapunckey)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := puncrel;
+                              leftdislocpuncfound := true;
+                            END
+       *> 
+
+3: 
+       <*
+         LOCALCONDITION: (%NP.NPhead <> watindefproNP)         AND
+                         ((%NP.NPhead <> reducedpersproNP) OR
+                          (Nominative IN %NP.cases))           AND
+                         ((%NP.NPhead <> hetNP) OR
+                          (Nominative IN %NP.cases))           AND
+                         (NOT watunderdetp(b))          
+                         !(* and other NP's that cannot be shifted *)
+         GLOBAL: #CONDITION: (not shiftrelfound)  AND
+                             ((leftdislocrelfound AND 
+                               (NOT advldlfound)
+                              )                         <=
+                              (%NP.NPhead = datNP)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := shiftrel;
+                              shiftxpmoodvar:= %NP.mood;
+                              shiftrelfound := true;
+                              shiftrelcases := %NP.cases;
+                              shiftpersonvar:= %NP.person;
+                              shiftnumbervar:= %NP.number;
+                              shiftNPhead   := %NP.NPhead;
+                              shiftNPtemporal := %NP.temporal;
+                              IF (%NP.NPhead = enNP) AND
+                                 (%NP.actcomas = [count])
+                              THEN countennpfound := true;
+                              IF   nodetNP(b) 
+                              THEN shiftnodetNPfound := true
+                            END
+       *>
+
+
+4: 
+       <*
+         LOCALCONDITION: (NOT %PREPP.stranded) AND
+                         (%PREPP.actsubcefs <> [restprep])
+         GLOBAL: #CONDITION: (not shiftrelfound)
+                 #ACTION:   BEGIN
+                              SYNREL := shiftrel;
+                              shiftxpmoodvar := %PREPP.mood;
+                              shiftrelfound := true;
+                              ppinshiftfound := true;
+                            END
+       *>
+
+5: 
+       <*
+         LOCALCONDITION: (%ADVP.actsubcefs * 
+                           [sentadv,locadv,tempadv, causadv, 
+                            subjvpadv,otheradv] <> []) OR
+                         (%ADVP.mood = wh) 
+         GLOBAL: #CONDITION: (NOT shiftrelfound)
+                 #ACTION:   BEGIN
+                              SYNREL := shiftrel;
+                              shiftxpmoodvar:= %ADVP.mood;
+                              shiftrelfound := true;
+                              advpinshiftfound := true;
+                            END
+       *>
+
+6: 
+       <*
+         LOCALCONDITION: (%ADJP.mood = wh) AND
+                         (%ADJP.eORenForm = NoForm) AND
+                         (predicative IN %ADJP.actuseefs)
+         GLOBAL: #CONDITION: (NOT shiftrelfound)
+                 #ACTION:   BEGIN
+                              SYNREL := shiftrel;
+                              shiftxpmoodvar:= %ADJP.mood;
+                              shiftrelfound := true;
+                              adjvpefsvar := %ADJP.adjpatternefs;
+                              IF   adjvpefsvar <> []
+                              THEN predadjfound := true;
+                              adjpinshiftfound := true;
+                            END
+       *>
+
+
+
+7: 
+       <*
+         LOCALCONDITION: (%RADVP.radvkey = KEY_erRADVkey)
+         GLOBAL: #CONDITION: (NOT shiftrelfound)
+                 #ACTION:   BEGIN
+                              SYNREL := shiftrel;
+                              shiftxpmoodvar:= declxpmood;
+                              shiftrelfound := true;
+                              Erinshiftfound := true;
+                              Rinshiftfound := true;
+                              advpinshiftfound := true;
+                            END
+       *>
+
+
+8: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: ((NOT advprepfound)    OR
+                              (NOT %CONJ.adverbial)
+                             )                          AND 
+                            (not conjrelfound)
+                 #ACTION:   BEGIN
+                              SYNREL          := conjrel; 
+                              conjkeyvar      := %CONJ.key;
+                              conjrelfound    := true;
+                              conjpatternsvar := %CONJ.conjpatterns;
+                              IF (NOT adverbialvar)
+                              THEN adverbialvar    := %CONJ.adverbial;
+                              IF (NOT temporalvar)
+                              THEN temporalvar     := %CONJ.temporal;
+                              conjaspectvar   := %CONJ.aspect;
+                              conjdeixisvar   := %CONJ.deixis;
+                              conjretrovar    := %CONJ.retro;
+                              conjclassvar    := %CONJ.class;
+                              IF (conjkeyvar = KEY_gelieveCONJkey) OR
+                                 (conjkeyvar = KEY_ugelieveCONJkey)
+                              THEN gelievefound := true;
+                            END
+       *>
+
+9: 
+       <*
+         LOCALCONDITION: (%VERB.modus in [ indicative, 
+                                            subjunctive, imperative] )   AND
+                         (%VERB.status = bareV) AND
+                         Noplural45(%VERB.persons, %VERB.number)
+         GLOBAL: #CONDITION: (not conjrelfound)
+                 #ACTION:   BEGIN
+                              SYNREL          := conjrel;
+                              conjrelfound    := true;
+                              V2found         := true;
+                              finitenessvar   := finite;
+                              infsortvar      := omegainf;
+                              V2modusvar      := %VERB.modus;
+                              tensevar        := %VERB.tense;
+                              V2thetavpvar    := %VERB.thetavp;
+                              V2synvpefsvar   := %VERB.synvps;
+                              V2subcvar       := %VERB.subc;
+                              V2classesvar    := %VERB.classes;
+                              V2adjuncts      := %VERB.adjuncts;
+                              verbpersonsvar  := %VERB.persons;
+                              verbnumbervar   := %VERB.number;
+                              expparticle     := %VERB.particle;
+                              verbprepkeyvar1 := %VERB.prepkey1;
+                              verbprepkeyvar2 := %VERB.prepkey2;
+                              reflexivityvar  := %VERB.reflexivity;
+                            END
+       *>
+
+
+
+10: 
+       <*
+         LOCALCONDITION: (Nominative IN %NP.cases)
+         GLOBAL: #CONDITION: (NOT ERinshiftfound)
+                 #ACTION:   BEGIN
+                              SYNREL := subjrel;
+                              subjrelfound := true;
+                              subjpersonvar := %NP.person;
+                              subjnumbervar := %NP.number;
+                              subjNPhead    := %NP.NPhead;
+                              IF (%NP.NPhead = enNP) AND
+                                 (%NP.actcomas = [count])
+                              THEN countennpfound := true;
+                              IF nodetNP(b) THEN BEGIN
+                                 subjnodetnpfound := true;
+                              END;
+                            END
+       *>
+
+11: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: NOT (
+                                   V2found                              AND 
+                                   (V2subcvar IN [mainverb, modalverb]) AND
+                                   (%VERBP.Vmatrixhead = true)
+                                 )                                          AND
+                             ((preadvrelfound AND V2found AND 
+                               (V2synvpefsvar * AUX_indobjvps = [])
+                              )                                    <=
+                               (NOT %VERBP.objfound)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := predrel;
+                              IF   (V2subcvar = latenverb)     AND 
+                                   (%VERBP.Vmatrixhead = true) 
+                              THEN adhortfound := true;
+                              verbpfound      := true;
+                              IF   (NOT preadvok)
+                              THEN preadvok   := %VERBP.preadvok;
+                              IF   (NOT preadvok2)
+                              THEN preadvok2  := %VERBP.preadvok;
+                              objrelfound     := %VERBP.objfound;
+                              indobjrelfound  := %VERBP.indobjfound;
+                              VPinfsortvar    := %VERBP.infsort;
+                              VPthetavpvar    := %VERBP.thetavp;
+                              VPsynvpefsvar   := %VERBP.synvpefs;
+                              vpadjuncts      := %VERBP.adjuncts;
+                              synvpefsvar2    := %VERBP.synvpefs2;
+                              VPmodusvar      := %VERBP.modus;
+                              voicevar        := %VERBP.voice;
+                              IF   (NOT V2found)
+                              THEN BEGIN
+                                   tensevar := %VERBP.tense;
+                                   infsortvar      := %VERBP.infsort;
+                                   verbpersonsvar := %VERBP.persons;
+                                   verbnumbervar  := %VERBP.number;
+                                   IF    %VERBP.modus IN [indicative]
+                                   THEN  finitenessvar := finite
+                                   ELSE  finitenessvar := infinite;
+                               END !(*not V2found*);
+
+                              VRfound := (synvpefsvar2 <> []);
+                              Vmatrixheadvar := %VERBP.Vmatrixhead;
+                              VPclassesvar   := %VERBP.classes;
+                              reflexivityvar := %VERBP.reflexivity;
+                              adjvpefsvar    := %VERBP.adjvpefs;
+                              IF   adjvpefsvar <> []
+                              THEN predadjfound := true;
+                              IF %VERBP.countenfound THEN
+                              countennpfound := true;
+                              locargrelfound := %VERBP.locargfound;
+                              dirargrelfound := %VERBP.dirargfound;
+                              prepobjrelfound:= %VERBP.prepobjfound;
+                              aanobjrelfound := %VERBP.aanobjfound;
+                              voorobjrelfound := %VERBP.voorobjfound;
+                              nppredrelfound  := %VERBP.nppredfound;
+                              adjppredrelfound  := %VERBP.adjpppredfound;
+                              prepppredrelfound  := %VERBP.prepppredfound;
+                              postvporelfound := %VERBP.postvpofound;
+                              strandedrelfound := %VERBP.strandedfound;
+                              vpcomplrelfound := %VERBP.vpcomplfound;
+                            END
+       *>
+
+
+12: 
+       <*
+         LOCALCONDITION: (NOT (%PREPP.actsubcefs = [dir])) AND
+                         (NOT %PREPP.stranded) AND
+                         (%PREPP.actsubcefs * [loc, temp, according ,
+                            excepting, topic, caus] <> [])
+         GLOBAL: #CONDITION: extrappok(rec^)
+                 #ACTION:   BEGIN
+                              SYNREL := spostverbrel;
+                              anterelativeok := false;
+                            END
+       *>
+
+
+13: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (NOT shiftrelfound)
+                 #ACTION:   BEGIN
+                              SYNREL := shiftrel;
+                              shiftrelfound := true;
+                              relprofound := true;
+                            END
+       *>
+
+14: 
+       <*
+         LOCALCONDITION: (subjvpadv IN %ADVP.actsubcefs)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := subjvpadvrel;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                              stadvfound := true;
+                            END
+       *>
+
+
+15:         
+       <*
+         LOCALCONDITION: (%PUNC.key = KEY_kommapunckey)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL :=puncrel;
+
+                            END
+       *>
+
+
+16: 
+       <*
+         LOCALCONDITION:((NOT %SENTENCE.adverbial) OR
+                         (%SENTENCE.conjkey = KEY_alsofCONJkey)
+                        )                                              AND 
+                          (%SENTENCE.mood IN 
+                            [declarative, yesnointerrogative, 
+                               WHinterrogative]
+                          )                                            AND
+                          (%SENTENCE.senttype = subordinateclause)     AND
+                          (
+                           (%SENTENCE.finiteness <> infinite) OR
+                           (%SENTENCE.infsort IN [teinf, omteinf])
+                          )
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := extraposrel;
+                              extraposrelfound := true;
+                              IF   %SENTENCE.conjkey = KEY_alsofCONJkey
+                              THEN alsofcomplfound := true;
+                              extraposmoodvar := %SENTENCE.mood;
+                              extraposmodus   := %SENTENCE.modus;
+                              anterelativeok := false;
+                            END
+       *>
+
+17: 
+       <*
+         LOCALCONDITION: (NOT %SENTENCE.adverbial)                       AND
+                         (%SENTENCE.mood = relative)  AND
+                         (%SENTENCE.senttype = subordinateclause)
+         GLOBAL: #CONDITION: (verbpfound             OR
+                              (objrelfound       AND
+                               postvpook( adjppredrelfound,advppredrelfound,
+                                nppredrelfound, prepppredrelfound,
+                                strandedrelfound,prepobjrelfound, 
+                                locargrelfound,dirargrelfound,particlekey)
+                              )
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := relsentrel;
+                              anterelativeok := false;
+
+                            END
+       *>
+
+18: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := thanascomplrel;
+                              anterelativeok := false;
+                            END
+       *>
+
+
+19: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := ascomplrel;
+                              anterelativeok := false;
+                            END
+       *>
+
+20:
+       <*
+         LOCALCONDITION: (%PUNC.key = KEY_kommaPUNCkey)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := puncrel;
+                              resultpuncrelfound := true
+                            END
+       *>
+
+21: 
+       <*
+         LOCALCONDITION: (NOT %SENTENCE.adverbial)                AND
+                         (%SENTENCE.mood = declarative)           AND
+                         (%SENTENCE.senttype = subordinateclause) AND
+                         (%SENTENCE.conjkey <> 0)
+         GLOBAL: #CONDITION: (NOT (%SENTENCE.finiteness = finite)) OR
+                             (resultpuncrelfound)
+                 #ACTION:   BEGIN
+                              SYNREL := resultrel;
+                              anterelativeok := false;
+                            END
+       *>
+
+
+
+22: 
+       <*
+         LOCALCONDITION: (%PERSPRO.NPhead = hetNP) AND
+                         (Accusative IN %PERSPRO.persprocases)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := hetclrel;
+                              hetclrelfound := true;
+                            END
+       *>
+
+23: 
+       <*
+         LOCALCONDITION: ([Dative, Accusative] 
+                             * %PERSPRO.persprocases <> []) AND
+                         (%PERSPRO.NPhead <> hetNP)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := firstclrel;
+                              firstclrelfound := true;
+                            END
+       *>
+
+24: 
+       <*
+         LOCALCONDITION: ([Dative, Accusative] 
+                           * %PERSPRO.persprocases <> []) AND
+                         (%PERSPRO.NPhead <> hetNP)
+                       
+         GLOBAL: #CONDITION: (NOT hetclrelfound )              AND
+                             (firstclrelfound)                 AND
+                             (NOT(firstclrelfound          AND
+                                 (%PERSPRO.persprocases= [Dative])))        
+                                  !(* to exclude hun  ?or should we allow it?*)
+                 #ACTION:   BEGIN
+                              SYNREL := secondclrel;
+                              secondclrelfound := true;
+                            END
+       *>
+
+
+25: 
+       <*
+         LOCALCONDITION: (NOT %REFLPRO.zelf)
+         GLOBAL: #CONDITION: (NOT stadvfound) AND
+                             (NOT erqrelfound)       AND
+                             ((NOT erposrelfound) OR
+                              (erinerposrelfound) )  AND
+                             (NOT reflrelfound)      AND
+                             (NOT conjsentinm1found)
+                 #ACTION:   BEGIN
+                              SYNREL := reflrel;
+                              reflrelfound := true;
+                              IF   (preadvrelfound)
+                              THEN reflafterNPfound := true; 
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+!(* has been put into the loop, 
+cf. dat er zich hebben voorgedaan vs hij heeft zich er.. *)
+                            END
+       *>
+
+26: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (NOT postsubjrelfound)  AND
+                             (NOT erposrelfound)     AND
+                             (NOT defRadvrelfound)   AND
+                             (NOT conjsentinm1found) AND
+                             (NOT erinshiftfound)
+                 #ACTION:   BEGIN
+                              SYNREL := erposrel;
+                              erposrelfound := true;
+                              IF   (%RADVP.radvkey = KEY_erRADVkey)
+                              THEN erinerposrelfound := true;
+                              IF   ((%RADVP.radvkey =  KEY_hierRADVkey) OR
+                                    (%RADVP.radvkey =  KEY_daarRADVkey)
+                                   )
+                              THEN hierdaarinRposfound := true;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                            END
+       *>
+
+27: 
+       <*
+         LOCALCONDITION:  ( (%PREPP.radvkey = KEY_hierRADVkey) OR
+                            (%PREPP.radvkey = KEY_daarRadvkey)
+                          )
+                          !(* daar,hier in the PREPP *)
+         GLOBAL: #CONDITION: (NOT postsubjrelfound)  AND
+                             (NOT erposrelfound)     AND
+                             (NOT defRadvrelfound)   AND
+                             (NOT conjsentinm1found) AND
+                             (NOT erinshiftfound)
+                 #ACTION:   BEGIN
+                              SYNREL := erposrel;
+                              erposrelfound := true;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                              stadvfound := true
+                            END
+       *>
+
+
+28: 
+       <*
+         LOCALCONDITION: (%RADVP.radvkey = KEY_daarRadvkey) OR
+                         (%RADVP.radvkey = KEY_hierRADVkey)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := defRadvrel;
+                              defRadvrelfound := true;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                              stadvfound := true
+                            END
+       *>
+
+
+29: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (NOT negorposfound)
+                 #ACTION:   BEGIN
+                              SYNREL := negrel;
+                              negorposfound := true;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                            END
+       *>
+
+30: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (NOT negorposfound)
+                 #ACTION:   BEGIN
+                              SYNREL := posrel;
+                              negorposfound := true;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                            END
+       *>
+
+
+31: 
+       <*
+         LOCALCONDITION: (%ADVP.actsubcefs *[sentadv, causadv] <> [])
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := sentadvrel;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                              stadvfound := true
+                            END
+       *>
+
+
+32: 
+       <*
+         LOCALCONDITION: (%PREPP.actsubcefs * [according, caus] <> []) AND
+                         (NOT %PREPP.stranded)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := sentadvrel;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                              stadvfound := true
+                            END
+       *>
+
+
+33: 
+       <*
+         LOCALCONDITION: (tempadv IN %ADVP.actsubcefs)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := tempadvrel;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                              stadvfound := true
+                            END
+       *>
+
+
+34: 
+       <*
+         LOCALCONDITION: (temp IN %PREPP.actsubcefs) AND
+                         (NOT %PREPP.stranded)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := tempadvrel;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                              stadvfound := true
+                            END
+       *>
+
+35: 
+       <*
+         LOCALCONDITION: (%NP.temporal = true)                        AND
+                         (temporalNPok(b))                            AND
+                         ((%NP.actsubcs 
+                           * [unitnoun,plurunitnoun,daynoun,monthnoun]<>[]) OR
+                          (measureadjundernp(b)) 
+                         )
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := tempadvrel;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                              stadvfound := true
+                            END
+       *>
+
+36: 
+       <*
+         LOCALCONDITION: (%NP.cases <> [Nominative]) AND
+                         (NOT (%NP.NPhead IN [hetNP, persproNP, jegenNP, 
+                           zegenNP, watindefproNP, reducedpersproNP])) AND
+                         (NOT nodetNP(b))
+         GLOBAL: #CONDITION: (NOT preadvrelfound) 
+                 #ACTION:   BEGIN
+                              SYNREL := preadvrel;
+                              preadvrelfound := true;
+                              IF (%NP.NPhead = enNP) AND
+                                 (%NP.actcomas = [count])
+                              THEN countennpfound := true;
+                            END
+       *>
+
+
+
+37: 
+       <*
+         LOCALCONDITION: (%NP.cases <> [Nominative]) AND
+                         (NOT (%NP.NPhead IN [hetNP, persproNP, jegenNP, 
+                           zegenNP, watindefproNP, reducedpersproNP]))  AND
+                         (NOT nodetNP(b))
+         GLOBAL: #CONDITION:  preadvrelfound AND
+                             (NOT preadvrel2found) 
+                 #ACTION:   BEGIN
+                              SYNREL := preadvrel;
+                              preadvrel2found := true;
+                              IF (%NP.NPhead = enNP) AND
+                                 (%NP.actcomas = [count])
+                              THEN countennpfound := true;
+                            END
+       *>
+
+38: 
+       <*
+         LOCALCONDITION: (locadv IN %ADVP.actsubcefs)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := locadvrel;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                              advfound := true;
+                            END
+       *>
+
+39: 
+       <*
+         LOCALCONDITION: (NOT %PREPP.stranded)        AND
+                         (loc IN %PREPP.actsubcefs)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := locadvrel;
+                              advfound := true;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                            END
+       *>
+
+
+40: 
+       <*
+         LOCALCONDITION: (%RADVP.radvkey <> KEY_erRADVkey  ) AND
+                         (%RADVP.radvkey <> KEY_daarRADVkey) AND 
+                         (%RADVP.radvkey <> KEY_hierRADVkey)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := locadvrel;
+                              advfound := true;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                            END
+       *>
+
+41: 
+       <*
+         LOCALCONDITION: (%ADVP.Qstatus = true) AND
+                         (agvpadv IN %ADVP.actsubcefs )
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := agvpadvrel;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                              stadvfound := true;
+                            END
+       *>
+
+
+42: 
+       <*
+         LOCALCONDITION: (%RADVP.radvkey <> KEY_erRADVkey)
+         GLOBAL: #CONDITION: (NOT shiftrelfound)
+                 #ACTION:   BEGIN
+                              SYNREL := shiftrel;
+                              shiftxpmoodvar:= %RADVP.mood;
+                              shiftrelfound := true;
+                              Rinshiftfound := true;
+                              advpinshiftfound := true;
+                            END
+       *>
+
+
+43: 
+       <*
+         LOCALCONDITION: %SENTENCE.adverbial                  AND
+                         (NOT(%SENTENCE.mood = conditional))      
+                        !(* can be a intermediate adverbial sent *)
+         GLOBAL: #CONDITION: (NOT conjsentinm1found)
+                 #ACTION:   BEGIN
+                              IF   %SENTENCE.temporal
+                              THEN SYNREL := tempadvrel 
+                              ELSE SYNREL := sentadvrel;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                              conjsentinm1found := true;
+                            END
+       *>
+
+
+44: 
+       <*
+         LOCALCONDITION: %SENTENCE.adverbial                 AND
+                         (%SENTENCE.finiteness = finite)     AND
+                         (NOT(%SENTENCE.mood = conditional))      
+                        !(* can be a final adverbial sent *)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              IF   %SENTENCE.temporal
+                              THEN SYNREL := posttemprel
+                              ELSE SYNREL := postsentadvrel;
+                              anterelativeok := false;
+                            END
+       *>
+
+
+45: 
+       <*
+         LOCALCONDITION: (%NP.definite = indef) 
+         GLOBAL: #CONDITION: (NOT postsubjrelfound) AND
+                             (NOT subjrelfound) AND
+                             (NOT preadvrelfound)
+                 #ACTION:   BEGIN
+                              SYNREL := postsubjrel;
+                              postsubjrelfound := true;
+                              postsubjpersonvar := %NP.person;
+                              postsubjnumbervar := %NP.number;
+                              IF (%NP.NPhead = enNP) AND
+                                 (%NP.actcomas = [count])
+                              THEN countennpfound := true;
+                              IF nodetNP(b) 
+                              THEN postsubjnodetNPfound:=true;
+                            END
+       *>
+
+
+46: 
+       <*
+         LOCALCONDITION: (%SENTENCE.adverbial)
+                         !(* can be an initial conjsent *)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := leftdislocrel;  !(* cf als.. dan *)
+                              leftdislocrelfound := true;
+                              advldlfound := true;
+                            END
+       *>
+
+
+47: 
+       <*
+         LOCALCONDITION: (%RADVP.radvkey = KEY_erRADVkey)
+         GLOBAL: #CONDITION: (NOT erqrelfound)             AND
+                             (
+                              (erposrelfound  AND
+                               (NOT erinerposrelfound)
+                              )                        OR
+                              erinshiftfound
+                             )                             AND
+                             (NOT postsubjrelfound)        AND
+                             (NOT conjsentinm1found)      
+                 #ACTION:   BEGIN
+                              SYNREL := erqrel;
+                              erqrelfound := true;
+                              IF preadvrelfound THEN preadvok := true;
+                              IF preadvrel2found THEN preadvok2 := true;
+                            END
+       *>
+
+
+48: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: erinerposrelfound OR
+                             (hierdaarinRposfound)
+                 #ACTION:   BEGIN
+                              SYNREL := gluerel;
+                              radvgluefound := true;
+                            END
+       *>
+
+
+
+49:   !(* cf. 1 from VP *) 
+       <*
+         LOCALCONDITION: (%NP.animate in [ yesanimate, omegaanimate]) AND
+                         (Dative IN %NP.cases) AND 
+                         (NOT(%NP.NPhead IN [reducedpersproNP, jegenNP, 
+                            zegenNP, hetNP]))                           
+         GLOBAL: #CONDITION: V2found AND
+                             ((V2synvpefsvar * AUX_indobjvps <> []) OR
+                              (benfactNP IN v2adjuncts)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := indobjrel;
+                              indobjrelfound := true;
+                              IF (%NP.NPhead = enNP) AND
+                                 (%NP.actcomas = [count])
+                              THEN countennpfound := true;
+                              IF nodetNP(b) THEN BEGIN
+                                 nodetNPfound := true;
+                                 nodetNPidvps := nodetNPidvps 
+                                                    * AUX_ionodetidvps;
+                              END;
+                            END
+       *>
+
+50: !(* cf. 2 from VP *) 
+       <*
+         LOCALCONDITION: (NOT %PREPP.stranded)               AND
+                         (%PREPP.headkey = KEY_aanioprepkey) AND
+                         (%PREPP.radvkey = 0) 
+         GLOBAL: #CONDITION: V2found AND
+                             (V2synvpefsvar * AUX_aanobjvps <> [])
+                 #ACTION:   BEGIN
+                              SYNREL := aanobjrel;
+                              aanobjrelfound := true;
+                              !(* preadvok := true; *)
+                            END
+       *>
+ 
+
+51: !(* cf. 3 from VP *)  
+       <*
+         LOCALCONDITION: (NOT %PREPP.stranded)                AND
+                         (%PREPP.headkey = KEY_voorioprepkey) AND
+                         (%PREPP.radvkey = 0) 
+         GLOBAL: #CONDITION: V2found AND
+                             ((V2synvpefsvar * AUX_voorobjvps <> []) OR
+                              (benfactPP IN v2adjuncts)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := voorobjrel;
+                              voorobjrelfound := true;
+                              !(* preadvok := true; *)
+                            END
+       *>
+
+
+
+52:  !(* cf. 4 from VP *) 
+       <*
+         LOCALCONDITION: ([nominative, accusative] * %NP.cases <> []) AND
+                         (%NP.cases <> [Nominative]) AND
+                         (NOT(%NP.NPhead IN [reducedpersproNP, jegenNP, 
+                            zegenNP, hetNP]))                          
+         GLOBAL: #CONDITION: V2found                               AND
+                             (V2synvpefsvar * 
+                                 ( AUX_objvps + [synzijn])<> [])   AND
+                             ((V2synvpefsvar * AUX_indobjvps = []) 
+                                  <= (NOT preadvrelfound)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := objrel;
+                              IF    NOT (nominative IN %NP.cases) 
+                              THEN  accobjfound := true;
+                              objrelfound := true;
+                              IF (%NP.NPhead = enNP) AND
+                                 (%NP.actcomas = [count])
+                              THEN countennpfound := true;
+                              IF nodetNP(b) THEN BEGIN
+                                 nodetNPfound := true;
+                                 nodetNPidvps := nodetNPidvps 
+                                                    * AUX_donodetidvps;
+                              END;
+                            END
+       *>
+
+
+53:  !(* cf. 5 from VP *)  
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (NOT prepobj2found)              AND
+                             (%PREPP.radvkey = 0)             AND
+                             V2found  AND
+                             ((V2synvpefsvar * ( AUX_aanobjvps + 
+                               AUX_voorobjvps + AUX_prepobjvps) <> [])  OR
+                              ((%PREPP.headkey = KEY_voorioprepkey)AND
+                               (benfactPP IN v2adjuncts)
+                              )
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := prepobjrel;
+                              prepobjrelfound := true;
+                              IF   (prepobj1found)
+                              THEN BEGIN
+                                prepkeyvar2   := %PREPP.headkey
+                              END !(*if prepobj1found then*)
+                              ELSE BEGIN
+                                prepkeyvar1   := %PREPP.headkey
+                              END !(*if prepobj1found else*);
+                              IF   (prepobj1found)
+                              THEN BEGIN
+                                prepobj2found := true
+                              END !(*if prepobj1found then*)
+                              ELSE BEGIN
+                                prepobj1found := true
+                              END !(*if prepobj1found else*);
+                              IF   %PREPP.stranded
+                              THEN strandedPPfound := true;
+                            END
+       *>
+
+54:  !(* cf. 6 from VP *)  
+       <*
+         LOCALCONDITION: (dir IN %PREPP.actsubcefs)
+         GLOBAL: #CONDITION: (NOT preprepobjrelfound)  AND
+                             (%PREPP.radvkey = 0)      AND
+                             V2found  AND
+                             ((V2synvpefsvar * AUX_dirargvps <> []) OR
+                              (diradjunct IN v2adjuncts)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := dirargrel;
+                              dirargrelfound := true;
+                              IF   %PREPP.stranded
+                              THEN strandedPPfound := true;
+                            END
+       *>
+
+
+55: !(* cf. 7 from VP *) 
+       <*
+         LOCALCONDITION: (diradv IN %ADVP.actsubcefs)
+         GLOBAL: #CONDITION: (NOT preprepobjrelfound) AND
+                             V2found  AND
+                             ((V2synvpefsvar * AUX_dirargvps <> []) OR
+                              (diradjunct IN v2adjuncts)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := dirargrel;
+                              dirargrelfound := true;
+                            END
+       *>
+
+
+56: !(* cf. 8 from VP *)  
+       <*
+         LOCALCONDITION: (loc IN %PREPP.actsubcefs)
+         GLOBAL: #CONDITION: (NOT preprepobjrelfound)  AND
+                             (%PREPP.radvkey = 0) AND
+                             V2found  AND
+                             ((V2synvpefsvar * AUX_locargvps <> []) OR
+                              (locadjunct IN v2adjuncts)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := locargrel;
+                              locargrelfound := true;
+                              IF   %PREPP.stranded
+                              THEN strandedPPfound := true;
+                            END
+       *>
+
+
+57:  !(* cf. 9 from VP *)  
+       <*
+         LOCALCONDITION: (locadv IN %ADVP.actsubcefs) 
+         GLOBAL: #CONDITION: (NOT preprepobjrelfound) AND
+                             V2found  AND
+                             ((V2synvpefsvar * AUX_locargvps <> []) OR
+                              (locadjunct IN v2adjuncts)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := locargrel;
+                              locargrelfound := true;
+                            END
+       *>
+
+
+
+58:  !(* cf. 10 from VP *)  
+       <*
+         LOCALCONDITION: (%PREPP.actsubcefs * [ other] <> [])  AND
+                         (NOT %PREPP.stranded)
+         GLOBAL: #CONDITION: (NOT preprepobjrelfound)    AND
+                             (%PREPP.radvkey = 0) AND
+                             V2found  AND
+                             ((V2synvpefsvar * AUX_prepppredvps <> []) OR
+                              (resPP IN v2adjuncts)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := predrel;
+                              prepppredrelfound := true;
+                            END
+       *>
+
+59:  !(* cf. 11 from VP *)  
+       <*
+         LOCALCONDITION: (%ADVP.actsubcefs * [otherAdv] <> [])
+         GLOBAL: #CONDITION: (NOT preprepobjrelfound) AND
+                             V2found  AND
+                             (V2synvpefsvar * AUX_prepppredvps <> [])
+                 #ACTION:   BEGIN
+                              SYNREL := predrel;
+                              advppredrelfound := true;
+                            END
+       *>
+
+60:  !(* cf. 12 from VP *)  
+       <*
+         LOCALCONDITION: (%NP.cases <> [Nominative]) AND
+                         (accusative IN %NP.cases)   AND
+                         (NOT(%NP.NPhead IN [reducedpersproNP, hetNP, jegenNP,
+                                 zegenNP]))          AND
+                         (%NP.posspred = true)  !(*NP can be used predicatively*) 
+         GLOBAL: #CONDITION: (NOT preprepobjrelfound) AND
+                             V2found  AND
+                             ((V2synvpefsvar * AUX_nppredvps <> [])  OR
+                              (resPP IN v2adjuncts)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := predrel;     
+                              nppredrelfound :=true;
+                              IF (%NP.NPhead = enNP) AND
+                                 (%NP.actcomas = [count])
+                              THEN countennpfound := true;
+                            END
+       *>
+
+
+61: !(* cf. 13 from VP *) 
+       <*
+         LOCALCONDITION: ( predicative IN %ADJP.actuseefs) AND
+                         (( %ADJP.eORenForm  <> NoForm ) <= (NOT V2found)) AND
+                         (NOT Sunderadjp(b))
+         GLOBAL: #CONDITION: (NOT preprepobjrelfound) AND
+                             (V2found  <= 
+                               ((V2synvpefsvar * AUX_adjppredvps <> []) OR
+                                (resAP IN v2adjuncts)
+                               )
+                             )                                              AND
+                             ((NOT V2found) <= (attributive IN %ADJP.actuseefs))
+                 #ACTION:   BEGIN
+                              SYNREL := predrel;
+                              adjppredrelfound := true;
+                              adjvpefsvar := %ADJP.adjpatternefs;
+                              IF   adjvpefsvar <> []
+                              THEN predadjfound := true;
+                              IF (NOT V2found) 
+                              THEN finitenessvar := infinite;
+                            END
+       *>
+
+
+62:  !(* for temporal PREP introducing an adverbial clause *)
+       <*
+         LOCALCONDITION: (temp IN %PREP.subcs)              AND
+                         (%PREP.synpps * 
+                             [synTHATSENT, synOPENTESENT] <> []
+                         )
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := modrel;
+                              prepsynppsvar := %PREP.synpps;
+                              advprepfound  := true;
+                              temporalvar   := true;
+                              adverbialvar  := true;     
+                            END
+       *>
+
+63: !(* cf. 15 from VP *) !(* for stranded preprep heads *)
+       <*
+         LOCALCONDITION: (%PREPP.stranded) 
+         GLOBAL: #CONDITION: (NOT prepobj2found) AND
+                             (NOT strandedPPfound)   AND
+                             (NOT preprepobjrelfound) AND
+                             V2found 
+                 #ACTION:   BEGIN
+                              SYNREL := strandedrel;
+                              strandedrelfound := true;
+                              IF   (prepobj1found)
+                              THEN BEGIN
+                                prepkeyvar2   := %PREPP.headkey
+                              END !(*if prepobj1found then*)
+                              ELSE BEGIN
+                                prepkeyvar1   := %PREPP.headkey
+                              END !(*if prepobj1found else*);
+                              IF   (prepobj1found)
+                              THEN BEGIN
+                                prepobj2found := true
+                              END !(*if prepobj1found then*)
+                              ELSE BEGIN
+                                prepobj1found := true
+                              END !(*if prepobj1found else*);
+                            END
+       *>
+
+
+
+64: !(* cf. 16 from VP *) !(* for stranded adverbials *)
+       <*
+         LOCALCONDITION: (%PREPP.actsubcefs * [instrum,comitative] <> [])  AND 
+                         (%PREPP.stranded) 
+         GLOBAL: #CONDITION: (NOT strandedPPfound) AND
+                             V2found 
+                 #ACTION:   BEGIN
+                              SYNREL := strandedrel;
+                              strandedrelfound := true;
+                            END
+       *>
+
+
+65:  !(* cf. 17 from VP *)  
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: V2found AND
+                             (expparticle = %PART.key)
+                 #ACTION:   BEGIN
+                              SYNREL := partrel;
+                              particlekey := %PART.key;
+                            END
+       *>
+
+
+66:  !(* cf. 21 from VP *) 
+       <*
+         LOCALCONDITION: (%PREPP.radvkey = 0)          AND
+                         (NOT %PREPP.stranded)
+         GLOBAL: #CONDITION: (NOT prepobj2found) AND
+                             V2found 
+                 #ACTION:   BEGIN
+                              SYNREL := prepobjrel;
+                              preprepobjrelfound := true;
+                              IF   (prepobj1found)
+                              THEN BEGIN
+                                prepkeyvar2   := %PREPP.headkey
+                              END !(*if prepobj1found then*)
+                              ELSE BEGIN
+                                prepkeyvar1   := %PREPP.headkey
+                              END !(*if prepobj1found else*);
+                              IF   (prepobj1found)
+                              THEN BEGIN
+                                prepobj2found := true
+                              END !(*if prepobj1found then*)
+                              ELSE BEGIN
+                                prepobj1found := true
+                              END !(*if prepobj1found else*);
+                            END
+       *>
+
+
+
+67:    !(* cf. 22 from VP *) 
+       <*
+         LOCALCONDITION:  (NOT %PREPP.stranded)   AND
+                          (%PREPP.radvkey = 0)
+         GLOBAL: #CONDITION: (NOT prepobj2found)  AND
+                             postvpook(
+                           adjppredrelfound,advppredrelfound,nppredrelfound,
+                           prepppredrelfound,strandedrelfound,prepobjrelfound,
+                           locargrelfound,dirargrelfound,particlekey) AND
+                             V2found  AND
+                             ((V2synvpefsvar * ( AUX_prepobjvps
+                              + AUX_aanobjvps + AUX_voorobjvps) <> []) OR
+                              (benfactPP IN v2adjuncts)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := postvporel;
+                              postvporelfound := true;
+                              IF   (prepobj1found)
+                              THEN BEGIN
+                                prepkeyvar2   := %PREPP.headkey
+                              END !(*if prepobj1found then*)
+                              ELSE BEGIN
+                                prepkeyvar1   := %PREPP.headkey
+                              END !(*if prepobj1found else*);
+                              IF   (prepobj1found)
+                              THEN BEGIN
+                                prepobj2found := true
+                              END !(*if prepobj1found then*)
+                              ELSE BEGIN
+                                prepobj1found := true
+                              END !(*if prepobj1found else*);
+                            END
+       *>
+
+
+68:  !(* cf. 23 from VP *) 
+       <*
+         LOCALCONDITION:  (NOT %PREPP.stranded)  AND
+                          (%PREPP.radvkey = 0)   AND
+                          (%PREPP.actsubcefs * [doorby, instrum, 
+                                  comitative] <> [])
+         GLOBAL: #CONDITION: postvok(adjppredrelfound,advppredrelfound,
+                           nppredrelfound,prepppredrelfound,strandedrelfound,
+                           prepobjrelfound,locargrelfound,dirargrelfound,
+                           objrelfound,indobjrelfound,particlekey) AND V2found
+                 #ACTION:   BEGIN
+                              SYNREL := postverbrel;
+                              postvrelfound := true;
+                            END
+       *>
+
+
+69:  !(* cf. 25 from VP *) 
+       <*
+         LOCALCONDITION: (%PREPP.actsubcefs * [instrum, comitative!(*, voor!!*)] 
+                                  <> []) AND
+                         (%PREPP.radvkey = 0)                              AND
+                         (NOT %PREPP.stranded)
+         GLOBAL: #CONDITION: V2found
+                 #ACTION:   BEGIN
+                              SYNREL := vpadvrel;
+                              preadvok := true;
+                            END
+       *>
+
+
+70:    !(* cf. 26 from VP *)  
+       <*
+         LOCALCONDITION: (%ADVP.actsubcefs * [vpadv] <> []) AND
+                         (%ADVP.Qstatus = false)
+         GLOBAL: #CONDITION: V2found
+                 #ACTION:   BEGIN
+                              SYNREL   := vpadvrel;
+                              preadvok := true;
+                            END
+       *>
+
+71:  !(* for nontemporal PREP introducing an adverbial clause *)
+       <*
+         LOCALCONDITION: (%PREP.subcs - [temp] <> [])              AND
+                         (%PREP.synpps * 
+                             [synTHATSENT, synOPENTESENT] <> []
+                         )
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := modrel;
+                              prepsynppsvar := %PREP.synpps;
+                              advprepfound  := true;
+                              adverbialvar  := true;     
+                            END
+       *>
+
+
+72:  !(* cf. 28 from VP *)  
+       <*
+         LOCALCONDITION: (%ADVP.actsubcefs * [agvpadv] <> []) AND
+                         (%ADVP.Qstatus = false)
+         GLOBAL: #CONDITION: V2found
+                 #ACTION:   BEGIN
+                              SYNREL   := agvpadvrel;
+                              preadvok := true;
+                            END
+       *>
+
+
+73: !(* cf. 34 from the VP rule *) 
+       <*
+         LOCALCONDITION:  ([nominative, accusative] * %NP.cases <> []) AND
+                         (%NP.cases <> [Nominative]) AND
+                         (NOT(%NP.NPhead IN [reducedpersproNP, jegenNP, 
+                            zegenNP, hetNP]))                          
+         GLOBAL: #CONDITION: (NOT preprepobjrelfound) AND
+                             V2found  AND
+                             ((V2synvpefsvar * AUX_dirargvps <> []) OR
+                              (diradjunct IN v2adjuncts)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := dirargrel;
+                              dirargrelfound := true;
+                              dirargNPfound  := true;
+                              IF nodetNP(b) THEN BEGIN
+                                 nodetNPfound := true;
+                                 nodetNPidvps := nodetNPidvps 
+                                                    * AUX_dirnodetidvps;
+                              END;
+                            END
+       *>
+
+
+74: 
+       <*
+         LOCALCONDITION: (dir IN %PREP.subcs)        AND
+                         (%PREP.preptype = postprep) 
+         GLOBAL: #CONDITION: (NOT dirargrelfound) OR
+                             (dirargNPfound) AND
+                             V2found  AND
+                             (V2synvpefsvar * AUX_dirargvps <> [])
+                 #ACTION:   BEGIN
+                              SYNREL := partrel;
+                              dirprepfound := true; 
+                            END
+       *>
+
+75: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := puncrel;
+                              finalpuncfound := true;
+                            END
+       *>
+
+
+76: 
+       <*
+         LOCALCONDITION: (%SENTENCE.finiteness = infinite)        AND
+                         (%SENTENCE.mood = declarative)           AND
+                         ((%SENTENCE.adverbial)               OR
+                          (%SENTENCE.conjkey = KEY_omCONJkey)
+                         )
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              IF   %SENTENCE.temporal
+                              THEN SYNREL := posttemprel
+                              ELSE SYNREL := postsentadvrel;
+                              anterelativeok := false;
+                            END
+       *>
+
+
+77: 
+       <*
+         LOCALCONDITION: (%VERBP.voice = passive)     AND
+                         (%VERBP.Vmatrixhead = true)  AND
+                         (%VERBP.modus = pastpart)    AND
+                         (%VERBP.foundauxes = [])     AND
+                         (%VERBP.synvpefs2 =[])       AND
+                         (%VERBP.objfound = false)    AND
+                         (%VERBP.indobjfound = false) AND
+                         (%VERBP.adjvpefs = [])       AND
+                         (%VERBP.countenfound = false)AND
+                         (%VERBP.vpcomplfound =false) 
+         GLOBAL: #CONDITION: (NOT preprepobjrelfound) AND
+                             V2found                  AND
+                             (V2synvpefsvar * AUX_vpcomplvps <> [])
+                 #ACTION:   BEGIN
+                              SYNREL := complrel;
+                              vpcomplrelfound := true;
+                            END
+       *>
+
+
+
+78: 
+       <*
+         LOCALCONDITION: %PROSENT.so = true
+         GLOBAL: #CONDITION: V2found AND
+                             (V2synvpefsvar * AUX_soprosentvps <> [])
+                 #ACTION:   BEGIN
+                              SYNREL := objrel;
+                              prosentfound := true;
+                            END
+       *>
+
+
+
+79: 
+       <*
+         LOCALCONDITION: %COORD.Sintroducer = true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              COORDfound := true;
+                            END
+       *>
+
+
+HFINAL: #CONDITION: postsubjok                                           AND
+                    countenOK                                            AND
+                    ((NOT leftdislocpuncfound) OR (shiftrelfound ))      AND
+                    VPandV2ok                                            AND
+                    conjandverbok                                        AND
+                    allpreadvsok                                         AND
+                    SVAOK                                                AND
+                    noofargsok                                           AND
+                    reflexivesok                                         AND
+                    ( (NOT(shiftrelcases = [Nominative])) OR
+                      ((NOT subjrelfound) AND (NOT postsubjrelfound))
+                    )                                                    AND
+                    (particlekey = expparticle)                          AND
+                    infok                                                AND
+                    dirargnpok                                           AND
+                    IMPLIES(conjsentinm1found, 
+                      (postvok(adjppredrelfound,advppredrelfound,
+                           nppredrelfound,prepppredrelfound,strandedrelfound,
+                           prepobjrelfound,locargrelfound,dirargrelfound,
+                           objrelfound,indobjrelfound,particlekey)
+                           OR verbpfound))
+
+
+        #ACTION: BEGIN
+                 !(*
+                    Determine values of thetavpvar, synvpefsvar, classesvar 
+                 *)
+
+                    detargstrANDclasses(
+                                     thetavpvar , vpsynvpefsvar , classesvar , 
+                                     verbadjuncts , adjunctsvar );
+
+
+                    !(* modusvar: *)
+                    IF   V2found
+                    THEN modusvar := V2modusvar
+                    ELSE modusvar := VPmodusvar;
+
+                    !(* deixisvar: *)
+                    IF   (tensevar = presenttense)
+                    THEN deixisvar := presentdeixis
+                    ELSE IF (tensevar = pasttense)
+                         THEN deixisvar := pastdeixis
+                         ELSE IF    (modusvar = imperative)
+                              THEN deixisvar := presentdeixis;
+
+                    IF gelievefound THEN deixisvar := presentdeixis;
+
+
+                    !(* conditions on thetavp *)
+                    IF  (thetacondsok AND
+                         prepobjok
+                        )
+                    THEN BEGIN         
+                      unreducedvpsvar := synvpefsvar;
+                      extracanbeadjsubjvar := extracanbeadjsubj;
+
+                      IF   (NOT VRfound) 
+                      THEN BEGIN
+			 IntReducevps(synvpefsvar);
+
+			 ExtReducevps(synvpefsvar);
+
+                         IF (subjnodetNPfound OR shiftnodetNPfound) 
+                         THEN BEGIN
+                           nodetNPidvps := nodetNPidvps * 
+                               (AUX_subjnodetidvps + AUX_donodetidvps);
+                           nodetNPfound := true; 
+                         END;
+                         IF postsubjnodetNPfound
+                         THEN BEGIN
+                           nodetNPidvps := 
+                              nodetNPidvps * AUX_subjnodetidvps;
+                           nodetNPfound := true;
+                         END;
+                         IF   (nodetNPfound)
+                         THEN synvpefsvar := synvpefsvar * nodetNPidvps;
+
+                      END
+                      ELSE BEGIN
+                         Intreducevps(synvpefsvar);
+                         EXTreducevps(synvpefsvar2);
+                         IF (subjnodetNPfound OR shiftnodetNPfound )
+                         THEN IF NOsubjraisingfound(thetavpvar,synvpefsvar)
+                              THEN BEGIN
+                                 nodetNPidvps := nodetNPidvps * 
+                                      (AUX_subjnodetidvps + AUX_donodetidvps);
+                                 nodetNPfound := true; 
+                              END
+                              ELSE IF (onlysubjraisingfound
+                                              (thetavpvar, synvpefsvar))
+                              THEN BEGIN
+                                 nodetNPidvps2 := nodetNPidvps2 * 
+                                      (AUX_subjnodetidvps + AUX_donodetidvps);
+                                 nodetNPfound2:= true; 
+                              END;
+                         IF postsubjnodetNPfound
+                         THEN IF NOsubjraisingfound(thetavpvar,synvpefsvar)
+                              THEN BEGIN
+                                 nodetNPidvps := nodetNPidvps * 
+                                                  AUX_subjnodetidvps ;
+                                 nodetNPfound := true; 
+                              END
+                              ELSE IF (onlysubjraisingfound
+                                               (thetavpvar, synvpefsvar))
+                              THEN BEGIN
+                                 nodetNPidvps2 := nodetNPidvps2 * 
+                                      AUX_subjnodetidvps ;
+                                 nodetNPfound2:= true; 
+                              END;
+                         IF   (nodetNPfound)
+                         THEN synvpefsvar := synvpefsvar * nodetNPidvps;
+                         IF   (nodetNPfound2)
+                         THEN synvpefsvar2 := synvpefsvar2 * nodetNPidvps2;
+                      END;
+
+                      IF predadjfound THEN BEGIN
+                         checkpredadj(adjvpefsvar);
+                      END;
+
+		      IF   (synvpsok)
+		      THEN BEGIN
+                    
+			 !(* determine moodvar: cases 1-6 *)
+			 moodvar     := omegamood;
+                         senttypevar := omegaclause;
+                         origsynvpefsvar := synvpefsvar;
+                         
+                         IF    (NOT adverbialvar)
+                         THEN  determinemood16(moodvar, senttypevar);
+                        
+			 IF (moodvar <> omegamood)   AND
+                            subordcondsok          AND
+                            argspresent
+			 THEN BEGIN
+			   MAKET_SENTENCE;
+			   $SENTENCE.req         := reqvar ;
+			   $SENTENCE.env         := envvar ;
+			   $SENTENCE.mood        := moodvar ;
+			   $SENTENCE.senttype    := senttypevar;
+			   $SENTENCE.voice       := voicevar ;
+			   $SENTENCE.PROsubject  := (finitenessvar = infinite );
+			   $SENTENCE.synvpefs    := synvpefsvar ;
+			   $SENTENCE.thetavp     := thetavpvar ;
+			   $SENTENCE.modus       := modusvar ;
+                           computeaktarts( classesvar,
+			                   $SENTENCE.aktionsarts
+                                         );
+			   $SENTENCE.aspect      := omegaaspect ;
+			   $SENTENCE.deixis      := deixisvar ;
+			   $SENTENCE.retro       :=  false ;
+			   $SENTENCE.finiteness  := finitenessvar ;
+			   $SENTENCE.infsort     := infsortvar;
+			   $SENTENCE.superdeixis := omegadeixis ;
+			   $SENTENCE.VRcompl     := false ;
+			   $SENTENCE.conjkey     := conjkeyvar;
+                           $SENTENCE.adverbial   := adverbialvar;
+                           $SENTENCE.temporal    := temporalvar;
+                           $SENTENCE.conjaspect  := conjaspectvar;
+                           $SENTENCE.conjclass   := conjclassvar;
+                           $SENTENCE.conjdeixis  := conjdeixisvar;
+                           $SENTENCE.conjretro   := conjretrovar;
+                           $SENTENCE.adjuncts    := adjunctsvar;
+			 END; !(*if moodvar <> omegamood then, cases 1-6*)
+	
+
+			 !(* determine moodvar; case 7 *)
+			 moodvar := omegamood;
+                         senttypevar := omegaclause;
+                         synvpefsvar := origsynvpefsvar;
+
+                         IF (NOT adverbialvar)
+                         THEN determinemood7(moodvar, senttypevar);
+			 IF (moodvar <> omegamood) AND
+                            subordcondsok          AND
+                            argspresent
+			 THEN BEGIN
+			   MAKET_SENTENCE;
+			   $SENTENCE.req  := reqvar ;
+			   $SENTENCE.env  := envvar ;
+			   $SENTENCE.mood := moodvar ;
+			   $SENTENCE.senttype := senttypevar;
+			   $SENTENCE.voice := voicevar ;
+			   $SENTENCE.PROsubject := (finitenessvar = infinite );
+			   $SENTENCE.synvpefs := synvpefsvar ;
+			   $SENTENCE.thetavp := thetavpvar  ;
+			   $SENTENCE.modus := modusvar ;
+                           computeaktarts( classesvar,
+			                   $SENTENCE.aktionsarts
+                                         );
+			   $SENTENCE.aspect := omegaaspect ;
+			   $SENTENCE.deixis := deixisvar ;
+			   $SENTENCE.retro :=  false ;
+			   $SENTENCE.finiteness := finitenessvar ;
+			   $SENTENCE.infsort := infsortvar;
+			   $SENTENCE.superdeixis := omegadeixis  ;
+			   $SENTENCE.VRcompl := false ;
+			   $SENTENCE.conjkey := conjkeyvar;
+                           $SENTENCE.adverbial   := adverbialvar;
+                           $SENTENCE.temporal    := temporalvar;
+                           $SENTENCE.conjaspect  := conjaspectvar;
+                           $SENTENCE.conjclass   := conjclassvar;
+                           $SENTENCE.conjdeixis  := conjdeixisvar;
+                           $SENTENCE.conjretro   := conjretrovar;
+                           $SENTENCE.adjuncts    := adjunctsvar;
+			 END; !(*if moodvar <> omegamood then, case 7*)
+	
+
+			 !(* determine moodvar, case 8 *)
+			 moodvar := omegamood;
+                         senttypevar := omegaclause;
+                         synvpefsvar := origsynvpefsvar;
+
+                         IF   (NOT adverbialvar)
+                         THEN determinemood8(moodvar, senttypevar);
+                 
+			 IF (moodvar <> omegamood)     AND
+                            subordcondsok              AND
+                            argspresent
+			 THEN BEGIN
+			   MAKET_SENTENCE;
+			   $SENTENCE.req  := reqvar ;
+			   $SENTENCE.env  := envvar ;
+			   $SENTENCE.mood := moodvar ;
+			   $SENTENCE.senttype := senttypevar;
+			   $SENTENCE.voice := voicevar ;
+			   $SENTENCE.PROsubject := (finitenessvar = infinite );
+			   $SENTENCE.synvpefs := synvpefsvar ;
+			   $SENTENCE.thetavp := thetavpvar ;
+			   $SENTENCE.modus := modusvar ;
+                           computeaktarts( classesvar,
+			                   $SENTENCE.aktionsarts
+                                         );
+			   $SENTENCE.aspect := omegaaspect ;
+			   $SENTENCE.deixis := deixisvar ;
+			   $SENTENCE.retro :=  false ;
+			   $SENTENCE.finiteness := finitenessvar ;
+			   $SENTENCE.infsort := infsortvar;
+			   $SENTENCE.superdeixis := omegadeixis  ;
+			   $SENTENCE.VRcompl := false ;
+			   $SENTENCE.conjkey := conjkeyvar;
+                           $SENTENCE.adverbial   := adverbialvar;
+                           $SENTENCE.temporal    := temporalvar;
+                           $SENTENCE.conjaspect  := conjaspectvar;
+                           $SENTENCE.conjclass   := conjclassvar;
+                           $SENTENCE.conjdeixis  := conjdeixisvar;
+                           $SENTENCE.conjretro   := conjretrovar;
+                           $SENTENCE.adjuncts    := adjunctsvar;
+			 END; !(*if moodvar <> omegamood then, case 8*)
+
+	
+			 !(* determination of moodvar, cases 9-14 *)
+
+
+			 moodvar := omegamood;
+                         senttypevar := omegaclause;
+                         synvpefsvar := origsynvpefsvar;
+
+                         IF   (NOT adverbialvar)
+                         THEN determinemood914(moodvar, senttypevar);
+
+                 
+			 IF (moodvar <> omegamood)    AND
+                            subordcondsok             AND
+                            argspresent
+			 THEN BEGIN
+
+			   MAKET_SENTENCE;
+			   $SENTENCE.req  := reqvar ;
+			   $SENTENCE.env  := envvar ;
+			   $SENTENCE.mood := moodvar ;
+			   $SENTENCE.senttype := senttypevar;
+			   $SENTENCE.voice := voicevar ;
+			   $SENTENCE.PROsubject := (finitenessvar = infinite );
+			   $SENTENCE.synvpefs := synvpefsvar ;
+			   $SENTENCE.thetavp := thetavpvar ;
+			   $SENTENCE.modus := modusvar ;
+                           computeaktarts( classesvar,
+			                   $SENTENCE.aktionsarts
+                                         );
+			   $SENTENCE.aspect := omegaaspect ;
+			   $SENTENCE.deixis := deixisvar ;
+			   $SENTENCE.retro :=  false ;
+			   $SENTENCE.finiteness := finitenessvar ;
+			   $SENTENCE.infsort := infsortvar;
+			   $SENTENCE.superdeixis := omegadeixis  ;
+			   $SENTENCE.VRcompl := false ;
+			   $SENTENCE.conjkey := conjkeyvar;
+                           $SENTENCE.adverbial   := adverbialvar;
+                           $SENTENCE.temporal    := temporalvar;
+                           $SENTENCE.conjaspect  := conjaspectvar;
+                           $SENTENCE.conjclass   := conjclassvar;
+                           $SENTENCE.conjdeixis  := conjdeixisvar;
+                           $SENTENCE.conjretro   := conjretrovar;
+                           $SENTENCE.adjuncts    := adjunctsvar;
+			 END; !(*if moodvar <> omegamood then, case 9-14*)
+
+	
+			 !(* determination of moodvar, case 15ff *)
+
+
+			 moodvar := omegamood;
+                         senttypevar := omegaclause;
+                         synvpefsvar := origsynvpefsvar;
+
+                         IF   (NOT adverbialvar)
+                         THEN determinemood15ff(moodvar, senttypevar);
+                 
+                 
+			 IF (moodvar <> omegamood)  AND
+                            subordcondsok           AND
+                            argspresent
+			 THEN BEGIN
+			   MAKET_SENTENCE;
+			   $SENTENCE.req  := reqvar ;
+			   $SENTENCE.env  := envvar ;
+			   $SENTENCE.mood := moodvar ;
+			   $SENTENCE.senttype := senttypevar;
+			   $SENTENCE.voice := voicevar ;
+			   $SENTENCE.PROsubject := (finitenessvar = infinite );
+			   $SENTENCE.synvpefs := synvpefsvar ;
+			   $SENTENCE.thetavp := thetavpvar ;
+			   $SENTENCE.modus := modusvar ;
+                           computeaktarts( classesvar,
+			                   $SENTENCE.aktionsarts
+                                         );
+			   $SENTENCE.aspect := omegaaspect ;
+			   $SENTENCE.deixis := deixisvar ;
+			   $SENTENCE.retro :=  false ;
+			   $SENTENCE.finiteness := finitenessvar ;
+			   $SENTENCE.infsort := infsortvar;
+			   $SENTENCE.superdeixis := omegadeixis  ;
+			   $SENTENCE.VRcompl := false ;
+			   $SENTENCE.conjkey := conjkeyvar;
+                           $SENTENCE.adverbial   := adverbialvar;
+                           $SENTENCE.temporal    := temporalvar;
+                           $SENTENCE.conjaspect  := conjaspectvar;
+                           $SENTENCE.conjclass   := conjclassvar;
+                           $SENTENCE.conjdeixis  := conjdeixisvar;
+                           $SENTENCE.conjretro   := conjretrovar;
+                           $SENTENCE.adjuncts    := adjunctsvar;
+
+			 END; !(*if moodvar <> omegamood then, case 15*)
+
+			 !(* determination of moodvar, case 15ff *)
+
+
+
+			 moodvar := omegamood;
+                         senttypevar := omegaclause;
+                         synvpefsvar := origsynvpefsvar;
+
+                         IF   adverbialvar
+                         THEN determinemoodadv(moodvar, senttypevar);
+                 
+                 
+			 IF (moodvar <> omegamood)  AND
+                            preporconjfound         AND
+                            subordcondsok           AND
+                            argspresent
+			 THEN BEGIN
+			   MAKET_SENTENCE;
+			   $SENTENCE.req  := reqvar ;
+			   $SENTENCE.env  := envvar ;
+			   $SENTENCE.mood := moodvar ;
+			   $SENTENCE.senttype := senttypevar;
+			   $SENTENCE.voice := voicevar ;
+			   $SENTENCE.PROsubject := (finitenessvar = infinite );
+			   $SENTENCE.synvpefs := synvpefsvar ;
+			   $SENTENCE.thetavp := thetavpvar ;
+			   $SENTENCE.modus := modusvar ;
+                           computeaktarts( classesvar,
+			                   $SENTENCE.aktionsarts
+                                         );
+			   $SENTENCE.aspect := omegaaspect ;
+			   $SENTENCE.deixis := deixisvar ;
+			   $SENTENCE.retro :=  false ;
+			   $SENTENCE.finiteness := finitenessvar ;
+			   $SENTENCE.infsort := infsortvar;
+			   $SENTENCE.superdeixis := omegadeixis  ;
+			   $SENTENCE.VRcompl := false ;
+			   $SENTENCE.conjkey := conjkeyvar;
+                           $SENTENCE.adverbial   := adverbialvar;
+                           $SENTENCE.temporal    := temporalvar;
+                           $SENTENCE.conjaspect  := conjaspectvar;
+                           $SENTENCE.conjclass   := conjclassvar;
+                           $SENTENCE.conjdeixis  := conjdeixisvar;
+                           $SENTENCE.conjretro   := conjretrovar;
+                           $SENTENCE.adjuncts    := adjunctsvar;
+
+			 END; !(*if moodvar <> omegamood then, adverbial cases *)
+
+
+                      END !(*if synvpsok  THEN*)
+
+
+                    END !(*thetaconds*)
+        END !(*finalaction*)
+*>                 
+END;
+& !(* SENTENCEsrule *)
+
+%%

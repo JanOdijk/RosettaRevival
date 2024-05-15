@@ -1,0 +1,2170 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta2
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  M-SYNTAX FOR DUTCH IN ROSETTA2. SURFACE RULES.
+
+         Author       :  Jan Landsbergen
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  0022
+
+         Date         :  85/05/22
+
+         Status       :  concept
+
+         Supersedes   :  
+
+         Distribution :  project
+
+         Clearance    :  Philips
+
+         Keywords     :  Surface syntax, regular expressions
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 0022                    date:85/05/22
+$SC &%
+$UC _
+$NP 1
+$LD 4
+
+_1. Introduction_
+
+
+$ In this document the surface rules of the Rosetta2 grammar for Dutch will
+be specified. $
+$ There are 18 surface rules (SR1 - SR20, with SR3 missing and SR19 never 
+applicable). Obviously, there must be at least 
+one surface rule for each non-terminal category that
+may occur at a non-terminal node in a complete surface tree. 
+On the other hand one rule per category 
+would be sufficient, because of the power of the surface rules. In the current
+set of surface rules there is almost a one-to-one correspondence between 
+rules and categories except for the coordination rules SR14 and SR17. Rule 
+SR9 shows that the lexical category VERB may occur as a non-terminal category
+as well (for "te + inf" constructions). In rule SR20 the category PROPERNOUN
+occurs as a non-terminal category, but this is a "robustness" rule for
+unknown words, which get the category BUG in AMORPH.$
+
+An overview of the rules and the corresponding top categories:
+
+SR1      SENT            (hij eet een peer)
+SR2      RELSENT         (die hij eet)
+SR4      ADVSENT         (omdat hij peren eet)
+SR5      SUBSENT         (dat hij peren eet)
+SR6      TECOMPLSENT     (peren te eten)
+SR7      COMPLSENT       (eten)
+SR8      ANTERELSENT     (peren etende)
+SR9      VERB            (te eten)
+SR10     UTT             (Ja, hij eet een peer.)
+SR11     PP              (in de kamer)
+SR12     ADJP            (zeer oud)
+SR13     THANP           (dan Marie)
+SR14     ADJP            (oud en lelijk)
+SR15     ADVP            (tamelijk vaak)
+SR16     NP              (de oude eik in de tuin)
+SR17     NP              (mannen en vrouwen)
+SR18     NUMP            (meer dan drie)
+SR19     MODNOUN (* not used *)
+SR20     PROPERNOUN      (Marie)
+
+$ In comparison with the notation for surface rules as described in R0013, 
+there are a few minor differences:$
+$ A distinction is made between local conditions (LOCCOND) 
+in terms of the attributes
+of the currently considered record and global conditions (GLOBCOND), 
+which involve
+parameters as well. This distinction is important for the current 
+implementation of the surface parser.$
+$ Note that there is no separate REL part; this is integrated in the ACTION
+part as an assignment to a variable SYNREL, in accordance with the
+current implementation.$
+$ The final condition and action have not always been separated. E.g. in
+SR1 there is one function FINALACTION which contains several alternative
+final conditions and corresponding final actions.$
+$ Because it is possible in principle that a rule is applicable more than
+once to the same input, we use - in imitation of the implementation - a
+function addnewtop in the final action, which _adds_ a new top node to
+a set (called newtop) of top nodes, which is originally empty.$
+$ For the creation of the new records special make-functions are used (e.g.
+mkclrec in SR1), which have the category and the attribute-values as
+their arguments.$
+$ In the conditions and actions 
+F will be used to refer to the record of the current node, but in general
+the attributes of the current node are used directly, e.g. quant instead of
+F.quant. In the notation no clear distinction is made between records and
+pointers to records. F, phead, paux1, paux2 may be used for both.$
+$NP
+_2. The surface rules_
+ 
+SR1:                                           (* SENT *) 
+
+REGULAR EXPRESSION:
+
+( advkop | interrkop | declkop | whsubjkop | whshiftkop | impkop ) . sentrest
+
+where:
+sentrest = objecten . verbs . sentobjecten 
+
+(* The "kop" is the beginning of the sentence, including the finite verb and
+the subject (if there is a subject). We distinguish:
+advkop: begins with an adverbial,
+interrkop: the beginning of a yes-no question,
+declkop: the beginning of an ordinary declarative sentence, subject + verb,
+whsubjkop: a WH-subject and a finite verb,
+whshiftkop: begins with a "shifted" WH-argument or modifier,
+impkop: the finite verb of an imperative.
+
+$ The sentrest is the rest of the sentence, consisting of the "objecten" 
+(i.e. all
+non-subject arguments of the main verb), the other - non-finite - "verbs" and
+the objects that are sentences (the "sentobjecten"). 
+These elements may also contain adverbials
+and negations (advpp).$
+$  The part sentrest is also used in several other rules (SR2 - SR6), with
+the same conditions and actions. Because of that the conditions on the 
+ordering of the verbs are somewhat weaker than would be possible for the
+main sentence alone. $
+$ The parts verb and sentobjecten are used in SR7 too. *)$ 
+
+objecten = [ NP%4% ] . [ advpp . union ] . [ advpp . ADJP%1% ] . advpp .
+           [ [ GLUE%11% ] . PREP%9% ]
+
+advpp = { ADVP%7% | PP%8% | NEG%9% }
+
+union = ( NP%0% | 
+          ( [ NP%0% ] . ( NP%2% | NP%3% | REFLPRO%5% |
+                          ( (NP%2% | REFLPRO%5%) .advpp. (NP%3% | NP%0%)) |
+                          (NP%3% . (NP%2% | REFLPRO%5%)  ) ) ) )
+
+verbs = { ( PART%10% . [GLUE%11%] | VERB%12% | VERB%13% ) . { PP%7% } }
+
+sentobjecten = [ COMPLSENT%14% | TECOMPLSENT%15% |
+                 ( [ PUNC%16% ] . ( SUBSENT%17% | SUBSENT%18% | ADVSENT%1% )) ]
+ 
+advkop = ( ( ADVP%20% . [ [ GLUE%11% ] . PREP%9% ]  | 
+           PP%21%  | 
+           ( ADVSENT%22% . [ PUNC%16% ] ) ) .
+         ( VERB%23% | VERB%24% ) . 
+         ( NP%25% | THERE%26% )
+
+$ (* The combination ADVP.GLUE.PREP, which occurs several times, is for 
+expressions like "ervan", "waarop", etc. *)$
+
+interrkop = ( VERB%23% | VERB%24% ) . ( NP%27% | THERE%28% )
+
+declkop = ( NP%25% | THERE%26% ) . ( VERB%23% | VERB%24% )
+
+whsubjkop = NP%29% . ( VERB%23% | VERB%24% )
+
+impkop = ( VERB%31% | VERB%30% )
+
+whshiftkop = ( NP%32% | PP%33% | ADJP%34% | 
+               ( ADVP%35% . [ [ GLUE%36% ] . PREP%37% ] ) ) .
+             ( VERB%23% | VERB%24% ) .
+             ( NP%38% | THERE%39% )
+
+                               
+PARAMETERS AND START VALUES:
+ 
+phead:=nil;               ((pointer to) verbrecord)  (* main verb *)
+paux1:=nil; paux2:=nil;   ((pointer to) verbrecord)  (* first and second aux *)
+moodvar:=omegamood;       (moodtype)                 (* mood of the sentence *)
+verbrefl:=false;          (boolean)       (* not used anymore *)
+foundrefl:=false;         (boolean)       (* reflexive pronoun found *)
+foundobj:=false;          (boolean)       (* direct object found *)
+foundhetobj:=false;       (boolean)       (* direct object "het" found *)
+foundindobj:=false;       (boolean)       (* indirect object found *)
+foundpostsubj:=false;     (boolean)       (* postsubject found, e.g. "there are
+                                             _people_ *)
+foundpred:=false;         (boolean)       (* predicate found, e.g. "John is 
+                                             _angry_" *)
+foundcompl:=false;        (boolean)       (* inf. complement found *)
+wrongaux:=false;          (boolean)       (* becomes true for impossible 
+                                             combination of auxiliaries *)
+foundsubj:=false;         (boolean)       (* subject found *)
+foundhetsubj:=false;      (boolean)       (* subject "het" found *)
+founddangprep:=false;     (boolean)       (* dangling preposition found,
+                                             e.g. "waar denk je _aan_" *)
+foundtecompl:=false;      (boolean)       (* complement with "te + inf." 
+                                             found *)
+foundthere:=false;        (boolean)       (* there found, e.g. "_there_ are
+                                             people" *)
+foundcomplsubj:=false;    (boolean)       (* complement subject found, e.g.
+                                             "hij heeft _haar_ kunnen zien" *)
+verbparticle:=0;          (baskeytype)    (* basic key *)
+                                          (* not used anymore *)
+foundparticle:=0;         (baskeytype)    (* preserves the key of a particle 
+                                             that has been found *)
+headtijd:=omegatijd;      (tijdtype)      (* preserves the tijd of the main
+                                             verb, omegatijd means: no
+                                             main verb yet *)
+zullentijd:=omegatijd;    (tijdtype)      (* preserves the tijd of the aux.
+                                             "zullen" *)
+hebbentijd:=omegatijd;    (tijdtype)      (* preserves the tijd of the aux.
+                                             "hebben" *) 
+zijntijd:=omegatijd;      (tijdtype)      (* preserves the tijd of the aux.
+                                             "zijn" *)  
+wordentijd:=omegatijd;    (tijdtype)      (* preserves the tijd of the aux.
+                                             "worden" *)
+comptijd:=omegatijd;      (tijdtype)      (* only used in the final action *)  
+restvps:=[];              (verbpatternsettype) (* used in final action *)  
+tijdvar:=omegacltijd;     (cltijdtype)    (* the tijd of the clause, used in
+                                             the final action *)
+
+
+CONDITIONS AND ACTIONS:
+
+
+      0:     (* NP *)
+             LOCCOND:  quant=indefquant
+             GLOBCOND: not(foundpostsubj)
+             ACTION:   SYNREL:=postsubjrel;
+                       foundpostsubj:=true;
+                                   
+                                         
+      1:     (* ADJP *)
+             LOCCOND:  not evorm
+             GLOBCOND: not foundpred
+             ACTION:   SYNREL:=predrel;
+                       foundpred:=true;
+                                   
+                            
+             
+      2:     (* NP *)              
+             LOCCOND:  dative in cases
+             GLOBCOND: (not foundindobj) and
+                       (not foundobj or foundhetobj)
+             ACTION:   SYNREL:=indobjrel;
+                       foundindobj:=true;
+                                   
+                                  
+      3:     (* NP *)              
+             LOCCOND:  accusative in cases
+             GLOBCOND: (not foundobj)
+             ACTION:   SYNREL:=objrel;
+                       foundobj:=true;
+                       if soort=hetpro
+                       then foundhetobj:=true;
+                                   
+                                  
+      4:     (* NP *)              
+             LOCCOND:  accusative in cases
+             GLOBCOND: (not foundcomplsubj) and
+                       (not foundindobj) and
+                       (not foundobj or foundhetobj)
+             ACTION:   SYNREL:=complsubjrel;
+                       foundcomplsubj:=true;
+                                   
+                            
+             
+      5:     (* REFLPRO *) 
+             LOCCOND:  true
+             GLOBCOND: not foundrefl
+             ACTION:   SYNREL:=reflrel;
+                       foundrefl:=true;
+                                   
+                            
+             
+      6:     (* ADVP *) 
+             LOCCOND:  soort <> adjadv
+             GLOBCOND: true
+             ACTION:   SYNREL:=modrel;
+                                   
+                            
+             
+      7:     (* PP *) 
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   SYNREL:=modrel;
+                                   
+                            
+             
+      8:     (* NEG *) 
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   SYNREL:=modrel;
+                                   
+                            
+             
+      9:     (* PREP *) 
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   SYNREL:=danglingrel;
+                       founddangprep:=true;
+                            
+                       
+             
+     10:     (* PART *)
+             LOCCOND:  true
+             GLOBCOND: foundparticle = 0
+             ACTION:   SYNREL:=partrel;
+                       foundparticle:=key;
+                                   
+                            
+             
+     11:     (* GLUE *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   SYNREL:=gluerel;
+                                   
+                            
+             
+     12:     (* VERB *) 
+             LOCCOND:  key <> zullenkey
+             GLOBCOND: phead = nil
+             ACTION:   SYNREL:=headrel;
+                       phead:=F;
+                                   
+                            
+             
+     13:     (* VERB *)
+             LOCCOND:  ((key=hebbenkey) or (key=zijnkey) or
+                        (key=wordenkey) or (key=zullenkey)) and
+                       (tijd <> VoltDw)
+             GLOBCOND: paux2 = nil
+             ACTION:   SYNREL:=auxrel;
+                       if paux1=nil
+                       then paux1:=F
+                       else paux2:=F;
+                                   
+                            
+             
+     14:     (* COMPLSENT *) 
+             LOCCOND:  true
+             GLOBCOND: (phead <> nil)  and
+                       (phead^.vps * [vpmodal1,vpmodal2,vp2c,vp2f,
+                                      vpid0,vpid1,vpid2,vpid3]) <> [])
+             ACTION:  
+                       SYNREL:=complrel;
+                       foundcompl:=true;
+                                  
+                                 
+             
+     15:     (* TECOMPLSENT *) 
+             LOCCOND:  true
+             GLOBCOND: (phead <> nil)  and
+                       (phead^.vps * [vp2d,vp2i,vp3c,vp3d,
+                                      vpid0,vpid1,vpid2,vpid3])<>[])
+             ACTION:  
+                        SYNREL:=complrel;
+                        foundtecompl:=true;
+                                  
+                            
+             
+     16:     (* PUNC *) 
+             LOCCOND:  key = kommakey
+             GLOBCOND: true
+             ACTION:   SYNREL:=puncrel;
+                                   
+                            
+             
+     17:     (* SUBSENT *) 
+             LOCCOND:  true
+             GLOBCOND: not foundobj
+             ACTION:   SYNREL:=objrel;
+                       foundobj:=true;
+                                   
+                            
+             
+     18:     (* SUBSENT *) 
+             LOCCOND:  true
+             GLOBCOND: founddangprep or foundhetsubj  or not foundsubj
+             ACTION:   SYNREL:=extraposrel;
+                                   
+                            
+             
+     19:     (* ADVSENT *) 
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   SYNREL:=modrel;
+                                   
+                            
+             
+     20:     (* ADVP *)              
+             LOCCOND:  (mood = declarative) and
+                       (soort <> eradv) and
+                       (soort <> adjadv)
+             GLOBCOND: true
+             ACTION:   SYNREL:=shiftrel;
+                                   
+                            
+             
+     21:     (* PP *) 
+             LOCCOND:  mood = declarative
+             GLOBCOND: true
+             ACTION:   SYNREL:=shiftrel;
+                                   
+                            
+             
+     22:     (* ADVSENT *) 
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   SYNREL:=shiftrel;
+                                   
+                            
+             
+     23:     (* VERB *)              
+             LOCCOND:  (key <> zullenkey) and
+                       (tijd in [TegenwTijd,VerlTijd])
+             GLOBCOND: phead = nil
+             ACTION:   SYNREL:=headrel;
+                       phead:=F;
+                                   
+                            
+             
+     24:     (* VERB *)              
+             LOCCOND:  ((key=hebbenkey) or (key=zijnkey) or
+                        (key=wordenkey) or (key=zullenkey)) and
+                       (tijd in [TegenwTijd,VerlTijd])
+             GLOBCOND: paux1 = nil
+             ACTION:   SYNREL:=auxrel;
+                       paux1:=F;
+                                   
+                            
+             
+     25:     (* NP *)              
+             LOCCOND:  ( mood = declarative) and
+                       ( nominative in cases)
+             GLOBCOND: true
+             ACTION:   SYNREL:=subjrel;
+                       foundsubj:=true;
+                       moodvar:=declarative;
+                       if soort = hetpro
+                       then foundhetsubj:=true;
+                                   
+                            
+             
+     26:     (* THERE *) 
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   SYNREL:=subjrel;
+                       foundsubj:=true;
+                       foundthere:=true;
+                       moodvar:=declarative;
+                                   
+                            
+             
+     27:     (* NP *)              
+             LOCCOND:  (mood = declarative) and
+                       (nominative in cases)
+             GLOBCOND: true
+             ACTION:   SYNREL:=subjrel;
+                       foundsubj:=true;
+                       moodvar:=yesno;
+                       if soort = hetpro
+                       then foundhetsubj:=true;
+                                   
+                            
+             
+     28:     (* THERE *) 
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   SYNREL:=subjrel;
+                       foundsubj:=true;
+                       foundthere:=true;
+                       moodvar:=yesno;
+                                   
+                                         
+     29:     (* NP *)              
+             LOCCOND:  (mood = whinterr) and
+                       (nominative in cases)
+             GLOBCOND: true
+             ACTION:   SYNREL:=subjrel;
+                       foundsubj:=true;
+                       moodvar:=whinterr;
+                                   
+                            
+             
+     30:     (* VERB *)              
+             LOCCOND:  ((tijd = TegenwTijd) or
+                       (tijd = GebWijsZijn))  and
+                       (key <> zullenkey) and
+                       (getal = enkelvoud) and
+                       (1 in personen);
+             GLOBCOND: true
+             ACTION:   SYNREL:=headrel;
+                       phead:=F;
+                       moodvar:=impenk;
+                                   
+                            
+             
+     31:     (* VERB *)
+             LOCCOND:  ((tijd = TegenwTijd) or
+                        (tijd = GebWijsZijn))  and
+                       (key <> zullenkey) and
+                       (getal = enkelvoud) and
+                       (2 in personen)
+             GLOBCOND: true
+             ACTION:   SYNREL:=headrel;
+                       phead:=F;
+                       moodvar:=impmv;
+                                   
+                            
+             
+     32:     (* NP *) 
+             LOCCOND:  mood = whinterr
+             GLOBCOND: true
+             ACTION:   SYNREL:=shiftrel;
+                                   
+                            
+             
+     33:     (* PP *) 
+             LOCCOND:  mood = whinterr
+             GLOBCOND: true
+             ACTION:   SYNREL:=shiftrel;
+                                   
+                            
+             
+     34:     (* ADJP *) 
+             LOCCOND:  mood = whinterr) and
+                       (not evorm)
+             GLOBCOND: true
+             ACTION:   SYNREL:=shiftrel;
+                                   
+                            
+             
+     35:     (* ADVP *) 
+             LOCCOND: (mood = whinterr) and
+                      (soort <> adjadv)
+             GLOBCOND: true
+             ACTION:   SYNREL:=shiftrel;
+                                   
+                            
+             
+     36:      
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   SYNREL:=gluerel;
+                                   
+                            
+             
+     37:      
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   SYNREL:=danglingrel;
+                                   
+                            
+             
+     38:     (* NP *)              
+             LOCCOND:  (mood = declarative) and
+                       (nominative in cases)
+             GLOBCOND: true
+             ACTION:   SYNREL:=subjrel;
+                       moodvar:=whinterr;
+                       foundsubj := true;            
+                            
+             
+     39:     (* THERE *) 
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   SYNREL:=subjrel;
+                       foundsubj:=true;
+                       foundthere:=true;
+                       moodvar:=whinterr;
+                                   
+                            
+$ (* The final condition and the final action have been integrated. In this 
+complicated rule the final action is expressed with the help
+of a number of auxiliary functions. The main task of these functions is
+to determine the tense, the voice and the mood. I specify these functions in
+their PASCAL notation.$
+
+$ The final condition and action of SR1 are complicated, mainly because it
+has to be decided what the "tempus" and the voice of the sentence are. We need
+to know the tempus because the M-grammar prescribes that in a surface tree
+the clause record attribute "tijd" is specified. After all, this seems to be
+not necessary; thanks to that this rule may become much simpler.$
+
+$ The final actions of the six surface rules SR1-SR7 (SR3 does not exist
+anymore) have much in common. Some of the auxiliary functions have been
+generalized in such a way that they can be used with small variations in
+the various rules. For this reason FINALACTION is a procedure with the new
+top category as its first argument and the number of the rule as the second
+argument. *)$
+
+FINAL COND/ACTION: FINALACTION(SENT,1)
+$NP
+ 
+Definition of the procedure FINALACTION and auxiliary procedures:
+
+procedure FINALACTION(c: syntcat; nr: integer);
+ 
+begin if (phead <> nil) and (not foundcomplsubj or foundcompl)  and
+         ((not foundpostsubj) or (foundpostsubj and foundthere) or
+          (c = COMPLSENT))  
+      then begin
+           if ((phead^.reflexive = foundrefl) and
+               (phead^.part = foundparticle)      ) or
+               foundcompl or
+               (c = COMPLSENT)  (* If the main verb expects a refl. pro or
+                                   a particle, they must be present, unless 
+                                   there is a complement sentence or the 
+                                   current sentence is itself a complement, for
+                                   the REFLPRO and the PART may have been
+                                   shifted from the COMPLSENT to the next 
+                                   higher sentence *)
+           then begin
+                BEPAALRESTVPS; (* BEPAALRESTVPS will be defined later. It
+                                  starts with the set verb patterns of the
+                                  main verb and reduces this set if there is
+                                  relevant information about other elements 
+                                  of the sentence. If ultimately the set of
+                                  possible patterns is empty, the rule is not
+                                  applicable. *)
+                if restvps <> []
+                then begin
+                     if moodvar in [impenk,impmv]
+                     then begin
+                          newtop:=addnewtop(mkclrec(c,
+                                                    moodvar,
+                                                    active,
+                                                    ott,
+                                                    presenttense,
+                                                    omegaclsoort,
+                                                    restvps),newtop)
+                          (* Because a rule may be applicable in more than
+                             one way, we make a list of new top nodes instead
+                             of just one *)
+                          end
+                     else if moodvar in [yesno, whinterr, declarative]
+                          then NONIMPMOODS(c,nr)
+                          (* The imperative has been treated in the first
+                             part of this procedure. All other cases (the
+                             NON IMPerative MOODS) are treated in 
+                             NONIMPMOODS *)
+                     end
+                end
+           end
+     end;
+$NP
+ 
+procedure NONIMPMOODS(c: syntcat; nr: integer);
+ 
+(* The final condition/action for the non-imperative moods *)
+begin
+      if not (foundcompl and (phead^.tijd = VoltDw))
+      then begin
+           AUXASS(paux1);
+           AUXASS(paux2);
+           (* AUXASS tests whether there are auxiliaries in paux1 and paux2,
+              looks what kind of auxiliaries these are, checks whether the
+              combination of auxiliaries is possible (e.g. twice "zullen" is
+              forbidden) and puts the tijd of each type of aux into the
+              variables zullentijd, zijntijd, hebbentijd and wordentijd. For
+              a wrong combination wrongaux becomes true. *)
+           if not wrongaux
+           then begin
+                if (hebbentijd <> omegatijd)
+                then begin if (hebvorm in phead^.voltvormen)
+                           then comptijd:=hebbentijd
+                           else wrongaux:=true;
+                           (* the aux. of completion "hebben" is only allowed
+                              if this is a possible aux. of the main verb *) 
+                     end
+                else if (zijntijd <> omegatijd)
+                then begin  if (isvorm in phead^.voltvormen)
+                           then comptijd:=zijntijd
+                                (* the aux. of completion "zijn" *)
+                           else wrongaux:=true;
+                     end;
+                if foundcompl and (phead^.tijd = Infinitief) and
+                   (comptijd <> omegatijd)
+                then headtijd:=VoltDw
+                     (* N.B.: it is not the tijd in the head itself that is
+                        changed here, but the parameter headtijd which will
+                        be used for determining the cltijd. Think of "hij
+                        heeft het KUNNEN doen" *)
+                else headtijd:=phead^.tijd;
+                if ((hebbentijd = omegatijd) or
+                    (zijntijd = omegatijd)) and
+                    not(wrongaux) and
+                    (wordentijd = omegatijd)
+                then begin 
+                     tijdvar:=ACTTIJD[headtijd,comptijd,zullentijd];
+                     (* ACTTIJD determines the cltijd from the tijd of
+                        the head and the auxiliaries for active sentences *)
+                     if tijdvar<>omegacltijd then ADDACTSENT(c,nr)
+                     (* ADDACTSENT adds a new sentence top *)
+                     end;
+                if (hebbentijd = omegatijd) and
+                   (phead^.tijd = VoltDw) and
+                   (phead^.possvoices * [passive,erpassive] <> []) and
+                   ((wordentijd <> omegatijd) or
+                    (zijntijd <> omegatijd))
+                then begin 
+                     tijdvar:=PASSTIJD[wordentijd,zijntijd,zullentijd];
+                     (* PASSTIJD determines the cltijd from the tijd of
+                        the head and the auxiliaries for passive sentences *)
+                     if tijdvar<>omegacltijd then ADDPASSSENT(c,nr)
+                     (* ADDPASSSENT adds a new sentence top with passive 
+                        voice *)
+                     end
+                end
+           end
+end;
+$NP 
+ 
+procedure ADDPASSSENT(c: syntcat;nr: integer);
+ 
+begin
+ 
+case nr of   (* a case over the various rules, SR1 - SR7 *)
+1,
+2,
+3,
+4,
+5    :
+      if tijdvar in [ott,ovt,ottt,ovtt,vtt,vvt,vttt,vvtt]
+      then begin
+           newtop:=addnewtop(mkclrec(c,
+                                     moodvar,
+                                     passive,
+                                     tijdvar,
+                                     STENSE(tijdvar),
+                                     omegaclsoort,
+                                     restvps),newtop)
+           end;
+6    :
+      if tijdvar in [oteinft,vteinft,oteinftt,vteinftt]
+      then begin
+           newtop:=addnewtop(mkclrec(c,
+                                     declarative,
+                                     passive,
+                                     tijdvar,
+                                     omegatense,
+                                     omegaclsoort,
+                                     restvps),newtop)
+           end;
+7    :
+      if tijdvar in [oinft,vinft]
+      then begin
+           ;
+           newtop:=addnewtop(mkclrec(c,
+                                     declarative,
+                                     passive,
+                                     tijdvar,
+                                     omegatense,
+                                     omegaclsoort,
+                                     restvps),newtop)
+           end;
+end
+ 
+end;
+$NP 
+ 
+procedure ADDACTSENT(c: syntcat; nr: integer);
+ 
+begin
+ 
+case nr of         (* a case over the various rules, SR1 - SR7 *)
+1,
+2,
+3,
+4,
+5    :
+      if tijdvar in [ott,ovt,ottt,ovtt,vtt,vvt,vttt,vvtt]
+      then begin
+           ;
+           newtop:=addnewtop(mkclrec(c,
+                                     moodvar,
+                                     active,
+                                     tijdvar,
+                                     STENSE(tijdvar),
+                                     omegaclsoort,
+                                     restvps),newtop)
+           end;
+6    :
+      if tijdvar in [oteinft,vteinft,oteinftt,vteinftt]
+      then begin
+           ;
+           newtop:=addnewtop(mkclrec(c,
+                                     declarative,
+                                     active,
+                                     tijdvar,
+                                     omegatense,
+                                     omegaclsoort,
+                                     restvps),newtop)
+           end;
+7    :
+      if tijdvar in [oinft,vinft]
+      then begin
+           ;
+           newtop:=addnewtop(mkclrec(c,
+                                     declarative,
+                                     active,
+                                     tijdvar,
+                                     omegatense,
+                                     omegaclsoort,
+                                     restvps),newtop)
+           end
+end
+ 
+end;
+$NP 
+ 
+procedure BEPAALRESTVPS;
+ 
+$ (* The procedure starts with assigning the set verb patterns of the
+main verb to restvps. It reduces this set if there is relevant information 
+about arguments of the verb. E.g. if foundobj is true, an object has been
+found, which implies that only verb patterns with an object are possible.
+The situation is a bit more complicated because in sentences with a complement
+the object may belong to the complement (e.g. "haar haar" in "ik heb haar 
+haar haar zien wassen"). *)$
+
+begin
+      restvps:=phead^.vps;
+ 
+      if foundobj and not foundcompl  and not foundtecompl
+      then restvps:=restvps * 
+           [vp2a,vpmodal2,vp3a,vp3b,vp3f,vp3g,vpid0,vpid1,vpid2,vpid3];
+      if foundindobj and not foundcompl and not foundtecompl
+      then restvps:=restvps * [vp3a,vp3c,vp3d,vp3e,vpid0,vpid1,vpid2,vpid3];
+      if foundpred and not foundcompl and not foundtecompl
+      then restvps:=restvps * [vp2e,vp3f,vpid0,vpid1,vpid2,vpid3];
+      if foundcompl
+      then restvps:=restvps * 
+                    [vp2c,vp2f,vpmodal1,vpmodal2,vpid0,vpid1,vpid2,vpid3];
+      if foundtecompl
+      then restvps:=restvps * [vp2d,vp2i,vp3c,vp3d,vpid0,vpid1,vpid2,vpid3];
+      if foundcomplsubj and not foundcompl
+      then restvps:=[]
+ 
+end;
+$NP 
+
+function STENSE(tijd: cltijdtype): supertensetype;
+ 
+$ (* STENSE determines the supertense, which follows immediately from the
+tempus (the "tijd" of the clause). *)$
+
+begin if tijd in [ott,ottt]
+      then STENSE:=presenttense
+      else if tijd in [ovt,vtt,vvt,ovtt,vttt,vvtt]
+           then STENSE:=pasttense
+           else STENSE:=omegatense
+end;
+$NP 
+
+ACTTIJD:
+
+$ (* ACTTIJD determines the tempus of active sentences from the tijd of
+   the head (headtijd) and the auxiliaries (comptijd for the completion aux. 
+and zullentijd for the future aux.). It is specified in the form of a table. 
+Note that omegatijd means that the auxiliary was not there. *)$
+
+headtijd       comptijd          zullentijd     |    ACTTIJD
+-------------------------------------------------------------
+TegenwTijd     omegatijd         omegatijd      |    ott   
+VerlTijd       omegatijd         omegatijd      |    ovt
+Infinitief     omegatijd         omegatijd      |    oinft
+TeInf          omegatijd         omegatijd      |    oteinft
+Infinitief     omegatijd         TegenwTijd     |    ottt
+Infinitief     omegatijd         VerlTijd       |    ovtt
+Infinitief     omegatijd         Infinitief     |    oinftt
+Infinitief     omegatijd         TeInf          |    oteinftt
+VoltDw         TegenwTijd        omegatijd      |    vtt   
+VoltDw         VerlTijd          omegatijd      |    vvt
+VoltDw         Infinitief        omegatijd      |    vinft
+VoltDw         TeInf             omegatijd      |    vteinft
+VoltDw         Infinitief        TegenwTijd     |    vttt
+VoltDw         Infinitief        VerlTijd       |    vvtt
+VoltDw         Infinitief        Infinitief     |    vinftt
+VoltDw         Infinitief        TeInf          |    vteinftt
+                                                |
+For all other combinations:                     |    omegacltijd
+$NP
+
+PASSTIJD:
+
+$ (* PASSTIJD determines the tempus of active sentences from the tijd of
+   the auxiliaries (wordentijd, zijntijd and
+zullentijd). It is specified in the form of a table. Notice that this
+table is almost identical to ACTTIJD *)$
+
+wordentijd     zijntijd          zullentijd     |    PASSTIJD
+-------------------------------------------------------------
+TegenwTijd     omegatijd         omegatijd      |    ott   
+VerlTijd       omegatijd         omegatijd      |    ovt
+Infinitief     omegatijd         omegatijd      |    oinft
+TeInf          omegatijd         omegatijd      |    oteinft
+Infinitief     omegatijd         TegenwTijd     |    ottt
+Infinitief     omegatijd         VerlTijd       |    ovtt
+Infinitief     omegatijd         Infinitief     |    oinftt
+Infinitief     omegatijd         TeInf          |    oteinftt
+omegatijd      TegenwTijd        omegatijd      |    vtt   
+omegatijd      VerlTijd          omegatijd      |    vvt
+omegatijd      Infinitief        omegatijd      |    vinft
+omegatijd      TeInf             omegatijd      |    vteinft
+omegatijd      Infinitief        TegenwTijd     |    vttt
+omegatijd      Infinitief        VerlTijd       |    vvtt
+omegatijd      Infinitief        Infinitief     |    vinftt
+omegatijd      Infinitief        TeInf          |    vteinftt
+                                                |
+For all other combinations:                     |    omegacltijd
+$NP
+
+procedure AUXASS(paux: pverbrecord);
+ 
+$ (* AUXASS is successively applied to all auxiliaries; it 
+looks what kind of auxiliary paux is
+  and puts the tijd of each type of aux into the
+      global variables zullentijd, zijntijd, hebbentijd and wordentijd. For
+              a wrong combination of auxiliaries wrongaux becomes true. *)$
+           
+begin
+      if paux <> nil
+      then begin
+           if paux^.key = zullenkey
+           then begin 
+                if zullentijd = omegatijd
+                then zullentijd:=paux^.tijd
+                else wrongaux:=true;
+                end
+           else begin
+                if paux^.key=zijnkey
+                then begin 
+                     if zijntijd = omegatijd
+                     then zijntijd:=paux^.tijd
+                     else wrongaux:=true;
+                     end
+                else begin
+                     if paux^.key=hebbenkey
+                     then begin 
+                          if hebbentijd = omegatijd
+                          then hebbentijd:=paux^.tijd
+                          else wrongaux:=true;
+                          end
+                     else begin
+                          if paux^.key=wordenkey
+                          then begin 
+                               if wordentijd=omegatijd
+                               then wordentijd:=paux^.tijd
+                               else wrongaux:=true;
+                               end
+                          end
+                     end
+                end
+           end
+end;
+$NP 
+
+ 
+SR2                                    (* for RELSENT *)    
+
+REGULAR EXPRESSION:
+ 
+    relsentkop . sentrest
+
+where
+  
+relsentkop = RELPRO%20%  |
+             ( ( RELPRO%21% | PP%22% | ADVP%23% . [ [GLUE%24%] . PREP%25% ] ) .
+               ( NP%28% | THERE%29% ) )
+
+sentrest = (* as in SR1 *)
+
+$ (* The relsentkop either consists of a relative pronoun which is the subject,
+or it starts with a relative pronoun (or a relative adverbial) 
+which is not the subject, followed by the subject and the finite verb.*)$
+
+PARAMETERS AND STARTVALUES:
+    as in SR1.
+
+CONDITIONS AND ACTIONS
+for 1 - 19 as in SR1.
+
+      20:    (* RELPRO *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:    
+                       SYNREL:=subjrel;
+                       foundsubj:=true;
+                       
+      21:    (* RELPRO *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:    
+                       SYNREL:=shiftrel;
+
+      22:    (* PP *)
+             LOCCOND:  mood = whinterr
+             GLOBCOND: true
+             ACTION:    
+                       SYNREL:=shiftrel;
+                            
+                            
+      23:    (* ADVP *)
+             LOCCOND:  soort = waaradv
+             GLOBCOND: true
+             ACTION:    
+                       SYNREL:=shiftrel;
+                            
+                            
+      24:    (* GLUE *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:    
+                       SYNREL:=gluerel;
+                            
+                            
+      25:    (* PREP *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:    
+                       SYNREL:=danglingrel;
+                            
+                            
+      26:    (* ADVP, deleted *)
+             LOCCOND:  mood = declarative
+             GLOBCOND: true
+             ACTION:    
+                       SYNREL:=modrel;
+                            
+                            
+      27:    (*  PP, deleted *)
+             LOCCOND:  mood  = declarative
+             GLOBCOND: true
+             ACTION:    
+                       SYNREL:=modrel;
+                            
+                            
+      28:    (* NP *)
+             LOCCOND:  mood = declarative
+             GLOBCOND: true
+             ACTION:    
+                       SYNREL:=subjrel;
+                       foundsubj:=true;
+                       if soort=hetpro
+                       then foundhetsubj:=true;
+                            
+                            
+      29:    (* THERE *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:    
+                       SYNREL:=subjrel;
+                       foundsubj:=true;
+                            
+                            
+FINAL COND/ ACTION:  moodvar:=declarative;
+                     FINALACTION(RELSENT,2)
+                     (* defined in SR1 *)
+$NP 
+
+SR4:                                        (* ADVSENT *)
+
+
+REGULAR EXPRESSION:
+
+    subsentkop . sentrest
+
+where
+
+subsentkop = CONJ%20% . { ADVP%21% | PP%22% } . ( NP%23% | THERE%24% )
+
+sentrest = (* as in SR1 *)
+
+$ (* An adverbial sentence begins with a conjunction (e.g. "als") followed
+by the subject and the finite verb and possibly an adverbial. *)$
+ 
+PARAMETERS AND STARTVALUES:
+
+    as in SR1.
+
+CONDITIONS AND ACTIONS:
+ 
+For 1 - 19 the same as in SR1.
+For 21 - 24 as in SR2: 26 - 29.
+
+           20:    (* CONJ *)                  
+                  LOCCOND:  not (( key = ofconjkey) or
+                                 ( key = datconjkey))
+                  GLOBCOND: true
+ 
+                  ACTION:   SYNREL:=conjrel;
+                            moodvar:=declarative;
+                                 
+FINAL COND/ACTION:  FINALACTION(ADVSENT,4)   (* see rule SR1 *)
+$NP 
+ 
+SR5                                           (* SUBSENT *)
+
+REGULAR EXPRESSION:
+
+    whsentkop . sentrest
+
+where
+
+whsentkop = NP%20%  |  CONJ%28%  |
+            ( ( NP%21% | PP%22% | ADVP%23% | 
+                ( ADVP%24% . [ GLUE%25% ] . PREP%26% ] )  |
+                ADJP%27%  | CONJ%28% ) .
+              ( NP%29% | THERE%30% ) )
+
+sentrest = (* as in SR1 *)
+
+$ (* A subsentence starts with "dat" or "of" (e.g. "dat hij kwam") or with a
+shifted WH element (e.g.: "wie hij zag", "waarop hij rekende"). The 
+whswntkop does not necessarily contain a subject, it may consist of a
+single CONJ, as in "wie denk je _dat_ de prijs heeft gewonnen?" *)$
+
+PARAMETERS AND STARTVALUES:
+
+    as in SR1.
+
+CONDITIONS AND ACTIONS:
+For 1 - 19 as in SR1
+
+      20:    (* NP *)
+             LOCCOND:  mood = whinterr 
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=subjrel;
+                       foundsubj:=true;
+                            
+      21:    (* NP *)
+             LOCCOND:  mood = whinterr
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=shiftrel;
+                            
+      22:    (* PP *)
+             LOCCOND:  mood = whinterr
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=shiftrel;
+                            
+      23:    (* ADVP *)
+             LOCCOND:  mood = whinterr) and
+                       not (soort = waaradv)
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=shiftrel;
+                            
+      24:    (* ADVP *)
+             LOCCOND:  soort = waaradv
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=shiftrel;
+                            
+      25:    (* GLUE *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=gluerel;
+                            
+      26:    (* PREP *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=danglingrel;
+                            
+      27:    (* ADJP *)
+             LOCCOND:  mood = whinterr
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=shiftrel;
+                            
+      28:    (* CONJ *)
+             LOCCOND:  ( key = ofconjkey) or
+                       ( key = datconjkey)
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=conjrel;
+                            
+      29:    (* NP *)
+             LOCCOND:  mood = declarative
+             GLOBCOND: true
+             ACTION: 
+                       foundsubj:=true;
+                       if soort = hetpro
+                       then foundhetsubj := true
+                       SYNREL:=subjrel;
+                            
+      30:    (* THERE *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=subjrel;
+                       foundsubj:=true;
+                       foundthere:=true;
+                            
+FINAL COND/ACTION:  moodvar:=declarative;
+                    FINALACTION(SUBSENT,5)   (* see rule SR1 *)
+$NP
+ 
+SR6                                     (* TECOMPLSENT  *)
+
+REGULAR EXPRESSION:
+
+    [ PREP%20% ] . sentrest
+
+where
+
+sentrest = (* as in SR1 *)
+
+$ (* A TECOMPLSENT has the form of a sentrest (e.g. "appels te eten")
+or it starts with the preposition "om". The sentrest regular expression is
+much too tolerant for this rule. 
+For example: o
+n the basis of the regular expression alone "om appels gegeten" is
+a correct TECOMPLSENT. We need the final condition/action to decide that it 
+is not. Maybe it is more efficient to write a version of sentrest for SR6
+only. *)$
+
+PARAMETERS AND START VALUES:
+
+    as in SR1.
+
+CONDITIONS AND ACTIONS:
+
+For 1 - 19 the same as in SR1.
+
+ 
+      20:    (* PREP *)             
+             LOCCOND:  key = omprepkey 
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=omrel;
+                            
+FINAL COND/ ACTION:  moodvar:=declarative;
+                     FINALACTION(TECOMPLSENT,6)    (* see SR1 *)
+$NP
+
+SR7                                         (* COMPLSENT *)
+
+REGULAR EXPRESSION:
+
+    verbs . [ sentobjecten ]
+
+where
+
+verbs = (* as in SR1 *)
+sentobjecten = (* as in SR1 *)
+
+$ (* Examples are: "komen", "zijn gekomen", "hebben geweten dat hij komt". Note
+that there are no "objecten". They are in the next higher sentence. *)$
+
+PARAMETERS AND STARTVALUES:
+
+    as in SR1.
+
+CONDITIONS AND ACTIONS:
+ 
+    as in SR1.
+ 
+FINAL COND/ ACTION:  moodvar:=declarative;
+                     FINALACTION(COMPLSENT,7)       (* as in SR1 *)
+$NP 
+ 
+SR8                                            (* ANTERELSENT *)
+
+REGULAR EXPRESSION:
+
+    [ REFLPRO%1% ] . 
+    { PP%2% | ADVP%3% } .
+    [ NP%4% | ADJP%5% ] .
+    [ PART%6% . GLUE%7% ] .
+    ( VERB%8% | VERB%9% )
+
+(* Examples: "zich iets afvragende", "door Frans rood geverfde". *)
+
+PARAMETERS AND STARTVALUES:
+
+             objfound:=false;       (boolean)
+             predfound:=false;      (boolean)
+             reflfound:=false;      (boolean)
+             foundparticle:=0;      (baskeytype)
+             phead:=nil;            (pointer to verbrecord)
+             voicevar:=omegavoice;  (voicetype)
+             restvps:=[]            (verbpatternsettype)
+
+CONDITIONS AND ACTIONS:
+
+       1:    (* RELPRO *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=reflrel;
+                       reflfound:=true;
+                            
+       2:    (* PP *)
+             LOCCOND:  mood  = declarative
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=modrel;
+                            
+       3:    (* ADVP *)
+             LOCCOND:  mood = declarative
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=modrel;
+                            
+       4:    (* NP *)             
+             LOCCOND:  (accusative in cases) and
+                       (mood = declarative)
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=objrel;
+                       objfound:=true;
+                            
+       5:    (* ADJP *)             
+             LOCCOND:  (mood = declarative) and
+                       (not evorm)
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=predrel;
+                            
+       6:    (* PART *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=partrel;
+                       foundparticle:=key;
+                            
+       7:    (* GLUE *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=gluerel;
+                            
+       8:    (* VERB *)             
+             LOCCOND:  ((tijd = VoltDw) or (tijd = VoltDwE)) 
+             GLOBCOND: not objfound
+             ACTION: 
+                       SYNREL:=headrel;
+                       phead:= F;
+                       if passive in possvoices
+                          (* "de gegeten appel" *)
+                       then voicevar:=passive
+                       else if isvorm in voltvormen
+                          (* "de ontsnapte gevangene" *)
+                       then voicevar:=active;
+                       tijdvar:=voltdwcltijd;
+                            
+       9:    (* VERB *)             
+             LOCCOND:  ( tijd = TegDw) or (tijd = TegDwE)
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=headrel;
+                       phead:= F;
+                       voicevar:=active;
+                       tijdvar:=tegdwcltijd;
+
+FINAL COND/ ACTION:
+
+             restvps:=phead^.vps;
+             if objfound then restvps:=restvps *
+                           [vp2a,vp3a,vp3b,vp3f,vp3g,vpid0,vpid1,vpid2,vpid3];
+             if predfound then restvps:=restvps *
+                           [vp2e,vp3f,vpid0,vpid1,vpid2,vpid3];
+ 
+FINAL COND:       (phead^.reflexive = reflfound) and
+                  (foundparticle = phead^.part) and
+                  (voicevar <> omegavoice) and
+                  (restvps <> [])
+FINAL ACTION:     newtop:=addnewtop(mkclrec(ANTERELSENT,
+                                            declarative,
+                                            voicevar,
+                                            tijdvar,
+                                            omegatense,
+                                            omegaclsoort,
+                                            restvps),
+                                    newtop)
+$NP
+
+SR9                                        (* VERB *)
+                 
+REGULAR EXPRESSION:
+
+    TE%1% . VERB%2%
+
+(* Example: "te komen" *)
+ 
+PARAMETERS AND STARTVALUES:
+
+             phead:=nil;    (* pointer to verbrecord *)
+
+CONDITIONS AND ACTIONS:
+
+       1:    (* TE *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   
+                       SYNREL:=terel;
+
+       2:    (* VERB *)
+             LOCCOND:  tijd  = Infinitief
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=headrel;
+                       phead:= F;
+
+FINAL COND/ ACTION
+             c:= VERB{ F' }
+                 with F' := copy ( F ); F'.tijd := TeInf
+
+             (* This is an abbreviated notation; in the strict notation we
+                should have parameters for all attributes of a verbrecord
+                assign values to them in ACTION 2:, and use these parameter
+                values for determining the new verb record at the top *)
+
+             newtop:=addnewtop(c,newtop)
+$NP
+
+SR10                                         (* UTT *)
+
+REGULAR EXPRESSION:
+
+(EXCLAM%1% | NP%1% | ( [COORD%2%] . SENT%1%) ) .
+{(PUNC%2% . (EXCLAM%1% | NP%1%)) | (( PUNC%2% | COORD%2% ) . SENT%1% ) }.
+[ PUNC%2% ]
+
+$ (* An 
+utterance is a sequence of exclamations (e.g. "ja"), NPs and sentences, 
+separated by punctuation marks or coordinators. A sentence may be preceded
+by a coordinator, e.g. "Maar het regende". $
+$ The regular expression of this and other rules is more complicated than 
+necessary because of an implementation restriction we had to take into
+account, but which is no longer valid. The theoretical definition of
+the rules says that regular expressions may denote the empty string, but that
+this possibility will not be used. Originally the implementation of the rules
+did not allow this possibility at all. So the regular expressions 
+had to be written in such a way that they could not be empty. *)$
+
+PARAMETERS AND STARTVALUES:
+ 
+-
+
+CONDITIONS AND ACTIONS:
+
+ 
+       1:    (* EXCLAM, NP, SENT *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=argrel;
+                            
+       2:    (* PUNC, COORD *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=puncrel;
+                            
+FINAL COND:    true
+FINAL ACTION:  newtop:= addnewtop( UTT{ }, newtop)
+$NP
+
+SR11                                            (* PP *)
+ 
+REGULAR EXPRESSION:
+
+    [ PREP%1% ] . NP%2% . { PREP%4% | PART%3% }
+
+(* Examples: "in de tuin", "de tuin in", "naar Marie toe" *)
+
+PARAMETERS AND STARTVALUES:
+ 
+             moodvar:=omegamood;    (moodtype)
+             prepfound:=false;      (boolean)
+             exppostpkey:=0;        (baskeytype)  (* preserves the key of the
+                                                     particle expected by the
+                                                     preposition *)
+             prepkeyvar:=0          (baskeytype)
+
+CONDITIONS AND ACTIONS:
+
+       1:    (* PREP *)             
+             LOCCOND:  (soort in [gewoneprep,splitprep])
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=headrel;
+                       if soort = splitprep
+                       then exppostpkey:=postpkey;
+                       prepkeyvar:=key;
+                       prepfound:=true;
+                            
+       2:    (* NP *)
+             LOCCOND:  (soort <> hetpro) and
+                       ((cases * [dative,accusative]) <> [])
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=objrel;
+                       moodvar:=mood;
+                            
+       3:    (* PART *)             
+             LOCCOND:  true
+             GLOBCOND: prepfound and (exppostpkey = key)
+             ACTION: 
+                       SYNREL:=postpreprel;
+                            
+       4:    (* PREP *)             
+             LOCCOND:  (soort = postprep)
+             GLOBCOND: not prepfound
+             ACTION: 
+                       SYNREL:=headrel;
+                       prepkeyvar:=key;
+                       prepfound:=true;
+                            
+
+FINAL COND:  prepfound
+
+FINAL ACTION:  newtop:=addnewtop(mkpprec(PP,
+                                 moodvar,
+                                 andereadv,
+                                 prepkeyvar,
+                                 omegatense), newtop)
+$NP 
+ 
+SR12
+
+REGULAR EXPRESSION:
+
+[ NEG%1% ] . [ ADVP%2% ] . [ ASCOMP%3% ] . ADJ%4% . [ PP%5% ] . [ THANP%6% ]
+
+(* Example: "niet minder blij met bier dan Piet" *)
+
+PARAMETERS AND START VALUES:         
+
+             advfound:=false;           (boolean)
+             evormvar:=false;           (boolean)
+             compfound:=false;          (boolean)
+             moodvar:=declarative;      (moodtype)
+             gebruikvar:=omegagebruik;  (gebruiktype) 
+             prepkeyvar:=0;             (baskeytype)
+             trapvar:=stellend          (traptype)
+
+CONDITIONS AND ACTIONS:
+
+       1:    (* NEG *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                      SYNREL:=modrel;
+                            
+       2:    (* ADVP *)
+             LOCCOND:  (soort = adjadv)
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=modrel;
+                       moodvar:=mood;
+                       advfound:=true;
+                            
+       3:    (* ASCOMP *)
+             LOCCOND:  true
+             GLOBCOND: not advfound
+             ACTION: 
+                       SYNREL:=ascomprel;
+                       compfound:=true;
+                       trapvar:=trap;
+                            
+       4:    (* ADJP *)
+             LOCCOND:   (not genvorm) ;
+             GLOBCOND:  ((trapvar = stellend) or (trap = stellend))
+                          and not(advfound and (trap = overtreffend))
+             ACTION: 
+                        SYNREL:=headrel;
+                        evormvar:=evorm;
+                        if trapvar = stellend
+                        then trapvar:=trap;
+                        prepkeyvar:=prep;
+                            
+       5:    (* PP *)
+             LOCCOND:  true
+             GLOBCOND: prepkey=prepkeyvar
+             ACTION: 
+                       SYNREL:=prepobjrel;
+                       gebruikvar:=predic;
+                            
+       6:    (* THANP *)
+             LOCCOND:  true
+             GLOBCOND: compfound or (trapvar <> stellend)
+             ACTION: 
+                       SYNREL:=modrel;
+                       gebruikvar:=predic;
+                            
+FINAL COND:     true
+FINAL ACTION:   newtop:=addnewtop(mkadjprec(ADJP,
+                                            moodvar,
+                                            evormvar,
+                                            gebruikvar),newtop)
+$NP
+
+SR13
+
+REGULAR EXPRESSION:
+
+    THANAS%1% . ( NP%2% | PP%3% | ADVP%4% )
+
+(* Examples: "dan Marie", "als gisteren" *)
+
+PARAMETERS AND START VALUES:  -
+
+
+CONDITIONS AND ACTIONS: 
+
+       1:    (* THANAS *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=headrel;
+                            
+       2:    (* NP *)             
+             LOCCOND:  (nominative in cases) and
+                       (mood = declarative)
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=argrel;
+                            
+       3:    (* PP *)
+             LOCCOND:  mood = declarative
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=argrel;
+                            
+       4:    (* ADVP *)
+             LOCCOND:  mood = declarative;
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=argrel;
+                            
+FINAL CONDITION:  true
+
+FINAL ACTION:     newtop:=addnewtop(THANP{ },
+                                    newtop)
+$NP
+
+SR14
+
+REGULAR EXPRESSION
+
+    ADJP%1% . COORD%2% . ADJP%3%
+
+(* Example: "lang en dun" *)
+
+PARAMETERS AND START VALUES:
+
+             moodvar:=declarative;       (moodtype)
+             evormvar:=false;            (boolean)
+             gebruikvar:=omegagebruik    (gebruiktype)
+
+       1:    (* ADJP *)             
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=argrel;
+                       moodvar:=mood;
+                       evormvar:=evorm;
+                       gebruikvar:=gebruik;
+                            
+       2:    (* COORD *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=headrel;
+                            
+       3:    (* ADJP *)             
+             LOCCOND:   true
+             GLOBCOND:  (mood = moodvar) and
+                        ((gebruikvar = omegagebruik) or
+                         (gebruikvar = gebruik))
+             ACTION: 
+                        SYNREL:=argrel;
+                        evormvar:=(evormvar or evorm);
+                        gebruikvar:=gebruik;
+                            
+FINAL COND:       true
+
+FINAL ACTION:     newtop:=addnewtop(mkadjprec(ADJP,
+                                              moodvar,
+                                              evormvar,
+                                              gebruikvar),
+                                    newtop)
+$NP
+
+SR15
+
+REGULAR EXPRESSION:
+
+    [ NEG%1% ] . [ ADVP%2% ] . ADV%3%
+
+(* Example: "niet zeer vaak" *)
+
+PARAMETERS AND START VALUES:
+
+             moodvar:=declarative;           (moodtype)
+             advsoortvar:=andereadv          (advsoorttype)
+
+CONDITIONS AND ACTIONS:
+
+       1:    (* NEG *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=modrel;
+                            
+       2:    (* ADVP *)             
+             LOCCOND:  soort = adjadv
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=modrel;
+                       moodvar:=mood;
+                            
+       3:    (* ADV *)             
+             LOCCOND:  true
+             GLOBCOND: (mood = declarative) or
+                       (moodvar = declarative)
+             ACTION: 
+                       SYNREL:=headrel;
+                       if moodvar = declarative
+                       then moodvar:=mood;
+                       advsoortvar:=soort;
+                            
+FINAL COND:       true
+
+FINAL ACTION:     newtop:=addnewtop(mkadvprec(ADVP,
+                                              moodvar,
+                                              advsoortvar),
+                                    newtop)
+$NP
+ 
+SR16                                   (* NP *)
+
+REGULAR EXPRESSION: 
+
+[ ADVP%1% ] . ( determiner . modifiers . NOUN%2% . [ PP%11% ] .
+                [ [ PUNC%26% ] . RELSENT%12% . [ PUNC%26% ] ]  |
+                WHPRO%4%  |
+                PERSPRO%5% |
+                DEMPRO%7%  |
+                POSSPRO%8%  |
+                [ NOUN%9% ] . PROPERNOUN%10% )
+
+where
+ 
+determiner = [ WHADJ%13% | POSSADJ%14% | DEMADJ%15% | ART%16% |
+               WHPOSSADJ%17% | QADJ%18% ]
+
+modifiers  = { NUMP%19% | ORDINAL%20% | ADJP%21% | ANTERELSENT%22% } .
+             [ MODNOUN%23% ]
+
+PARAMETERS AND START VALUES:
+
+           moodvar:=declarative;                     (moodtype)
+           getalvar:=omegagetal;                     (getaltype)
+           casesvar:=[nominative,dative,accusative]; (casesettype)
+           soortvar:=omeganomsoort;                  (nomsoorttype) 
+           quantvar:=indefquant;                     (quanttype)
+           persoonvar:=3;                            (persoontype)
+           natgeslachtvar:=omegageslacht             (natgeslachttype)
+
+CONDITIONS AND ACTIONS:
+
+       1:     (* ADVP *)
+              LOCCOND:  soort=antenpadv
+              GLOBCOND: true 
+              ACTION:
+                        SYNREL:=modrel;
+                            
+             
+       2:    (* NOUN *)             
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:
+                        getalvar:=getal;
+                        SYNREL:=headrel
+                            
+             
+       3:    (* INDEFPRO *)             
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:   
+                        SYNREL:=headrel;
+                        getalvar:=getal;
+                        soortvar := indefprosoort;
+                            
+             
+       4:    (* WHPRO *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:
+                        moodvar:=whinterr;
+                        SYNREL:=headrel;
+                        quantvar:=whquant;
+                        soortvar:=wiewatsoort;
+                        getalvar:=getal;
+                                     
+       5:    (* PERSPRO *)             
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=headrel;
+                        getalvar:=getal;
+                        persoonvar:=persoon;
+                        casesvar:=cases;
+                        if key=hetprokey
+                        then soortvar:=hetpro
+                        else soortvar:=persproniethet;
+                        if gender=mnlgender
+                        then natgeslachtvar:=mannelijk
+                        else if gender=vrgender
+                        then natgeslachtvar:=vrouwelijk;
+             
+       7:    (* DEMPRO *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:   
+                        SYNREL:=headrel;
+                        if (key=ditdemprokey) or
+                           (key=datdemprokey)
+                        then soortvar := ditdatsoort;
+                        getalvar:=getal
+             
+       8:     (* POSSPRO *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=headrel
+                            
+             
+       9:     (* NOUN *)
+              LOCCOND:  soort = aanspreeknoun
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=modrel
+                            
+             
+      10:     (* PROPERNOUN *))
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=headrel;
+                        getalvar:=getal;
+                        quantvar:=defquant;
+                        natgeslachtvar:=natgeslacht;
+                            
+             
+      11:     (* PP *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=modrel
+                            
+             
+      12:     (* RELSENT *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=modrel
+                            
+             
+      13:     (* WHADJ *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:   
+                        SYNREL:=detrel;
+                        moodvar:=whinterr;
+                        quantvar:=whquant
+                            
+             
+      14:     (* POSSADJ *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=detrel;
+                        quantvar:=defquant
+                            
+             
+      15:     (* DEMADJ *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=detrel;
+                        quantvar:=defquant
+                            
+             
+      16:     (* ART *)             
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=detrel;
+                        if (key=deartkey) or (key=hetartkey)
+                        then quantvar:=defquant
+                            
+             
+      17:     (* WHPOSSADJ *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:   
+                        SYNREL:=detrel;
+                        moodvar:=whinterr;
+                        quantvar:=whquant
+                            
+             
+      18:     (* QADJ *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:   
+                        SYNREL:=detrel
+                            
+             
+      19:     (* NUMP *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:   
+                        SYNREL:=modrel
+                            
+             
+      20:     (* ORDINAL *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:   
+                        SYNREL:=modrel
+                            
+             
+      21:     (* ADJP *)
+              LOCCOND:  gebruik <> predic
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=modrel;
+                        moodvar:=mood
+                            
+             
+      22:     (* ANTERELSENT *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:   
+                        SYNREL:=modrel;
+                            
+             
+      23:     (* MODNOUN *)
+              LOCCOND:  true
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=modrel
+                            
+             
+      24:     (* INDEFPRO *)
+              LOCCOND:  getal=enkelvoud
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=headrel
+                            
+             
+      25:     (* ADJ *)
+              LOCCOND:  genvorm
+              GLOBCOND: true
+              ACTION:
+                        SYNREL:=modrel
+                            
+             
+      26:     (* PUNC *)
+              LOCCOND:  key = kommakey
+              GLOBCOND: true 
+              ACTION:
+                        SYNREL:=puncrel
+     
+FINAL CONDITION:  true
+
+FINAL ACTION:     newtop:=addnewtop(mknomrec(NP,
+                                             getalvar,
+                                             soortvar,
+                                             persoonvar,
+                                             natgeslachtvar,
+                                             omegatense,
+                                             moodvar,
+                                             casesvar,
+                                             quantvar),
+                                    newtop)
+$NP
+
+SR17                                          (* NP with coord. *)
+
+REGULAR EXPRESSION: 
+
+    NP%1% . COORD%2% . NP%3%
+
+(* Example: "de oude man en de zee" *)
+
+PARAMETERS AND START VALUES:
+
+                   moodvar:=declarative;      (moodtype)
+                   encoord:=false;            (boolean)
+                   getalvar:=enkelvoud;       (getaltype)
+                   casesvar:=[];              (casesettype)
+                   quantvar:=omegaquant;      (quanttype)
+
+CONDITIONS AND ACTIONS:
+
+       1:    (* NP *)
+             LOCCOND:  (soort<>hetpro) and
+                       (soort<>conjsoort)
+             GLOBCOND: true
+             ACTION:
+                       SYNREL:=argrel;
+                       moodvar:=mood;
+                       casesvar:=cases;
+                       if getal=meervoud
+                       then getalvar:=meervoud;
+                       persoonvar:=persoon;
+                       quantvar:=quant;
+
+       2:    (* COORD *)
+             LOCCOND:  ( key = encoordkey) or
+                       ( key = ofcoordkey) or
+                       ( key = nochcoordkey)
+             GLOBCOND: true 
+             ACTION:
+                       SYNREL:=headrel;
+                       if key = encoordkey
+                       then encoord:=true;
+                       getalvar:=meervoud
+                       
+       3:    (* NP *)
+             LOCCOND:  (soort <> hetpro);
+             GLOBCOND: (moodvar=mood) then
+             ACTION:
+                       SYNREL:=argrel;
+                       if getal = meervoud
+                       then getal := meervoud;
+                       casesvar:=casesvar * cases;
+                       if quant<>quantvar
+                       then quantvar:=omegaquant;
+
+FINAL CONDITION:  casesvar <> []
+
+FINAL ACTION:     newtop:=addnewtop(mknomrec(NP,
+                                             getalvar,
+                                             conjsoort,
+                                             3,
+                                             omegageslacht,
+                                             omegatense,
+                                             moodvar,
+                                             casesvar,
+                                             quantvar),
+                                    newtop)
+$NP
+
+SR18                                        (* NUMP *)
+
+REGULAR EXPRESSION:
+
+[ QADJ%1% . THANAS%2% ] . ( NUMERAL%3% | ( NUMERAL%4% . NOUN%5% ) )
+
+(* Examples: "drie", "meer dan drie", "minder dan 3 gram" *)
+
+PARAMETERS AND START VALUES: -
+
+CONDITIONS AND ACTIONS:
+
+       1:    (* QADJ *)
+             LOCCOND:  (key = meerqadjkey) or
+                       (key = minderqadjkey)
+             GLOBCOND: true
+             ACTION:
+                       SYNREL:=modrel
+
+       2:    (* THANAS *)
+             LOCCOND:  key = danthanaskey 
+             GLOBCOND: true
+             ACTION:
+                       SYNREL:=modrel;
+                       
+       3:    (* NUMERAL *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:
+                       SYNREL:=headrel;
+                       
+       4:    (* NUMERAL *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:   
+                       SYNREL:=modrel
+                       
+       5:    (* NOUN *)
+             LOCCOND:  soort = eenheidnoun;
+             GLOBCOND: true
+             ACTION: 
+                       SYNREL:=headrel
+                       
+FINAL CONDITION: true
+
+FINAL ACTION:    newtop:=addnewtop( NUMP{ },
+                                    newtop)
+$NP
+ 
+SR19                                            (* MODNOUN *)
+
+REGULAR EXPRESSION:
+
+    [ MODNOUN%1% ] . NOUN%2%
+
+$ (* This rule has been made powerless by making the two local conditions
+false. It should be deleted. It was originally invented to have a Dutch
+counterpart for the English noun - noun compounds without having composite
+words in the morphology. E.g. "knapen liefde" instead of "knapenliefde" *)$
+$NP
+
+SR20                                       (* PROPERNOUN consisting of BUGs *) 
+ 
+REGULAR EXPRESSION:
+
+    BUG%1% . { BUG%1% }
+
+(* Examples: "uyrdkjh", "Jan Jansen" *)
+
+PARAMETERS AND START VALUES: -
+ 
+CONDITIONS AND ACTIONS:
+
+       1:    (* BUG *)
+             LOCCOND:  true
+             GLOBCOND: true
+             ACTION:
+                       SYNREL:=argrel
+                       
+FINAL CONDITION:  true
+
+FINAL ACTION:     newtop:=addnewtop(mkpropernounrec(PROPERNOUN,
+                                                    enkelvoud,
+                                                    mannelijk,
+                                                    0),
+                                    newtop)
+

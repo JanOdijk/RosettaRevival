@@ -1,0 +1,534 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3.formalism
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Parse stages
+
+         Author       :  Rene@' Leermakers
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  072
+
+         Date         :  86/01/26
+
+         Status       :  informal
+
+         Supersedes   :  ...
+
+         Distribution :  project
+
+         Clearance    :  project
+
+         Keywords     :  subgrammar,parsing
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright (c) Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 0072                    date:86/01/26
+$LD 4
+$NP 1
+$QM
+$CH 1,Introduction
+This document is an elaboration on the formalism defined in doc. 0068 (Formal
+Subgrammars). An effective parsing algorithm is given for a grammar 
+that is divided into subgrammars as in 0068. The algorithm calculates so-called
+stage hierarchies, a kind of dressed derivation trees, to represent the 
+derivation process inside a subgrammar. Hierarchies at different subgrammar 
+levels are coupled to each other by means of a refinement relation. The usual 
+M-rule d-tree can be calculated using this refinement relation. The algorithms 
+are presented without proof.
+$NL
+As an illustration of the formalism, an example of subgrammars
+is given. The subgrammar hierarchy is defined tentatively and an example 
+sentence is 'parsed' into stage hierarchies of a few levels.
+$NL
+We will use the same notational conventions as in doc. 0068.
+$CH 2,Parse stages
+It is the purpose of this section to set the stage (pun) for an effective 
+algorithm that computes various derivation trees for a given stree. A derivation
+tree at level k, i.e. of subgrammar SG%k% is of the form
+$UM
+$LD 5
+
+d%k% = cat, where cat is an ensemble in I%k%, or
+
+d%k% = SG%k.i%<d%k%&(1)&,..,d%k%&(n)&>,
+
+$LD 4
+$QM
+where SG%k.i% is a subgrammar name and the d%k%&(i)& are also derivation trees
+at level k. So the leaves of derivation trees of SG%k% are members of its input
+set, and the nodes are sub-subgrammar names. Derivation trees represent the 
+derivation process inside the subgrammar. This information, however, does not
+suffice to characterize the derivation of sentences by the whole M-grammar. For
+this reason we introduce the concept of parse stages, or simply stages, called 
+s%k,l%, with k,l:= <int>{.int}, which are five-tuples of the form
+$UM
+
+s%k,l%:= <t;D;T;S;R>.
+
+$QM
+We will refer to the stage fields individually as t(s%k,l%), D(s%k,l%), 
+etcetera. Here D(s%k,l%) is given by a formule similar to the d-tree 
+definition,
+$UM
+
+D(s%k,l%) = SG%m%<s%k,l.0%,..,s%k,l.n%>, or
+
+D(s%k,l%) = cat, where cat in I%k% (basic stage),
+
+$QM
+where we call SG%m% the head of the stage, The index m ranges over the 
+sub-subgrammar indices if they exist, i.e. m=k.i for integer i. For primitive
+subgrammars we define m=k. The D fields define a hierarchy 
+of parse stages with basic stages, the leaves, at the bottom and with s%k,0%, 
+the top stage, at the top.
+A stage hierarchy represents the derivation process, within a subgrammar, of
+the stree t(s%k,l%). In the stage description, T is the tuple of strees the 
+subgrammar derivation process starts with or the decomposition process ends up 
+with, S is the tuple of stages that form the leaves of the hierarchy headed by
+s%k,l%, and R, standing for Refinement, is a stage of the same or an adjacent, 
+higher or lower, subgrammar level. 
+$NL
+If SG%m% in D(s%k,l%) is a 'free'(=top) subgrammar, s%k,l% is called a 
+free stage, while a fixed stage corresponds to fixed subgrammars. So we have 
+free stages, fixed stages, among which are the primitive ones, and basic 
+stages. Each of these stages can be characterized by a number of relations 
+between its fields and by some other properties.
+$NL
+The S fields of free and fixed stages satisfy by definition:
+$UM
+
+S(s%k,l%) = S(s%k,l.0%),..,S(s%k,l.n%),
+
+$QM
+i.e. the leaves of a stage are inherited from the sons. 
+For basic stages it is natural to have them be their own leaf:
+$UM
+
+S(s%k,l%) = s%k,l%.
+
+$QM
+Due to the structure imposed on fixed subgrammars, fixed stage hierarchies have
+only two levels. In fact one has
+$UM
+
+S(s%k,0%) = s%k,0.0%,..,s%k,0.n%, or D(s%k,0%) = SG%m%<S(s%k,0%)>,
+
+$QM
+where s%k,0.i% are basic stages and the D fields of these basic
+stages together form the input tuple I%k%. 
+$NL
+The T field of a stage contains strees which are elements of the D fields of 
+the leaves of the stage; one stree for each leaf. Thus a basic stage has
+a T field consisting of one stree:
+$UM
+
+T(s%k,l%) = t, where t in D(s%k,l%).
+
+The T fields of free and fixed stages are then determined by a relation like
+the one for the S fields:
+$UM
+
+T(s%k,l%) = T(s%k,l.0%),..,T(s%k,l.n%).
+
+Furthermore, the t field of a basic stage is given by
+
+t(s%k,l%) = T(s%k,l%).
+
+The above relations imply for fixed stages the equation
+
+T(s%k,0%) = t(s%k,0.0%),..,t(s%k,0.n%).
+
+$QM
+The relation between t fields in a stage hierarchy will in general be 
+determined by
+$UM
+
+t(s%k,l%) in com%m%(t(s%k,l.0%),..,t(s%k,l.n%)).
+
+As a consequence, we have the nice relations
+
+t(s%k,0%) in com%k%(T(s%k,0%)),
+
+T(s%k,0%) in decom%k%(t(s%k,0%)).
+
+$QM
+The R fields serve to relate hierarchies of different levels. We will speak
+of a nested set of hierarchies {s%k,l%|k,l in some finite domain}, if the 
+following three conditions hold for all k,l:
+$UM
+
+t(R(s%k,l%))=t(s%k,l%);
+
+D(s%k,l%)=SG%m%<s%k,l.0%,..,s%k,l.n%> => ((R(s%k.l%) =s%m,0%) and
+$QM
+(FORALL(j) [R(s%m,l(j)%) = s%k,l.j%] where s%m,l(0)%,..,s%m,l(n)%:=
+S(s%m,0%)));
+$UM
+
+FORALL(j) [R(s%0,l(j)%) = s%0,l(j)%] where s%0,l(0)%,..,s%0,l(n)%:=S(s%0,0%);
+
+$QM
+Put in words, whenever the head of a stage s%k,l% is not primitive, R(s%k,l%) 
+is a top stage of a lower subgrammar level, representing the lower-level 
+derivation process of the stree t(s%k,l%). The R fields of the leaves of 
+R(s%k,l%) lead back to the direct sons of the head of s%k,l%.
+The leaves of the highest-level subgrammar, S(s%0,0%), are not fixed by the 
+second condition, but by the third. They are made to satisfy the first 
+condition by letting them be their own R field.
+$NL
+It will be the task of parsing to calculate all possible nested sets of stage 
+hierarchies s%k,l% with the same t(s%0,0%).
+$CH 3,Example
+
+In this section we describe a fake grammar for the purpose of illustrating
+the concepts of doc. 0068 and the preceding section. As an example we will
+parse the sentence:
+$UM
+
+the boy reads a book
+
+$QM
+The highest-level subgrammar of our fake grammar looks as follows:
+$NL
+SG%0% = <O%0%,I%0%,SG%0.0%,SG%0.1%,SG%0.2%,SG%0.3%>,
+$NL
+where the output ensemble consists of all utterances, O%0%=UTT, and
+the input set consists of one ensemble of all basic strees, I%0%={BVAR},
+where BVAR runs over all basic categories. So the specification of this 
+subgrammar says that utterances are to be constructed from basic
+strees, and that four sub-subgrammars exist to do so. These sub-subgrammars
+have the following output ensembles and input sets:
+$UM
+
+O%0.0%=SENT    I%0.0%={CL}
+O%0.1%=CL      I%0.1%={NP,BVERB,VAR,BTENSE}
+O%0.2%=NP      I%0.2%={BNOUN,CL}
+O%0.3%=UTT     I%0.3%={SENT}
+
+$QM
+All four SG%0.i% are divided further into sub-subgrammars. For instance,
+SG%0.1% could look like 
+$NL
+SG%0.1% = <O%0.1%,I%0.1%,SG%0.1.0%,SG%0.1.1%,SG%0.1.2%>,
+$NL
+with the following input ensembles and output sets:
+$UM
+
+O%0.1.0%=CL(init)       I%0.1.0%={BVERB,VAR(m,s),VAR(n,s),...}
+O%0.1.1%=CL(init,subst) I%0.1.1%={CL(init),NP(m,s),NP(n,s),...}
+O%0.1.2%=CL             I%0.1.2%={CL(init,subst),BTENSE}
+
+$QM
+So a clause is built up in three stages. Firstly, CL(init) is made by 
+SG%0.1.0%, which contains the 'start' rules. In I%0.1.0% VAR(m,s) is a 
+masculine singular variable, VAR(n,s) is neutral singular, etcetera. 
+Consequently, the variables are substituted for by SG%0.1%, and the tense
+of the clause is handled in SG%0.1.2%. The resulting, 'orderless', clauses
+can be input for SG%0.0% and SG%0.2%, which are supposed to do the necessary
+ordering.
+$NL
+The highest-level stage hierarchy for the above sentence might look like
+$UC :
+$NP
+$LD 5
+$UM
+
+
+                              s%0,0%-SG%0.3% (UTT)
+                                __|__
+                               |_____|
+                                  |
+                            s%0,0.0%-SG%0.0% (SENT)
+                                __|__
+                               |_____|
+                                  |
+                          s%0,0.0.0%-SG%0.1% (CL)
+                               ___|___
+                           ___|       |___
+                       ___|               |__
+                   ___|                      |___
+               ___|                              |___
+           ___|                                      |___
+          |______________________________________________|         
+           |        |        |        |        |        |
+           |  s%0,0.0.0.1% s%0,0.0.0.2% s%0,0.0.0.3% |     s%0,0.0.0.5% 
+$LD 4
+           |      (read) (var(m,s)) (var(n,s)) |          (simplepresent)
+$LD 5
+           |                                   |  
+ s%0,0.0.0.0%-SG%0.2% (NP)               s%0,0.0.0.4%-SG%0.2% (NP)
+         __|__                               __|__
+        |_____|                             |_____|
+           |                                   |
+      s%0,0.0.0.0.0%                      s%0,0.0.0.4.0%
+$LD 4
+         (boy)                               (book)   
+$UC _
+
+Among the six leaves of this hierarchy are the tuples:
+
+s%0,0.0.0.0.0%=<boy;BNOUN;boy;s%0,0.0.0.0.0%;s%0,0.0.0.0.0%>,
+s%0,0.0.0.5%=<simplepresent;BTENSE;simplepresent;s%0,0.0.0.5%;s%0,0.0.0.5%>.
+
+$QM
+All leaves have R fields equal to themselves, which is different for the other
+stages. For instance the above big triangle is represented by
+$UM
+
+$QM
+s%0,0.0.0%=<reads the boy a book;
+SG%0.1%<s%0,0.0.0.0%,s%0,0.0.0.1%,..,s%0,0.0.0.5%>;
+$NL
+boy,read,var(m,s),..,simplepresent;BNOUN,BVERB,VAR,..,BTENSE;s%0.1,0%>,
+$UM
+
+$QM
+of which the refinement is s%0.1,0%, which heads a hierarchy like
+$NP
+$UM
+$UC :
+$LD 5
+
+
+
+                            s%0.1,0%-SG%0.1.2%(CL)
+                                __|__
+                             __|     |__
+                            |___________|
+                             |         |
+                            |      s%0.1,0.1%
+$LD 4
+                           |      (simplepresent)
+$LD 5
+                           |
+                   s%0.1,0.0%-SG%0.1.1%(CL(init,subst))
+                         __|__
+                      __|     |__
+                   __|           |__
+                  |_________________|
+                 |         |         | 
+           s%0.1,0.0.0%      |   s%0.1,0.0.2%
+$LD 4
+            (the boy)      |      (a book)
+$LD 5
+                           |
+                 s%0.1,0.0.1%-SG%0.1.0%(CL(init))
+                         __|__
+                      __|     |__
+                   __|           |__
+                  |_________________|
+                  |        |        |
+         s%0.1,0.0.1.0% s%0.1,0.0.1.1% s%0.1,0.0.1.2%
+$LD 4
+              (var(m,s)) (read)   (var(n,s))
+
+$UC _
+Here we have for instance
+
+$QM
+s%0.1,0.0%=<read the boy a 
+book;SG%0.1.1%<s%0.1,0.0.0%,s%0.1,0.0.1%,s%0.1,0.0.2%>;
+the boy,var(m,s),read,var(n,s),a book;NP(m,s),VAR(m,s),BVERB,VAR(n,s),NP(n,s);
+R>,
+$UM
+
+$QM
+where s%0.1,0.0.0%=<the boy;NP(m,s);the boy;NP(m,s);s%0,0.0.0.0%>, etcetera.
+So the R fields of the leaves refer to stages of the previous picture, with
+the same t-field stree.
+$NL
+In this example, SG%0.1.2% might be an M-rule, as it is a fixed subgrammar with
+two obligatory input ensembles. SG%0.1.1% contains (at least) a subgrammar
+for object substitution and one for subject substitution. SG%0.1.1% has
+sub-subgrammars for the various verbpatterns and the many combinations
+of variable-tuples differing in genders and numbers. Of course, it will
+be convenient to take these combinations together in a subgrammar scheme
+for each verbpattern.
+
+$CH 4,Parsing algorithm
+Below we will define functions parser%k,l% for each subgrammar SG%k%, which 
+yield a set of nested hierarchies s%k,l% for a given stree t, representing the 
+derivation process of that tree. The function Mparser deduces from this set
+the set of Mrule derivation trees, i.e. d-trees with only Mrules at the nodes.
+Firstly, we present the function parser%k,l%:
+$UM
+$LD 5
+
+parser%k,l%(t):
+begin result:={};
+if primitive(SG%k%) then result:= newprimitivestage%k%(t)
+else
+  FOR ALL B in I%k% such that (t in B) result:= result + newbasicstage(B,t); 
+  FOR ALL i
+    FOR ALL s%k.i,0% in parser%k.i,0%(t)
+$QM
+$MA 6
+    FOR ALL <s%k,l.0%,..,s%k,l.n%> in parser%k,l.0%(t%0%) x .. x 
+parser%k,l.n%(t%n%), 
+$UM
+$MA 0
+					       where t%0%,..,t%n%=T(s%k.i,0%),
+        do
+        s%k,l%:= newstage(t;s%k.i,0%;s%k,l.0%,..,s%k,l.n%);
+$LD 4
+        if CONTROL1%k%(s%k.l%) then result:=result + s%k.l% fi
+$LD 5
+        od
+fi;
+CONTROL2%k,l%(result);
+parser%k,l%:=result
+end;
+
+$QM
+Here some functions for the creation of new stages were used, which are
+defined as follows:
+$UM
+
+$LD 5
+newprimitivestage%k%(t):
+begin
+$QM
+D(s%k,0%):= SG%k%<s%k,0.0%,..,s%k,0.n%>, where 
+<D(s%k,0.0%),..,D(s%k,0.n%)> = I%k%;
+$NL
+$LD 4
+<T(s%k,0.0%),..,T(s%k,0.n%)> = decom%k%(t);
+$NL
+FORALL(i)[t(s%k,0.i%)=T(s%k,0.i%) and S(s%k,0.i%)=D(s%k,0.i%) and 
+R(s%k,0.i%)=s%k,0.i%];
+$UM
+T(s%k,0%):= T(s%k,0.0%),..,T(s%k,0.n%);
+$LD 5
+S(s%k,0%):= s%k,0.0%,..,s%k,0.n%;
+R(s%k,0%):= s%k,0%;
+t(s%k,0%):= t;
+$LD 4
+newprimitivestage%k%:= s%k,0%
+$LD 5
+end;
+
+newbasicstage(B,t):
+begin
+s%k,l%:= <t;B;t;s%k,l%;s%k,l%>;
+newbasicstage:= s%k,l%
+end;
+
+$NP
+newstage(t;s%k.i,0%;s%k,l.0%,..,s%k,l.n%):
+begin
+t(s%k,l%):= t;
+D(s%k,l%):= SG%k.i%<s%k,l.0%,..,s%k,l.n%>;
+T(s%k,l%):= T(s%k,l.0%),..,T(s%k,l.n%);
+S(s%k,l%):= S(s%k,l.0%),..,S(s%k,l.n%);
+R(s%k,l%):= s%k.i,0%;
+$QM
+$LD 4
+FOR ALL s%k.i,l(j)%in [S(s%k.i,0%)=s%k.i,l(0)%,..,s%k.i,l(n)%] 
+do R(s%k.i,l(j)%:=s%k,l.j% od
+$UM
+newstage:= s%k,l%
+$LD 5
+end;
+
+$QM
+$LD 4
+It is not necessary to differentiate in the parser between 
+free and fixed subgrammars. In case it would be possible that the output of
+a sub-subgrammar could serve as the input of another, this can always be
+prohibited by the CONTROL1 function. Note the redefinion of the R field
+of s%k.i,l(j)% as a by-product of newstage. The CONTROL2 function was
+introduced to have an overview of the results at some level.(see below)
+$NL
+The function Mparser determines the 'usual' M-rule derivation trees:
+$UM
+$LD 5
+
+Mparser(t):
+begin result:={};
+FOR ALL s%0,0% in parser%0,0%(t) do result := result + refine(s%0,0%) od;
+Mparser := result
+end;
+
+$LD 4
+$QM
+Here the function refine proceeds from the top of the d-tree towards its 
+leaves, going up and down the subgrammar hierarchy using the R fields. Whenever
+an M-rule is met, such a subgrammar is not refined. When d-tree leaves are 
+encountered, they are replaced by the corresponding (basic) strees. Refine 
+looks as follows:
+$UM
+$LD 5
+
+refine(s%k,l%):
+begin
+if R(s%k,l%)=s%k,l% and not(primitive(SG%k%)) then refine:=T(s%k,l%)
+if D(s%k,l%)=SG%k%<s%k,l.0%,..,s%k,l.n%> and Mrule(SG%k%) then
+$LD 4
+  refine:=SG%k%<refine(s%k,l.0%),..,refine(s%k,l.n%)>
+$LD 5
+else
+  refine:=refine(R(s%k,l%))
+fi
+end;
+
+$LD 4
+$QM
+Note that the condition R(s%k,l%) = s%k,l% applies to both the final
+leaves of the d-tree and to primitive stages. When one of the latter would
+become the argument of the function refine, the result would be a never ending
+loop. However,this can not happen, if there is no path through the subgrammar 
+hierarchy down to a primitive subgrammar without meeting an M-rule.
+
+$CH 5,Discussion
+
+As I said in doc. 0068, the division of an M-grammar in terms of subgrammars
+can perhaps help in coping with interaction (about syntax) and robustness.
+Interaction could take place during the execution of the two CONTROL functions
+in parser%k,l%, at the higher subgrammar levels. Also robustness measures
+could be taken there, for instance in CONTROL2%k,l% if the result is empty when
+it shouldn't. In that case a robust version of parser%k,l% could be executed,
+which calls 'shadow' subgrammars in addition to the normal ones, and/or 
+reduces restrictions on the order of subgrammar applications.
+$NL
+The CONTROL2 function could also be used to order the results of the parsers
+in a perhaps more reliable way than is possible in Rosetta2, with or without
+consulting the user.
+$NL
+I assumed M-rules always to be subgrammars, but I realize that this could 
+become rather unnatural. The first generalization is of course to let
+M-rules be non-empty sets of subgrammars of the same k-level. It is easy
+to change Mparser accordingly.

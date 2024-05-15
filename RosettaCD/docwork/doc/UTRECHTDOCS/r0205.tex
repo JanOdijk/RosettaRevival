@@ -1,0 +1,370 @@
+
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Formalism}
+   \RosTitle{Dictionaries in Rosetta3 Revisited}
+   \RosAuthor{Jan Odijk, Andr\'{e} Schenk}
+   \RosDocNr{0205}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{dictionaries, idioms}
+   \MakeRosTitle
+%
+%
+
+\section{Introduction}
+\paragraph{Intro}
+This document discusses a variant of the proposals in document R0194 (Andr\'{e}
+Schenk - Idioms and the Dictionary) and document R0201 (Jan Odijk and Andr\'{e}
+Schenk - Dictionaries in Rosetta3) in as far as they concern the syntactic 
+parts of the grammar and B-LEX. As will be shown below the proposal is very 
+much in the spirit of DOC R0108 (Agnes Mijnhout - Verbpatterns in Rosetta3), in 
+which it is argued that a distinction is necessary between thetavps and synvps 
+since thetavps specify semantic properties and synvps specify syntactic 
+properties.
+
+\paragraph{Dictionaries}
+As indicated in R0194 a new definition of the dictionaries was necessary in
+order to solve some problems with idioms. Problems and solutions were given in
+DOC R0201. Yet, in that proposal there were certain drawbacks related to a
+mismatch between the treatment of idioms and of simple basic expressions. 
+
+\paragraph{Idioms}
+The strongest theory on idioms predicts that are no special syntactic rules for
+idioms, i.e. idioms are not visible in the grammar apart from the lexicon. The
+lexicon lists all phenomena which constitute exceptions to rules. The form of
+an idiom cannot be captured by rules, since the lexical elements in an idiom
+are idiosyncratic. Under the above theory that is exactly the outcome, the
+idiom problem has been reduced to a dictionary problem. The proposal forwarded
+here attempts to define M-grammars and the lexicons in such a way that this is
+possible. 
+
+\paragraph{Preview Sectioning}
+In the next sections the problem will be formulated, an informal description of 
+the solution will be given; then the solution will be formalized and in the 
+last chapter certain potential problems will be given with some potential 
+solutions.
+
+\section{Definition of the Problem}
+\paragraph{Intro}
+In order to sketch the problem a comparison will be made between the analysis 
+and the generation of the canonical form of simple and complex basic 
+expressions as discussed in R0201. The comparison will be stated in general and 
+thus informally.
+
+\paragraph{Simple Basic Expressions}
+The canonical form of simple basic expressions is generated as follows (note
+that the term simple basic expression is somewhat misleading, simple basic
+expressions also comprise for example verb particle combinations). The
+derivation tree associated to the name of the basic expression is looked up.
+For simple expressions this D-tree is rather trivial. It equals the name of the
+basic expression. A terminal expression is formed on the basis of syntactic
+information drawn from slex associated to the name of this basic expression
+(skey). The syntactic information comprises the canonical syntactic
+environment the expression can appear in, in the form of thetavps and synvps
+(cf. DOC R0108, Agnes Mijnhout - Verbpatterns in Rosetta3) and the particle and
+reflexive attributes. The start and the verbpattern rules then build the
+syntactic environment of the verb (together with the zichspelling and the
+particle spelling rules) on the basis of information specified at the verb. 
+
+\paragraph{Complex Basic Expressions}
+The canonical form of complex basic expressions (idioms) is generated in the
+lexicon as described in R0194 and R0201. The derivation tree associated to the
+name of the basic expression is looked up. BE-GRAMMAR generates a complex
+S-tree from the non-trivial derivation tree, which corresponds to the name of
+the basic expression, as specified in DERIV-TREES. 
+
+\paragraph{Comparison}
+If we compare the two methods we can see that the results (i.e. after the 
+verbpattern rules) are the same for idioms and literals, in the sense that in
+both cases there are S-trees containing lexical material and VARiables. Yet,
+the way in which these S-trees are built is different, i.e. idiomatic canonical
+S-trees are built in the lexicon and literal canonical S-trees are built in the 
+grammar while using the same rules. 
+
+\paragraph{Discussion}
+This has some nasty consequences which are listed below. Most of the problems 
+are more or less related to each other.
+
+\paragraph{Problems}
+\begin{enumerate}
+  \item Certain attributes have to be doubled. In particular the thetavps and
+the synvps attribute have to be doubled for idioms. The reason for this is that
+within ID-GRAMMAR these attributes have to have other values than in literal
+grammar. For example, thetavps indicates the number of free arguments a verb
+can take. In ID-GRAMMAR the number of arguments for {\em kick} in {\em kick the
+bucket} is 2, but in literal grammar it is one. 
+  \item Because certain attribute values are different the head of an idiom can 
+never be the same as the literal equivalent. For example, {\em spill} in {\em 
+spill the beans} can never be the same as literal {\em spill}, while in fact 
+their syntactic behaviour is the same in both cases.
+  \item The fact that there is a difference between idiom heads and their
+literal counterparts makes it necessary that in morphology when fkeys are 
+mapped onto skeys literal and idiomatic paths are created (in analysis). To 
+reduce the number of paths a so-called idiom technique is necessary.
+  \item In R0201 it was necessary to refer to ILDICT in syntaxis which is in 
+contradiction to the idea of modularity (i.e. there is a morphological, a 
+syntactic and a semantic component and in the different components there is no 
+reference to another component).
+  \item It is impossible to get at the strongest theory on idioms, since idioms 
+are visible in syntax.
+\end{enumerate}
+
+\section{Informal Description of the Solution}
+\paragraph{Assumptions}
+The proposal made here is based on the following assumptions:
+\begin{enumerate}
+  \item A terminal of an idiomatic S-tree behaves syntactically and 
+morphologically in exactly the same way as one of its literal counterparts. For 
+example, {\em spill} and {\em bean} in the idiom {\em spill the beans} have the 
+same lexical properties as (one of) their literal equivalents.
+  \item Non-terminal idiom parts behave in the same way as similar expressions. 
+If an idiom part is a free argument then it behaves in the same way as other 
+free arguments. If an idiom part is only a syntactic argument it behaves in the 
+same way as other purely syntactic arguments. So, the NP {\em the beans} in the 
+idiom {\em spill the beans} behaves in exactly the same way as the NP {\em it} 
+in {\em it rains} or {\em it is clear that}, w.r.t. the relevant operations.
+This is indicated by the category. 
+\end{enumerate} 
+
+\paragraph{Conclusion}
+Under the above assumptions it should not have to be necessary to 
+differentiate between literal and idiomatic paths until dictionary look-up, 
+were it not for idthetavps and idpatterns (and some other attributes, cf. the 
+problems section).
+
+\paragraph{Two Possibilities}
+Basically there are two ways to overcome this dilemma. The first is to try and
+treat idioms in the same way as literals in the Start and Verbpattern rules, 
+but as argued in doc R0194 there are several objections to such a method. The 
+second is to try and treat literals in the same way as idioms.
+
+\paragraph{Proposal}
+In R0194 a lexicon DERIVTREES was defined that defined the syntactic properties 
+of an idiom. In R0201 the definition of DERIVTREES had been extended such that 
+DERIVTREES defined the syntactic properties of any basic expression (idioms 
+or simple basic expressions). The D-tree for simple expressions was trivial in 
+the sense that it was simply the name of the basic expression. DERIVTREES under 
+the proposal forwarded here is extended such that the D-tree for simple
+expressions is non-trivial either (at least in most cases); it contains
+particle spelling, zich spelling rules, if necessary, and start and verbpattern
+rules. Application of BE-GRAMMAR to DERIVTREES then renders a complex S-tree
+for both idioms and non-idioms. 
+
+\paragraph{BE-GRAMMAR}
+BE-GRAMMAR consists of at least the following rules:
+
+C: particlespelling . C: startverbrules . \{C: verbpatternrules\} . \{C: 
+propositionsubstitution\} . C: controlrules . C: zichspellingrules .
+\{C: nowhshiftsubstitution\}
+
+\paragraph{Comment}
+Particle spelling, startverb, verbpattern and zich spelling rules are 
+applicable for both idioms and non-idioms. The other rules applicable for 
+idioms only.
+
+\paragraph{Examples Result of BE-GRAMMAR}
+If we look at the results of BE-GRAMMAR for the sentence {\em John spilled the 
+beans} in its non-idiomatic (figure~\ref{NID}) and idiomatic (figure~\ref{ID}) 
+reading.
+
+\begin{figure}[htb]
+\par
+\begingroup
+\def\par{\leavevmode\endgraf}
+\obeylines\obeyspaces
+{\obeyspaces\global\let =\ }
+                          S
+
+                   V$_{1}$         VP
+
+                              VERB      V$_{2}$
+                               spill
+\endgroup
+\caption{Example of a non-idiomatic canonical S-tree}
+\label{NID}
+\end{figure}
+
+\begin{figure}[htb]
+\par
+\begingroup
+\def\par{\leavevmode\endgraf}
+\obeylines\obeyspaces
+{\obeyspaces\global\let =\ }
+                          S
+
+                   V$_{1}$         VP
+
+                              VERB      NP
+                               spill
+                                        the beans
+\endgroup
+\caption{Example of an idiomatic canonical S-tree}
+\label{ID}
+\end{figure}
+
+\paragraph{Characteristics}
+{\em Spill} has identical properties in both figures and that {\em bean} is the
+same as literal {\em bean}. There are V's which are placeholder variables for
+VARiables. 
+
+\paragraph{Placeholder substitution rules}
+The V's are replaced by VARiables in the placeholder substitution rules that
+apply before other syntactic rules in the grammar (cf. below). It has
+implicitly been assumed that the attribute thetavps is not necessary any
+longer. The number and the position of the free arguments is indicated by the
+V's in the S-tree\footnote{In fact for the part of the grammar under discussion
+the verbpattern attribute is superfluous as well; however, this attribute is
+necessary in S-parser, so it has to be retained}. So, in M-GRAMMAR the start,
+verbpattern, zich spelling and particle spelling do not exist any longer. A new
+type of rule is necessary i.e. the placeholder substitution rules. These are
+similar to other substitution rules, i.e. from left to right V's in the
+canonical S-tree are replaced by VARiables. 
+
+\section{Definitions}
+The definitions are the same as in R0201 with, possibly, the following
+exception. 
+
+The set of basic expressions B is as follows.
+
+\begin{tabbing}
+aaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+B =    \> \{ t $\mid \exists$ d, skey $\wedge$ \\
+       \> d = BE-PARSER(t) $\wedge$\\
+       \> $\langle$ skey,d $\rangle$  $\in$ DERIVTREES \\
+       \> \}
+\end{tabbing}
+
+\section{Example}
+\paragraph{Intro}
+To illustrate, in this section an example is presented. The sentence is {\em 
+John spilled the beans}.
+
+\subsection{Example Lexicons and Dictionaries}
+
+\begin{tabbing}
+\= aa \= aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\kill
+\> MDICT =\\
+\> \> \{(spill,98), (the,752), (bean,110), (John,1334)\}\\ \\
+\> MLEX =\\
+\> \> \{\\
+\> \> (98, BVERB,\{... regularconj ...\}),\\
+\> \> (752, ART, \{ \}),\\
+\> \> (110, BNOUN, \{... regplur ...\}),\\
+\> \> (1334, BPROPERNOUN, \{... regulargenitive ...\})\\
+\> \> \}\\ \\
+\> SDICT =\\
+\> \> \{(98, 98.1), (752, 752.1), (110, 110.1), (1334, 1334.1)\}\\ \\
+\> SLEX =\\
+\> \> \{\\
+\> \> (98.1,BVERB,\{... trans, 2-place, +passive,..\}),\\
+\> \> (752.1,ART,\{... def, ...\}),\\
+\> \> (110.1,BNOUN,\{... count, ...\}),\\
+\> \> (1334.1,BPROPERNOUN,\{... firstname ...\})\\
+\> \> \}\\ \\
+\> DERIVTREES =\\
+\> \> \{\\
+\> \> (98.1.1, TVP2a [RSTARTCL2 [98.1,V$_{1}$,V$_{3}$]]),\\
+\> \> (98.1.7, RARGSUBST1,3 [TVP2a [RSTARTCL2 [98.1,V$_{1}$,V$_{3}$]], 
+RNP1 [110.1]]),\\
+\> \> (110.1.1, 110.1),\\
+\> \> (1334.1.1, 1334.1)\\
+\> \> \}\\ \\
+\> ILDICT =\\
+\> \> \{(98.1.1, 33), (98.1.7, 38), (110.1.1, 220), (1334.1.1, 267)\}\\ \\
+\> ILLEX =\\
+\> \> \{\\
+\> \> (33, 2-pl-function,\{sort:activity,arg1:animate,arg2:concrete,...\}),\\
+\> \> (38, 1-pl-function,\{sort:achievement,arg1:animate,meaning descr: 
+'divulge a secret',...\}),\\
+\> \> (220, constant,\{sort:...\}),\\
+\> \> (267, constant,\{sort:human\})\\
+\> \> \}
+\end{tabbing}
+
+\subsection{Example Derivation}
+\paragraph{Intro}
+The analytical derivation of {\em John spilled the beans} is given globally.
+
+\paragraph{Input string} 
+John spilled the beans
+
+\paragraph{After segmentation} 
+1334,98,SFKed,752,110,SFKs
+
+\paragraph{LEX-Tree} 
+PROPERNOUN[.1334.1.],VERB[.98.1.],ART[.752.1.],NOUN[.110.1.]
+
+\paragraph{After the surface parser}
+\begin{verbatim}
+                      SENTENCE
+ 
+                    NP         VP
+
+                          VERB       NP
+
+                                 ART    NOUN
+
+                 1334.1   98.1  752.1   110.1
+\end{verbatim}
+\paragraph{After the Placeholder substitution rules}
+The substitution rules are iterative and do not apply obligatory. The following 
+structures will be checked whether they are basic expressions.
+
+\paragraph{NP VERB NP}
+fails, no D-trees associated to 98.1 can generate two NPs
+
+\paragraph{V VERB NP}
+succeeds, one D-tree (98.1.7) associated to 98.1 in DERIVTREE equals the
+D-tree to generate this structure 
+
+\paragraph{NP VERB V}
+fails, no D-trees associated to 98.1 can generate an NP in subject position
+
+\paragraph{V VERB V}
+succeeds, one D-tree (98.1.1) associated to 98.1 in DERIVTREE equals the
+D-tree to generate this structure 
+
+\paragraph{Comment}
+In the successful cases the name of the basic expression is incorporated into 
+the D-tree.
+
+\section{Problems}
+\paragraph{Intro}
+There is a class of potential problems. The characteristics of this class are
+that it does not follow from the syntactic representation whether a syntactic 
+operation is applicable. It should be emphasized that in general it is
+impossible to specify such a distinction in the representation, since this 
+would lead to differences between idiomatic and non-idiomatic paths. 
+
+\paragraph{Example}
+The canonical case is passive. Literal {\em kick} and {\em spill} can
+passivize, but while {\em spill the beans} can passivize, {\em kick the
+bucket} cannot. For passivization in English a transitive verb and an overt 
+object are necessary. {\em Kick the bucket} meets that description.
+
+\paragraph{Discussion}
+There are cases similar to the above. In general one can ask whether problems 
+like the above are due to idiom theory or to a wrong (or even absent) theory on 
+the phenomenon under discussion. If we take passive as an example for several 
+cases it is clear why passivization is not allowed, but in some cases this is 
+unknown (cf. $^{\ast}${\em er wordt door de bloemen gebloeid}).
+
+\paragraph{Solutions}
+The best solution possible is to create a correct theory on the phenomenon 
+under discussion. Since this seems to be impracticable another solution is to 
+temporarily double the entries in the dictionary for the relevant cases, and to 
+delete these entries when theory has improved. For example, this implies that 
+for {\em kick} there are two entries in slex, one for the idiomatic and one for 
+the literal case, and for {\em spill} there is only one entry in slex.
+
+\paragraph{Efficiency}
+Dictionaries under this approach will be larger since D-trees will have to be 
+specified in the lexicon for simple expressions (though an efficient 
+implementation is conceivable). Dictionary access is necessary 
+for simple expressions as well (but for fewer paths). 
+
+\end{document}

@@ -1,0 +1,457 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  DICTIONARIES IN ROSETTA3
+
+         Author       :  Jan Landsbergen
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  0125
+
+         Date         :  86/07/17
+
+         Status       :  informal
+
+         Supersedes   :  
+
+         Distribution :  Odijk, Rous, Smit
+
+         Clearance    :  project
+
+         Keywords     :  dictionaries, type, sort, bonus
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright  Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta                     Doc.nr: 0125              date: 86/07/17
+$NP 1
+$UC _
+$SC &%
+$LD 4
+$c1 Introduction
+$ In doc. R0015 an overview was given of the dictionaries in Rosetta2.
+This document is partially a copy of R0015 and 
+has a similar aim, for Rosetta3. It is a preliminary
+and incomplete paper, mainly intended to stimulate the discussion in the
+lexicon committee. The document gives an informal overview of the
+dictionaries and the kind of information they contain.$
+$ Important topics
+_not_ discussed in this paper are: the implementation of the
+dictionaries, the way the Van Dale dictionaries will be used for filling
+the dictionaries and the edit facilities that are needed for modifying
+them.$
+$ On the other hand topics that deserve a separate paper (the bonus
+system, types and sorts) are briefly discussed in section 2.$
+
+$c1 Assumptions
+$ In this document I make assumptions about the bonus system, about
+derivation trees and about types and sorts 
+which I want to make explicit first, although they
+do not fit very well 
+in this paper about dictionaries. $
+
+$c2 Bonus system
+I assume the following bonus system:
+$ Each node in an S-tree and in a derivation tree has a bonus (the local bonus
+of that node).$
+$ A bonus is a triple of three integers (i, j, k).$
+$ The ordering of bonuses is defined as follows:$
+      (i,j,k) > (l,m,n) if    i>l or
+                              i=l and j>m  or
+                              i=l and j=m and k>n
+Intuitively: 
+i is the _correctness bonus_, 
+j is the _strong preference bonus_,
+k is the _weak preference bonus_.
+The start value of i, j and k is 0.
+$ - i indicates the correctness (syntactic or semantic) of the
+construction under consideration.$
+$ So, i := i-1 if a syntactic incorrectness is noticed. The same holds for
+morphological incorrectness and for an unknown word. For the notion
+semantic incorrectness cf. section 2.3. In general, robustness measures will
+lead to a negative correctness bonus. So, for a correct expression 
+the correctness
+bonus will be 0, for an incorrect expression it will be negative.
+At certain points in the system, e.g. after each component, the
+set of results should be inspected and if there are both correct and
+incorrect results the incorrect ones are deleted. (this seems a
+reasonable strategy, taking into account that expressions that are judged
+incorrect will never become correct anymore.) $
+$ - the weak preference bonus k is intended to fulfil the same function
+as the bonus in Rosetta2. It is purely relative. If there are two
+interpretations (S-trees or  deriv. trees etc.) of the same phrase,
+the weak preference bonus may be used to express that, 
+all other things being equal, one interpretation is more "plausible" or
+"probable" or "frequent" than the other. $
+$ - The strong preference bonus j is somewhere between i and k. It has the power
+to overrule several weak preferences. An example of its use 
+might be the preference
+one would like to give to idioms over literal interpretations.
+Consider for example "kick the bucket". In the literal interpretation it
+might get a positive k, thanks to the compatibility of the kind
+of object expected by "kick" and the kind of object "bucket" is. 
+The idiomatic interpretation will not get this positive bonus, because
+"bucket" is no argument in that interpretation. This can be overruled
+by making for each idiom j := j + 1. 
+All this is disputable and I am not sure at the moment that j
+is really necessary. $
+$ The bonus of a tree is the sum of the bonuses of its nodes, i.e. the
+triple that results from adding separately the i's, j's and k's of
+the nodes. Choices between interpretations are always made on the basis 
+of the bonuses of the complete trees.$
+$ The way bonuses are transduced by the components of the system has to be 
+defined yet. Roughly, what is needed is a mechanism that transports
+the bonuses of a subexpression to its transduction, e.g. from
+S-tree to syntactic derivation tree or from syntactic derivation tree to
+semantic derivation tree.$
+
+$c2 Types and sorts
+$ In logic, semantic _types_ are used for classifying the objects in the
+domain according to their formal structure, i.e. into entities, sets,
+functions etc. In Montague grammar these types are e, t, <e, t>,
+<e, <e, t>>, etc. In Rosetta we have 2-place and 3-place functions as
+well. Because of that I prefer the notation e --> t,  (e, e) --> t
+and (e, e, e) --> t for functions.$
+$ The term _sorts_ is used for 
+the classification of the entities into various kinds, e.g. person,
+concrete, abstract. From this we can derive structured types such as
+person --> t, (person, concrete) --> t, etc.$
+$ The idea about the so-called "type test" in Rosetta has always been
+the following:$
+$ - the entities are classified into sorts; a kind of hierarchy relation
+between sorts is defined,$
+$ - nouns have a specific sort as their type.$
+$ - verbs, adjectives and adverbs (i.e. their meanings) have a function
+type with specific sorts at the place of the arguments, e.g. person-->t.$
+$ - the type test at the IL level comes down to checking whether the
+sorts of the actual arguments are compatible with the sorts of the 
+arguments expected by the functions.$
+$ Unfortunately, there are problems with this approach, especially if
+we have functions operating on other functions - or function applications -
+ as in the case of adverbs.$
+Consider for example the sentences:
+(1) Marie loopt langzaam
+(2) Marie zit langzaam
+$ We would like to have a type test which discovers that (1) is more
+plausible than (2). Such a type test would be useful for making the
+right choice in ambiguous sentences such as:$
+(3) hoe langzaam beweerde Marie dat ze gelopen had?
+$ However, if both "zitten" and "lopen" have type  person --> t,
+the type test cannot have the desired discriminating effect.
+Intuitively we want "langzaam" to operate on a specific kind of events
+or situations, but this information is not available in the types.$
+$ Observations like this suggest that a rather drastic change in
+the semantic framework is necessary. In the new framework verbs
+would not be functions to truth values, but functions to specific
+(sets of) entities, e.g. events, states, situations etc.$
+$ An example: WALK, the meaning of "lopen", would be a function from
+persons to sets of walk-situations. The application of this
+function to MARY (the meaning of "Marie") in WALK(MARY) 
+is then a set of walk-situations in which Marie is involved.
+"Marie loopt" denotes the set of walk-situations w such that the moment 
+of speech is in the time-interval of w, more formally:$
+    { w | w in WALK(MARY) and NOW in TIME(w) }
+$ We arrive at the desired truth value type for the sentence "Marie loopt"
+by stating that this set is non-empty or equivalently by expressing the
+meaning as:$
+    _E_w: w in WALK(MARY) and NOW in TIME(w)
+$ One may have
+different opinions about the attractiveness of such a semantic
+framework, but at any case it seems highly implausible that we will be able 
+to work it out
+very soon (unless it turns out that a similar system has already
+been worked out elsewhere). Therefore I propose that for the time
+being we make a distinction between the use of types and the use of sorts,
+as follows:$
+$ 1. Types are assigned to expressions of IL in relation with the
+formal semantics of the M-grammars. They have the form e, t, e --> t,
+(e, e) --> t etc. For these types the same remark can be made as for 
+the semantics of IL in general: they do not play an explicit role in
+the implemented Rosetta system, they are "only" relevant for 
+understanding  the system. So, these types need not be specified in
+the dictionaries.$
+$ 2. Sorts are assigned to terms of IL for the compatibility tests.
+They are not defined as subdivisions of the semantic types.
+To each IL term a sort is assigned, indicating what kind of object,
+event 
+or situation is denoted. So this is done for meanings of nouns as
+well as for verbs (their sorts might for instance comprehend 
+states, activities and the like). In principle it is also done for
+adjectives and adverbs, but in these cases the usefulness for the
+compatibility tests is not yet clear. $
+$ For functions (verbs, adjectives, adverbs and possibly 
+some nouns, e.g. "price",
+"destruction") the expected sorts of the arguments are indicated. Here
+is a link with the formal type system, for a term that is called a function
+here should have the semantic type of a function, with the same number
+of arguments. $
+$ There is a partial (transitive) relation, sort-inclusion (IN%SORT%), 
+between sorts.$ 
+$ E.g. person 
+IN%SORT% animate, animate IN%SORT% concrete, etc. $
+$ The compatibility
+test for sorts comes down to testing whether in a function application 
+the sorts of the actual arguments  of
+the function are compatible with (have relation IN%SORT% with) 
+the sorts expected as arguments.$
+$ In Rosetta3 we do not need to have an elaborate sort system, but it
+would be nice to have an adequate formal framework and an implementation 
+in order to gain some experience before Rosetta4 starts.$
+
+$c2 Semi-idioms
+$ Semi-idioms are expressions like "een voordracht houden", "een opmerking
+maken". These expressions consist of a verb with a rather general meaning
+and a specific argument of the verb, more precisely: an argument with a specific
+head. This head, however, can be modified in all possible ways ("een
+goede voordracht houden", "een opmerking maken die hout snijdt"). 
+Therefore it is not possible to treat these expressions as
+ordinary flexible idioms. On the other hand this is not necessary either;
+semi-idioms have in fact a compositional semantics, the translation
+of the argument can be done locally, but the
+translation of the verb depends strongly on the head of the argument.
+NB: it is not sufficient to know the sort of the argument, for an
+adequate translation we need its exact head, or better: the exact meaning of
+its head.$
+$ I propose the following approach:$
+$ In A-TRANSFER A-TR%B% translates locally the basic key of "houden"
+into a number of IL keys, if necessary a separate IL key for each semi-idiom
+with "houden". For example:$
+Khouden --> MKvoordrachthouden,
+            MKcollectehouden,
+            ....
+            MKbehouden,
+            ...
+(MKbehouden is a general meaning of houden, not a semi-idiom)
+$ The IL dictionary for semi-idioms specifies the keys of the required
+argument heads, e.g. for MKvoordrachthouden it requires for
+the second argument the meaning key of "voordracht".$
+$ The compatibility test for semi-idioms m,atches this with the key of
+the actual second argument of MKvoordrachthouden in the semantic
+derivation tree. 
+If the second argument is indeed the required meaning 
+key, then the strong preference bonus is raised (j:= j+1). If the
+second argument does not have the required key, the correctness bonus
+is lowered (i:=i-1). In most cases, the verb in a semi idiom will also
+have at least one general meaning (MKbehouden in the example) which 
+does not depend on a specific
+argument, although it may prefer a specific sort. So if the verb "houden"
+is used in a context different from the semi-idioms in IL,
+one of the general meanings will be preferred.$
+$ Note that for semi-idioms there may also be sort information in the
+IL dictionary, for the other arguments.$
+
+$ In G-TRANSFER the compatibility tests need not be repeated. There
+we have simply:$
+MKvoordrachthouden --> Khouden
+
+$c2 Semantic derivation trees
+$ I assume that in semantic derivation trees a term with a function type
+always occurs in the following context:$
+            R%i%
+            / \
+           /   \
+          F     A%1% ... A%n%
+$ for an n-place function F, where A%1%, ... , A%n% are the arguments and
+R%i% is a rule for function application.$
+$ These arguments may be constants, but will in most cases be variables.
+I assume that variables are always coupled to variable substitution
+rules and that it is defined for each substitution rule what the
+substituent is.$ 
+$ I assume that for each (sub) derivation tree it is defined what the semantic 
+head is, the basic expression (its key) which defines its sort.
+In case of coordination we may have a set of heads.$
+$ In this way we can find for each variable the set of keys corresponding
+to the head(s) of the substituent for that variable.$
+
+$ Thanks to all these assumptions, it is possible to state that a
+compatibility test between a function and its arguments 
+can always be done in a very specific context,
+a subtree of the beforementioned form 
+with arguments which are either constants with
+a specific key or variables for which the corresponding constituent keys can
+be found. The compatibility test comes down to confronting the conditions on 
+sorts and on keys of semi-idioms attached to functions (in the IL dictionary)
+with the sorts and keys of the actual arguments. The result of the compatibility
+tests is an assignment of bonuses to semantic derivation trees, which
+can be used for rejecting or preferring certain interpretations.$
+$ So the compatibility test is executed at the level of the rules for
+function application, but the effect is that certain meanings of F are
+rejected and others are preferred.$
+$c1 Dictionaries in the formal system
+$ In the theoretical definition of M-grammars (R0011) dictionaries are not
+mentioned at all. There we only have sets
+and functions. However, certain sets and functions will have to be 
+specified by means of extensive enumerations, which may require
+a special kind of implementation. In that case we speak of dictionaries.$
+
+$ If we consider the formal definition of M-grammars we see the 
+following parts
+in which dictionaries play a role.$
+
+$ - In the _syntactic component_: the set B of basic S-trees.$
+$    Each basic expression has a unique name, called its key.
+So in fact B is a set of pairs (key, S-tree). In Rosetta2
+    a basic S-tree was always a terminal S-tree.
+    Each basic S-tree has
+    a category in BASICCATS. For each basic category C the corresponding
+    set of attributes ATS%C% contains the attribute "key", of which
+    the value is the unique key of the basic S-tree. This can be 
+regarded as a specific  implementation of the pairs.$
+$ In Rosetta3 basic expressions may be complex (i.e. non-terminal) S-trees
+(or possibly: their derivation trees), 
+because of flexible idioms. We do not go into this here.$
+
+$ - In the _semantic component_:$
+$    1. the set of basic meanings (meaning keys) of IL.$
+$ The IL dictionary specifies for each meaning key a meaning description
+(for interactive disambiguation), the sort and in case of functions 
+the information
+needed for the compatibility conditions, 
+in terms of sorts or keys.$
+$    2. A-TR%B%: a function from (keys of) basic expressions to sets of 
+       (keys of) basic meanings. This set is ordered in the same way as
+       the word meanings in Van Dale are ordered, according to some
+       intuition on plausibility or frequency. This ordering may be
+       used for assigning weak preference bonuses to the IL expressions
+       (an alternative is that each pair in A-TR%B% gets an explicit bonus.$
+$    3. G-TR%B%: a function from meaning keys to (ordered) sets of basic keys.
+       (In principle this is redundant, it is the reverse of A-TR%B%, 
+        but in the implemented system it is ordered in a different way.
+        In practice there may be other differences as well.)$
+
+$ - In the _morphological component_: (See Joep Rous, R0065, forthcoming)$
+    1. MDICT (morphological dictionary): a set of tuples < a, K, F, CC >, 
+       where a is a string, K a key, F is phonetic information (about the
+       pronunciation of the string) and CC a context condition, on the phonetic
+       information of the right neighbour in the sentence.
+       With MDICT two functions are defined: AMDICT and GMDICT (See R0065).
+       If we want an efficient implementation of AMDICT and GMDICT, 
+       the difference in direction is important. E.g. in AMDICT the tuples 
+       may be ordered alphabetically w.r.t the strings, in GMDICT w.r.t. 
+       the keys.
+    2. B-LEX (basic lexicon) is in principle the same as B, but now implemented
+       as a set of pairs < K, t > in which K is the key of t, in such a way
+       that it can be used efficiently as a function from basic keys to
+       basic expressions (e.g. ordered w.r.t. the keys).
+    3. ID-LEX (idiom lexicon) is a set of pairs < K, < K%1%, . . . , K%n% > >,
+       where K%1%, . . . , K%n% are "idpart" keys, which are not names of 
+       S-trees but names of strings that are part of a ("fixed") idiom. K is 
+       the key of the idiom as a whole and is the name of an S-tree.
+       ID-LEX defines a function A-ID-LEX from tuples of idpart keys to sets of
+       keys and a function G-ID-LEX from keys to sets of tuples of idpart keys.
+       In addition the place of the suffices in the idiom may be indicated.
+    4. There are some other parts of the morphological components that
+       may be called dictionaries, the marker lexicon and the affix lexicon,
+       but they will be ignored here.   
+$c1 The use of the dictionaries in the components of Rosetta
+$ In this section we will pass 
+through the system in "processing order", from A-MORPH
+to G-MORPH and discuss the role of the dictionaries informally.$
+
+1. A-MORPH.
+$  AMDICT translates words (their stems) into keys: basic
+keys or idpart-keys.$
+$  A-ID-LEX translates tuples of 
+idpart-keys into keys.$ 
+$ B-LEX translates basic keys into
+basic S-trees.$ 
+
+2. S-PARSER. No dictionary involved.
+
+$ 3. M-PARSER. In theory M-PARSER needs a dictionary in order to check
+whether an S-tree is a basic expression and to translate it into its key. 
+In practice this is not necessary, because it can be decided whether or
+not an S-tree is a basic expression by looking at its category and its
+attibute values and because the key is one of the attributes.$
+$ For flexible idioms the recognition of a basic expression 
+will be more complicated.$
+$ In addition to this, B-LEX plays a role in some of the M-rules, i.e. in
+rules where words (i.e. S-trees) are introduced or eliminated 
+syncategorematically. In the 
+case that a word is introduced in a rule, the rule specifies the key of that 
+word and uses B-LEX for creating the corresponding S-tree. It may be 
+efficient to have a separate dictionary for basic S-trees which are  
+introduced syncategorematically.$
+$ Usually words are introduced syncategorematically in generative M-rules
+and eliminated in analytical M-rules, but there are exceptions to this. In
+the Spanish grammar a "deleted" subject pronoun will be introduced in the 
+analytical
+rule.$
+
+$ 4. A-TRANSFER. Here the dictionary A-TR%B% is used for the translation
+of basic keys into sets of meaning keys. $
+$ At the "end" of A-TRANSFER interactive disambiguation and 
+compatibility tests take place with the help of the
+IL dictionary. It may be more elegant to do these compatibility tests
+in a separate module, 
+for which the symmetry conditions between analysis and generation
+do not hold. The Rosetta system consists in that case of three main
+components:$
+$ - the analysis component, which gives the IL expressions
+for all syntactically
+possible analyses of the input phrase,$
+$ - the "IL component" which decides
+ which of the possible IL expressions are correct
+from a semantic point of view (or from the user's point of
+view, in the interactive mode), assigns bonuses to these expressions 
+ and orders the semantically
+well-formed IL expressions according to their bonuses, $
+$ - the 
+generation component which generates phrases for each well-formed IL 
+expression. $
+$ It should be given some thought whether or not a separate IL component
+is attractive from a conceptual point of view; from an implementation 
+point of view it seems to be of minor importance.$
+
+$ 5. G-TRANSFER. Here the dictionary G-TR%B% is used for the translation of
+meaning keys into sets of basic keys.$
+$ G-TRANSFER does not perform the generative counterpart of the compatibility 
+tests in A-TRANSFER. This lack of symmetry
+can be explained by the fact that the compatibility tests in
+A-TRANSFER are defined in terms of IL, independent of the source
+language. These tests do not have to be repeated in G-TRANSFER.$
+
+$ 6. M-GENERATOR. The generation process
+starts with the translation of basic keys into
+the corresponding basic expressions with the help of B-LEX.$
+
+$ 7. LEAVES. No dictionary involved.$
+
+$ 8. G-MORPH. 
+$ Basic S-trees are translated into keys without the help of a dictionary,
+because the key is an attribute of the basic S-tree itself.$
+$ G-ID-LEX translates keys of idioms into tuples of idpart-keys.$
+$ GMDICT translates keys into strings.$
+

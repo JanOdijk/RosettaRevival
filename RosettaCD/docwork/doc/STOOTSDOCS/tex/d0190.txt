@@ -1,0 +1,970 @@
+R0190.tex
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.Software}
+   \RosTitle{System to Create Retrograde Vocabularies}
+   \RosAuthor{Jeroen Medema}
+   \RosDocNr{190}
+   \RosDate{\today}
+   \RosStatus{Informal}
+   \RosSupersedes{-}
+   \RosDistribution{Software, Harm Smit}
+   \RosClearance{Project}
+   \RosKeywords{Retrograde vocabulary, System}
+   \MakeRosTitle
+%
+%
+\setlength{\parskip}{2mm}
+\setlength{\parindent}{0mm}
+
+\section{Target}
+\subsection{Definition}
+The target of the system is the creation of the retrograde vocabularies for
+the Van Dale dictionaries N~--~N \cite{st:groot}, N~--~E \cite{ma:groot1}, 
+and E~--~N \cite{ma:groot2}. That is, somewhat more formal, given the 26 files 
+(one per letter) of one of these dictionaries, make one file (in which the 
+words are retrograde ordered) that, without any conversion, is printable in 
+a special form as defined in subsection 1.3.
+\subsection{Input Description}
+A description of the N~--~N dictionary is \cite{sm:descr} while the 
+other two dictionaries aren't described up to now. What is to be known here, is,
+however, only a small part of an entire description of these dictionaries. 
+First, the 
+entryword -that's what we're looking for- is always on the same place in the 
+entry. Also, there are, in the entryword, some special codes which need to be 
+converted to other characters in the printed version. These conversion codes 
+are listed in table~1. 
+\begin{center}
+\begin{tabular}{|l|l|l|}\hline
+ Code             
+  & $\alpha \in$       
+    & Conversion\\ \hline
+ {\tt `}$\alpha$
+  & \{a, e, i, o, u, A, E, I, O, U\}  
+    & \`{a}, \`{e}, \`{\i}, \`{o}, \`{u}, \`{A}, \`{E}, \`{I}, \`{O}, \`{U}\\
+ \~{}$\alpha$
+  & \{a, e, i, o, u, A, E, I, O, U\}  
+    & \'{a}, \'{e}, \'{\i}, \'{o}, \'{u}, \'{A}, \'{E}, \'{I}, \'{O}, \'{U}\\
+ \^{}$\alpha$     
+  & \{a, e, i, o, u, A, E, I, O, U\}  
+    & \^{a}, \^{e}, \^{\i}, \^{o}, \^{u}, \^{A}, \^{E}, \^{I}, \^{O}, \^{U}\\
+ {\tt "}$\alpha$  
+  & \{a, e, i, o, u, A, E, I, O, U\}  
+    & \"{a}, \"{e}, \"{\i}, \"{o}, \"{u}, \"{A}, \"{E}, \"{I}, \"{O}, \"{U}\\
+ {[ps]o[pr]}&          & $^{\rm o}$ \\
+ /[h9]      &          & -\\
+ //         &          & /\\
+ /9         &          & $|$\\
+ +$\alpha$1 & \{n, N\} & \~{n}, \~{N}\\
+ +$\alpha$4 & \{a, A\} & \aa, \AA \\
+ +$\alpha$8 & \{c, C\} & \c{c}, \c{C}\\
+ +\%        &          & $^{\rm o}$ \\
+ +{\tt '}   &          & {\tt `}\\
+ +;         &          & \\ \hline
+\end{tabular}\vspace{1mm}
+
+Table 1.
+\end{center}
+\subsection{Output Description}
+\subsubsection{Sorting Order}
+ The sorting order of the words is retrograde (which 
+ means that they are not ordered with respect to the first characters of a 
+ word -as in normal dictionaries- but with respect to the last ones). 
+ The ordering is done by smallest first; that is: first ``~'', then 
+  ``-'', next ``.'', followed by the letters.
+ The following constraints apply to the equivalence of words:
+ \begin{enumerate}
+  \item characters with an accent (as e.g. \^{e}, \~{n}, \aa, \"{o}) are 
+  considered to be equal to the same character without the accent.
+  \item words containing the string ``(-)'' are considered to be equal to the 
+  same word without that string.
+  \item words containing {\em other} characters than letters, ``-'', ``~'', and 
+  ``.'' are considered to be equal to the same word without those characters.
+  \item the upper and lower case form of a letter are considered to be equal.
+ \end {enumerate}
+\subsubsection{Printing Format}
+ The words are split up in twenty-eight parts: for every letter one part and 
+ two additional for the ``-'' and ``.'' (no word ends with a space). Each part 
+ starts at a new page. The output more or less looks like the retrograde 
+ dictionary of the `Grote Van Dale' \cite{ni:retro}. It is defined follows:
+  \begin{itemize}
+   \item every page consist of sixty rows, of which the last one is empty, and
+         four columns.
+   \item in a column, every word is right justified.
+   \item if a word has a length greater than 19 (which is the pagewidth -80-
+         divided by the number of columns minus 1 for the separation of the 
+         columns) it has to be split into two or more consecutive (that is, in 
+         one column) printed strings.
+   \item if a word (because of its length) does not fit anymore in the column
+         a new column is to be used (the same applies for pages).
+   \item the order of reading is column first, row second, page last.
+   \item the headwords (as stored in the file) are converted from a coded form 
+         (see table 1) to printable strings more or less as in \cite{st:groot}.
+  \end{itemize}
+Appendix A contains an example of two output pages as generated making the 
+retrograde wordlist of the E~--~N dictionary.
+\section{System Description}
+The target of the system was reached by writing several programs, each partly 
+doing the job.
+First is told which programs are needed and what they do, and after that the 
+coupling of them into the system is described.
+\subsection{Programs}
+For this system three programs were made: SkipXtra (sx), AddReverse (ar), and 
+PrintRetro (pr). Two system programs were used to append and sort files: append 
+and sort. A description of each of these programs is listed below.
+\begin{description}
+  \item [SkipXtra] This program will produce one outputfile which is the 
+        stripped version of a Van Dale dictionary inputfile. It will only 
+        contain the entryword of the entire entry. In the outputfile one word 
+        is placed per line. The skipping of the ``+;''-string, which markes the 
+        stress in the entryword, is done with this program too.
+  \item [AddReverse] This program will with the given input (which is described 
+        below) generate output (also described below) which also contains the 
+        reversed words (at the beginning of each line). The input consists of 
+        26 files which each contain the entrywords as in the Van Dale 
+        dictionary on disk but without the string ``+;''. The output will 
+        consist of 26 files which contain lines of the following form: first 
+        the reversed entryword, then four spaces followed by the normal entry. 
+        The reversed entryword is, however, totaly stripped of special 
+        characters (e.g. {\tt`},{\tt"},\~{},\^{},+,\%,(-), etcetera). 
+  \item [Append] This system command is used to append 26 files onto one, 
+        initially empty, file.
+  \item [Sort] This system program is used to take as input one file and make a 
+        new version of it by sorting it on the first characters of a line.
+  \item [PrintRetro]
+        This program will make a printfile of the given input. The input 
+        consist of one file which contains the (retrograde) sorted list of 
+        entries preceeded by the reversed entry and four spaces. The output is 
+        one file in which the words are ordered as described in 1.3.2. Every 
+        word is made printable (in normal text) by converting the special codes 
+        (as defined in table~1).
+\end{description}
+\subsection{Coupling}
+With the previous defined programs the creation of a retrograde wordlist is 
+very simple: one runs the program SkipXtra 26 times to get the stripped files. 
+From these 26 new files the program AddReverse will generate files with the 
+reversed word at front. With Append one file is made by appending all 26 
+AddReverse-files which gives one large file. This large file is sorted using the
+system program Sort (which is really quick: 3 minutes CPU time for a file with 
+90.000 entries). The newly created file is treated by PrintRetro which makes 
+the printable file.
+
+The scheme in figure~1 represents the total structure of the system. Double 
+arrows represent programs which were especially made for this system, while 
+single arrows depict programs which were already available in the operating 
+system.
+\begin{figure}
+ \[ \left.
+     \begin{array}{ccc} 
+        A_{text} & \stackrel{sx}{\Longrightarrow} & SXA_{word}\\ 
+        B_{text} & \stackrel{sx}{\Longrightarrow} & SXB_{word}\\ 
+        C_{text} & \stackrel{sx}{\Longrightarrow} & SXC_{word}\\ 
+        \vdots   & \stackrel{sx}{\Longrightarrow} & \vdots  \\ 
+        Z_{text} & \stackrel{sx}{\Longrightarrow} & SXZ_{word}
+     \end{array}
+    \right\}
+     \stackrel{ar}{\Longrightarrow}
+    \left\{
+     \begin{array}{cc} 
+        ARA_{retro} &             \\
+        ARB_{retro} & \searrow    \\
+        ARC_{retro} & \rightarrow \\
+        \vdots    & \nearrow    \\
+        ARZ_{retro}
+    \end{array}
+   \right.
+   Abc_{app} \rightarrow Abc_{sort} \stackrel{pr}{\Longrightarrow} Abc_{prt}
+ \]
+ \caption{Outline Retrograde Wordlist System}
+\end{figure}
+\section{Program Implementation}
+ Two of the three programs were very simple to write, viz.\ SkipXtra and 
+ AddReverse. The straightforward mechanisms for these programs are described 
+ below. The third, PrintRetro, was more difficult but gave no real problems.
+ \subsection{SkipXtra}
+  This program was written more general and determines its input with the aid 
+  of another file named INP.SX\@. In this file, which can be filled manually, 
+  the name of the dictionary file which is to be treated is given. The output 
+  of the program will be in a file named SX.OUT\@. The algorithm used is very 
+  simple: per entry in the inputfile one has to: read it, extract the entryword,
+  delete occurences of ``+;'', write this entryword in the outputfile.
+ \subsection{AddReverse}
+  This program is, if possible, even more simple to write (because of the 
+  existing modules). It works on 26 inputfiles named SXA.OUT to SXZ.OUT\@. 
+  It generates 26 files named LETTERA.OUT to LETTERZ.OUT\@. The algorithm used 
+  is very simple: inputfile SX$\alpha$.OUT is used to make outputfile 
+  LETTER$\alpha$.OUT; per line of the inputfile, the line generated for the 
+  outputfile is made by reversing the inputline, write this reversed string 
+  followed by four spaces and the original inputline.
+ \subsection{PrintRetro}
+  This program works on an input-file named RETRO.TXT and generates an 
+  output-file named RETRO.PRT\@. The output is generated (added to the 
+  output-file) per page. A page is internally represented by an array of sixty
+  lines (which each are: a string of eighty characters and the current length 
+  of that string). A page is made by appending the first column to the 
+  initially empty lines. A column is made up out of a sequence of words, each 
+  right justified and converted. The mechanism of adding columns is repeated 
+  four times (four columns), or until a new ending-letter is found, or until 
+  there are no entrywords left. Then, the page is written to the output-file 
+  and the lengthes of the page-lines are set to zero.
+  
+\section{Motivation}
+\begin{itemize}
+  \item {\bf Why?}\\
+        The retrograde dictionaries were made to be used by linguists and 
+        dictionary programmers at times a set of words with a special kind of 
+        ending is to be known. This especially accounts for the morphological 
+        parts of the system.
+  \item {\bf Why this way?}\\
+        It was, of course, possible to make one program that performs the task
+        as described. However, this program would be quite more complex than 
+        the total of its parts. It also would require a lot of internal memory
+        to store the entrywords of the dictionary and its printed form. Further,
+        some intermediate results can be useful for other programs (this 
+        especially accounts for the files generated by SkipXtra).
+\end{itemize}
+
+\begin{thebibliography}{MMM99m}
+ \bibitem[MAR84]{ma:groot2} W. Martin, ed. {\em Groot woordenboek 
+  Engels -- Nederlands}, Van Dale Lexicografie, 1984
+ \bibitem[MAR86]{ma:groot1} W. Martin, ed. {\em Groot woordenboek 
+  Nederlands -- Engels}, Van Dale Lexicografie, 1986
+ \bibitem[NIE69]{ni:retro} E.R. Nieuwborg, {\em Retrograde woordenboek van de 
+  Nederlandse taal}, Universit\'{e} Catholique de Louvain, 1969
+ \bibitem[SME87]{sm:descr} Harm Smit \& Jeroen Medema, {\em Description Van 
+  Dale dictionary N~--~N}, {\bf Rosetta report 174}, Philips Research 
+  Laboratories, 1987
+ \bibitem[STE84]{st:groot} P.G.J. van Sterkenburg, ed. {\em Groot woordenboek 
+  hedendaags Nederlands}, Van Dale Lexicografie, 1984
+\end{thebibliography}
+\newpage
+\appendix
+\section{Output Examples}
+\footnotesize
+\begin{verbatim}
+              Vedic ai                           mystagogic             graphic 
+          Samoyedic r-passenger traffic               logic            -graphic 
+          Samoyedic         air traffic              -logic         sciagraphic 
+             acidic     tourist traffic            dialogic         paragraphic 
+           nuclidic            morbific            analogic         telegraphic 
+            juridic             Pacific             illogic        calligraphic 
+         glucosidic             pacific       pharmacologic          epigraphic 
+            Druidic        transpacific        archaeologic     pseudepigraphic 
+            Davidic            specific            geologic       stratigraphic 
+            scaldic            specific          teleologic       lexicographic 
+           heraldic         subspecific         morphologic       palaeographic 
+          Icelandic         conspecific      geomorphologic         ideographic 
+          Icelandic       interspecific         glaciologic          geographic 
+               .                   .                   .                   .
+               .                   .                   .                   .
+               .                   .                   .                   .
+            melodic           honorific           topologic     historiographic 
+          psalmodic           honorific           serologic       physiographic 
+          spasmodic           saporific           horologic    encephalographic 
+      antispasmodic           vaporific          petrologic    crystallographic 
+      antispasmodic           soporific          astrologic         holographic 
+             anodic           soporific        climatologic        stylographic 
+            parodic          torporific        dermatologic         xylographic 
+           episodic            terrific          tautologic         demographic 
+           prosodic            horrific           sexologic        anemographic 
+          rhapsodic             ossific        ichthyologic        cosmographic 
+             bardic            beatific         embryologic        planographic 
+          Lombardic          scientific           lethargic        stenographic 
+          Sephardic        unscientific            allergic        ethnographic 
+             Nordic               Cufic            lysergic        iconographic 
+             Nordic               Cufic             georgic        phonographic 
+              asdic               Kufic             georgic         monographic 
+              ludic               sufic            theurgic       chronographic 
+           Talmudic             pelagic           demiurgic        pornographic 
+              pudic               magic         dramaturgic         typographic 
+          aldehydic               magic        thaumaturgic       polarographic 
+            nucleic               magic                chic        micrographic 
+        ribonucleic              tragic                chic        hydrographic 
+   deoxyribonucleic              tragic           stomachic          orographic 
+              oleic          paraplegic           stomachic        chorographic 
+          dyspnoeic          paraplegic        amphibrachic        reprographic 
+         mythopoeic           strategic             bacchic      spectrographic 
+       onomatopoeic              -algic          oligarchic        petrographic 
+               -fic           neuralgic            diarchic     cinematographic 
+            malefic           nostalgic            anarchic        pictographic 
+            benefic              Belgic          hierarchic        photographic 
+            traffic           pedagogic           autarchic    telephotographic 
+            traffic           demagogic             psychic   astrophotographic 
+white-slave traffic            anagogic             psychic       cryptographic 
+   carrying traffic          hypnagogic             edaphic        cartographic 
+  passenger traffic           paragogic            seraphic        dittographic 
+                               isagogic             graphic         autographic 
+\end{verbatim}
+\newpage
+\begin{verbatim}
+       tachygraphic               ethic            bicyclic             bucolic 
+        polygraphic               ethic           alicyclic             bucolic 
+         euthrophic              lithic           epicyclic               Eolic 
+            trophic          megalithic        heterocyclic              Aeolic 
+      gonadotrophic            Eolithic              Gaelic              Aeolic 
+      heterotrophic            eolithic              Gaelic          hypergolic 
+        autotrophic        palaeolithic         psychedelic              -holic 
+       hypertrophic           neolithic         psychedelic          workaholic 
+           strophic         heliolithic            Goidelic           potaholic 
+       catastrophic         granolithic            Goidelic              cholic 
+        geostrophic          monolithic             angelic         melancholic 
+        apostrophic          Mesolithic         archangelic         melancholic 
+         dystrophic          mesolithic            Gadhelic             -oholic 
+            Sapphic            ornithic            Gadhelic           alcoholic 
+               .                   .                   .                   .
+               .                   .                   .                   .
+               .                   .                   .                   .
+        theomorphic              Sothic        bibliophilic           fumarolic 
+        idiomorphic            autarkic         hydrophilic              frolic 
+      theriomorphic              Turkic       psychrophilic              frolic 
+     enantiomorphic              Turkic           lyophilic              frolic 
+        homomorphic             vocalic             basilic            petrolic 
+      actinomorphic         postvocalic              exilic           diastolic 
+        monomorphic            vandalic          pre-exilic           apostolic 
+         zoomorphic            cephalic              gallic        subapostolic 
+    anthropomorphic           -cephalic          pyrogallic              garlic 
+      heteromorphic        megacephalic             phallic          peelgarlic 
+        mesomorphic          encephalic         ithyphallic           pilgarlic 
+         isomorphic       mesencephalic         ithyphallic               aulic 
+      robotomorphic     dolichocephalic             thallic           hydraulic 
+       protomorphic       orthocephalic            metallic    electrohydraulic 
+        polymorphic      megalocephalic          bimetallic           salicylic 
+            glyphic       macrocephalic         nonmetallic              beylic 
+         anaglyphic       microcephalic      organometallic               hylic 
+         triglyphic       microcephalic         intervallic             acrylic 
+       hieroglyphic       hydrocephalic            Cyrillic            dactylic 
+            myrrhic        mesocephalic            Cyrillic            dactylic 
+            pyrrhic       leptocephalic         glycol(l)ic          carboxylic 
+            pyrrhic         oxycephalic             idyllic             pyeamic 
+            gnathic            pashalic            diabolic               gamic 
+             pathic            phthalic            anabolic              agamic 
+         telepathic               malic           parabolic        phanerogamic 
+           empathic               Salic           catabolic         cryptogamic 
+       homoeopathic              italic           metabolic        cleistogamic 
+         idiopathic              italic           shambolic           polygamic 
+         allopathic            tantalic             embolic           sulphamic 
+     anthropopathic              oxalic            symbolic         epithalamic 
+        hydropathic         philobiblic            symbolic             Islamic 
+       heteropathic              public            carbolic             dynamic 
+        neuropathic              public          hyperbolic             dynamic 
+       naturopathic            republic               colic            adynamic 
+            spathic     banana republic          lead colic m                   
+        feldspathic   people's republic          wind colic agnetoplasmadynamic 
+         felspathic              cyclic     painter's colic       thermodynamic 
+\end{verbatim}
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.3 - released  feb-1987}
+% feb-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1987 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

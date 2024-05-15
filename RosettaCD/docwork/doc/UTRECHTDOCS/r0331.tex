@@ -1,0 +1,2842 @@
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.morphology}
+   \RosTitle{Rosetta3 Dutch Morphology, rules}
+   \RosAuthor{Harm Smit}
+   \RosDocNr{331}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Dutch, morphology, rules, documentation}
+   \MakeRosTitle
+
+%DUTCH1
+%&
+
+\section{Rules for verbs.}
+
+Note:
+\begin{itemize}
+ \item Irregular verbs have class 1 and 2 (and not --as they had in ROSETTA2-- 
+       class 0).
+ \item Class 0 has been used for verbs without conjugation: these verbs have 
+       only {\em infinitive}-form (and forms derived of infinitives).
+ \item Even class-numbers (without 0 and 14) correspond with verbs {\em without}
+       "ge"-prefix in the past participle, odd class-numbers 
+       correspond with verbs {\em with} "ge"-prefix.
+ \item The function "copy...." copies the values of the --in the rule not 
+       explicitely mentioned-- fields of the old record to those of the new one.
+ \item Conjugationclass 14 has been used for verbs with extra form for the
+       1st person singular.
+\end{itemize}
+
+\subsection{Rules for derivation.}
+\subsubsection{Rule for particle as prefix.}
+
+The M-grammar should not yield forms of the type PART-V $ + $ SUBJ 
+({\em *afvraag ik me?}, etc.). 
+In this rule this is not done (because the morphology only handles
+single words). Therefore, in generation also the set [0,1] is yielded for the
+attribute persons, although person$=$0 can never be combined with particles:
+{\em *afvraag jij je?, *wegga jij?,} etc.
+
+The test on `eORenForm' is necessary because the {\em order} of this rule and 
+the rule `VerbeORenvorm' should be stated.
+
+(examples: {\em afgevraagd(e(n)), afvragen(d(e(n))), afvraag, afvraagt, ...})
+\begin{verbatim}
+%ParticleToVerb
+
+m1: PART{PARTrec1}
+m2: VERB{VERBrec1} 
+        [ head/ SUBVERB{SUBVERBrec1} 
+              [ head/ BVERB{BVERBrec1}] 
+        ]
+m:  VERB{VERBrec2} 
+        [ head/ SUBVERB{SUBVERBrec2} 
+              [ partrel/ PART{PARTrec1},
+                head/ SUBVERB{SUBVERBrec1} [head/ BVERB{BVERBrec1}] 
+              ]
+        ]
+
+comp:
+      C1: (PARTrec1.key = VERBrec1.particle)
+          and (VERBrec1.status = bareV)
+          and (VERBrec1.eORenForm = NoForm)
+          
+      A1: SUBVERBrec2     := SUBVERBrec1;
+          SUBVERBrec2.lastaffix := partaffix;
+          VERBrec2        := VERBrec1;
+          VERBrec2.status := partV
+
+decomp: 
+      C1: (PARTrec1.key = VERBrec2.particle)
+          and (VERBrec2.status = partV)
+          and (SUBVERBrec2.lastaffix = partaffix)
+          and (VERBrec2.eORenForm = NoForm)
+      A1: VERBrec1 := VERBrec2;
+          VERBrec1.status := bareV
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for verbs without derivation.}
+\begin{verbatim}
+%VerbBtoSub
+
+m1:   BVERB{BVERBrec1}
+m:    SUBVERB{SUBVERBrec1} [head/ BVERB{BVERBrec1}]
+
+comp:        
+         C:  true
+         A:  SUBVERBrec1 := COPYT_bverbtosubverb(BVERBrec1)
+
+decomp:      
+         C: true
+         A:  @
+&
+\end{verbatim}
+\newpage
+\subsection{Inflection: weak and strong verbs}
+
+Note: for irregular verbs see next {\em section}.
+
+\subsubsection{Rule for present tense "0"th and 1st person singular.}
+
+\begin{verbatim}
+%VerbOttEnk1
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:        
+         C: [3,4,5,6,7,8,9,10,11,12,13,15,16] * SUBVERBrec1.conjclasses <> []
+         A: VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+            VERBrec1.tense     := presenttense;
+            VERBrec1.modus     := indicative;
+            VERBrec1.number    := singular;
+            VERBrec1.persons   := [1,0];
+            VERBrec1.eORenForm := NoForm
+
+decomp:      
+         C: (VERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> [])
+            and (VERBrec1.tense     = presenttense)                  
+            and (VERBrec1.modus     = indicative)                    
+            and (VERBrec1.number    = singular)                      
+            and ([1,0] * VERBrec1.persons <> [])
+            and (VERBrec1.eORenForm = NoForm) 
+         A: @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for extra form 0th and 1st person sg. for class 14.}
+This rule makes for instance ``snij'' out of the stem ``snijd'', and ``hou'' 
+out of ``houd''.
+
+It works for the following verbs: *glij, *rij, *snij, verblij, *hou 
+(and maybe for: bevrij, kastij ?)
+
+\begin{verbatim}
+%VerbOttEnk1extra
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:        
+         C: (SUBVERBrec1.conjclasses * [14] <> [])
+            and (SFCATrec1.key = SFKdelD)
+         A: VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+            VERBrec1.tense     := presenttense;
+            VERBrec1.modus     := indicative;
+            VERBrec1.number    := singular;
+            VERBrec1.persons   := [0,1];
+            VERBrec1.eORenForm := NoForm
+
+decomp:      
+          C: (VERBrec1.conjclasses * [14] <> []) 
+            and (VERBrec1.tense     = presenttense)
+            and (VERBrec1.modus     = indicative)
+            and (VERBrec1.number    = singular)
+            and ([0,1] * VERBrec1.persons <> [])
+            and (VERBrec1.eORenForm = NoForm)
+         A: SFCATrec1.key  := SFKdelD
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for present tense 2nd, 3rd, 4th and 5th person singular.}
+\begin{verbatim}
+%VerbOttEnk2
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:        
+         C: (SUBVERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> [])
+            and (SFCATrec1.key = SFKt)
+         A: VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+            VERBrec1.tense     := presenttense;
+            VERBrec1.modus     := indicative;
+            VERBrec1.number    := singular;
+            VERBrec1.persons   := [2,3,4,5];
+            VERBrec1.eORenForm := NoForm
+
+decomp:      
+          C: (VERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> []) 
+            and (VERBrec1.tense     = presenttense)
+            and (VERBrec1.modus     = indicative)
+            and (VERBrec1.number    = singular)
+            and ([2,3,4,5] * VERBrec1.persons <> [])
+            and (VERBrec1.eORenForm = NoForm)
+         A: SFCATrec1.key  := SFKt
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for present tense plural.}
+\begin{verbatim}
+%VerbOttMv
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C1: (SUBVERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> [])
+           C2: (SFCATrec1.key = SFKen)
+           A2: VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+               VERBrec1.persons  := [1,2,3]
+           C2: (SFCATrec1.key = SFKt)
+           A2: VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+               VERBrec1.persons  := [4,5]
+         A1: VERBrec1.tense     := presenttense;
+             VERBrec1.modus     := indicative;
+             VERBrec1.number    := plural;
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C1: (VERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> [])
+             and (VERBrec1.tense     = presenttense) 
+             and (VERBrec1.modus     = indicative)
+             and (VERBrec1.number    = plural)
+             and (VERBrec1.eORenForm = NoForm)
+           C2: [1,2,3] * VERBrec1.persons <> []
+           A2:  SFCATrec1.key   := SFKen
+           C2: [4,5] * VERBrec1.persons <> []
+           A2:  SFCATrec1.key   := SFKt
+         A1: @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for past tense 1st, 2nd, 3rd and 4th person singular.}
+
+Note: this rule also treats the 5th
+         person singular for the classes 3, 4, 15, 16.
+
+\begin{verbatim}
+%VerbOvtEnk
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C1:  true
+           C2:  (SUBVERBrec1.conjclasses * [3,4] <> []) 
+                and (SFCATrec1.key = SFKdete)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [1,2,3,4,5]
+           C2:  (SUBVERBrec1.conjclasses * [5,6] <> []) 
+                and (SFCATrec1.key = SFKovt1)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [1,2,3,4]
+           C2:  (SUBVERBrec1.conjclasses * [7,8] <> [])
+                and (SFCATrec1.key = SFKovtvd1)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [1,2,3,4]
+           C2:  (SUBVERBrec1.conjclasses * [9,10] <> [])
+                and (SFCATrec1.key = SFKovtvd2)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [1,2,3,4]
+           C2:  (SUBVERBrec1.conjclasses * [11,12] <> []) 
+                and (SFCATrec1.key = SFKovt2)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [1,2,3,4]
+           C2:  (13 in SUBVERBrec1.conjclasses) 
+                and (SFCATrec1.key = SFKovt3)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [1,2,3,4]
+           C2:  (SUBVERBrec1.conjclasses * [15,16] <> []) 
+                and (SFCATrec1.key = SFKdete)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [1,2,3,4,5]
+         A1: VERBrec1.tense     := pasttense;
+             VERBrec1.modus     := indicative;
+             VERBrec1.number    := singular;
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C1: (VERBrec1.tense         = pasttense) 
+             and (VERBrec1.modus     = indicative) 
+             and (VERBrec1.number    = singular)
+             and (VERBrec1.eORenForm = NoForm)
+           C2: ([1,2,3,4,5] * VERBrec1.persons <> [])
+                and (VERBrec1.conjclasses * [3,4] <> [])
+           A2:  SFCATrec1.key := SFKdete
+           C2: ([1,2,3,4] * VERBrec1.persons <> [])
+                and (VERBrec1.conjclasses * [5,6] <> [])
+           A2:  SFCATrec1.key := SFKovt1
+           C2: ([1,2,3,4] * VERBrec1.persons <> [])
+                and (VERBrec1.conjclasses * [7,8] <> [])
+           A2:  SFCATrec1.key := SFKovtvd1
+           C2: ([1,2,3,4] * VERBrec1.persons <> [])
+                and (VERBrec1.conjclasses * [9,10] <> [])
+           A2:  SFCATrec1.key := SFKovtvd2
+           C2: ([1,2,3,4] * VERBrec1.persons <> [])
+                and (VERBrec1.conjclasses * [11,12] <> [])
+           A2:  SFCATrec1.key := SFKovt2
+           C2: ([1,2,3,4] * VERBrec1.persons <> [])
+                and (13 in VERBrec1.conjclasses)
+           A2:  SFCATrec1.key := SFKovt3
+           C2: ([1,2,3,4,5] * VERBrec1.persons <> [])
+                and (VERBrec1.conjclasses * [15,16] <> [])
+           A2:  SFCATrec1.key := SFKdete
+         A1: @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Extra rule for past tense singular for the 5th person sg.}
+
+Note: this rule treats the past tense 5th person singular for the 
+classes 5, 6, 7, 8, 9, 10, 11, 12, 13.
+
+\begin{verbatim}
+%VerbOvtEnkPers5extra
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m3:   SFCAT{SFCATrec2}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C1: SFCATrec2.key = SFKt
+           C2:  (SUBVERBrec1.conjclasses * [5,6] <> [])
+                and (SFCATrec1.key = SFKovt1)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+           C2:  (SUBVERBrec1.conjclasses * [7,8] <> [])
+                and (SFCATrec1.key = SFKovtvd1)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+           C2:  (SUBVERBrec1.conjclasses * [9,10] <> [])
+                and (SFCATrec1.key = SFKovtvd2)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+           C2:  (SUBVERBrec1.conjclasses * [11,12] <> []) 
+                and (SFCATrec1.key = SFKovt2)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+           C2:  (13 in SUBVERBrec1.conjclasses) 
+                and (SFCATrec1.key = SFKovt3)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+         A1: VERBrec1.tense     := pasttense;
+             VERBrec1.modus     := indicative;
+             VERBrec1.number    := singular;
+             VERBrec1.persons   := [5];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C1: (VERBrec1.tense        = pasttense) 
+             and (VERBrec1.modus    = indicative)
+             and (VERBrec1.number   = singular)
+             and (5 in VERBrec1.persons)
+             and (VERBrec1.eORenForm = NoForm)
+           C2:  VERBrec1.conjclasses * [5,6]   <> []
+           A2:  SFCATrec1.key := SFKovt1
+           C2:  VERBrec1.conjclasses * [7,8]   <> []
+           A2:  SFCATrec1.key := SFKovtvd1
+           C2:  VERBrec1.conjclasses * [9,10]  <> []
+           A2:  SFCATrec1.key := SFKovtvd2
+           C2:  VERBrec1.conjclasses * [11,12] <> []
+           A2:  SFCATrec1.key := SFKovt2
+           C2:  13 in VERBrec1.conjclasses
+           A2:  SFCATrec1.key := SFKovt3
+         A1: SFCATrec2.key := SFKt
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for past tense plural.}
+
+Note: Rule for past tense 1st, 2nd and 3rd person, as well as the 5th person 
+      for the classes  5, 6, 7, 8, 9, 10, 11, 12, 13. 
+
+\begin{verbatim}
+%VerbOvtMv 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m3:   SFCAT{SFCATrec2}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C1: true
+           C2:  SFCATrec2.key = SFKen
+             C3:  (SUBVERBrec1.conjclasses * [3,4] <> []) 
+                  and (SFCATrec1.key = SFKdete)
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+             C3:  (SUBVERBrec1.conjclasses * [5,6] <> []) 
+                  and (SFCATrec1.key = SFKovt1)
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+             C3:  (SUBVERBrec1.conjclasses * [7,8] <> [])
+                  and (SFCATrec1.key = SFKovtvd1)
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+             C3:  (SUBVERBrec1.conjclasses * [9,10] <> []) 
+                  and (SFCATrec1.key = SFKovtvd2)
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+             C3:  (SUBVERBrec1.conjclasses * [11,12] <> [])
+                  and (SFCATrec1.key = SFKovt2)
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+             C3:  (13 in SUBVERBrec1.conjclasses) 
+                  and (SFCATrec1.key = SFKovt3)
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+             C3:  (SUBVERBrec1.conjclasses * [15,16] <> []) 
+                  and (SFCATrec1.key = SFKdete)
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+           A2:  VERBrec1.persons  := [1,2,3]
+           C2:  SFCATrec2.key = SFKt
+             C3:  (SUBVERBrec1.conjclasses * [5,6] <> []) 
+                  and (SFCATrec1.key = SFKovt1)
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+             C3:  (SUBVERBrec1.conjclasses * [7,8] <> []) 
+                  and (SFCATrec1.key = SFKovtvd1)
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+             C3:  (SUBVERBrec1.conjclasses * [9,10] <> [])
+                  and (SFCATrec1.key = SFKovtvd2)
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+             C3:  (SUBVERBrec1.conjclasses * [11,12] <> []) 
+                  and (SFCATrec1.key = SFKovt2)
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+             C3:  (13 in SUBVERBrec1.conjclasses) 
+                  and (SFCATrec1.key = SFKovt3)
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1)
+           A2:  VERBrec1.persons  := [5]
+         A1: VERBrec1.tense     := pasttense;
+             VERBrec1.modus     := indicative;
+             VERBrec1.number    := plural;
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C1: (VERBrec1.tense         = pasttense) 
+             and (VERBrec1.modus     = indicative) 
+             and (VERBrec1.number    = plural)     
+             and (VERBrec1.eORenForm = NoForm)
+           C2: [1,2,3] * VERBrec1.persons <> []
+             C3:  VERBrec1.conjclasses * [3,4] <> []
+             A3:  SFCATrec1.key := SFKdete
+             C3:  VERBrec1.conjclasses * [5,6] <> []
+             A3:  SFCATrec1.key := SFKovt1
+             C3:  VERBrec1.conjclasses * [7,8] <> []
+             A3:  SFCATrec1.key := SFKovtvd1
+             C3:  VERBrec1.conjclasses * [9,10] <> []
+             A3:  SFCATrec1.key := SFKovtvd2
+             C3:  VERBrec1.conjclasses * [11,12] <> []
+             A3:  SFCATrec1.key := SFKovt2
+             C3:  13 in VERBrec1.conjclasses
+             A3:  SFCATrec1.key := SFKovt3
+             C3:  VERBrec1.conjclasses * [15,16] <> []
+             A3:  SFCATrec1.key := SFKdete
+           A2: SFCATrec2.key := SFKen
+           C2:  5 in VERBrec1.persons 
+             C3:  VERBrec1.conjclasses * [5,6] <> []
+             A3:  SFCATrec1.key := SFKovt1
+             C3:  VERBrec1.conjclasses * [7,8] <> []
+             A3:  SFCATrec1.key := SFKovtvd1
+             C3:  VERBrec1.conjclasses * [9,10] <> []
+             A3:  SFCATrec1.key := SFKovtvd2
+             C3:  VERBrec1.conjclasses * [11,12] <> []
+             A3:  SFCATrec1.key := SFKovt2
+             C3:  13 in VERBrec1.conjclasses
+             A3:  SFCATrec1.key := SFKovt3
+           A2:  SFCATrec2.key := SFKt
+         A1:  @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Extra rule for past tense plural.}
+
+Note: This rule treats the past form for 4th person plural, as well as the
+5th person for the classes  3, 4, 15, 16. 
+
+\begin{verbatim}
+%VerbOvtMvPers4en5extra
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C1:  true
+           C2:  (SUBVERBrec1.conjclasses * [3,4] <> [])
+                and (SFCATrec1.key = SFKdete)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [4,5]
+           C2:  (SUBVERBrec1.conjclasses * [5,6] <> [])
+                and (SFCATrec1.key = SFKovt1)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [4]
+           C2:  (SUBVERBrec1.conjclasses * [7,8] <> [])
+                and (SFCATrec1.key = SFKovtvd1)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [4]
+           C2:  (SUBVERBrec1.conjclasses * [9,10] <> [])
+                and (SFCATrec1.key = SFKovtvd2)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [4]
+           C2:  (SUBVERBrec1.conjclasses * [11,12] <> [])
+                and (SFCATrec1.key = SFKovt2)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [4]
+           C2:  (13 in SUBVERBrec1.conjclasses) 
+                and (SFCATrec1.key = SFKovt3)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [4]
+           C2:  (SUBVERBrec1.conjclasses * [15,16] <> []) 
+                and (SFCATrec1.key = SFKdete)
+           A2:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.persons  := [4,5]
+         A1: VERBrec1.tense     := pasttense;
+             VERBrec1.modus     := indicative;
+             VERBrec1.number    := plural;
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C1: (VERBrec1.tense         = pasttense) 
+             and (VERBrec1.modus     = indicative) 
+             and (VERBrec1.number    = plural) 
+             and (VERBrec1.eORenForm = NoForm)
+           C2: ([4,5] * VERBrec1.persons <> [])
+                and (VERBrec1.conjclasses * [3,4] <> [])
+           A2:  SFCATrec1.key := SFKdete
+           C2: (4 in VERBrec1.persons)
+                and (VERBrec1.conjclasses * [5,6] <> [])
+           A2:  SFCATrec1.key := SFKovt1
+           C2: (4 in VERBrec1.persons)
+                and (VERBrec1.conjclasses * [7,8] <> [])
+           A2:  SFCATrec1.key := SFKovtvd1
+           C2: (4 in VERBrec1.persons)
+                and (VERBrec1.conjclasses * [9,10] <> [])
+           A2:  SFCATrec1.key := SFKovtvd2
+           C2: (4 in VERBrec1.persons)
+                and (VERBrec1.conjclasses * [11,12] <> [])
+           A2:  SFCATrec1.key := SFKovt2
+           C2: (4 in VERBrec1.persons)
+                and (13 in VERBrec1.conjclasses)
+           A2:  SFCATrec1.key := SFKovt3
+           C2: ([4,5] * VERBrec1.persons <> [])
+                and (VERBrec1.conjclasses * [15,16] <> [])
+           A2:  SFCATrec1.key := SFKdete
+         A1:  @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for past participle (with "ge") for the classes  3, 5, 9.}
+
+Note: In this rule, the past participle is formed by one prefix and one
+suffix; the suffix handles ablaut or inflectional ending.
+
+\begin{verbatim}
+%VerbVd1 
+
+m1:   PFCAT{PFCATrec1}
+m2:   SUBVERB{SUBVERBrec1}[mu1]
+m3:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C1: PFCATrec1.key = PFKge 
+           C2: (3 in SUBVERBrec1.conjclasses) 
+               and (SFCATrec1.key = SFKdt) 
+           A2: VERBrec1  := COPYT_subverbtoverb(SUBVERBrec1)
+           C2: (5 in SUBVERBrec1.conjclasses)
+               and (SFCATrec1.key = SFKen) 
+           A2: VERBrec1  := COPYT_subverbtoverb(SUBVERBrec1)
+           C2: (9 in SUBVERBrec1.conjclasses)
+               and (SFCATrec1.key = SFKovtvd2) 
+           A2: VERBrec1  := COPYT_subverbtoverb(SUBVERBrec1)
+         A1: VERBrec1.tense     := omegatense;
+             VERBrec1.modus     := pastpart;
+             VERBrec1.number    := omeganumber;
+             VERBrec1.persons   := [];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C1: (VERBrec1.tense         = omegatense) 
+             and (VERBrec1.modus     = pastpart)
+             and (VERBrec1.eORenForm = NoForm) 
+             and (VERBrec1.persons   = [])
+             and (VERBrec1.number    = omeganumber)
+           C2:  3 in VERBrec1.conjclasses
+           A2:  SFCATrec1.key := SFKdt
+           C2:  5 in VERBrec1.conjclasses
+           A2:  SFCATrec1.key := SFKen
+           C2:  9 in VERBrec1.conjclasses 
+           A2:  SFCATrec1.key := SFKovtvd2
+         A1: PFCATrec1.key := PFKge
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for past participle (with "ge") for the classes 7, 11, 15.}
+
+Note: In this rule, the past participle is formed by one prefix and two
+suffixes; one suffixe handles ablaut, the other "-en"-ending.
+
+\begin{verbatim}
+%VerbVd2 
+
+m1:   PFCAT{PFCATrec1}
+m2:   SUBVERB{SUBVERBrec1}[mu1]
+m3:   SFCAT{SFCATrec1}
+m4:   SFCAT{SFCATrec2}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C1: (PFCATrec1.key = PFKge) 
+             and (SFCATrec2.key = SFKen)
+           C2: (7 in SUBVERBrec1.conjclasses)
+               and (SFCATrec1.key = SFKovtvd1) 
+           A2: VERBrec1  := COPYT_subverbtoverb(SUBVERBrec1)
+           C2: (11 in SUBVERBrec1.conjclasses)
+               and (SFCATrec1.key = SFKvd1) 
+           A2: VERBrec1  := COPYT_subverbtoverb(SUBVERBrec1)
+           C2: (15 in SUBVERBrec1.conjclasses) 
+               and (SFCATrec1.key = SFKvd2) 
+           A2: VERBrec1  := COPYT_subverbtoverb(SUBVERBrec1)
+         A1: VERBrec1.tense     := omegatense;
+             VERBrec1.modus     := pastpart;
+             VERBrec1.number    := omeganumber;
+             VERBrec1.persons   := [];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C1: (VERBrec1.tense         = omegatense) 
+             and (VERBrec1.modus     = pastpart)
+             and (VERBrec1.eORenForm = NoForm) 
+             and (VERBrec1.persons   = [])
+             and (VERBrec1.number    = omeganumber)
+           C2: 7 in VERBrec1.conjclasses
+           A2: SFCATrec1.key := SFKovtvd1 
+           C2: 11 in VERBrec1.conjclasses 
+           A2: SFCATrec1.key := SFKvd1
+           C2: 15 in VERBrec1.conjclasses 
+           A2: SFCATrec1.key := SFKvd2 
+         A1: PFCATrec1.key   := PFKge;
+             SFCATrec2.key   := SFKen
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for past participle (without "ge") for the classes  4, 6, 10.}
+
+Note: In this rule, the past participle is formed by one suffix only; the 
+suffix handles ablaut or inflectional ending.
+
+\begin{verbatim}
+%VerbVd3 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C1: true
+           C2: (4 in SUBVERBrec1.conjclasses)
+               and (SFCATrec1.key = SFKdt) 
+           A2: VERBrec1  := COPYT_subverbtoverb(SUBVERBrec1)
+           C2: (6 in SUBVERBrec1.conjclasses)
+               and (SFCATrec1.key = SFKen) 
+           A2: VERBrec1  := COPYT_subverbtoverb(SUBVERBrec1)
+           C2: (10 in SUBVERBrec1.conjclasses)
+               and (SFCATrec1.key = SFKovtvd2) 
+           A2: VERBrec1  := COPYT_subverbtoverb(SUBVERBrec1)
+         A1: VERBrec1.tense     := omegatense;
+             VERBrec1.modus     := pastpart;
+             VERBrec1.number    := omeganumber;
+             VERBrec1.persons   := [];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C1: (VERBrec1.tense         = omegatense) 
+             and (VERBrec1.modus     = pastpart)
+             and (VERBrec1.number    = omeganumber)
+             and (VERBrec1.persons   = []) 
+             and (VERBrec1.eORenForm = NoForm) 
+           C2:  4 in VERBrec1.conjclasses 
+           A2:  SFCATrec1.key := SFKdt
+           C2:  6 in VERBrec1.conjclasses
+           A2:  SFCATrec1.key := SFKen
+           C2:  10 in VERBrec1.conjclasses
+           A2:  SFCATrec1.key := SFKovtvd2
+         A1: @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for past participle (without "ge") for the classes  8, 12, 16.}
+
+Note: In this rule, the past participle is formed by two suffixes; one suffix
+handles ablaut, the other the "-en"-ending.
+
+\begin{verbatim}
+%VerbVd4 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m3:   SFCAT{SFCATrec2}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C1: SFCATrec2.key = SFKen
+           C2: (8 in SUBVERBrec1.conjclasses)
+               and (SFCATrec1.key = SFKovtvd1) 
+           A2: VERBrec1  := COPYT_subverbtoverb(SUBVERBrec1)
+           C2: (12 in SUBVERBrec1.conjclasses) 
+               and (SFCATrec1.key = SFKvd1) 
+           A2: VERBrec1  := COPYT_subverbtoverb(SUBVERBrec1)
+           C2: (16 in SUBVERBrec1.conjclasses) 
+               and (SFCATrec1.key = SFKvd2) 
+           A2: VERBrec1  := COPYT_subverbtoverb(SUBVERBrec1)
+         A1: VERBrec1.tense     := omegatense;
+             VERBrec1.modus     := pastpart;
+             VERBrec1.number    := omeganumber;
+             VERBrec1.persons   := [];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C1: (VERBrec1.tense         = omegatense) 
+             and (VERBrec1.modus     = pastpart)
+             and (VERBrec1.number    = omeganumber)
+             and (VERBrec1.persons   = []) 
+             and (VERBrec1.eORenForm = NoForm)
+           C2: 8 in VERBrec1.conjclasses 
+           A2: SFCATrec1.key := SFKovtvd1 
+           C2: 12 in VERBrec1.conjclasses 
+           A2: SFCATrec1.key := SFKvd1
+           C2: 16 in VERBrec1.conjclasses 
+           A2: SFCATrec1.key := SFKvd2 
+         A1: SFCATrec2.key := SFKen
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for the infinitive.}
+
+Note: verbs of class 0 do have an infinitive-form.
+
+\begin{verbatim}
+%VerbInf 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C:  (SUBVERBrec1.conjclasses * [0,3,4,5,6,7,8,9,10,11,12,13,15,16] <> 
+             []) and (SFCATrec1.key = SFKen)
+         A:  VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+             VERBrec1.tense     := omegatense;
+             VERBrec1.modus     := infinitive;
+             VERBrec1.number    := omeganumber;
+             VERBrec1.persons   := [];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C:  (VERBrec1.conjclasses * [0,3,4,5,6,7,8,9,10,11,12,13,15,16] <> [])
+             and (VERBrec1.tense     = omegatense) 
+             and (VERBrec1.modus     = infinitive)
+             and (VERBrec1.number    = omeganumber)
+             and (VERBrec1.persons   = []) 
+             and (VERBrec1.eORenForm = NoForm) 
+         A:  SFCATrec1.key     := SFKen
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for present participle.}
+
+Note: verbs of class 0 do have a present participle.
+
+\begin{verbatim}
+%VerbTd 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m3:   SFCAT{SFCATrec2}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C:  (SUBVERBrec1.conjclasses * [0,3,4,5,6,7,8,9,10,11,12,13,15,16] <> 
+             []) 
+             and (SFCATrec1.key = SFKen) 
+             and (SFCATrec2.key = SFKdt)
+         A:  VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+             VERBrec1.tense     := omegatense;
+             VERBrec1.modus     := prespart;
+             VERBrec1.number    := omeganumber;
+             VERBrec1.persons   := [];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C:  (VERBrec1.conjclasses * [0,3,4,5,6,7,8,9,10,11,12,13,15,16] <> [])
+             and (VERBrec1.tense     = omegatense) 
+             and (VERBrec1.modus     = prespart)
+             and (VERBrec1.number    = omeganumber)
+             and (VERBrec1.persons   = []) 
+             and (VERBrec1.eORenForm = NoForm)
+         A:  SFCATrec1.key     := SFKen;
+             SFCATrec2.key     := SFKdt
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for imperative singular.}
+\begin{verbatim}
+%VerbGbEnk 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C:  SUBVERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> []
+         A:  VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+             VERBrec1.tense     := omegatense;
+             VERBrec1.modus     := imperative;
+             VERBrec1.number    := singular;
+             VERBrec1.persons   := [];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C:  (VERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> [])
+             and (VERBrec1.tense     = omegatense) 
+             and (VERBrec1.modus     = imperative)
+             and (VERBrec1.number    = singular) 
+             and (VERBrec1.persons   = [])
+             and (VERBrec1.eORenForm = NoForm)
+         A:  @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for extra form imperative singular for class 14.}
+This rule makes for instance ``snij'' out of the stem ``snijd'', and ``hou'' 
+out of ``houd''.
+
+It works for the following verbs: *glij, *rij, *snij, verblij, *hou 
+(and maybe for: bevrij, kastij ?)
+
+\begin{verbatim}
+%VerbGbEnkExtra
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:        
+         C: (SUBVERBrec1.conjclasses * [14] <> [])
+            and (SFCATrec1.key = SFKdelD)
+         A: VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+            VERBrec1.tense     := omegatense;
+            VERBrec1.modus     := imperative;
+            VERBrec1.number    := singular;
+            VERBrec1.persons   := [];
+            VERBrec1.eORenForm := NoForm
+
+decomp:      
+         C: (VERBrec1.conjclasses * [14] <> []) 
+            and (VERBrec1.tense     = omegatense) 
+            and (VERBrec1.modus     = imperative)
+            and (VERBrec1.number    = singular) 
+            and (VERBrec1.persons   = [])
+            and (VERBrec1.eORenForm = NoForm)
+         A: SFCATrec1.key  := SFKdelD
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for imperative plural.}
+\begin{verbatim}
+%VerbGbMv 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C: (SUBVERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> [])
+            and (SFCATrec1.key = SFKt)
+         A: VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+            VERBrec1.tense     := omegatense;
+            VERBrec1.modus     := imperative;
+            VERBrec1.number    := plural;
+            VERBrec1.persons   := [];
+            VERBrec1.eORenForm := NoForm
+
+decomp:
+         C: (VERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> []) 
+            and (VERBrec1.tense     = omegatense) 
+            and (VERBrec1.modus     = imperative)
+            and (VERBrec1.number    = plural) 
+            and (VERBrec1.persons   = [])
+            and (VERBrec1.eORenForm = NoForm) 
+         A: SFCATrec1.key     := SFKt
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for conjunctive.}
+
+Note: all weak and strong verbs have present conjunctive forms only.
+
+\begin{verbatim}
+%VerbConjunctiefOtt
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C: (SUBVERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> [])
+            and (SFCATrec1.key = SFKe)
+         A: VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+            VERBrec1.tense     := presenttense;
+            VERBrec1.modus     := subjunctive;
+            VERBrec1.number    := omeganumber;
+            VERBrec1.persons   := [];
+            VERBrec1.eORenForm := NoForm
+
+decomp:
+         C: (VERBrec1.conjclasses * [3,4,5,6,7,8,9,10,11,12,13,15,16] <> [])
+            and (VERBrec1.tense     = presenttense) 
+            and (VERBrec1.modus     = subjunctive)
+            and (VERBrec1.number    = omeganumber)
+            and (VERBrec1.persons   = [])
+            and (VERBrec1.eORenForm = NoForm)
+         A: SFCATrec1.key   := SFKe
+&
+\end{verbatim}
+\newpage
+\subsection{Irregular verbs.}
+\subsubsection{Extra rule for the "0"th and 1st person singular present tense.}
+\begin{verbatim}
+%VerbZorOttExtra 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C:  SUBVERBrec1.conjclasses * [1,2] <> []
+         A:  VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+             VERBrec1.tense     := presenttense;
+             VERBrec1.modus     := indicative;
+             VERBrec1.number    := singular;
+             VERBrec1.persons   := [1,0];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C:  (VERBrec1.conjclasses * [1,2] <> [])
+             and (VERBrec1.tense     = presenttense)
+             and (VERBrec1.modus     = indicative)
+             and (VERBrec1.number    = singular)
+             and ([0,1] * VERBrec1.persons <> [])
+             and (VERBrec1.eORenForm = NoForm)
+         A:  @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for present tense.}
+
+SFKIrrottenk0 is needed for the (extra) forms "zul je" and "kun je".
+
+\begin{verbatim}
+%VerbZorOtt 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C1:  SUBVERBrec1.conjclasses * [1,2] <> []
+           C2:  true
+             C3:  SFCATrec1.key = SFKIrrottenk0
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [0]
+             C3:  SFCATrec1.key = SFKIrrottenk2
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [2]
+             C3:  SFCATrec1.key = SFKIrrottenk3
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [3]
+             C3:  SFCATrec1.key = SFKIrrott4              
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [4]
+             C3:  SFCATrec1.key = SFKIrrott5
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [5]
+           A2:  VERBrec1.number := singular
+           C2:  true
+             C3:  SFCATrec1.key = SFKIrrott4
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [4]
+             C3:  SFCATrec1.key = SFKIrrott5
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [5]
+             C3:  SFCATrec1.key = SFKIrrottmv
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [1,2,3]
+           A2:  VERBrec1.number   := plural
+         A1: VERBrec1.tense     := presenttense;
+             VERBrec1.modus     := indicative;
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C1:  (VERBrec1.conjclasses * [1,2] <> []) 
+              and (VERBrec1.tense     = presenttense)
+              and (VERBrec1.modus     = indicative) 
+              and (VERBrec1.eORenForm = NoForm)
+           C2:  VERBrec1.number = singular
+             C3:  0 in VERBrec1.persons 
+             A3:  SFCATrec1.key := SFKIrrottenk0
+             C3:  2 in VERBrec1.persons 
+             A3:  SFCATrec1.key := SFKIrrottenk2
+             C3:  3 in VERBrec1.persons 
+             A3:  SFCATrec1.key := SFKIrrottenk3
+             C3:  4 in VERBrec1.persons 
+             A3:  SFCATrec1.key := SFKIrrott4
+             C3:  5 in VERBrec1.persons 
+             A3:  SFCATrec1.key := SFKIrrott5
+           A2:  @
+           C2:  VERBrec1.number = plural
+             C3: [1,2,3] * VERBrec1.persons <> []
+             A3:  SFCATrec1.key := SFKIrrottmv
+             C3:  4 in VERBrec1.persons 
+             A3:  SFCATrec1.key := SFKIrrott4
+             C3:  5 in VERBrec1.persons 
+             A3:  SFCATrec1.key := SFKIrrott5
+           A2:  @
+         A1:  @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for past tense.}
+\begin{verbatim}
+%VerbZorOvt
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C1:  SUBVERBrec1.conjclasses * [1,2] <> []
+           C2:  true
+             C3:  SFCATrec1.key = SFKIrrovtenk
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [1,2,3,4]
+             C3:  SFCATrec1.key = SFKIrrovt5
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [5]
+           A2:  VERBrec1.number   := singular
+           C2:  true
+             C3:  SFCATrec1.key = SFKIrrovtmv
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [1,2,3]
+             C3:  SFCATrec1.key = SFKIrrovtenk
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [4]
+             C3:  SFCATrec1.key = SFKIrrovt5
+             A3:  VERBrec1          := COPYT_subverbtoverb(SUBVERBrec1);
+                  VERBrec1.persons  := [5]
+           A2:  VERBrec1.number   := plural
+         A1: VERBrec1.tense     := pasttense;
+             VERBrec1.modus     := indicative;
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C1:  (VERBrec1.conjclasses * [1,2] <> [])
+              and (VERBrec1.tense     = pasttense) 
+              and (VERBrec1.modus     = indicative)
+              and (VERBrec1.eORenForm = NoForm)
+           C2:  VERBrec1.number = singular
+             C3:  [1,2,3,4] * VERBrec1.persons <> []
+             A3:  SFCATrec1.key  := SFKIrrovtenk
+             C3:  5 in VERBrec1.persons 
+             A3:  SFCATrec1.key  := SFKIrrovt5
+           A2:  @
+           C2:  VERBrec1.number = plural
+             C3:  [1,2,3] * VERBrec1.persons <> []
+             A3:  SFCATrec1.key  := SFKIrrovtmv
+             C3:  4 in VERBrec1.persons 
+             A3:  SFCATrec1.key  := SFKIrrovtenk
+             C3:  5 in VERBrec1.persons 
+             A3:  SFCATrec1.key  := SFKIrrovt5
+           A2:  @
+         A1:  @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for past participles with "ge"-prefix.}
+\begin{verbatim}
+%VerbZorVd1 
+
+m1:   PFCAT{PFCATrec1}
+m2:   SUBVERB{SUBVERBrec1}[mu1]
+m3:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C:  (SUBVERBrec1.conjclasses * [1] <> [])
+             and (PFCATrec1.key = PFKge) 
+             and (SFCATrec1.key = SFKIrrvd)
+         A:  VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+             VERBrec1.tense     := omegatense;
+             VERBrec1.modus     := pastpart;
+             VERBrec1.number    := omeganumber;
+             VERBrec1.persons   := [];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C:  (VERBrec1.conjclasses * [1] <> [])
+             and (VERBrec1.tense     = omegatense) 
+             and (VERBrec1.modus     = pastpart)
+             and (VERBrec1.number    = omeganumber)
+             and (VERBrec1.persons   = [])
+             and (VERBrec1.eORenForm = NoForm)
+         A:  PFCATrec1.key     := PFKge;
+             SFCATrec1.key     := SFKIrrvd
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for past participles without "ge"-prefix.}
+\begin{verbatim}
+%VerbZorVd2 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C:  (SUBVERBrec1.conjclasses * [2] <> [])
+             and (SFCATrec1.key = SFKIrrvd)
+         A:  VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+             VERBrec1.tense     := omegatense;
+             VERBrec1.modus     := pastpart;
+             VERBrec1.number    := omeganumber;
+             VERBrec1.persons   := [];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C:  (VERBrec1.conjclasses * [2] <> [])
+             and (VERBrec1.tense     = omegatense) 
+             and (VERBrec1.modus     = pastpart)
+             and (VERBrec1.number    = omeganumber)
+             and (VERBrec1.persons   = [])
+             and (VERBrec1.eORenForm = NoForm)
+         A:  SFCATrec1.key     := SFKIrrvd
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for infinitive.}
+\begin{verbatim}
+%VerbZorInf 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C:  (SUBVERBrec1.conjclasses * [1,2] <> [])
+             and (SFCATrec1.key = SFKIrrottmv)
+         A:  VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+             VERBrec1.tense     := omegatense;
+             VERBrec1.modus     := infinitive;
+             VERBrec1.number    := omeganumber;
+             VERBrec1.persons   := [];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C:  (VERBrec1.conjclasses * [1,2] <> [])
+             and (VERBrec1.tense     = omegatense) 
+             and (VERBrec1.modus     = infinitive)
+             and (VERBrec1.number    = omeganumber)
+             and (VERBrec1.persons   = [])
+             and (VERBrec1.eORenForm = NoForm)
+         A:  SFCATrec1.key     := SFKIrrottmv
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for present participle.}
+\begin{verbatim}
+%VerbZorTd
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m3:   SFCAT{SFCATrec2}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C:   (SUBVERBrec1.conjclasses * [1,2] <> []) 
+              and (SFCATrec1.key = SFKIrrottmv)
+              and (SFCATrec2.key = SFKdt)
+         A:   VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+              VERBrec1.tense     := omegatense;
+              VERBrec1.modus     := prespart;
+              VERBrec1.number    := omeganumber;
+              VERBrec1.persons   := [];
+              VERBrec1.eORenForm := NoForm
+
+decomp:
+         C:   (VERBrec1.conjclasses * [1,2] <> [])
+              and (VERBrec1.tense     = omegatense) 
+              and (VERBrec1.modus     = prespart)
+              and (VERBrec1.number    = omeganumber)
+              and (VERBrec1.persons   = [])
+              and (VERBrec1.eORenForm = NoForm)
+         A:   SFCATrec1.key := SFKIrrottmv;
+              SFCATrec2.key := SFKdt
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for imperative singular.}
+\begin{verbatim}
+%VerbZorGbEnk 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C:  (SUBVERBrec1.conjclasses * [1,2] <> [])
+             and (SFCATrec1.key = SFKIrrgb)
+         A:  VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+             VERBrec1.tense     := omegatense;
+             VERBrec1.modus     := imperative;
+             VERBrec1.number    := singular;
+             VERBrec1.persons   := [];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C:  (VERBrec1.conjclasses * [1,2] <> []) 
+             and (VERBrec1.tense     = omegatense) 
+             and (VERBrec1.modus     = imperative) 
+             and (VERBrec1.number    = singular) 
+             and (VERBrec1.persons   = [])
+             and (VERBrec1.eORenForm = NoForm)
+         A:  SFCATrec1.key    := SFKIrrgb
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for imperative plural.}
+\begin{verbatim}
+%VerbZorGbMv 
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m3:   SFCAT{SFCATrec2}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C:  (SUBVERBrec1.conjclasses * [1,2] <> [])
+             and (SFCATrec1.key = SFKIrrgb)
+             and (SFCATrec2.key = SFKt)
+         A:  VERBrec1           := COPYT_subverbtoverb(SUBVERBrec1);
+             VERBrec1.tense     := omegatense;
+             VERBrec1.modus     := imperative;
+             VERBrec1.number    := plural;
+             VERBrec1.persons   := [];
+             VERBrec1.eORenForm := NoForm
+
+decomp:
+         C:  (VERBrec1.conjclasses * [1,2] <> [])
+             and (VERBrec1.tense     = omegatense) 
+             and (VERBrec1.modus     = imperative)
+             and (VERBrec1.number    = plural)
+             and (VERBrec1.persons   = [])
+             and (VERBrec1.eORenForm = NoForm)
+         A:  SFCATrec1.key     := SFKIrrgb;
+             SFCATrec2.key     := SFKt
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for conjunctive.}
+
+Note: only the verb "zijn" has a past conjunctive form: "ware". 
+
+\begin{verbatim}
+%VerbZorConjunctief
+
+m1:   SUBVERB{SUBVERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1} [head/ SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+         C1:  SUBVERBrec1.conjclasses * [1,2] <> []
+           C2:  SFCATrec1.key = SFKIrrconjott
+           A2:  VERBrec1         := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.tense   := presenttense
+           C2:  SFCATrec1.key = SFKIrrconjovt
+           A2:  VERBrec1         := COPYT_subverbtoverb(SUBVERBrec1);
+                VERBrec1.tense   := pasttense
+         A1:  VERBrec1.modus     := subjunctive;
+              VERBrec1.number    := omeganumber;
+              VERBrec1.persons   := [];
+              VERBrec1.eORenForm := NoForm
+
+decomp:
+         C1:  (VERBrec1.conjclasses * [1,2] <> [])
+              and (VERBrec1.modus     = subjunctive)
+              and (VERBrec1.number    = omeganumber)
+              and (VERBrec1.persons   = [])
+              and (VERBrec1.eORenForm = NoForm) 
+           C2:  VERBrec1.tense = presenttense 
+           A2:  SFCATrec1.key := SFKIrrconjott
+           C2:  VERBrec1.tense = pasttense
+           A2:  SFCATrec1.key := SFKIrrconjovt
+         A1:  @
+&
+\end{verbatim}
+\newpage
+\subsection{Rule for the "e(n)"-form of past and present participle.}
+
+Note: this is the only rule that makes a VERB out of another VERB; the only
+attribute that changes is "eORenForm".
+Because this rule is of the type ``CAT''-to-``CAT''-type and because it should 
+never be applied more than once, some measures have
+been taken to prevent looping or unnecessarily trying to apply the rule again:
+in the ``comp''-part, there is an explicit test on the input: 
+``SFCATrec1.eORenForm = NoForm'' (see: C1); in the ``decomp''-part, there is an 
+explicit assignment when the rule succeeds: ``VERBrec1.eORenForm := NoForm''
+(see: A1).
+
+\begin{verbatim}
+%VerbeORenvorm
+
+m1:   VERB{VERBrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    VERB{VERBrec1}[mu1]
+
+comp:
+         C1:  ((VERBrec1.modus = pastpart) or (VERBrec1.modus = prespart)) 
+              and (VERBrec1.eORenForm = NoForm)
+           C2:  SFCATrec1.key = SFKe
+           A2:  VERBrec1.eORenForm  := eForm
+           C2:  SFCATrec1.key = SFKen
+           A2:  VERBrec1.eORenForm  := enForm
+         A1:  @
+
+decomp:
+         C1:  (VERBrec1.modus = pastpart) or (VERBrec1.modus = prespart)
+           C2:  VERBrec1.eORenForm = eForm
+           A2:  SFCATrec1.key := SFKe
+           C2:  VERBrec1.eORenForm = enForm
+           A2:  SFCATrec1.key := SFKen
+         A1:  VERBrec1.eORenForm := NoForm
+&
+\end{verbatim}
+
+
+%DUTCH2
+%&
+
+\newpage
+\section{Propernouns and nouns.}
+\subsection{Propernouns.}
+\subsubsection{Rule for propernoun without genitive out of bpropernoun.}
+
+Propernouns have inflection only in case of genitive formation.
+
+Cases like: "de Antillen", "de Fillipijnen", "de Verenigde Staten", 
+            "de Verenigde Arabische Emiraten", etc. are problematic.
+The best way to deal with these words is to treat them as normal nouns (with 
+only semantic properties of a propernoun), asif they are some kind of fixed
+idioms.
+
+Cases like "de beide Duitslanden" and "de Kennedy's" will be treated as 
+derivation: out of a propernoun a subnoun is made.
+Attributes like for instance {\em gender} are already present 
+at the bpropernoun level. Other examples: "het zonnige Itali/"{e}", 
+"het romantische Duitsland".  
+
+Propernouns do not have a sub-level.
+
+\begin{verbatim}
+%bpropernountopropernoun
+
+m1:   BPROPERNOUN{BPROPERNOUNrec1}
+m:    PROPERNOUN{PROPERNOUNrec1} [head/ BPROPERNOUN{BPROPERNOUNrec1}]
+
+comp:    
+         C:   true
+         A:   PROPERNOUNrec1  := COPYT_bpropernountopropernoun(BPROPERNOUNrec1);
+              PROPERNOUNrec1.geni := false  
+
+decomp:  
+         C:   PROPERNOUNrec1.geni = false  
+         A:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for propernoun with genitive out of bpropernoun.}
+\begin{verbatim}
+%bpropertopropergenitief
+
+m1:   BPROPERNOUN{BPROPERNOUNrec1}
+m2:   SFCAT{SFCATrec1}
+m:    PROPERNOUN{PROPERNOUNrec1} [head/ BPROPERNOUN{BPROPERNOUNrec1}]
+
+comp:    
+         C:   (SFCATrec1.key = SFKgens)
+              and (not(OnlyPlural in BPROPERNOUNrec1.pluralforms))
+              and (BPROPERNOUNrec1.possgeni = true)
+         A:   PROPERNOUNrec1 := COPYT_bpropernountopropernoun(BPROPERNOUNrec1);
+              PROPERNOUNrec1.number  := singular;
+              PROPERNOUNrec1.geni    := true
+
+decomp:  
+         C:  (PROPERNOUNrec1.number       = singular) 
+             and (PROPERNOUNrec1.possgeni = true)
+             and (PROPERNOUNrec1.geni     = true)
+             and (not(OnlyPlural in PROPERNOUNrec1.pluralforms))
+         A:  SFCATrec1.key := SFKgens
+&
+\end{verbatim}
+\newpage
+\subsubsection{Derivation rule for propernouns with diminutive.}
+Note: 
+\begin{itemize}
+  \item compare with rule for diminutives of nouns.
+  \item there is a separate rule for genitive forms.
+\end{itemize}
+\begin{verbatim}
+%PropernounWithDimForm
+
+m1: BPROPERNOUN{BPROPERNOUNrec1}
+m2: SFCAT{SFCATrec1}
+
+m:  PROPERNOUN{PROPERNOUNrec1}[complrel/BPROPERNOUN{BPROPERNOUNrec1}, 
+                          head/BNOUNSUFF(dimBNOUNSUFFkey){BNOUNSUFFrec1}]
+
+comp:
+
+C1: true
+   C2: (not(noDim in BPROPERNOUNrec1.dimforms))
+      C3: (SFCATrec1.key = SFKje) and (jeDim in BPROPERNOUNrec1.dimforms)
+      A3: @
+      C3: (SFCATrec1.key = SFKetje) and (etjeDim in BPROPERNOUNrec1.dimforms)  
+      A3: @
+      C3: (SFCATrec1.key = SFKonregdim) and (irregdim in 
+                                                    BPROPERNOUNrec1.dimforms)
+      A3: @
+      C3: (SFCATrec1.key = SFKdimletterword) and  (dimletterword in
+                                                    BPROPERNOUNrec1.dimforms)
+      A3: @
+   A2:   PROPERNOUNrec1      := COPYT_bpropernountopropernoun(BPROPERNOUNrec1)
+A1: PROPERNOUNrec1.geni     := false;
+    PROPERNOUNrec1.number   := singular
+
+decomp:
+
+C1: (PROPERNOUNrec1.geni     = false)  and
+    (PROPERNOUNrec1.number   = singular)
+   C2: (not(noDim in BPROPERNOUNrec1.dimforms))
+      C3: jeDim in BPROPERNOUNrec1.dimforms
+      A3: SFCATrec1.key := SFKje
+      C3: etjeDim in BPROPERNOUNrec1.dimforms
+      A3: SFCATrec1.key := SFKetje
+      C3: irregdim in BPROPERNOUNrec1.dimforms
+      A3: SFCATrec1.key := SFKonregdim
+      C3: dimletterword in BPROPERNOUNrec1.dimforms
+      A3: SFCATrec1.key := SFKdimletterword
+   A2: @
+A1: @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Derivation rule for propernouns with diminutive.}
+Note: This is a separate rule for genitive forms.
+\begin{verbatim}
+%PropernounWithGeniDimForm
+
+m1: BPROPERNOUN{BPROPERNOUNrec1}
+m2: SFCAT{SFCATrec1}
+m3: SFCAT{SFCATrec2}
+
+m:  PROPERNOUN{PROPERNOUNrec1}[complrel/BPROPERNOUN{BPROPERNOUNrec1}, 
+                          head/BNOUNSUFF(dimBNOUNSUFFkey){BNOUNSUFFrec1}]
+
+comp:
+
+C1: (BPROPERNOUNrec1.possgeni = true) and (SFCATrec2.key = SFKgens)
+   C2: (not(noDim in BPROPERNOUNrec1.dimforms))
+      C3: (SFCATrec1.key = SFKje) and (jeDim in BPROPERNOUNrec1.dimforms)
+      A3: @
+      C3: (SFCATrec1.key = SFKetje) and (etjeDim in BPROPERNOUNrec1.dimforms)  
+      A3: @
+      C3: (SFCATrec1.key = SFKonregdim) and (irregdim in 
+                                                    BPROPERNOUNrec1.dimforms)
+      A3: @
+      C3: (SFCATrec1.key = SFKdimletterword) and  (dimletterword in
+                                                    BPROPERNOUNrec1.dimforms)
+      A3: @
+   A2:   PROPERNOUNrec1      := COPYT_bpropernountopropernoun(BPROPERNOUNrec1)
+A1: PROPERNOUNrec1.geni     := true;
+    PROPERNOUNrec1.number   := singular
+
+decomp:
+
+C1: (PROPERNOUNrec1.possgeni = true)  and
+    (PROPERNOUNrec1.geni     = true)  and
+    (PROPERNOUNrec1.number   = singular) 
+   C2: (not(noDim in BPROPERNOUNrec1.dimforms))
+      C3: jeDim in BPROPERNOUNrec1.dimforms
+      A3: SFCATrec1.key := SFKje
+      C3: etjeDim in BPROPERNOUNrec1.dimforms
+      A3: SFCATrec1.key := SFKetje
+      C3: irregdim in BPROPERNOUNrec1.dimforms
+      A3: SFCATrec1.key := SFKonregdim
+      C3: dimletterword in BPROPERNOUNrec1.dimforms
+      A3: SFCATrec1.key := SFKdimletterword
+   A2: @
+A1: SFCATrec2.key := SFKgens
+&
+\end{verbatim}
+\newpage
+\subsection{Nouns}
+\subsubsection{Rule for subnouns out of bpropernouns.}
+\begin{verbatim}
+%bpropernountosubnoun
+
+m1:   BPROPERNOUN{BPROPERNOUNrec1}
+m:    SUBNOUN{SUBNOUNrec1} [head/ BPROPERNOUN{BPROPERNOUNrec1}]
+
+comp:    
+         C:   true
+         A:   SUBNOUNrec1.req          := [pospol, negpol, omegapol];
+              SUBNOUNrec1.env          := [pospol, negpol, omegapol];
+              SUBNOUNrec1.dimforms     := BPROPERNOUNrec1.dimforms;
+              SUBNOUNrec1.pluralforms  := BPROPERNOUNrec1.pluralforms;
+              SUBNOUNrec1.genders      := BPROPERNOUNrec1.genders;
+              SUBNOUNrec1.class        := BPROPERNOUNrec1.class;
+              SUBNOUNrec1.deixis       := BPROPERNOUNrec1.deixis;
+              SUBNOUNrec1.aspect       := BPROPERNOUNrec1.aspect;
+              SUBNOUNrec1.retro        := BPROPERNOUNrec1.retro;
+              SUBNOUNrec1.sexes        := BPROPERNOUNrec1.sexes;
+              SUBNOUNrec1.subcs        := [othernoun];
+              SUBNOUNrec1.temporal     := BPROPERNOUNrec1.temporal;
+              SUBNOUNrec1.possgeni     := false;
+              SUBNOUNrec1.animate      := BPROPERNOUNrec1.animate;
+              SUBNOUNrec1.human        := BPROPERNOUNrec1.human;
+              SUBNOUNrec1.posscomas    := [count];
+              SUBNOUNrec1.thetanp      := omegathetanp;
+              SUBNOUNrec1.nounpatterns := [];
+              SUBNOUNrec1.prepkey      := 0;
+              SUBNOUNrec1.personal     := true;
+              SUBNOUNrec1.lastaffix    := noaffix
+
+decomp:  
+         C:   (SUBNOUNrec1.dimforms     = BPROPERNOUNrec1.dimforms)    and
+              (SUBNOUNrec1.pluralforms  = BPROPERNOUNrec1.pluralforms) and
+              (SUBNOUNrec1.genders      = BPROPERNOUNrec1.genders)     and
+              (SUBNOUNrec1.class        = BPROPERNOUNrec1.class)       and
+              (SUBNOUNrec1.deixis       = BPROPERNOUNrec1.deixis)      and
+              (SUBNOUNrec1.aspect       = BPROPERNOUNrec1.aspect)      and
+              (SUBNOUNrec1.retro        = BPROPERNOUNrec1.retro)       and
+              (SUBNOUNrec1.sexes        = BPROPERNOUNrec1.sexes)       and
+              (SUBNOUNrec1.temporal     = BPROPERNOUNrec1.temporal)    and
+              (SUBNOUNrec1.possgeni     = false)                       and
+              (SUBNOUNrec1.animate      = BPROPERNOUNrec1.animate)     and
+              (SUBNOUNrec1.human        = BPROPERNOUNrec1.human)       and
+              (SUBNOUNrec1.lastaffix    = noaffix)   
+         A:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for subnouns out of bnouns without derivation.}
+\begin{verbatim}
+%bnountosub
+
+m1:   BNOUN{BNOUNrec1}
+m:    SUBNOUN{SUBNOUNrec1} [head/ BNOUN{BNOUNrec1}]
+
+comp:    
+         C:   true
+         A:   SUBNOUNrec1       := COPYT_bnountosubnoun(BNOUNrec1)
+
+decomp:  
+         C:   true
+         A:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Derivation rule for diminutives.}
+Note: 
+\begin{itemize}
+  \item "possgeni" (and many other attributes) come from the BNOUN;
+  \item "onlyPlural"-words, like "hersenen", "notulen" and "onkosten" do NOT
+         have a dim-form or have IRREGULAR dimforms like "hersentje" (or is
+         "hersentjes" the only possible form??), which is of importance for the
+         filling of the attribute "dimforms";
+  \item for "dimletterword" see suffix-rules with "SFKdimletterword";
+  \item the condition in C2 of `comp' is in this rule necessary, because
+         dimforms of dimforms do not exist: *bootjetje! 
+         This does NOT mean that two dimforms can never occur in one word:
+         "stapJESgewijsheidJES" or "jongetJESachtigheidJES"; it only means that 
+         two dimunitive-suffixes cannot be adjacent.
+\end{itemize}
+\begin{verbatim}
+%DimForm
+
+m1: SUBNOUN{SUBNOUNrec1}[mu1]
+m2: SFCAT{SFCATrec1}
+
+m:  SUBNOUN{SUBNOUNrec2}[complrel/SUBNOUN{SUBNOUNrec1}[mu1], 
+                          head/BNOUNSUFF(dimBNOUNSUFFkey){BNOUNSUFFrec1}]
+
+comp:
+
+C1: true
+   C2: (not(SUBNOUNrec1.lastaffix = dimaffix)) and (not(noDim in 
+                                                     SUBNOUNrec1.dimforms))
+      C3: (SFCATrec1.key = SFKje) and (jeDim in SUBNOUNrec1.dimforms)
+      A3: @
+      C3: (SFCATrec1.key = SFKetje) and (etjeDim in SUBNOUNrec1.dimforms)  
+      A3: @
+      C3: (SFCATrec1.key = SFKonregdim) and (irregdim in SUBNOUNrec1.dimforms)
+      A3: @
+      C3: (SFCATrec1.key = SFKdimletterword) and  (dimletterword in
+                                                         SUBNOUNrec1.dimforms)
+      A3: @
+   A2: SUBNOUNrec2               := SUBNOUNrec1;
+       SUBNOUNrec2.lastaffix     := dimaffix
+A1: SUBNOUNrec2.dimforms    := BNOUNSUFFrec1.dimforms;
+    SUBNOUNrec2.pluralforms := BNOUNSUFFrec1.pluralforms;
+    SUBNOUNrec2.genders     := BNOUNSUFFrec1.genders
+
+decomp:
+
+C1: (SUBNOUNrec2.pluralforms = BNOUNSUFFrec1.pluralforms) and
+    (SUBNOUNrec2.genders     = BNOUNSUFFrec1.genders)      and
+    (SUBNOUNrec2.dimforms    = BNOUNSUFFrec1.dimforms)
+   C2: (SUBNOUNrec2.lastaffix = dimaffix)    and 
+       (not(noDim in SUBNOUNrec1.dimforms))  and 
+       (not(SUBNOUNrec1.lastaffix = dimaffix))  
+      C3:jeDim in SUBNOUNrec1.dimforms
+      A3: SFCATrec1.key := SFKje
+      C3: etjeDim in SUBNOUNrec1.dimforms
+      A3: SFCATrec1.key := SFKetje
+      C3: irregdim in SUBNOUNrec1.dimforms
+      A3: SFCATrec1.key := SFKonregdim
+      C3: dimletterword in SUBNOUNrec1.dimforms
+      A3: SFCATrec1.key := SFKdimletterword
+   A2: @
+A1: @
+&
+\end{verbatim}
+\newpage
+\subsubsection{ Rule for the singular form of nouns. }
+
+Note: in case that the noun has pluralform only ("hersenen"), this rule 
+      assigns the value "plural"!
+
+\begin{verbatim}
+%nounenkelvoud
+
+m1:   SUBNOUN{SUBNOUNrec1}[mu1]
+m:    NOUN{NOUNrec1} [head/ SUBNOUN{SUBNOUNrec1}[mu1]]
+
+comp:    
+         C1:  true
+           C2:  not(OnlyPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1        := COPYT_subnountonoun(SUBNOUNrec1);
+                NOUNrec1.number := singular
+           C2:  OnlyPlural in SUBNOUNrec1.pluralforms
+           A2:  NOUNrec1        := COPYT_subnountonoun(SUBNOUNrec1);
+                NOUNrec1.number := plural
+         A1:  NOUNrec1.geni  := false
+
+decomp:  
+         C1:  NOUNrec1.geni = false
+           C2:  (NOUNrec1.number = singular) 
+                and (not(OnlyPlural in NOUNrec1.pluralforms))
+           A2:  @
+           C2:  (NOUNrec1.number = plural) 
+                and (OnlyPlural in NOUNrec1.pluralforms)
+           A2:  @
+         A1:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for the plural form of nouns.}
+\begin{verbatim}
+%nounmeervoud
+
+m1:   SUBNOUN{SUBNOUNrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    NOUN{NOUNrec1} [head/ SUBNOUN{SUBNOUNrec1}[mu1]]
+
+comp:    
+         C1:  (not(OnlyPlural in SUBNOUNrec1.pluralforms)) 
+              and (not(NoPlural in SUBNOUNrec1.pluralforms)) 
+           C2:  (SFCATrec1.key = SFKen) 
+                 and (enPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKmvs) 
+                 and (sPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKaTOaa) 
+                 and (aTOaaPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKaTOee) 
+                 and (aTOeePlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKeTOee)
+                 and (eTOeePlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKeiTOee) 
+                 and (eiTOeePlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKiTOee) 
+                 and (iTOeePlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKoTOoo) 
+                 and (oTOooPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKeren) 
+                 and (erenPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKien) 
+                 and (ienPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKden) 
+                 and (denPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKnen) 
+                 and (nenPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKieAccent) 
+                 and (ieAccentPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKlui) 
+                 and (luiPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKlieden) 
+                 and (liedenPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKLat) 
+                 and (LatPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKenIrreg) 
+                 and (enIrregPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKsIrreg) 
+                 and (sIrregPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKLatIrreg) 
+                 and (LatIrregPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+         A1:  NOUNrec1.number     := plural;
+              NOUNrec1.geni       := false
+
+decomp:  
+         C1:   (NOUNrec1.number   = plural) 
+               and (NOUNrec1.geni = false) 
+               and (not(OnlyPlural in NOUNrec1.pluralforms))
+           C2:  enPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKen
+           C2:  sPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKmvs
+           C2:  aTOaaPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKaTOaa
+           C2:  aTOeePlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKaTOee
+           C2:  eTOeePlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKeTOee
+           C2:  eiTOeePlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKeiTOee
+           C2:  iTOeePlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKiTOee
+           C2:  oTOooPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKoTOoo
+           C2:  erenPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKeren
+           C2:  ienPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKien
+           C2:  denPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKden
+           C2:  nenPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKnen
+           C2:  ieAccentPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKieAccent
+           C2:  luiPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKlui
+           C2:  liedenPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKlieden
+           C2:  LatPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKLat
+           C2:  enIrregPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKenIrreg
+           C2:  sIrregPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKsIrreg
+           C2:  LatIrregPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKLatIrreg
+         A1:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for genitive of singular nouns.}
+
+Note: ANS says that (besides rigid constructions like "heer des huizes") 
+      genitive forms can only be made out of proper names and a certain kind of
+      nouns, namely the ones that can be used accost somebody, like: "vader",
+      "moeder", "dominee", "buurman", "ouder"(?). In the grammatical Compendium
+      of Van Dale, the main criterium to decide whether or not a noun can get 
+      a genitive-s is family-relation.
+      Also diminutives can get genitive-s: "mijn zoontjes fiets", etc.
+\begin{verbatim}      
+%noungenitiefenkelvoud
+
+m1:   SUBNOUN{SUBNOUNrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    NOUN{NOUNrec1} [head/ SUBNOUN{SUBNOUNrec1}[mu1]]
+
+
+comp:    
+         C:   (SFCATrec1.key = SFKgens) 
+              and (SUBNOUNrec1.possgeni = true)
+              and (not(OnlyPlural in SUBNOUNrec1.pluralforms))
+         A:   NOUNrec1            := COPYT_subnountonoun(SUBNOUNrec1);
+              NOUNrec1.number     := singular;
+              NOUNrec1.geni       := true
+
+decomp:  
+         C:  (NOUNrec1.number       = singular)
+             and (NOUNrec1.possgeni = true)
+             and (NOUNrec1.geni     = true) 
+             and (not(OnlyPlural in NOUNrec1.pluralforms))
+         A:  SFCATrec1.key := SFKgens
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for genitive of plural nouns.}
+
+Note: because only a (very) limited number of nouns can get genitive-s, not
+      every plural-ending will be possible; in fact, the only plural-ending
+      here seems to be "-s": "grootouders' huis", "mijn zoontjes' fietsen",
+      etc. Therefore, this rule accepts "sPlural" and "sIrregPlural" ("mijn
+      eegaas' namen verschilden") only.
+\begin{verbatim}
+%noungenitiefmeervoud
+
+m1:   SUBNOUN{SUBNOUNrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m3:   SFCAT{SFCATrec2}
+m:    NOUN{NOUNrec1} [head/ SUBNOUN{SUBNOUNrec1}[mu1]]
+
+comp:    
+         C1:  (SFCATrec2.key = SFKgens) 
+              and (SUBNOUNrec1.possgeni = true)
+           C2:  (SFCATrec1.key = SFKmvs) 
+                 and (sPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+           C2:  (SFCATrec1.key = SFKsIrreg) 
+                 and (sIrregPlural in SUBNOUNrec1.pluralforms)
+           A2:  NOUNrec1  := COPYT_subnountonoun(SUBNOUNrec1)
+         A1:  NOUNrec1.number     := plural;
+              NOUNrec1.geni       := true
+
+decomp:  
+         C1:  (NOUNrec1.number       = plural) 
+              and (NOUNrec1.geni     = true) 
+              and (NOUNrec1.possgeni = true)
+           C2:  sIrregPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKsIrreg
+           C2:  sPlural in NOUNrec1.pluralforms
+           A2:  SFCATrec1.key := SFKmvs
+         A1:  SFCATrec2.key := SFKgens
+&
+\end{verbatim}
+\newpage
+\section{Pronouns.}
+\subsection{Perspro's}
+\subsubsection{Rule for nominative forms of PERSPRO's.}
+
+Note: this rule makes the "dictionary"-forms, like "ik", "jij", etc., which are
+      always nominative and never reduced.
+      The attribute `reduced' is compared with/ assigned from the inherent
+      attribute `generalized' of BPERSPRO; the value of `generalized' is false
+      for the normal dictionary forms, like "ik", "jij", "hij", etc., but it is
+      true for the BPERSPRO with `generalized' meaning, like "je", "ze" (as in
+      for instance: "ZE laten JE hier ook maar aanploeteren"). These are the
+      only reduced forms that are in the dictionary, al the others are derived
+      from the non-reduced forms in the dictionary (see rule Perspro2.
+\begin{verbatim} 
+%Perspro1
+
+m1:   BPERSPRO{BPERSPROrec1}
+m:    PERSPRO{PERSPROrec1} [head/ BPERSPRO{BPERSPROrec1}]
+
+comp:    
+         C:   true
+         A:   PERSPROrec1              := COPYT_bpersprotoperspro(BPERSPROrec1);
+              PERSPROrec1.reduced      := BPERSPROrec1.generalized;
+              PERSPROrec1.persprocases := [nominative]
+
+decomp:  
+         C:   (nominative in PERSPROrec1.persprocases) 
+              and (PERSPROrec1.reduced = BPERSPROrec1.generalized)
+         A:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for nominative, dative and accusative forms of PERSPRO's.}
+
+Note: this rule makes derived forms like "mij", "jou", "hem", etc.; forms can
+      be nominative, or dative, or accusative. For all cases, reduced forms, 
+      like "me" are made too.
+\begin{verbatim}
+%Perspro2
+
+m1:   BPERSPRO{BPERSPROrec1}
+m2:   SFCAT{SFCATrec1}
+m:    PERSPRO{PERSPROrec1} [head/ BPERSPRO{BPERSPROrec1}]
+
+comp:    
+         C1:  true
+           C2:   BPERSPROrec1.number = singular
+             C3:   SFCATrec1.key = SFKsgnom
+             A3:   PERSPROrec1         := COPYT_bpersprotoperspro(BPERSPROrec1);
+                   PERSPROrec1.persprocases := [nominative];
+                   PERSPROrec1.reduced      := false
+             C3:   SFCATrec1.key = SFKsgnomred
+             A3:   PERSPROrec1         := COPYT_bpersprotoperspro(BPERSPROrec1);
+                   PERSPROrec1.persprocases := [nominative];
+                   PERSPROrec1.reduced      := true
+             C3:   SFCATrec1.key = SFKsgaccdat
+             A3:   PERSPROrec1         := COPYT_bpersprotoperspro(BPERSPROrec1);
+                   PERSPROrec1.persprocases := [accusative, dative];
+                   PERSPROrec1.reduced      := false
+             C3:   SFCATrec1.key = SFKsgaccdatred
+             A3:   PERSPROrec1         := COPYT_bpersprotoperspro(BPERSPROrec1);
+                   PERSPROrec1.persprocases := [accusative, dative];
+                   PERSPROrec1.reduced      := true
+           A2:   @
+           C2:   BPERSPROrec1.number = plural
+             C3:   SFCATrec1.key = SFKplnom
+             A3:   PERSPROrec1         := COPYT_bpersprotoperspro(BPERSPROrec1);
+                   PERSPROrec1.persprocases := [nominative];
+                   PERSPROrec1.reduced      := false
+             C3:   SFCATrec1.key = SFKplnomred
+             A3:   PERSPROrec1         := COPYT_bpersprotoperspro(BPERSPROrec1);
+                   PERSPROrec1.persprocases := [nominative];
+                   PERSPROrec1.reduced      := true
+             C3:   SFCATrec1.key = SFKplaccdat
+             A3:   PERSPROrec1         := COPYT_bpersprotoperspro(BPERSPROrec1);
+                   PERSPROrec1.persprocases := [accusative, dative];
+                   PERSPROrec1.reduced      := false
+             C3:   SFCATrec1.key = SFKplaccdatred
+             A3:   PERSPROrec1         := COPYT_bpersprotoperspro(BPERSPROrec1);
+                   PERSPROrec1.persprocases := [accusative, dative];
+                   PERSPROrec1.reduced      := true
+             C3:   SFCATrec1.key = SFKplacc
+             A3:   PERSPROrec1         := COPYT_bpersprotoperspro(BPERSPROrec1);
+                   PERSPROrec1.persprocases := [accusative];
+                   PERSPROrec1.reduced      := false
+             C3:   SFCATrec1.key = SFKpldat
+             A3:   PERSPROrec1         := COPYT_bpersprotoperspro(BPERSPROrec1);
+                   PERSPROrec1.persprocases := [dative];
+                   PERSPROrec1.reduced      := false
+           A2:   @
+         A1:  @
+
+
+decomp:  
+         C1:   PERSPROrec1.number = singular
+           C2:   (nominative in PERSPROrec1.persprocases) 
+                 and (PERSPROrec1.reduced = false)
+           A2:   SFCATrec1.key := SFKsgnom
+           C2:   (nominative in PERSPROrec1.persprocases) 
+                 and (PERSPROrec1.reduced = true)
+           A2:   SFCATrec1.key := SFKsgnomred
+           C2:   ([accusative, dative] * PERSPROrec1.persprocases <> []) 
+                 and (PERSPROrec1.reduced = false)
+           A2:   SFCATrec1.key := SFKsgaccdat
+           C2:   ([accusative, dative] * PERSPROrec1.persprocases <> []) 
+                 and (PERSPROrec1.reduced = true)
+           A2:   SFCATrec1.key := SFKsgaccdatred
+         A1:  @
+         C1:   PERSPROrec1.number = plural
+           C2:   (nominative in PERSPROrec1.persprocases) 
+                 and (PERSPROrec1.reduced = false)
+           A2:   SFCATrec1.key := SFKplnom
+           C2:   (nominative in PERSPROrec1.persprocases) 
+                 and (PERSPROrec1.reduced = true)
+           A2:   SFCATrec1.key := SFKplnomred
+           C2:   ([accusative, dative] * PERSPROrec1.persprocases <> []) 
+                 and (PERSPROrec1.reduced = false)
+           A2:   SFCATrec1.key := SFKplaccdat
+           C2:   ([accusative, dative] * PERSPROrec1.persprocases <> []) 
+                 and (PERSPROrec1.reduced = true)
+           A2:   SFCATrec1.key := SFKplaccdatred
+           C2:   (accusative in PERSPROrec1.persprocases) 
+                 and (PERSPROrec1.reduced = false)
+           A2:   SFCATrec1.key := SFKplacc
+           C2:   (dative in PERSPROrec1.persprocases) 
+                 and (PERSPROrec1.reduced = false)
+           A2:   SFCATrec1.key := SFKpldat
+         A1:  @
+&
+\end{verbatim}
+\newpage
+\subsection{Whpro's, Possadj's and Posspro's}
+\subsubsection{Rule for POSSADJ's.}
+
+Note: this rule makes -generatively speaking- POSSADJ's (like "mijn", "jouw", 
+      "uw", etc.) out of BPERSPRO's. Reduced forms (like "m'n") are made too.
+      The attribute 'eORenForm' has a special value for "onze".
+      The attribute 'geni' is 'true' for genitive forms like: "mijner", 
+      "jouwer", etc.
+\begin{verbatim}
+%PersproToPossadj
+
+m1:   BPERSPRO{BPERSPROrec1}
+m2:   SFCAT{SFCATrec1}
+m:    POSSADJ{POSSADJrec1} [head/ BPERSPRO{BPERSPROrec1}]
+
+comp:    
+         C1:   true
+           C2:   BPERSPROrec1.number = singular
+             C3:   SFCATrec1.key = SFKsgpossadj
+             A3:   POSSADJrec1.eORenForm  := NoForm;
+                   POSSADJrec1.reduced    := false;
+                   POSSADJrec1.geni       := false
+             C3:   SFCATrec1.key = SFKsgpossadjred
+             A3:   POSSADJrec1.eORenForm  := NoForm;
+                   POSSADJrec1.reduced    := true;
+                   POSSADJrec1.geni       := false
+             C3:   SFCATrec1.key = SFKsgpossadjgen
+             A3:   POSSADJrec1.eORenForm  := NoForm;
+                   POSSADJrec1.reduced    := false;
+                   POSSADJrec1.geni       := true
+           A2:   @
+           C2:   BPERSPROrec1.number = plural
+             C3:   SFCATrec1.key = SFKplpossadj
+             A3:   POSSADJrec1.eORenForm  := NoForm;
+                   POSSADJrec1.reduced    := false;
+                   POSSADJrec1.geni       := false
+             C3:   SFCATrec1.key = SFKplpossadjonze
+             A3:   POSSADJrec1.eORenForm  := eForm;
+                   POSSADJrec1.reduced    := false;
+                   POSSADJrec1.geni       := false
+             C3:   SFCATrec1.key = SFKplpossadjons
+             A3:   POSSADJrec1.eORenForm  := NoForm;
+                   POSSADJrec1.reduced    := false;
+                   POSSADJrec1.geni       := false
+             C3:   SFCATrec1.key = SFKplpossadjgen
+             A3:   POSSADJrec1.eORenForm  := NoForm;
+                   POSSADJrec1.reduced    := false;
+                   POSSADJrec1.geni       := true
+           A2:   @
+         A1:  POSSADJrec1.mood := declxpmood
+
+decomp:  
+         C1:   POSSADJrec1.mood = declxpmood
+           C2:   BPERSPROrec1.number = singular
+             C3:   (POSSADJrec1.eORenForm   = NoForm) 
+                   and (POSSADJrec1.reduced = false) 
+                   and (POSSADJrec1.geni    = false) 
+             A3:   SFCATrec1.key := SFKsgpossadj
+             C3:   (POSSADJrec1.eORenForm   = NoForm) 
+                   and (POSSADJrec1.reduced = true ) 
+                   and (POSSADJrec1.geni    = false) 
+             A3:   SFCATrec1.key := SFKsgpossadjred
+             C3:   (POSSADJrec1.eORenForm   = NoForm) 
+                   and (POSSADJrec1.reduced = false) 
+                   and (POSSADJrec1.geni    = true) 
+             A3:   SFCATrec1.key := SFKsgpossadjgen
+           A2:   @
+           C2:   BPERSPROrec1.number = plural
+             C3:   (POSSADJrec1.eORenForm   = NoForm) 
+                   and (POSSADJrec1.reduced = false) 
+                   and (POSSADJrec1.geni    = false) 
+             A3:   SFCATrec1.key := SFKplpossadj
+             C3:   (POSSADJrec1.eORenForm   = eForm) 
+                   and (POSSADJrec1.reduced = false) 
+                   and (POSSADJrec1.geni    = false) 
+             A3:   SFCATrec1.key := SFKplpossadjonze
+             C3:   (POSSADJrec1.eORenForm   = NoForm) 
+                   and (POSSADJrec1.reduced = false) 
+                   and (POSSADJrec1.geni    = false) 
+             A3:   SFCATrec1.key := SFKplpossadjons
+             C3:   (POSSADJrec1.eORenForm   = NoForm) 
+                   and (POSSADJrec1.reduced = false) 
+                   and (POSSADJrec1.geni    = true ) 
+             A3:   SFCATrec1.key := SFKplpossadjgen
+           A2:   @
+         A1:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for POSSPRO's.}
+
+Note: this rule makes POSSPRO's, like: "mijne", "jouwe", etc. out of BPERSPRO's.
+      There is no POSSPRO form corresponding to "jullie"!
+\begin{verbatim}
+%PersproToPosspro
+
+m1:   BPERSPRO{BPERSPROrec1}
+m2:   SFCAT{SFCATrec1}
+m:    POSSPRO{POSSPROrec1} [head/ BPERSPRO{BPERSPROrec1}]
+
+comp:    
+         C1:   true
+           C2:   BPERSPROrec1.number = singular
+             C3:   SFCATrec1.key = SFKsgposs
+             A3:   POSSPROrec1.nForm   := false
+             C3:   SFCATrec1.key = SFKsgpossnvorm
+             A3:   POSSPROrec1.nForm   := true
+           A2:   @
+           C2:   BPERSPROrec1.number = plural
+             C3:   SFCATrec1.key = SFKplposs
+             A3:   POSSPROrec1.nForm   := false
+             C3:   SFCATrec1.key = SFKplpossnvorm
+             A3:   POSSPROrec1.nForm   := true
+           A2:   @
+         A1:  @
+
+decomp:  
+         C1:   BPERSPROrec1.number = singular
+           C2:   POSSPROrec1.nForm = false
+           A2:   SFCATrec1.key   := SFKsgposs
+           C2:   POSSPROrec1.nForm = true
+           A2:   SFCATrec1.key   := SFKsgpossnvorm
+         A1:   @
+         C1:   BPERSPROrec1.number = plural
+           C2:   POSSPROrec1.nForm = false
+           A2:   SFCATrec1.key   := SFKplposs
+           C2:   POSSPROrec1.nForm = true
+           A2:   SFCATrec1.key   := SFKplpossnvorm
+         A1:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for WHPRO's out of BWHPRO's.}
+
+\begin{verbatim} 
+%BwhProToWhPro
+
+m1:   BWHPRO{BWHPROrec1}
+m:    WHPRO{WHPROrec1} [head/ BWHPRO{BWHPROrec1}]
+
+comp:    
+         C:   true
+         A:   WHPROrec1   := COPYT_bwhprotowhpro(BWHPROrec1)
+
+decomp:  
+         C:   true
+         A:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for POSSADJ's out of BWHPRO.}
+
+Note: this rule makes "wiens" and "wier" out of "wie".
+\begin{verbatim}
+%WhproToPossadj
+
+m1:   BWHPRO{BWHPROrec1}
+m2:   SFCAT{SFCATrec1}
+m:    POSSADJ{POSSADJrec1} [head/ BWHPRO{BWHPROrec1}]
+
+comp:    
+         C1:  true
+           C2:  BWHPROrec1.number = singular
+             C3:  (SFCATrec1.key = SFKpossadjwiens) 
+                  and (BWHPROrec1.sexes = [masculine])
+             A3:  @
+             C3:  (SFCATrec1.key = SFKpossadjwier) 
+                  and (BWHPROrec1.sexes = [feminine])
+             A3:  @
+           A2:  @
+           C2:  BWHPROrec1.number = plural
+             C3:  (SFCATrec1.key = SFKpossadjwier) 
+                  and (BWHPROrec1.sexes = [masculine,feminine])
+             A3:  @
+           A2:  @
+         A1:  POSSADJrec1.mood      := wh;
+              POSSADJrec1.reduced   := false;
+              POSSADJrec1.eORenForm := NoForm;
+              POSSADJrec1.geni      := false
+
+
+decomp:  
+         C1:  (POSSADJrec1.mood          = wh) 
+              and (POSSADJrec1.reduced   = false) 
+              and (POSSADJrec1.eORenForm = NoForm) 
+              and (POSSADJrec1.geni      = false)
+           C2:   BWHPROrec1.number = singular
+             C3:   BWHPROrec1.sexes = [masculine]
+             A3:   SFCATrec1.key   := SFKpossadjwiens
+             C3:   BWHPROrec1.sexes = [feminine]
+             A3:   SFCATrec1.key   := SFKpossadjwier
+           A2:   @
+           C2:   BWHPROrec1.number = plural
+             C3:   BWHPROrec1.sexes = [masculine,feminine]
+             A3:   SFCATrec1.key   := SFKpossadjwier
+           A2:   @
+         A1:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for POSSADJ out of DEMPRO.}
+
+Note: this rule makes "diens" out of "die".
+\begin{verbatim}
+%DemproToPossadj
+
+m1:   DEMPRO{DEMPROrec1}
+m2:   SFCAT{SFCATrec1}
+m:    POSSADJ{POSSADJrec1} [head/ DEMPRO{DEMPROrec1}]
+
+comp:    
+         C:  (SFCATrec1.key = SFKpossadjdiens) 
+             and (DEMPROrec1.sexes = [masculine])
+         A:  POSSADJrec1.mood      := declxpmood;
+             POSSADJrec1.reduced   := false;
+             POSSADJrec1.eORenForm := NoForm;
+             POSSADJrec1.geni      := false
+             
+
+decomp:  
+         C:  (POSSADJrec1.mood          = declxpmood) 
+             and (POSSADJrec1.reduced   = false) 
+             and (POSSADJrec1.eORenForm = NoForm) 
+             and (POSSADJrec1.geni      = false) 
+             and (DEMPROrec1.sexes      = [masculine])
+         A:  SFCATrec1.key := SFKpossadjdiens
+&
+\end{verbatim}
+\newpage
+
+\section{Det's and Indefpro's.}
+\subsection{Rules for Det's.}
+\subsubsection{Rule for DET out of BDET.}
+\begin{verbatim}
+%BDetToDet1
+
+m1:   BDET{BDETrec1}
+m:    DET{DETrec1} [head/ BDET{BDETrec1}]
+
+comp:    
+         C:   true
+
+         A:   DETrec1 := COPYT_bdettodet(BDETrec1);
+              DETrec1.eORenForm := NoForm
+
+decomp:  
+         C:   DETrec1.eORenForm = NoForm
+
+         A:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for DET out of BDET with inflection.}
+
+Note: this rule makes (for instance) "vele" and "velen" out of "veel".
+Note: because all forms of the words of the category (B)DET are listed in the
+      suffix-rules (in combination with the suffix-keys SFKedet and SFKendet),
+      only two values for eFormation suffice: NoFormation (for BDET that don't
+      have an e-form) and regeFormation (for those that do have one). The value 
+      irregeFormation is not needed!
+\begin{verbatim}
+%BDetToDet2
+
+m1:   BDET{BDETrec1}
+m2:   SFCAT{SFCATrec1}
+m:    DET{DETrec1} [head/ BDET{BDETrec1}]
+
+comp:    
+         C1:  true
+            C2:  (SFCATrec1.key = SFKeDet) 
+                  and (BDETrec1.eFormation = regeFormation)
+            A2:  DETrec1 := COPYT_bdettodet(BDETrec1);
+                 DETrec1.eORenForm := eForm
+            C2:  (SFCATrec1.key = SFKenDet) 
+                  and (BDETrec1.enFormation = true)
+            A2:  DETrec1 := COPYT_bdettodet(BDETrec1);
+                 DETrec1.eORenForm := enForm
+         A1:  @
+
+
+decomp:  
+
+         C1:   true
+           C2:   (DETrec1.eORenForm = eForm) 
+                  and (DETrec1.eFormation = regeFormation)
+           A2:   SFCATrec1.key := SFKeDet 
+           C2:   (DETrec1.eORenForm = enForm) 
+                  and (DETrec1.enFormation = true)
+           A2:   SFCATrec1.key := SFKenDet 
+         A1:   @
+&
+\end{verbatim}
+\newpage
+\subsection{Rules for Indefpro's.}
+\subsubsection{Rule for INDEFPRO out of BINDEFPRO.}
+\begin{verbatim}
+%Bindefprotoindefpro1
+
+m1:   BINDEFPRO{BINDEFPROrec1}
+m:    INDEFPRO{INDEFPROrec1} [head/ BINDEFPRO{BINDEFPROrec1}]
+
+comp:    
+         C:   true
+
+         A:   INDEFPROrec1 := COPYT_bindefprotoindefpro(BINDEFPROrec1);
+              INDEFPROrec1.geni := false 
+
+decomp:  
+         C:   INDEFPROrec1.geni = false 
+
+         A:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for INDEFPRO out of BINDEFPRO with genitive.}
+
+Note: this rule makes (for instance) "iemands" out of "iemand".
+\begin{verbatim}
+%Bindefprotoindefpro2
+
+m1:   BINDEFPRO{BINDEFPROrec1}
+m2:   SFCAT{SFCATrec1}
+m:    INDEFPRO{INDEFPROrec1} [head/ BINDEFPRO{BINDEFPROrec1}]
+
+comp:    
+         C:  (SFCATrec1.key = SFKgens) 
+              and (BINDEFPROrec1.possgeni = true)
+         A:  INDEFPROrec1 := COPYT_bindefprotoindefpro(BINDEFPROrec1);
+             INDEFPROrec1.geni := true
+
+
+decomp:  
+
+         C:  (INDEFPROrec1.geni = true) 
+              and (INDEFPROrec1.possgeni = true)
+         A:  SFCATrec1.key := SFKgens
+&
+\end{verbatim}
+
+
+%DUTCH3
+%&
+
+\newpage
+\section{Adjectives and adverbs.}
+\subsection{Adjectives.}
+\subsubsection{Rule for adjectives without derivational affixes.}
+\begin{verbatim}
+%adjbtosub
+
+m1:   BADJ{BADJrec1}
+m:    SUBADJ{SUBADJrec1} [head/ BADJ{BADJrec1}]
+
+comp:    
+         C:   true
+         A:   SUBADJrec1 := COPYT_badjtosubadj(BADJrec1)
+
+decomp:  
+         C:   true
+         A:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for the positive form of adjectives.}
+\begin{verbatim}
+%adjposvorm
+
+m1:   SUBADJ{SUBADJrec1}[mu1]
+m:    ADJ{ADJrec1} [head/ SUBADJ{SUBADJrec1}[mu1]]
+
+comp:    
+         C:   true
+         A:   ADJrec1           := COPYT_subadjtoadj(SUBADJrec1);
+              ADJrec1.form      := positive;
+              ADJrec1.eORenForm := NoForm
+
+decomp:  
+         C:   (ADJrec1.eORenForm = NoForm)
+              and (ADJrec1.form  = positive)
+         A:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for the "-s"-form of the positive of adjectives.}
+\begin{verbatim}
+%adjsPositive
+
+m1:   SUBADJ{SUBADJrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    ADJ{ADJrec1} [head/ SUBADJ{SUBADJrec1}[mu1]]
+
+comp:    
+         C:   (SFCATrec1.key = SFKadjs) 
+              and (SUBADJrec1.sFormation = true)
+         A:   ADJrec1           := COPYT_subadjtoadj(SUBADJrec1);
+              ADJrec1.form      := sPositive;
+              ADJrec1.eORenForm := NoForm
+
+decomp:  
+         C:   (ADJrec1.form           = sPositive)
+              and (ADJrec1.eORenForm  = NoForm)
+              and (ADJrec1.sFormation = true)
+         A:   SFCATrec1.key := SFKadjs
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for the comparative of adjectives.}
+\begin{verbatim}
+%adjcompvorm
+
+m1:   SUBADJ{SUBADJrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    ADJ{ADJrec1} [head/ SUBADJ{SUBADJrec1}[mu1]]
+
+comp:    
+         C1: true
+           C2: (SFCATrec1.key = SFKer) 
+               and (erComp in SUBADJrec1.comparatives)
+           A2: ADJrec1  := COPYT_subadjtoadj(SUBADJrec1)
+           C2: (SFCATrec1.key = SFKonreger) 
+               and (erIrregComp in SUBADJrec1.comparatives)
+           A2: ADJrec1  := COPYT_subadjtoadj(SUBADJrec1)
+         A1:  ADJrec1.form      := comparative;
+              ADJrec1.eORenForm := NoForm
+
+decomp:  
+         C1: (ADJrec1.form          = comparative) 
+             and (ADJrec1.eORenForm = NoForm)
+           C2:  erComp in ADJrec1.comparatives
+           A2:  SFCATrec1.key := SFKer
+           C2:  erIrregComp in ADJrec1.comparatives
+           A2:  SFCATrec1.key := SFKonreger
+         A1:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for "-s"-form of comparatives.}
+\begin{verbatim}
+%adjsComparative
+
+m1:   SUBADJ{SUBADJrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m3:   SFCAT{SFCATrec2}
+m:    ADJ{ADJrec1} [head/ SUBADJ{SUBADJrec1}[mu1]]
+
+comp:    
+         C1: SFCATrec2.key = SFKadjs
+           C2: (SFCATrec1.key = SFKer) 
+               and (erComp in SUBADJrec1.comparatives)
+           A2: ADJrec1  := COPYT_subadjtoadj(SUBADJrec1)
+           C2: (SFCATrec1.key = SFKonreger)
+               and (erIrregComp in SUBADJrec1.comparatives)
+           A2: ADJrec1  := COPYT_subadjtoadj(SUBADJrec1)
+         A1: ADJrec1.form      := sComparative;
+             ADJrec1.eORenForm := NoForm
+
+decomp:  
+         C1:  (ADJrec1.form          = sComparative) 
+              and (ADJrec1.eORenForm = NoForm)
+           C2:  erComp in ADJrec1.comparatives
+           A2:  SFCATrec1.key := SFKer
+           C2:  erIrregComp in ADJrec1.comparatives
+           A2:  SFCATrec1.key := SFKonreger
+         A1:  SFCATrec2.key := SFKadjs
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for the superlative of adjectives.}
+\begin{verbatim}
+%adjsupvorm
+
+m1:   SUBADJ{SUBADJrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    ADJ{ADJrec1} [head/ SUBADJ{SUBADJrec1}[mu1]]
+
+comp:    
+         C1: true
+           C2: (SFCATrec1.key = SFKst) 
+               and (stSup in SUBADJrec1.superlatives)
+           A2: ADJrec1  := COPYT_subadjtoadj(SUBADJrec1)
+           C2: (SFCATrec1.key = SFKonregst) 
+               and (stIrregSup in SUBADJrec1.superlatives)
+           A2: ADJrec1  := COPYT_subadjtoadj(SUBADJrec1)
+          A: ADJrec1.form      := superlative;
+             ADJrec1.eORenForm := NoForm
+
+decomp:  
+        C1: (ADJrec1.form = superlative) 
+            and (ADJrec1.eORenForm = NoForm)
+          C2:  stSup in ADJrec1.superlatives
+          A2:  SFCATrec1.key := SFKst
+          C2:  stIrregSup in ADJrec1.superlatives
+          A2:  SFCATrec1.key := SFKonregst
+        A1:  @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for the "aller"-superlative of adjectives.}
+\begin{verbatim}
+%adjallersupvorm
+
+m1:   PFCAT{PFCATrec1}
+m2:   SUBADJ{SUBADJrec1}[mu1]
+m3:   SFCAT{SFCATrec1}
+m:    ADJ{ADJrec1} [head/ SUBADJ{SUBADJrec1}[mu1]]
+
+comp:    
+         C1: PFCATrec1.key   = PFKaller
+           C2: (SFCATrec1.key = SFKst) 
+               and (allerSup in SUBADJrec1.superlatives)
+           A2: ADJrec1  := COPYT_subadjtoadj(SUBADJrec1)
+           C2: (SFCATrec1.key = SFKonregst) 
+               and (allerIrregSup in SUBADJrec1.superlatives)
+           A2: ADJrec1  := COPYT_subadjtoadj(SUBADJrec1)
+         A: ADJrec1.form      := allerSuperlative;
+            ADJrec1.eORenForm := NoForm
+
+decomp:  
+         C1:  (ADJrec1.form          = allerSuperlative) 
+              and (ADJrec1.eORenForm = NoForm)
+           C2:  allerSup in ADJrec1.superlatives
+           A2:  SFCATrec1.key := SFKst
+           C2:  allerIrregSup in ADJrec1.superlatives
+           A2:  SFCATrec1.key := SFKonregst
+         A1:  PFCATrec1.key := PFKaller
+&
+\end{verbatim}
+\newpage
+\subsubsection{The "-e"-form of adjectives.}
+
+Note:  the "e"-form can be made out of: positive, 
+   comparative, superlative and allersuperlative of adjectives.
+
+Note: attributively used adjectives can get "-e"; nominalised adjectives can get
+      "-e" or "-en". The inherent attribute "uses" tells us whether or not 
+      adjectives can be used attributively or nominalised.
+
+\begin{verbatim}
+%adjEform
+
+m1:   ADJ{ADJrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    ADJ{ADJrec1}[mu1]
+
+comp:    
+         C1:  ADJrec1.eORenForm = NoForm
+           C2:  (ADJrec1.form     = comparative) 
+                 or (ADJrec1.form = superlative) 
+                 or (ADJrec1.form = allersuperlative)
+             C3: SFCATrec1.key = SFKe
+               C4: (attributive in ADJrec1.uses) 
+                    or (nominalised in ADJrec1.uses)
+               A4:  @
+             A3:  @
+           A2:  @
+           C2:  ADJrec1.form = positive 
+             C3:  (SFCATrec1.key = SFKe)
+                  and (   ((ADJrec1.eFormation = regeFormation)
+                           and (attributive in ADJrec1.uses))
+                      or  ((ADJrec1.eNominalised = regeNominalised)
+                           and (nominalised in ADJrec1.uses))   )
+             A3:  @
+             C3:  (SFCATrec1.key = SFKonrege)
+                  and (   ((ADJrec1.eFormation = irregeFormation)
+                           and (attributive in ADJrec1.uses))
+                      or  ((ADJrec1.eNominalised = irregeNominalised)
+                           and (nominalised in ADJrec1.uses))   )
+             A3:  @
+           A2:  @
+         A1:  ADJrec1.eORenForm := eForm
+
+decomp:  
+         C1: ADJrec1.eORenForm = eForm
+           C2:  (ADJrec1.form     = comparative) 
+                 or (ADJrec1.form = superlative) 
+                 or (ADJrec1.form = allersuperlative)
+             C3: (attributive in ADJrec1.uses) 
+                  or (nominalised in ADJrec1.uses) 
+             A3:  @
+           A2:  SFCATrec1.key := SFKe
+           C2:  ADJrec1.form = positive 
+             C3:  ((attributive in ADJrec1.uses) 
+                    and (ADJrec1.eFormation   = irregeFormation))
+                  or
+                  ((nominalised in ADJrec1.uses) 
+                    and (ADJrec1.eNominalised = irregeNominalised))
+             A3:  SFCATrec1.key := SFKonrege
+             C3:  ((attributive in ADJrec1.uses) 
+                   and (ADJrec1.eFormation   = regeFormation))
+                  or
+                  ((nominalised in ADJrec1.uses)
+                   and (ADJrec1.eNominalised = regeNominalised))
+             A3: SFCATrec1.key := SFKe 
+           A2:  @
+         A1:  ADJrec1.eORenForm := NoForm
+&
+\end{verbatim}
+\newpage
+\subsubsection{The "-en"-form of adjectives.}
+\begin{verbatim}
+%adjENform
+
+m1:   ADJ{ADJrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    ADJ{ADJrec1}[mu1]
+
+comp: 
+        C1:  ADJrec1.eORenForm = eForm
+           C2:  (nominalised in ADJrec1.uses) 
+                and (SFCATrec1.key = SFKen) 
+             C3:  (ADJrec1.form     = positive) 
+                   or (ADJrec1.form = comparative)
+                   or (ADJrec1.form = superlative) 
+                   or (ADJrec1.form = allersuperlative)
+             A3:  @
+           A2:  @
+         A1:  ADJrec1.eORenForm := enForm
+
+decomp:  
+         C1: (nominalised in ADJrec1.uses) 
+             and (ADJrec1.eORenForm = enForm) 
+           C2: (ADJrec1.eNominalised     = regeNominalised)
+                or (ADJrec1.eNominalised = irregeNominalised)
+             C3: (ADJrec1.form     = positive) 
+                  or (ADJrec1.form = comparative) 
+                  or (ADJrec1.form = superlative) 
+                  or (ADJrec1.form = allersuperlative)
+             A3: @
+           A2: @
+         A1: SFCATrec1.key     := SFKen;
+             ADJrec1.eORenForm := eForm
+&
+\end{verbatim}
+\newpage
+\subsection{Adverbs.}
+\subsubsection{Rule for adverbs without derivational affixes.}
+\begin{verbatim}
+%badvtosubadv
+
+m1:   BADV{BADVrec1}
+m:    SUBADV{SUBADVrec1} [head/ BADV{BADVrec1}]
+
+comp:    
+         C: true
+         A: SUBADVrec1 := COPYT_badvtosubadv(BADVrec1)
+
+decomp:  
+         C: true
+         A: @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for the derivation of adverbs from adjectives.}
+
+\begin{verbatim}
+%AdvFromAdj
+
+m1: SUBADJ{SUBADJrec1}[mu1]
+
+m:  SUBADV{SUBADVrec1}[complrel/SUBADJ{SUBADJrec1}[mu1], 
+                        head/BADVSUFF(adjadvBADVSUFFkey){BADVSUFFrec1}]
+
+comp:
+
+C1: true
+   C2: SUBADJrec1.possadv = true
+   A2: SUBADVrec1.lastaffix     := advaffix
+A1: SUBADVrec1.req          := SUBADJrec1.req;  
+    SUBADVrec1.env          := SUBADJrec1.env;  
+    SUBADVrec1.comparatives := SUBADJrec1.comparatives;
+    SUBADVrec1.superlatives := SUBADJrec1.superlatives;
+    SUBADVrec1.subcs       := BADVSUFFrec1.subcs;    
+    SUBADVrec1.Qstatus     := BADVSUFFrec1.Qstatus;  
+    SUBADVrec1.class        := SUBADJrec1.class;
+    SUBADVrec1.deixis       := SUBADJrec1.deixis;
+    SUBADVrec1.aspect       := SUBADJrec1.aspect;
+    SUBADVrec1.retro        := SUBADJrec1.retro;
+    SUBADVrec1.mood        := BADVSUFFrec1.mood;    
+    SUBADVrec1.thetaadv    := BADVSUFFrec1.thetaadv;    
+    SUBADVrec1.advpatterns := BADVSUFFrec1.advpatterns;    
+    SUBADVrec1.prepkey     := BADVSUFFrec1.prepkey;    
+    SUBADVrec1.temporal    := BADVSUFFrec1.temporal;
+    SUBADVrec1.possnietnp  := BADVSUFFrec1.possnietnp;    
+    SUBADVrec1.thanas      := BADVSUFFrec1.thanas;    
+    SUBADVrec1.Radvb           := false
+
+decomp:
+
+C1: (SUBADVrec1.req          = SUBADJrec1.req)          and
+    (SUBADVrec1.env          = SUBADJrec1.env)          and
+    (SUBADVrec1.comparatives = SUBADJrec1.comparatives) and
+    (SUBADVrec1.superlatives = SUBADJrec1.superlatives) and
+    (SUBADVrec1.subcs        = BADVSUFFrec1.subcs)        and
+    (SUBADVrec1.Qstatus      = BADVSUFFrec1.Qstatus)      and
+    (SUBADVrec1.class        = SUBADJrec1.class)        and
+    (SUBADVrec1.deixis       = SUBADJrec1.deixis)       and
+    (SUBADVrec1.aspect       = SUBADJrec1.aspect)       and
+    (SUBADVrec1.retro        = SUBADJrec1.retro)        and
+    (SUBADVrec1.mood         = BADVSUFFrec1.mood)         and
+    (SUBADVrec1.thetaadv     = BADVSUFFrec1.thetaadv)     and
+    (SUBADVrec1.advpatterns  = BADVSUFFrec1.advpatterns)  and
+    (SUBADVrec1.prepkey      = BADVSUFFrec1.prepkey)      and
+    (SUBADVrec1.temporal     = BADVSUFFrec1.temporal)     and
+    (SUBADVrec1.possnietnp   = BADVSUFFrec1.possnietnp)   and
+    (SUBADVrec1.thanas       = BADVSUFFrec1.thanas)       and
+    (SUBADVrec1.Radvb        = false)  
+   C2:  (SUBADJrec1.possadv    = true)   and
+        (SUBADVrec1.lastaffix  = advaffix)                  
+   A2: @
+A2: @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for positive form of adverbs.}
+\begin{verbatim}
+%advposvorm
+
+m1:   SUBADV{SUBADVrec1}[mu1]
+m:    ADV{ADVrec1} [head/ SUBADV{SUBADVrec1}[mu1]]
+
+comp:     
+         C:   true
+         A:   ADVrec1       := COPYT_subadvtoadv(SUBADVrec1);
+              ADVrec1.eORenForm  := NoForm;
+              ADVrec1.form       := positive
+
+decomp:  
+         C:   (ADVrec1.eORenForm = NoForm)
+              and (ADVrec1.form  = positive)
+         A:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for comparative forms of adverbs.}
+\begin{verbatim} 
+%advcompvorm
+
+m1:   SUBADV{SUBADVrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    ADV{ADVrec1} [head/ SUBADV{SUBADVrec1}[mu1]]
+
+comp:    
+         C1:  true
+           C2:  (SFCATrec1.key = SFKer) 
+                 and (erComp in SUBADVrec1.comparatives)
+           A2:  ADVrec1  := COPYT_subadvtoadv(SUBADVrec1)
+           C2:  (SFCATrec1.key = SFKonreger) 
+                 and (erIrregComp in SUBADVrec1.comparatives) 
+           A2:  ADVrec1  := COPYT_subadvtoadv(SUBADVrec1)
+         A1:  ADVrec1.eORenForm  := NoForm;
+              ADVrec1.form       := comparative
+
+decomp:  
+         C1:  (ADVrec1.eORenForm = NoForm) 
+               and (ADVrec1.form = comparative)
+           C2:  erComp in ADVrec1.comparatives
+           A2:  SFCATrec1.key := SFKer
+           C2:  erIrregComp in ADVrec1.comparatives
+           A2:  SFCATrec1.key := SFKonreger
+         A1:   @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for superlatives of adverbs.}
+\begin{verbatim} 
+%advsupvorm
+
+m1:   SUBADV{SUBADVrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    ADV{ADVrec1} [head/ SUBADV{SUBADVrec1}[mu1]]
+
+comp:    
+         C1:  true
+           C2:  (SFCATrec1.key = SFKst) 
+                 and (stSup in SUBADVrec1.superlatives)
+           A2:  ADVrec1  := COPYT_subadvtoadv(SUBADVrec1)
+           C2:  (SFCATrec1.key = SFKonregst)
+                 and (stIrregSup in SUBADVrec1.superlatives)
+           A2:  ADVrec1  := COPYT_subadvtoadv(SUBADVrec1)
+         A1:  ADVrec1.eORenForm  := NoForm; 
+              ADVrec1.form       := superlative
+
+decomp:  
+        C1:  (ADVrec1.eORenForm = NoForm)
+              and (ADVrec1.form = superlative)
+           C2:  stSup in ADVrec1.superlatives
+           A2:  SFCATrec1.key := SFKst
+           C2:  stIrregSup in ADVrec1.superlatives
+           A2:  SFCATrec1.key := SFKonregst
+         A:  @
+&
+\end{verbatim}
+\newpage
+\subsubsection{Rule for the "aller"-superlative of adverbs.}
+\begin{verbatim} 
+%advallersupvorm
+
+m1:   PFCAT{PFCATrec1}
+m2:   SUBADV{SUBADVrec1}[mu1]
+m3:   SFCAT{SFCATrec1}
+m:    ADV{ADVrec1} [head/ SUBADV{SUBADVrec1}[mu1]]
+
+comp:    
+         C1:  PFCATrec1.key = PFKaller
+           C2:  (SFCATrec1.key = SFKst) 
+                 and (allerSup in SUBADVrec1.superlatives)
+           A2:  ADVrec1  := COPYT_subadvtoadv(SUBADVrec1)
+           C2:  (SFCATrec1.key = SFKonregst) 
+                 and (allerIrregSup in SUBADVrec1.superlatives)
+           A2:  ADVrec1  := COPYT_subadvtoadv(SUBADVrec1)
+         A1:  ADVrec1.eORenForm  := NoForm;
+              ADVrec1.form       := allersuperlative
+
+decomp:  
+         C1:  (ADVrec1.eORenForm = NoForm) 
+               and (ADVrec1.form = allersuperlative)
+           C2:  allerSup in ADVrec1.superlatives
+           A2:  SFCATrec1.key := SFKst
+           C2:  allerIrregSup in ADVrec1.superlatives
+           A2:  SFCATrec1.key := SFKonregst
+         A1:  PFCATrec1.key := PFKaller
+&
+\end{verbatim}
+\newpage
+\subsubsection{The "-e"-form of adverbs.}
+
+Note: adverbs have eForm in the (aller)superlative, like "het beste", "het 
+      liefste" (from: graag). They never have enForm. I assume that every
+      adverb that can have (aller)superlative also can have the eForm of 
+      this (aller)superlative, and that this will be made regular (with
+      SFKe) because the string ends in -st.
+
+\begin{verbatim} 
+%adveform
+
+m1:   ADV{ADVrec1}[mu1]
+m2:   SFCAT{SFCATrec1}
+m:    ADV{ADVrec1}[mu1]
+
+comp:    
+         C1:  (ADVrec1.eORenForm = NoForm) 
+              and (SFCATrec1.key = SFKe)
+           C2:  (ADVrec1.form    = superlative) 
+                or (ADVrec1.form = allersuperlative)
+           A2:  @
+         A1:  ADVrec1.eORenForm := eForm
+
+decomp:  
+         C1: ADVrec1.eORenForm = eForm
+           C2:  (ADVrec1.form    = superlative) 
+                or (ADVrec1.form = allersuperlative)
+           A2:  @
+         A1: SFCATrec1.key     := SFKe; 
+             ADVrec1.eORenForm := NoForm
+&
+\end{verbatim} 
+\end{document}

@@ -1,0 +1,57 @@
+#! /bin/sh -e
+#
+case $# in
+0) echo "Usage: ftcopy componentname filename"; exit 1;;
+1) echo "Usage: ftcopy componentname filename"; exit 1;;
+2) ;;
+*) ;;
+esac
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+#
+#
+trap '' 1 2 3
+#
+trap 'echo "FTCOPY: No ftcopy allowed during your other grabs"; umask 22; cd $savedir; exit 2' 0
+umask 222
+( echo "  " > $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs ) 2> /dev/null
+umask 22
+#
+#
+set -e
+trap 'echo "FTCOPY: No ftcopy allowed during your integrate"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs ; cd $savedir; exit 2' 0
+if ( test -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs )
+then exit 0
+fi
+#
+#
+set -e 
+trap 'echo "FTCOPY: Error during ftcopy" ; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs ; cd $savedir ; exit 2' 0
+#
+#
+#
+fname=`$RBS_DIR/get_fname RBS_logicals $1 $2`
+if ( test "$1" = "actions" )
+then comp="actions"
+else comp="$1/target"
+fi
+if ( test -s  $comp/$2 )
+then echo "FTCOPY: File already exists in your target directory!"
+     exit
+else
+     if ( test "$fname" )
+     then cp $fname $comp/$2
+          echo "FTCOPY: copied (not grabbed!) file $fname"
+          chmod a+x $comp/$2
+     else 
+          echo "FTCOPY:  File does not exist in archive path"
+          exit
+     fi
+fi
+#
+#
+#
+rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs
+cd $savedir
+trap 0

@@ -1,0 +1,546 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3.software
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        : Lextree-rule compiler
+
+         Author       :   Rene@' Leermakers
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  119
+
+         Date         :  18/07/86
+
+         Status       :  concept
+
+         Supersedes   :  ...
+
+         Distribution :  software, morpho groups
+
+         Clearance    :  project
+
+         Keywords     :  lextree rules, compiler
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright (c) Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 0119                    date:18/07/86
+$LD 4
+$Np 1
+$QM
+$Ch 1,Introduction
+In this document the lextree-compiler is described. In section 2 the notation
+of the lextree rules is given, both informally and by giving a rudimentary
+grammar, without attributes. The complete attributed grammar, which is used
+in the compiler, is given in the appendix.
+Section 3 contains information about the methods used by and the internal
+structure of the compiler. Finally, in section 4 it is explained how to
+use the compiler. As soon as the morphological component of Rosetta comes into
+existence, this last section will be somewhat outdated.
+$CH 2,Notation
+$CH 2.1,Informal description
+The rule starts with '%' as the first character of a line, followed by the rule
+name:
+$UM
+
+%rulename
+
+$QM
+The rule name is any string of characters. It should be unique, of course.
+Subsequently, input and output models are specified as follows:
+$UM
+
+M1: catname1{catname1rec1}[relname/catnaam2{catnaam2rec1},..]
+M2: ..............
+ .
+ .
+M:  catname3{catname3rec1}[relname/catname1{catnamerec1},relname2/T1,..]
+
+$QM
+To each category a number of record names is associated with as names
+the strings obtained by concatenating the category name, the string 'rec' and
+a number. For the time being the allowed numbers are 1 to 9.
+The names of the input models are "M" or "m", followed by a number. The output
+model name is "m" or "M". The class of allowed models is being specified by 
+a grammar, see the next section and the appendix.
+$NL
+After the models, the compositional and decompositional rules are given, in that
+order. The compositional rule starts with the string "comp:" as the first 
+characters of a line:
+$UM
+
+comp:
+
+The decompositional rule starts likewise with the "decomp:" statement:
+
+decomp:
+
+$QM
+The comp: and decomp: statements are followed by nested condition-action
+pairs:
+$UM
+$NP
+C1: condition1
+        C2: condition2
+        A2: action1
+        C2: condition
+                C3: condition
+                A3: action
+        A2: action
+A1: action
+C: condition
+A: action
+
+$QM
+The conditions are preceded by "C" or "c", possibly followed by a number, 
+followed by ":". The actions are preceded by "A" or "a", possibly followed by 
+a number and ":". C-numbers and A-numbers do not have to be unique. The actions
+must be pascal statements, separated by semi-colons. Likewise the conditions
+must be in pascal format. The compiler does not completely analyze conditions
+and actions in order to subsequently translate them. Rather, parts of the 
+pascal procedures the rule is translated into, are simply copies of the 
+conditions and actions appearing in the rule.
+$NL
+The rule is concluded by "&" as the first character of a line.
+
+$CH 2.2,lextree-rule grammar
+A basic grammar formalizing the above rule structure follows below. It is the
+context-free grammar that underlies the present lextree-rule compiler. The
+models allowed by the grammar contain T-variables (for s-trees) and, in a very
+limited way, mu-variables (for reltree-lists). The grammar presented below
+is the actual grammar that was used with its attributes stripped off, for 
+readability reasons. The attributed grammar is given in the appendix. It
+completely specifies the allowed 'sentences', apart from the layout aspects
+mentioned above, such as that the rule name should be written directly at the
+beginning of a line.
+$NL
+The attribute-less grammar does of course not specify the same language
+as does the complete grammar. For instance, attributes are used to check wether
+the first model name is m1, the second m2, etcetera. Also, the correspondence
+between record names and category names is checked via attributes. The
+attributeless grammar also unjustly allows the output model to be a T-variable,
+and T-variables to have reltree-lists. These combinations are also filtered
+out using attributes.
+$NL
+In extended BNF-notation the grammar rules look as follows:
+$UM
+
+
+utt: "%".rulename.models."comp:".capairs."decomp:".capairs."&"
+models: inputmodels.outputmodel
+inputmodels: {Mcijfer.":".model}
+outputmodel: mcijfer.":".model
+model: nodedescription.["[".[reltreelist]."]"]
+nodedescription: (catname."{".catrecname."}"|Tcijfer)
+reltreelist: reltree.{",".reltree}|mucijfer 
+reltree: relname."/".model
+capairs: {condition.[capairs].action}
+action: Acijfer.":".(pascal.{";".pascal}|"@").["::"]
+condition: Ccijfer.":".pascal.{"and".pascal}.["::"]
+tcijfer: "T".number
+mcijfer: ("M"|"m").[number]
+ccijfer:  ("C"|"c").[number]
+acijfer:  ("A"|"a").[number]
+mucijfer:  "mu".number
+number: 1|2|3|4|5|6|7|8|9
+rulename: charstring
+catname: charstring
+catrecname: charstring
+relname: charstring
+pascal: charstring
+
+$QM
+The last five rules rewrite non-terminals into the terminal 'charstring', which
+is not further analyzed in the grammar. This implies that the syntax check of
+a compiler based on this grammar is similarly limited. Only a successful 
+pascal compilation of the translated rule will imply further syntactic 
+correctness.
+$CH 3,Compiler structure
+In this section, I will describe the various modules of the compiler. The
+contents are summarized, and the relevant file-names mentioned.
+$CH 3.1,Scanner
+The file tools:lexcomscanner contains a very simple scanner. It identifies
+the rule name at the beginning of a line and subsequently looks for the
+reserved 'tokens' in the rule. These are ":" , ";" , "," , "{" , "}" , "[" ,
+"]" , "/" , "and". It stops when '&' is encountered as the first character
+of a line. After the statement 'comp:' the scanner only recognizes the
+tokens ":" , ";" and "and".
+$NL
+The relevant characters between two tokens are identified as "charstring". Thus,
+the output of the scanner is a sequence of tokens and charstring's.
+$CH 3.2,Parser
+The grammar sketched in section 2.2 and detailed in the appendix can
+be implemented in exactly the same way as has been done for the surface grammar
+of Rosetta2. If this is done, the same parser can be used as in Rosetta, which
+is very convenient. I chose the parser based on the earley algorithm, because
+its internals are known to me best. It transforms the output of the scanner
+into a syntax tree. Correct rules have one and only one such syntax tree.
+$NL
+The file tools:lexcomsurfpar.pas contains the parser, the file 
+tools:lexcomsurfgraph.pas the procedures constructing the surfgraph's needed by
+the parser, and the 'surface rules' may be found in tools:lexcomsurfrules.pas.
+$CH 3.3,Code generation
+$SC &%
+The code generation module (contained in tools:lexcomcode.pas)
+contains three main procedures, one (writecomcode) generating compositional, 
+one (writedecomcode) writing decompositional code, and one (writeintercode) 
+that updates a file needed for the interface with the morphological component 
+of Rosetta. The first two procedures directly reflect the grammar structure, 
+in the following way. They each call a local procedure uttproc which takes as 
+input the complete syntax tree. Uttproc in its turn has two local procedures, 
+modelsproc and capairsproc, corresponding to the (real) nonterminals in the 
+right-hand side of the first rule of the grammar. 
+These procedures take as input the partial syntax tree headed 
+by the corresponding non-terminal. Hence, modelsproc takes a sub-tree of which 
+the top node has category 'models', the procedure capairsproc local to 
+'writecomcode' gets the first sub-tree with 'capairs' at the top, whereas the 
+second such sub-tree is the argument of the capairsproc of 'writedecomcode'.
+In its turn modelsproc has local procedures inputmodelsproc and 
+outputmodelproc, etcetera. Whenever a derivation N ->&*& aNb exists, where
+N is some nonterminal and a and b are strings of terminals and non-terminals,
+no procedure Nproc for the second N is created. Instead, Nproc calls itself,
+recursively, possibly via local procedures. In the present grammar the
+non-terminals 'model' and 'capairs' have this recursive property.
+$NL
+Each procedure corresponding to a non-terminal, writes code to the relevant
+output file, which depends mainly on information at the top of its input tree.
+Moreover, for each son tree it calls the procedure corresponding to the 
+category of its top node, passing the son tree as the argument.
+$NL
+In practise, I deviated slightly from this scheme, partly because of problems
+inherent to lextree-rule compiling, but mainly because of personal weakness.
+In particular, in one or two cases, top node information seemed insufficient 
+for generating proper code, and I started looking deeper into the syntax tree.
+$CH 3.4,Command files
+A few command procedures exist to run the program. They can be found under
+Rosetta as syslibdir:lexcomstartlexje.com, syslibdir.lexcomlexje.com and
+syslibdir:lexcomblexje.com. In the next section it is explained how to use them.
+$CH 4,External behaviour
+The program expects four files to exist. Their names are to be given at the 
+beginning of a compiling session through the command:
+$UM
+
+ $startlexje <rulefile> <comp.file> <decomp.file> <inter.file>
+
+$QM
+The file <rulefile> contains the lextree rules in the format described before. 
+The files <comp.file> and <decomp.file> are the target files the translation
+is to written into. Lastly in <inter.file> information is collected that is
+needed for the interface with the morphological component. In the 
+(immediate) future, given the language, the last three file names will be 
+known to the system, and the above command will be replaced by something like:
+$UM
+
+ $startlexje <rulefile> <language>
+
+Subsequently, you can invoke the compiler by the command:
+
+ $lexje
+
+$QM
+The program will request for the rule name, and one has two options. One can
+supply a rule name, which can be found in <rulefile>, or answer 'all'.
+If a rule name is supplied, the program will ask what has to be done. It can 
+delete the rule (i.e. remove its traces in the files <comp.file>, <decomp.file>
+and <inter.file>), add a new rule or revise an already existing one. 
+If one answers 'all' to the rule name request, the program will compile
+all rules contained in <rulefile>. 
+$NL
+The program can also be invoked in batch mode by the command:
+$UM
+
+ $blexje
+
+$QM
+which will execute the program in the 'all' mode.
+$NL
+The files <comp.file>, <decomp.file>, and <inter.file> are assumed to have
+a certain content initially. For instance, the first two must be
+pascal modules, with declarations of record variables, procedures and functions
+used in the rules. In addition some pascal comments are required.
+For instance, the initial comp.pas file should be according to the format:
+$UM
+$NP
+
+[INHERIT('domain')]
+MODULE composlextrees(output);
+var {recorddeclarations}
+
+procedure skip;
+begin
+end;
+
+{other procedures and functions used in the rules}
+
+{firstrule:}
+
+{:lastrule}
+END.{composlextrees}
+ 
+$QM
+The module imports the domain of s-trees. Of course, it will also have to
+create an environment, but that is irrelevant for the lextree compilation. The 
+record declarations should be in accordance with the category names of the 
+domain. 
+The local procedure skip appears in translated rules and must be included. The 
+comments {firstrule:} and {:lastrule} are obligatory. They are used by the 
+program to find the correct place to insert the rules.
+$NL
+The other files have similar initial contents; for a concrete example, see the 
+files comp.pas, decomp.pas, inter.dat, together with domain.env, in the 
+directory [leermaker.compile].
+
+$CH 5,Appendix: the complete grammar
+In this section the grammar is given that has been used in the lextree compiler.
+The notation is similar to the one used in the surface grammar documentation
+of Rosetta2 (doc.0022). It deviates a little bit from the grammar of section 2,
+but has a one-to-one correspondence with the implementation. The assignments to
+attributes of created categories are explicitly written. Some of the 
+attributes are for use inside the grammar, i.e. for syntactic purposes, others
+mainly exist for code-generating purposes.
+$UM
+
+1:utt: rulename%1%.models%2%.comp%3%.capairs%4%.decomp%5%.capairs%6%
+parameters:void
+Hinit,1,2,3,4,5,6:void
+Hfinal:mkutt;no attributes
+
+2:models: inputmodels%1%.outputmodel%2%
+parameters:void
+Hinit,1,2:void
+Hfinal:mkmodels;no attributes
+
+3:inputmodels: {Mcijfer%1%.dotdot%3%.model%2%}
+parameters:numberofmodels:integer
+Hinit:numberofmodels:=0
+1:loccond:not(outputmodelname(mfield))
+  globcond: checkmodelname(mfield,numberofmodels)
+2:loccond:true
+  globcond:true;numberofmodels:=numberofmodels + 1
+3:void
+Hfinal:mkinputmodels;numberofmodels:=numberofmodels
+
+4:outputmodel: mcijfer%1%.dotdot%3%.model%2%
+parameters:mstring:string
+Hinit:mstring:=' '
+1:loccond:outputmodelname(mfield)
+  globcond:true;mstring:=mfield
+2:loccond:true
+  globcond:not(variable and output_model(mstring)) 
+3:void
+Hfinal:mkoutputmodel;no attributes
+
+5:model: 
+nodedescription%1%.[sqareopen%2%.[reltreelist%3%].squareclose%4%]
+parameters:variable2,existreltreelist,nonemptyreltreelist:boolean
+Hinit:Tname2:=' ';variable2,existreltreelist,nonemptyreltreelist:=false
+1:loccond:true
+  globcond:true;if variable then variable2:=true;Tname2:=Tname
+2:loccond:true
+  globcond:true;existreltreelist:=true
+3:loccond:true
+  globcond:not(variable2);nonemptyreltreelist:=true
+4:void
+Hfinal:mkmodel;variable:=variable2;existreltreelist:=existreltreelist
+              ;nonemptyreltreelist:=nonemptyreltreelist
+
+6:nodedescription: 
+(catname%1%.curlyopen%2%.catrecname%3%.curlyclose%4%|Tcijfer%5%)
+parameters: catn,rec,Tname:string;variable:boolean
+Hinit: catn,rec,Tname:=' ';variable:=false
+1:loccond: true
+  globcond: true;variable:=false;catn:=catfield
+2:void
+3:loccond: true
+  globcond: checkrecname(rec,catn);rec:=catrecfield
+4:void
+5:loccond: true
+  globcond: true;variable:=true;Tname:=Tfield
+Hfinal: mknodedescription;catn:=catn;rec:=rec;tname:=tname;variable:=variable
+
+7:reltreelist: reltree.{comma%2%.reltree}|mucijfer%5%
+               reltree: relname%1%.slash%3%.model%4%
+parameters:variable2,numberofsons:integer
+Hinit: numberofsons:=0;variable2:=false
+1:loccond: true
+  globcond: true;numberofsons:=numberofsons + 1
+2,3,4:void
+5:loccond: true
+  globcond: true;variable2:=true
+Hfinal: mkreltreelist;numberofsons:=numberofsons;variable:=variable
+
+8:capairs: {condition%1%.[capairs%2%].action%3%}
+parameters: levelpar,numberofson_ca_s:integer
+Hinit: levelpar:=1;numberofson_ca_s:=0
+1:loccond: true
+  globcond: true;numberofsoncas:=numberofson_ca_s + 1
+2:loccond: true
+  globcond: true;levelpar:=level+1
+3:void
+Hfinal: mkcapairs;level:=levelpar;numofcas:=numberofson_ca_s
+
+9:action: Acijfer%1%.dotdot%3%.(pascal%2%.{dotcomma%3%.pascal%2%}|apestaart%4%)
+          .[dotdot%3%.dotdot%3%] 
+parameters:numberofactions:integer
+Hinit: numberofactions:=0
+1:void
+2:loccond: not(checkapestaart(stringfield))
+  globcond: true;numberofactions:=numberofactions + 1
+3,4:void
+Hfinal: mkaction;numberofactions:=numberofactions
+
+10:condition: Ccijfer%1%.dotdot%3%.pascal%2%.{andcat%3%.pascal%2%}.
+[dotdot%3%.dotdot%3%]
+parameters: numberofconditions:integer
+Hinit: numberofconditions:=0
+1:void
+2:loccond: true
+  globcond: true;numberofconditions:=numberofconditions + 1
+3:void
+Hfinal:mkcondition;numberofconditions:=numberofconditions
+
+11:catname: charstring%1%
+parameters: doorgeefpar:string
+Hinit: doorgeefpar:=' '
+1:loccond: not(alreadyconcatenated)
+  globcond: true;doorgeefpar:=stringfield
+Hfinal:mkcatname;catfield:=doorgeefpar
+
+12:catrecname: charstring%1%
+parameters: doorgeefpar:string
+Hinit: doorgeefpar:=' '
+1:loccond: not(alreadyconcatenated)
+  globcond: true;doorgeefpar:=stringfield
+Hfinal:mkcatrecname;catrecfield:=doorgeefpar
+
+13:relname: charstring%1%
+parameters: doorgeefpar:string
+Hinit: doorgeefpar:=' '
+1:loccond: not(alreadyconcatenated)
+  globcond: true;doorgeefpar:=stringfield
+Hfinal:mkrelname;stringfield:=doorgeefpar
+
+14:pascal: charstring%1%
+parameters: doorgeefpar:string
+Hinit: doorgeefpar:=' '
+1:loccond: not(checkapestaart(stringfield))
+           and not(checkcomp(stringfield)) 
+           and not(checkdecomp(stringfield)) 
+           and not(checkacijfer(stringfield))            
+           and not(checktcijfer(stringfield)) 
+	   and not(checkmucijfer(stringfield))
+           and not(checkmcijfer(stringfield)) 
+           and not(checkccijfer(stringfield)) 
+  globcond: true;doorgeefpar:=stringfield
+Hfinal:mkpascal;stringfield:=doorgeefpar
+
+15:tcijfer: charstring%1%
+parameters: doorgeefpar:string
+Hinit: doorgeefpar:=' '
+1:loccond: checktcijfer(stringfield)
+  globcond: true;doorgeefpar:=stringfield
+Hfinal:mktcijfer;tfield:=doorgeefpar
+
+16:mcijfer: charstring%1%
+parameters: doorgeefpar:string
+Hinit: doorgeefpar:=' '
+1:loccond: checkmcijfer(stringfield)
+  globcond: true;doorgeefpar:=stringfield
+Hfinal:mkmcijfer;mfield:=doorgeefpar
+
+17:ccijfer: charstring%1%
+parameters: doorgeefpar:string
+Hinit: doorgeefpar:=' '
+1:loccond: checkccijfer(stringfield)
+  globcond: true;doorgeefpar:=stringfield
+Hfinal:mkccijfer;mfield:=doorgeefpar
+
+18:acijfer: charstring%1%
+parameters: doorgeefpar:string
+Hinit: doorgeefpar:=' '
+1:loccond: checkacijfer(stringfield)
+  globcond: true;doorgeefpar:=stringfield
+Hfinal:mkacijfer;afield:=doorgeefpar
+
+19:apestaart:charstring%1%
+parameters:void
+Hinit:void
+1:loccond: checkapestaart(stringfield)
+  globcond: true
+Hfinal:mkapestaart;no attributes
+
+20:comp:charstring%1%.dotdot%2%
+parameters:void
+Hinit:void
+1:loccond: checkcomp(stringfield)
+  globcond: true
+2:void
+Hfinal:mkcomp;no attributes
+
+21:decomp:charstring%1%.dotdot%2%
+parameters:void
+Hinit:void
+1:loccond: checkdecomp(stringfield)
+  globcond: true
+2:void
+Hfinal:mkdecomp;no attributes
+
+22:charstring:charstring%1%.charstring%2%
+parameters:doorgeefpar
+Hinit:doorgeefpar:= ' '
+1:loccond:not(checkapestaart(stringfield))
+           and not(checkcomp(stringfield)) 
+           and not(checkdecomp(stringfield)) 
+           and not(checkacijfer(stringfield))            
+           and not(checktcijfer(stringfield)) 
+           and not(checkmcijfer(stringfield)) 
+           and not(checkccijfer(stringfield))
+  globcond: true;addstring(doorgeefpar,stringfield)
+2:loccond:not(alreadyconcatenated) 
+           and not(checkapestaart(stringfield))
+           and not(checkcomp(stringfield)) 
+           and not(checkdecomp(stringfield)) 
+           and not(checkacijfer(stringfield))            
+           and not(checktcijfer(stringfield)) 
+           and not(checkmcijfer(stringfield)) 
+           and not(checkccijfer(stringfield))
+  globcond: true;addstring(doorgeefpar,stringfield)
+Hfinal:mkcharstring;stringfield:=doorgeefpar;alreadyconcatenated:=true
+
+23:mucijfer: charstring%1%
+parameters: doorgeefpar
+Hinit: doorgeefpar:=' '
+1:loccond: checkmucijfer(stringfield) 
+  globcond: true;doorgeefpar:=stringfield
+Hfinal: mkmucijfer;mufield:=doorgeefpar
+

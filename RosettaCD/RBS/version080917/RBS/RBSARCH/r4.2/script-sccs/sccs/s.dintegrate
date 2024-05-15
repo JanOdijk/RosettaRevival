@@ -1,0 +1,87 @@
+h07839
+s 00001/00001/00042
+d D 1.4 96/02/15 20:31:12 rous 4 3
+c 
+e
+s 00002/00002/00041
+d D 1.3 95/12/04 10:44:11 rous 3 2
+c 
+e
+s 00043/00001/00000
+d D 1.2 95/10/17 11:07:29 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 95/10/17 08:59:49 rous 1 0
+c date and time created 95/10/17 08:59:49 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+#! /bin/sh -e
+case $# in
+0) ;;
+*) echo "Usage: dintegrate"; exit 1;;
+esac
+# set -v
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+rm -f RBS_logicals
+cp $RBS_ARCHIVE$RBS_RELEASE/RBS_logicals RBS_logicals
+#
+set -e
+#
+trap 'echo "DINTEGRATE: Error during consolidate"; loopforever "DCONSOLID: Error" ; exit 2' 0
+#
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/doc/source
+for j in `ls`; do
+   k=`basename $j`
+   if ( test -s $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/s.$k.ascii )
+   then
+      echo "DCONSOLID: consolidating document file $j"
+      rm -f $RBS_ARCHIVE$RBS_RELEASE/doc/$k
+      rm -f $k.ascii
+      uuencode $k $k > $k.ascii
+      chmod ug+rwx $k
+      chmod ug+rwx $k.ascii
+I 3
+#      $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+E 3
+      $RBS_ARCHIVE/fuid "cp -p $k $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+D 3
+      $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+E 3
+I 3
+      $RBS_ARCHIVE/fuid "chmod ug=rx $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+E 3
+      rm -f $k
+      sccs -d$RBS_ARCHIVE$RBS_RELEASE/doc -psccs delta -s -y $k.ascii
+      chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/s.$k.ascii
+      users=`cat $RBS_ARCHIVE$RBS_RELEASE/RBS_users`
+      for u in `cat $RBS_ARCHIVE$RBS_RELEASE/RBS_users`; do
+         echo "informing user $u"
+D 4
+         echo "user $USER integrated document $k" | mail $u@prle
+E 4
+I 4
+         echo "user $USER integrated document $k" | mail -s "DINTEGRATED: $k" $u@prle
+E 4
+D 3
+#         echo "allerlaatste keer!" | mail $u@prle
+E 3
+      done
+   fi
+done
+#
+rm -f  $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/doc/target/* 
+cd $savedir
+trap 0
+E 2
+E 1

@@ -1,0 +1,3275 @@
+R263.tex
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Linguistics}
+   \RosTitle{Documentation of the rules for the translation
+             of temporal expressions in Rosetta3, part 1}
+   \RosAuthor{Lisette Appelo}
+   \RosDocNr{263}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{ Time, tense}
+   \MakeRosTitle
+%
+%
+\setlength{\parindent}{0in}
+\setlength{\unitlength}{1 em}
+\input{definitions}
+
+\section{Introduction}
+This document is meant as documentation for the `time rules' that have been 
+written for the first deadline of 1-7-1988. It is called {\em part 1}, because 
+there are more rules planned before the deadline of 1-11-1988. These planned 
+rules contain rules for the phenomena such as {\em future and prospectivity}, {
+\em habituality, frequency} and {\em `local tense'}.\\
+This document starts with a section on what the `time rules' for Rosetta3 are 
+and in particular,
+what the differences are with respect to the proposal for the 
+translation of temporal expressions in Rdoc.\ 53. This document presupposes 
+knowledge of that document. The outlines are repeated here, particularly when 
+the modifications are explained, but details are left out; for data and 
+examples the reader is referred to Rdoc.\ 53.\\
+Section 3 gives an overview of the rules written for CLAUSE in Dutch, 
+English and Spanish. Each class is commented on; some of (the consequences of) 
+the decisions and alternatives not chosen are explained.\\
+In section 4, the rules for ADJP  are described and the isomorphy with the 
+clausal rules is indicated. The rules for other non-clausal categories will be 
+along these lines. \\
+Section 5 deals with the temporal adverbials, but does not contain much new 
+information w.r.t. Rdoc.\ 53 as the rules have {\em not} been
+written yet; only rules for a 
+few, very simple ones  have been
+written for testing purposes. This is because the 
+subgrammars for ADVP, PREPP and the mood rules for adverbial sentences have not 
+been written yet.\\
+The solution in Rosetta3 for the complicating factors in a treatment of 
+temporal expressions {\em modality} and {\em negation} 
+is described in section 6.\\
+In section 7, some language-specific details are treated.\\
+The assumptions made about the rest of the M-grammar, the S-parser and the 
+morphological component are summed 
+up in section 8.\\
+Section 9  and 10  give an overview of the temporal aspects of the 
+auxiliary domain and the special functions respectively.\\
+Section 11, finally, contains some concluding remarks about the experiences 
+sofar.
+\section{The `time rules' in the M-grammars for Rosetta3}
+\subsection{Introduction}
+The `time rules' of the M-grammars for Rosetta3,as proposed in Rdoc. 53, are a 
+set of rules that account in the first place
+for the {\em tense} forms of verbs and the proper 
+combinations of {\em tense} and {\em temporal adverbials}. In the second place, 
+this set of rules contains rules for other subgrammars than the subgrammars of 
+the projection from VERB to CLAUSE to preserve (partial) isomorphy between 
+subgrammars.\\ 
+The most important difference between that
+ proposal for the translation of temporal 
+expressions and the actual implementation is a difference of what I 
+call {\bf strategy} of implementation into M-rules. 
+The original idea of how to treat {\bf time} in 
+Rosetta3 has not been implemented into the {\em lingware} in the straightforward
+manner I had in mind at the time writing
+Rdoc. 53. The result is a not-transparant complex of 
+`time rules' spread through the whole grammar. There were  three reasons for 
+doing this:
+\begin{enumerate}
+  \item The rather semantic nature of time does not fit very well into the 
+very syntactic approach to the M-grammars for Rosetta3.\\
+The rules do not only 
+spell out the {\em (periphrastic) tense}, the purely
+syntactic view on time, but 
+also account for correct combinations with temporal adverbials. Moreover, the 
+splitting up into more rule classes of the `tense rule class' of Rosetta2 was 
+not quite appreciated by the (monolingual) syntax writers. I suppose that it 
+was too `semantics- and translation-driven'. So, many compromises had to 
+be reached and the transparancy has been sacrificed.
+  \item Efficiency of the system.\\
+It turned out that not everything that was supposed to be handled in the 
+surface parser was acceptable for ambiguity reasons. So some adaptation rules 
+had to be added and other rules were complicated. Transformations 
+that exist in all languages are now rules, so that an ambiguity in generation 
+can be avoided. Note that this kind of efficiency is not only necessary for the 
+ultimate system, but also very convenient for debugging and testing purposes.
+
+  \item Near deadlines.\\
+As we are running out of time, new and better solutions cannot be implemented 
+for the moment.
+\end{enumerate}
+
+
+\subsection{The differences with the proposal in Rdoc.\ 53}
+Before indicating which specific changes took place and why, I will give a 
+short summary of the idea of treating time in Rosetta and what would be the 
+implementation at hand. For further details, see Rdoc.\ 53 and Appelo(1986).\\
+The intuitive
+semantic idea of time is the placing of an event on a time-axis involving a 
+specification of the relation with the moment of speech, relations with other 
+events on that time-axis and which `amounts of time' play a role. We assumed 
+that an event was represented by a (tenseless) sentence which had a (semantic)
+type called Aktionsart which was composed from properties of the constituents 
+of that sentence. We also assumed a time model existing of a time-axis with a 
+point of speech S, an interval E to which the event was associated, and some 
+reference intervals R. S, E and one R are always involved. Between these 
+intervals hold relations such as {\em before, after, simultaneous} etc.
+The intervals 
+can be specified for their `length' or relation with S. The strategy at hand 
+was to place the event in time by relating E, through R to S and by specifying 
+every time the specifications of length and relation to S of the intervals 
+involved. By doing this also restrictions of combinations could be expressed.
+The proposal for temporal expressions in Rosetta3 was along these lines,
+expressed by rule classes in the control expression:\\
+
+(OP = optional, OB = obligatory, OP/OB = optional, but obligatory if 
+possible)\\
+
+{\bf input}: a {\bf completed} clause with some value for Aktionsart, computed 
+by the  obligatory transformation class Aktionsartcalculation\\
+
+{\bf rules}:\\
+OP: Aktionsart rules: modificate the type of event, i.e. insert some auxiliary 
+verb (`local tense')\\
+OP: Duration rules: specify the `length' of the event, i.e. insert an adverbial 
+of duration\\
+OB: Aspect rules: relate the interval E to an interval R and specify R, i.e. 
+spell out aspectual tense forms and insert a referential time adverbial\\
+OP: Retrospective rules: relate two intervals R and specify the latter R, i.e. 
+spell out perfect tense forms and insert a referential time adverbial\\
+OB: Finiteness transformations: spell out finite or infinite forms\\
+OB: Deixis rules: relate the interval R to S, i.e. spell out deictic tense 
+forms.\\
+OP/OB: Abstract referential adverbial deletion transformations: delete abstract 
+adverbials.\\
+
+It turned out that doing it in this way, all adverbials could be added to the 
+right of the arguments in SVO-languages and to the left of arguments in SOV-
+languages in this order to get a neutral reading of the sentence.\\
+Further, by applying the rules in this order we got a natural order of the 
+auxiliary verbs such as {\em be} and {\em have} to the left and right of the 
+verb(s) respectively:\\
+
+\begin{lxam}
+&&&dat hij om 5 uur 3 uur gezwommen had (SOV, Dutch))
+\end{lxam}
+\begin{lxam}
+&&&that he had swum for 3 hours at 5 o'clock (SVO, English)
+\end{lxam}
+\begin{lxam}
+&&&que habia nadado por 3 horas a las cinco (SVO, Spanish)
+\end{lxam}
+The idea that S, E and one R are
+always involved in the time calculation for an event was
+expressed by the obligation of application
+of the Aktionsartcalculation transformations, 
+the aspect rules and the deixis rules and the possibility of an abstract 
+referential adverbial in case no overt referential adverbial is present. This 
+one had to be deleted in the end, of course. It had to be interpreted as a 
+kind of anaphore that has an antecedent in the context.\\
+It was already indicated in Rdoc.\ 53 that the place of the `time rules' would 
+not be at `the end ' of the grammar, but in the middle subgrammars 
+XPPROPtoCLAUSE and XPPROPtoXPFORMULA for convenience of other syntactic rules. 
+This did not cause any problems at that time, because all necessary information 
+was available in the form of (argument) variables and - as we will see later -
+because time adverbials were inserted directly by the `time rules'.
+\subsubsection{Changes in the M-grammar}
+Some of the changes and decisions with respect to the M-grammars affected the `
+time rules':
+\begin{enumerate}
+  \item Variables for adverbials\\
+These variables have a long history, but in the end we agreed on
+the following: there are variables for all
+adverbials. These variables do not always have a 
+propositional character, i.e. they are {\bf not} always
+of category XPPROP, but can also be of 
+category XP. This means that next to the XPPROP-subgrammars, XP-grammars will
+have to 
+be written. All variables (arguments and non-arguments) are introduced in the 
+XPPROPformation subgrammars and substituted for
+in the substitution rules, i.e. the 
+proposition substitution rules (propositional arguments and adverbial sentences
+) or the non-propositional substitution rules.\\
+For the `time rules' this means that not full temporal adverbials are inserted, 
+but first variables of category XP that are substituted later. The moment of 
+insertion of these variables had to be moved to the XPPROPformation 
+subgrammars. (Until then, 
+they were inserted in the XPPROPtoCLAUSE subgrammars.) The consequences of 
+these decisions are elaborated in the next section.
+  \item There are no separate XPPROPtoCLAUSE-subgrammars for every X anymore.
+There is only one left which takes as input all kinds of XPPROPs and makes them 
+CLAUSE in the clauseformation rules.\\
+For the `time rules' this means a saving of rules that had to be written in 
+order to get the isomorphy between subgrammars.
+  \item The path leading to VERBPFORMULA-VERBPPROP is still missing. For the 
+moment an adverb such as {\em graag} takes a SENTENCE and not a VERBPPROP as 
+argument.\\
+Because of the forseen isomorphy of these subgrammars this did not have much
+effect in the `time rules' for {\em like} or {\em graag}, but the `time rules'
+for imperatives had to be added to the path leading to CLAUSE-SENTENCE.
+
+  \item The category CONJP, later CONJSENT,
+ has been done away with. As I understood this was 
+because of reasons in the surface parser and the fact that from a syntactic 
+point of view, every sentence has a 
+conjunction. So CONJSENT has been substituted by SENTENCE. The special time 
+attributes due to the temporal conjunction
+have been added to SENTENCE and have been prefixed by {\em conj-}. The 
+conjunction is inserted in the mood rules.\\
+For the `time rules' this had a rather tecnical disadvantage caused by the 
+prefix {\em conj-} for the temporal conjunction attributes. It is not possible 
+to generalize over the values of these temporal attributes of different 
+syntactic categories in 
+the M-rule notation, because they do not have the same name for each relevant 
+syntactic category. This resulted in splitting up every rule that referred to 
+temporal properties of adverbials for every syntactic category they could have,
+i.e. ADVP, PREPP and SENTENCE.
+This holds for almost every `time rule'.
+\end{enumerate}
+The actual modular structure of the M-grammar is illustrated in figure 
+~\ref{subgrammars} for the subgrammars involved in the {\em propositional} 
+projection paths of BADV, BVERB and BADJ.
+\begin{figure}[htbp]
+\begin{picture}(40,45)
+\put(0,0){\framebox(10,7.5)}
+\put(15,0){\framebox(10,7.5)}
+\put(30,0){\framebox(10,7.5)}
+\put(0,12.5){\framebox(10,7.5)}
+\put(15,12.5){\framebox(10,7.5)}
+\put(30,12.5){\framebox(10,7.5)}
+\put(0,25){\framebox(10,5)}
+\put(15,25){\framebox(10,5)}
+\put(30,25){\framebox(10,5)}
+\put(0,35){\framebox(10,5)}
+\put(15,35){\framebox(10,5)}
+\put(30,35){\framebox(10,5)}
+\put(5,42){\makebox(0,0)[b]{BADV}}
+\put(20,42){\makebox(0,0)[b]{BVERB}}
+\put(35,42){\makebox(0,0)[b]{BADJ}}
+\put(20,41.5){\vector(0,-1){1.5}}
+\put(5,41.5){\vector(0,-1){1.5}}
+\put(35,41.5){\vector(0,-1){1.5}}
+\put(5,35){\vector(0,-1){5}}
+\put(20,35){\vector(0,-1){5}}
+\put(35,35){\vector(0,-1){5}}
+\put(5,25){\vector(0,-1){5}}
+\put(20,25){\vector(0,-1){5}}
+\put(35,25){\vector(0,-1){5}}
+\put(5,12.5){\vector(0,-1){5}}
+\put(20,12.5){\vector(0,-1){5}}
+\put(35,12.5){\vector(0,-1){5}}
+\put(5,25){\vector(3,-1){15}}
+\put(35,25){\vector(-3,-1){15}}
+\put(1,2.5){\shortstack{ADVPFORMULA\\ to \\ ADVPPROP}}
+\put(1,15){\shortstack{ADVPPROP\\ to \\ ADVPFORMULA}}
+\put(2,26.5){\shortstack{ADVPPROP\\ formation}}
+\put(3,36.5){\shortstack{ADV\\ derivation}}
+\put(17,2.5){\shortstack{CLAUSE\\ to \\ SENTENCE}}
+\put(18,15){\shortstack{XPPROP\\ to \\ CLAUSE}}
+\put(17,26.5){\shortstack{VERBPPROP\\ formation}}
+\put(18,36.5){\shortstack{VERB\\ derivation}}
+\put(31,2.5){\shortstack{ADJPFORMULA\\ to \\ ADJPPROP}}
+\put(31,15){\shortstack{ADJPPROP\\ to \\ ADJPFORMULA}}
+\put(32,26.5){\shortstack{ADJPPROP\\ formation}}
+\put(33,36.5){\shortstack{ADJ\\ derivation}}
+\end{picture}  
+\caption{The subgrammars involved in the {\em propositional} projection paths
+of BADV, BVERB and BADJ}
+\label{subgrammars}
+\end{figure} 
+\subsubsection{Changes in the `time rules'}
+The following changes in the `time rules' 
+with respect to the proposals in Appelo(1986) and
+Rdoc.\ 53 took place:
+\begin{enumerate}
+  \item The aspect and retrospective rules were split up
+  \item Variables for temporal adverbials
+  \item Movement of the adverbial variable insertion rules to the 
+XPPROPformation subgrammars
+  \item The obligation of a referential adverbial for every clause was 
+given up
+\end{enumerate}
+With respect to the first three changes, it should be noticed that they took 
+place in this order.
+\begin{itemize}
+  \item {\bf Splitting up the aspect and retrospective rules.}\\
+The aspect and retrospective rules did two things: spell out tense 
+forms and insert adverbials, while other rules had only one task. 
+This was not motivated in a very principled way and it did not express a `
+feeling' (especially of Jan Odijk)
+that rules that spell out tense should be different from rules that 
+insert adverbial(variable)s. It was decided to split up these rules 
+which resulted in the following relevant part of the scheme:\\
+
+OB: Aspect rules: spell out aspectual tense forms\\
+OP: Retrospective adverbial insertion rules: insert adverbials with 
+retrospective properties\\
+OP: Retrospective rules: spell out perfect tense forms\\
+OB: Referential adverbial insertion rules: insert a referential, not 
+retrospective adverbial
+ \item {\bf Variables for temporal adverbials.}\\
+In the proposal of Rdoc.\ 53 full temporal adverbials were inserted directly 
+into the CLAUSE. As 
+explained above, these had 
+to be changed to variables for temporal adverbials and temporal adverbial 
+substitution rules had to be written.  But only for category ADVP and PREPP, 
+because SENTENCE, as a proposition,
+always was substituted before the `time rules'. So a variable 
+for SENTENCE was not necessary. Temporal adverbial sentences were not 
+substituted, but inserted directly.
+This resulted in the following scheme:\\
+
+{\bf XPPROPformation}:\\
+OB: Aktionsartcalculation transformations: calculate the value for the 
+attribute {\em Aktionsart} form properties of the constituents\\
+
+{\bf XPPROPtoCLAUSE} and {\bf XPPROPtoXPFORMULA}:\\
+OP: Aktionsart rules: insert some auxiliary verb (`local tense')\\
+OP: Duration rules: insert durative adverbials of category ADVPVAR, PREPVAR and 
+SENTENCE\\
+OB: Aspect rules: spell out aspectual tense forms\\
+OP: Retrospective adverbial insertion rules: insert adverbials with 
+retrospective properties of category ADVPVAR, PREPPVAR and SENTENCE\\
+OP: Retrospective rules: spell out perfect tense forms\\
+OB: Referential adverbial insertion rules: insert a referential, not 
+retrospective adverbial of category ADVPVAR, PREPVAR and SENTENCE\\
+OB: Finiteness transformations: spell out finite and infinite forms\\
+OB: Deixis rules: spell out deictic tense forms\\
+
+{\bf CLAUSEtoSENTENCE} and {\bf XPFORMULAtoXPPROP}:\\
+OP: Temporal adverbial substitution rules: substitute adverbials of category 
+ADVP and PREPP for ADVPVAR and PREPPVAR respectively.\\
+OP/OB: Abstract referential adverbial deletion transformations: delete abstract 
+adverbials.\\
+
+Note that not all rules will exist in the XPFORMULA-variant. Sometimes only a 
+kind of `default rule' for an obligatory rule class will take care of the 
+isomorphy between subgrammars. In general, `full' isomorphy between subgrammars 
+within one language is not required, only some `partial' isomorphy. (For 
+further details on this topic, see Rdoc.\ 67 and Appelo et. al (1987).)\\
+ 
+A general advantage of having variables is the possibility to express scope 
+relations. Unfortunately, temporal adverbials, except for the so called {\em 
+frequency adverbials} that were not treated yet in Rosetta, are not considered
+to bear scope (but see also the section on Negation with respect to durative 
+adverbials).
+In general, we assumed in Rosetta that the surface order reflects scope order 
+and that this order should be maintained as much as possible during translation
+. Unfortunately, the neutral surface order of temporal adverbials is opposite 
+in SOV- and SVO-languages. So, special measures have to be taken in the 
+substitution rules to get the right order!\\
+Propositions are not subject to scope order. The reasons
+ they are substituted or 
+inserted before the `time rules' are 1)
+that they are subject to control and verb cluster
+transformations
+and 2) that subgrammar switches such as with {\em graag} should precede the `
+time rules'. Temporal adverbial sentences also fall in this class, although 
+I am not so sure about that.\\
+Note that the place of the `time rules', especially the rules that spell out 
+periphrastic tense, in the M-grammar in general was 
+motivated by the necessary precedence to the verb cluster transformations (in 
+Dutch), because of the fact that it was necessary to know the temporal 
+auxiliary verbs in those transformations (cf. Jan Odijk: Rdoc?).
+  \item {\bf Movement of the adverbial variable insertion rules to the 
+XPPROPformation subgrammars}\\
+The reason for doing this was the wish that temporal adverbials could be
+mixed with other adverbials which were already introduced in those subgrammars.
+The temporal adverbial insertion rules now can form one iterative rule class 
+with the other adverbial insertion rules. The place of insertion is directly to 
+the left of the VERBP in SOV-languages and directly to the right of the VERBP 
+in SVO-languages. The resulting order of 
+adverbial variables in the S-tree 
+will be reflected by the order of insertion. In general, all orders of 
+variables should be generated; the substitution order will reflect the scope 
+relations. But the temporal adverbials have a (neutral) 
+order of their own: `durative-retrospective-referential', in SOV to the left 
+from the VERBP, resulting in  referential-retrospective-durative,
+in SVO to the right from the VERBP. Because the M-rule-notation was not suited 
+to express such conditions at that time, special PASCAL 
+functions had to be made to take care of this order that was reflected in the 
+order of the rules (and later in the control expression) of earlier proposals.
+In an iterative rule class this is not possible anymore.\\
+The result is the following scheme:\\
+
+{\bf XPPROPformation}:\\
+OP: Temporal adverbial variable insertion rules: insert variables for 
+referential, retrospective and durative adverbials of categories ADVPVAR,
+PREPPVAR and SENTENCEVAR.\\
+OB: Aktionsartcalculation transformations: calculate the value for the 
+attribute {\em Aktionsart} form properties of the constituents\\
+
+{\bf XPPROPtoCLAUSE} and {\bf XPPROPtoXPFORMULA}:\\
+OP: Temporal adverbial proposition substitution rule: substitute adverbials of 
+category SENTENCE for SENTENCEVAR\\
+OP: Aktionsart rules: insert some auxiliary verb (`local tense')\\
+OB: Aspect rules: spell out aspectual tense forms\\
+OP: Retrospective rules: spell out perfect tense forms\\
+OB: Finiteness transformations: spell out finite and infinite forms\\
+OB: Deixis rules: spell out deictic tense forms\\
+
+{\bf CLAUSEtoSENTENCE} and {\bf XPFORMULAtoXPPROP}:\\
+OP: Temporal adverbial substitution rules: substitute adverbials of category 
+ADVP and PREPP for ADVPVAR and PREPPVAR respectively.\\
+OP/OB: Abstract referential adverbial deletion transformations: delete abstract 
+adverbials\\
+
+Note that the obligation of one referential adverbial is not expressed in 
+this scheme anymore. The solution is that in cases where it is necessary the 
+deixis rules will require the presence of a referential adverbial (variable).
+  \item {\bf The obligation of a referential adverbial for all clauses was 
+given up}\\
+The first idea was that one referential adverbial, overt or abstract, was 
+required in every clause. If this adverbial was overt and deictic the clause 
+was called {\em temporally independent}, 
+in other cases it was, strictly spoken, {\em temporally
+dependent}. The abstract and non-deictic adverbials should be bound by some 
+deictic antecedent. This should be done by some kind of `control rules'. But 
+there are some problems with this idea:
+\begin{enumerate}
+  \item {\bf The definition of `independent sentence'.}\\
+This idea implies that an independent sentence always should contain 
+an overt deictic adverbial, but the kind of `independent sentences' Rosetta3 
+aims at, do not require that. For example, a simple main sentence without a 
+deictic adverbial would not be independent in the proposal above, but in 
+Rosetta3 it is preferred to call it `independent'.\\
+We can solve this problem by relaxing the constraint and 
+insert an abstract adverbial in cases there is no overt adverbial and say that 
+those non-deictic and abstract adverbials are interpreted in the context. In 
+fact, the same problem arises with pronomina (overt and in Spanish even 
+abstract). This problem stresses the idea that time only can be looked at 
+properly in texts.
+  \item {\bf The `temporal control' of dependent sentences.}\\
+As main sentences will fall under the class of `independent sentences' in 
+Rosetta3, dependent sentences always will be complement clauses or adverbial 
+sentences. (Note that they also {\em may} be independent!) It would be possible 
+to let them have a deictic variable that would be deleted under identity
+in so called `
+temporal control rules' after substitution in the higher clause. In the 
+proposal of Rdoc.\ 53 the right place would have been after the `time rules', 
+in the modified proposal it would already be possible right after (or in)
+the proposition substitution rules (i.e. before the `time rules') as the 
+variables for adverbials are now inserted earlier. How ever,
+the problems with this 
+proposal are:
+\begin{enumerate}
+  \item Relative clauses\\
+They can be  embedded rather `deeply', 
+in which case it is difficult to write such 
+control rules. Moreover, the substitution rules for NPs have been ordered after 
+the `time rules' which means that the control rules should be postponed.
+  \item Overt non-deictic adverbials\\
+In this proposal they should be treated as modifiers of abstract deictic 
+adverbials, which causes problems in the representation of such objects.
+  \item The aversion of syntax writers
+against abstract elements that never occur at the surface(!), although this 
+proposal would have caught their feeling `that every clause has its own time'
+and that there exists something as a (syntactic!)
+`consecutio temporum' rule, i.e. temporal control.
+\end{enumerate}
+Because of these problems of which the first two also already existed at the 
+time of Rdoc.\ 53, but which were not dealt with explicitly there, it was 
+decided there to distinguish between two attributes : {\em deixis} on CLAUSE and
+SENTENCE for independent sentences and the categories for temporal adverbials
+and {\em 
+superdeixis} on all XPPROPs, CLAUSE and SENTENCE for dependent sentences.
+In short, the value for superdeixis of a constituent
+should agree with the value for 
+deixis (or superdeixis) of the constituent it is substituted or inserted in.
+As this attribute superdeixis now takes care of the temporal control, the 
+(abstract) deictic adverbial variable in dependent clauses seemed to be
+no longer needed (solving problem b and c).
+The problem of the relative clauses could also be
+solved with an NP-attribute 
+{\em superdeixis} that could function as a `serving hatch'.\\
+The consequence of this approach is that almost all syntactic categories now 
+need the attribute {\em superdeixis} and that next to deixis rules superdeixis 
+rules are needed. As the latter ones
+can be seen as purely syntactic rules, i.e. as 
+`consecutio temporum rules', they were first transformations. But they always 
+cause temporary paraphrases in generation, which are `filtered out' in the 
+substitution rules. So for efficiency reasons they were made rules which is 
+possible under the assumption that a temporally dependent expression is always 
+translated to a temporally dependent expression. In fact, this was what we did 
+with the {\em obligatory} abstract deictic adverbial variables in earlier 
+proposals that were translated, 
+too. The information to be translated is now carried by a rule and expressed 
+in the S-trees with an attribute instead of by a(n) (abstract) 
+basic expression. The superdeixis rules differ from the deixis 
+rules in the conditions on referential adverbials: in superdeixis rules deictic 
+adverbials are not allowed, but the absence of adverbials and non-deictic 
+adverbials are allowed, in deixis rules the absence of adverbials is not 
+allowed. They form together one obligatory rule class: {\em deixis rules}, 
+which expresses the idea that every clause has its `own' deictic
+time, dependent or independent. Dependent clauses (and other constituents) are 
+subject to superdeixis checking in substitution rules.\\
+Note that if we
+look at the ultimate result, we also could have chosen for deixis 
+rules alone, without making difference between dependent and independent 
+clauses here, and separate temporal control {\em rules}, including no-control 
+rules, that take care of the checking and that would be translated. This 
+resembles the first ideas about `temporal control' except that it was done 
+with abstract basic expressions then and now with rules which, of course, does 
+not have the problem of deleting abstract elements and, worse,
+ inserting them in 
+analysis. 
+\end{enumerate}
+\end{itemize}
+\subsubsection{Additional transformations}
+During the process of writing the rules described above, we found out, that we 
+had to add some transformations. There were two different reasons for them:
+\begin{enumerate}
+  \item problems caused by the order of the rules 
+  \item efficiency and complexity of the surface parser
+\end{enumerate}
+
+{\bf Superdeixis adaptation transformations}\\
+The order of the `time rules' and the proposition substitution rules 
+implied that the superdeixis/(super)deixis-check could not be done in the 
+proposition substitution rules. So, we had to add a transformation class after 
+the deixis rules to do this job. It is called: {\em Superdeixisadaptation 
+transformations}. Because of the second reason, this class has also 
+a second task: if the value for superdeixis of the complement clause is 
+{\bf not} {\em omega}, i.e. the unmarked value, which means that it is a 
+dependent clause, 
+then after checking the values of deixis and superdeixis of the 
+subsituent and the substituee, the value for superdeixis is set to {\em omega}, 
+and deixis is given the value of superdeixis in case 
+of a finite clause. \\
+The reason behind this is, that it is too complicated for the surface parser
+to generate S-trees with all values for time attributes in a way that it is 
+acceptably efficient. So, it was decided to give the attribute {\em deixis} of 
+SENTENCE the value {\em present} or {\em past} in the S-parser,
+if there is a verb that has value 
+{\em present} or 
+{\em past} respectively for his 
+attribute tense and {\em omega}
+ otherwise, i.e. in case of infinite forms. The value 
+for the attribute {\em superdeixis} remains always {\em omega}.
+ So, in the analytic version of
+superdeixisadaptation transformations the appropriate values for deixis and 
+superdeixis have to be set. Sometimes the verb of the higher clause only allows 
+for dependent clauses, so the independent path is filtered out here, but 
+otherwise there will be a(n) (temporary) ambiguity.\\
+
+{\bf Aspect neutralization transformation}\\
+The surface parser does not set a value for {\em aspect},
+ so this rule creates in 
+analysis two paths, one for imperfective and one for perfective aspect; in some 
+languages it will be 
+restricted by syntactic forms, in others it will create an ambiguity.
+In generation the unmarked value is given.\\
+
+{\bf Retro neutralization transformation}\\
+The surface parser does not set the value for {\em retro}, so in analysis
+this rule creates two 
+paths one for {\em false} and one for {\em true}; in some languages it will be
+restricted by syntactic 
+forms, in others it always will create
+ an ambiguity. In generation the value {\em false} 
+is given.\\
+
+{\bf Deixis retro adaptation transformations}\\
+It can be argued that the auxiliary verbs {\em have, hebben, haber} in some 
+cases do not reflect {\em retrospectivity} but {\em past} (see section 3.9).
+ These transformations take care 
+of the creation of this possibility in analysis and  neutralize it to the retro 
+case in generation.
+\subsubsection{The graag/like-case}
+In Rdoc. 53 several proposals were done to solve the problems with respect to 
+time in cases of `subgrammar switch' such as the {\em graag/like}-case. I will 
+not repeat them here, but the actual implementation will come down to the 
+following (cf. Jan Odijk, Rdoc?):\\
+The propositional argument of {\em graag} and {\em like} is a SENTENCE, not 
+a VERBPPROP, that must be {\em infinite} and {\em dependent}, which means that 
+it will have a non-{\em omega} value for {\em superdeixis}. {\em Like} will not 
+cause any problems, but the substitution rule for {\em graag} will be a special 
+one. It makes a new top category VERBPPROP instead of SENTENCE and inserts the 
+ADVPPROP of {\em graag} into it. This VERBPPROP will have some properties of 
+the argument sentence, but not all: some attributes will have their unmarked 
+value again. This holds for example, for the attribute {\em finiteness}. The 
+{\em superdeixis} value will be carried over onto the new VERBPPROP, because in 
+this case the `normal' superdeixis check rules for propositional arguments 
+cannot work anymore: {\em head} and {\em argument} have been merged.
+The deixis rules allow for this configuration (i.e. that {\em superdeixis} is 
+not {\em omega} which would be the `normal' case). The superdeixis attribute 
+functions again as `serving hatch'. Note that this approach will always cause a 
+temporary ambiguity in the deixis rules in analysis which will always have been 
+solved after the proposition substitution rules. The syntactic modals in 
+English are dealt with in the same way. (see also the section on Modality and 
+the section on language-specific details of English.)
+\section{The temporal rule and transformation classes for the projection of 
+VERB}
+\subsection{Introduction}
+This section is meant for a quick overview of the existing (i.e. implemented on 
+1-7-1988) `time rules'. In the section on the control expression is indicated 
+which parts were planned in Rdoc.\ 53 but
+are not implemented yet. It should be noticed that nothing has been 
+done yet for {\em future and prospectivity},
+ {\em habituality} and {\em frequency}, because 
+research on those topics is still going on. {\em Modality} and {\em negation} 
+which are also complicating factors for the treatment of time are included 
+here, but see the section on {Modality and Negation}. In the next section the 
+control expressions for Dutch, English and Spanish will be given. After that,
+each class is commented on. For language-specific details, see section 7.
+
+\nopagebreak[8]
+\subsection{The control expression}
+\subsubsection{The control expressions per subgrammar for Dutch}
+(An asterisk `*' indicates that this rule is planned but that it will not be
+implemented before 1-7-88.)\\
+
+\nopagebreak[12]
+{\bf VERBPPROPformation}\\
+.\\
+{\em RC: Temporal adverbial variable insertion rules }\\
+\{Rdurvarinsertion $|$ Rretrovarinsertion $|$ Rrefvarinsertion\}\\
+.\\
+.\\
+{\em TC: Aktionsartcalculation transformations }\\
+.(Taktactivity1 $|$  Taktactivity2 $|$  Taktactivity3 $|$  Taktactivity4 $|$\\
+\ \ Taktactivity5 $|$ Taktaccomplishment1  $|$ Taktaccomplishment2  $|$\\ 
+\ \ Taktaccomplishment3  $|$  Taktstative1  $|$ Taktachievement1)\\ 
+.\\
+.\\
+
+\nopagebreak[29]
+{\bf XPPROPtoCLAUSE}\\
+.\\
+{\em RC: Proposition substitution rules }\\
+.\{..........$|$ Rtempadvsentsubstitution $|$ ........\}\\
+.\\
+.\\
+{\em RC: Aktionsart rules }\\
+.*[............]\\
+.\\
+{\em RC: Aspect rules }\\
+.(Raspectperfective $|$ Raspectimperfective $|$ *Raspecthabitual)\\
+{\em RC: Retrospective rules }\\
+.[ Rretroimperfective $|$ Rretroperfective ]\\
+{\em TC: Finiteness transformations }\\
+.(Tfinite $|$ Tinfinite)\\
+{\em Deixis rules }\\
+.(Rfinpresentdeixis $|$ Rfinpastdeixis $|$ Rfinpastdeixisspec $|$\\
+\ \ Rinfinpresentdeixis $|$ Rinfinpastdeixisspec $|$\\
+\ \ Rfinpresentsuperdeixis $|$ Rfinpastsuperdeixis $|$ 
+Rfinpastsuperdeixisspec $|$\\
+\ \ Rinfinpresentsuperdeixis $|$ Rinfinpastsuperdeixis $|$ \\
+\ \ Rinfinpastsuperdeixispec $|$ Rimpdeixis)\\
+{\em TC: passivegewordendeletion }\\
+. [Tpassivegewordendeletion]\\
+. Fpassivegewordendeletion\\
+{\em TC: Superdeixisadaptation transformations }\\
+. (Tnosuperdeixisadaptation $|$ Tsuperdeixisadaptation1 $|$\\
+\ \ \ Tsuperdeixisadaptation2 $|$ Tsuperdeixisadaptation3 $|$ *.....)\\
+.\\
+.\\
+
+\nopagebreak[16]
+{\bf CLAUSEtoSENTENCE}
+.\\
+{\em RC: Substitution rules }\\
+.\{...... $|$ Rtempadvsubstitution1 $|$ Rtempadvsubstitution2 $|$ ........\}\\
+{\em TC: Tempemptydeletion transformations }\\
+. [ Trefdeletion ]\\
+. Frefdeletion\\
+. [ Tretrodeletion ]\\
+. Fretrodeletion\\
+{\em TC: deixisretroadaptation transformations }\\
+. [ Tdeixisretroadaptation1 ]\\
+. Fdeixisretroadaptation1\\
+{\em TC: Retroneutralization transformations }\\
+. [ Tretroneutralization ]\\
+. Fretroneutralization\\
+{\em TC: Aspectneutralization transformations }\\
+. Taspectneutralization
+\nopagebreak[8]
+\subsubsection{The control expressions per subgrammar for Spanish}
+(An asterisk `*' indicates that this rule is planned but that it will not be
+implemented before 1-7-88.)\\
+
+\nopagebreak[12]
+{\bf VERBPPROPformation}\\
+.\\
+{\em RC: Temporal adverbial variable insertion rules }\\
+\{Rdurvarinsertion $|$ Rretrovarinsertion $|$ Rrefvarinsertion\}\\
+.\\
+.\\
+{\em TC: Aktionsartcalculation transformations }\\
+.(Taktactivity1 $|$  Taktactivity2 $|$  Taktactivity3 $|$  Taktactivity4 $|$\\
+\ \ Taktactivity5 $|$ Taktaccomplishment1  $|$ Taktaccomplishment2  $|$\\ 
+\ \ Taktaccomplishment3  $|$  Taktstative1  $|$ Taktachievement1)\\ 
+.\\
+.\\
+
+\nopagebreak[26]
+{\bf XPPROPtoCLAUSE}\\
+.\\
+{\em RC: Proposition substitution rules }\\
+.\{..........$|$ Rtempadvsentsubstitution $|$ ........\}\\
+.\\
+.\\
+{\em RC: Aktionsart rules }\\
+.*[............]\\
+.\\
+{\em RC: Aspect rules }\\
+.(Raspectperfective $|$ Raspectimperfective $|$ *Raspecthabitual)\\
+{\em RC: Retrospective rules }\\
+.[ Rretroimperfective1 $|$ Rretroimperfective2 $|$ Rretroperfective ]\\
+{\em TC: Finiteness transformations }\\
+.(Tfinite $|$ Tinfinite)\\
+{\em Deixis rules }\\
+.(Rfinpresentdeixis $|$ Rfinpastdeixis $|$\\
+\ \ Rinfinpastdeixisspec $|$\\
+\ \ Rfinpresentsuperdeixis $|$ Rfinpastsuperdeixis $|$\\
+\ \ Rinfinpresentsuperdeixis $|$ Rinfinpastsuperdeixis $|$ \\
+\ \ Rimpdeixis)\\
+{\em TC: Superdeixisadaptation transformations }\\
+. (Tnosuperdeixisadaptation $|$ Tsuperdeixisadaptation1 $|$\\
+\ \ \ Tsuperdeixisadaptation2 $|$ Tsuperdeixisadaptation3 $|$ *.....)\\
+.\\
+.\\
+
+\nopagebreak[16]
+{\bf CLAUSEtoSENTENCE}
+.\\
+{\em RC: Substitution rules }\\
+.\{...... $|$ Rtempadvsubstitution1 $|$ Rtempadvsubstitution2 $|$ ........\}\\
+{\em TC: Tempemptydeletion transformations }\\
+. [ Trefdeletion ]\\
+. Frefdeletion\\
+. [ Tretrodeletion ]\\
+. Fretrodeletion\\
+{\em TC: deixisretroadaptation transformations }\\
+. [ Tdeixisretroadaptation1 ]\\
+. Fdeixisretroadaptation1\\
+{\em TC: Retroneutralization transformations }\\
+. [ Tretroneutralization ]\\
+. Fretroneutralization\\
+{\em TC: Aspectneutralization transformations }\\
+. Taspectneutralization
+\nopagebreak[8]
+\subsubsection{The control expressions per subgrammar for English}
+(An asterisk `*' indicates that this rule is planned but that it will not be
+implemented before 1-7-88.)\\
+
+\nopagebreak[12]
+{\bf VERBPPROPformation}\\
+.\\
+{\em RC: Temporal adverbial variable insertion rules }\\
+\{Rdurvarinsertion $|$ Rretrovarinsertion $|$ Rrefvarinsertion\}\\
+.\\
+.\\
+{\em TC: Aktionsartcalculation transformations }\\
+.(Taktactivity1 $|$  Taktactivity2 $|$  Taktactivity3 $|$  Taktactivity4 $|$\\
+\ \ Taktactivity5 $|$ Taktaccomplishment1  $|$ Taktaccomplishment2  $|$\\ 
+\ \ Taktaccomplishment3  $|$  Taktstative1  $|$ Taktachievement1)\\ 
+.\\
+.\\
+
+\nopagebreak[27]
+{\bf XPPROPtoCLAUSE}\\
+.\\
+{\em RC: Proposition substitution rules }\\
+.\{..........$|$ Rtempadvsentsubstitution $|$ ........\}\\
+.\\
+.\\
+{\em RC: Aktionsart rules }\\
+.*[............]\\
+.\\
+{\em RC: Aspect rules }\\
+.(Raspectperfective $|$ Raspectimperfective1 $|$\\
+\ \ Raspectimperfective2 $|$  *Raspecthabitual)\\
+{\em RC: Retrospective rules }\\
+.[ Rretro ]\\
+{\em TC: Finiteness transformations }\\
+.(Tfinite1 $|$ Tfinite2 $|$ Tinfinite)\\
+{\em Deixis rules }\\
+.(Rfinpresentdeixis $|$ Rfinpastdeixis $|$\\
+\ \ Rinfinpastdeixisspec $|$\\
+\ \ Rfinpresentsuperdeixis $|$ Rfinpastsuperdeixis $|$\\
+\ \ Rinfinpresentsuperdeixis $|$ Rinfinpastsuperdeixis $|$\\
+\ \ Rinfinpastsuperdeixispec $|$ Rimpdeixis)\\
+{\em TC: Superdeixisadaptation transformations }\\
+. (Tnosuperdeixisadaptation $|$ Tsuperdeixisadaptation1 $|$\\
+\ \ \ Tsuperdeixisadaptation2 $|$ Tsuperdeixisadaptation3 $|$ *......)\\
+.\\
+.\\
+
+\nopagebreak[16]
+{\bf CLAUSEtoSENTENCE}
+.\\
+{\em RC: Substitution rules }\\
+.\{...... $|$ Rtempadvsubstitution1 $|$ Rtempadvsubstitution2 $|$ ........\}\\
+{\em TC: Tempemptydeletion transformations }\\
+. [ Trefdeletion ]\\
+. Frefdeletion\\
+. [ Tretrodeletion ]\\
+. Fretrodeletion\\
+{\em TC: deixisretroadaptation transformations }\\
+. [ Tdeixisretroadaptation1 ]\\
+. Fdeixisretroadaptation1\\
+{\em TC: Retroneutralization transformations }\\
+. [ Tretroneutralization ]\\
+. Fretroneutralization\\
+{\em TC: Aspectneutralization transformations }\\
+. Taspectneutralization
+\subsection{Temporal adverbial variable insertion rules}
+This is an iterative rule class. For each kind of temporal adverbial there is a 
+rule: for {\em ref}erential, {\em dur}ative and {\em retro}spective adverbials.
+The rules insert variables of category ADVPVAR
+, PREPPVAR and SENTENCEVAR into the VERBPPROP,
+ directly to the right of the VERBP 
+in English and Spanish and directly to the left of the VERBP in Dutch.\\
+Temporal 
+adverbials have an order of their own in a neutral reading of the sentence. To 
+take care of that order, special functions are made to be sure that that order 
+is maintained. The only order in which the rules can be applied is: 
+Rrefvarinsertion, Rretrovarinsertion and Rdurvarinsertion. The rules are, of 
+course, optional. In the future these rules will be merged with other adverbial 
+insertion rules in which case other adverbial variables than temporal adverbial 
+variables can be inserted between the temporal ones, but the order of the 
+temporal variables will not be disturbed. A different surface order of the 
+temporal adverbials can be achieved by {\em shift transformations} (for 
+wh-adverbials), movement transformations  and {\em topicalisation rules}. 
+With the same special functions is achieved that only 
+one referential, one durative and one retrospective adverbial per VERBPPROP is 
+allowed.\\
+These rules suppose that temporal adverbial substitution rules exist for the 
+various categories.\\
+The variables are used in conditions of the deixis and superdeixis rules and 
+sometimes in the retrospective and aspect rules.
+\subsection{Aktionsart calculation transformations}
+These obligatory transformation class accounts for the calculation of the type 
+of event the VERBPPROP expresses. This type is represented by the attribute 
+{\em Aktionsart} of the VERBPPROP. 
+The calculation is based on properties of the 
+verb, expressed by the attribute {\em class} and properties of arguments of 
+the verb, expressed by the attribute {\em specQ}.\\
+The above mentioned attributes have the following value set and default value:\\
+\begin{center}
+\begin{tabular}{|l|l|l|}    \hline
+attribute     &  values         & default value \\ \hline\hline
+Aktionsart    &  subset of      & [\ \ ] \\
+              &  [stative       & \\
+              &  activity       & \\
+              &  accomplishment & \\
+              &  achievement]   & \\ \hline
+class         &  subset of      & [durativeclass] \\
+              & [durativeclass  & \\
+              &  movementclass  & \\
+              &  momentaryclass & \\
+              &  stativeclass]  & \\ \hline
+SpecQ         &  yesspec        & omegaspec \\
+              &  nospec         & \\
+              &  omegaspec      & \\ \hline
+\end{tabular}
+\end{center}
+
+The reason for a set as value is efficiency.\\
+Before giving a short account of the task of each transformation in this 
+class, it should be noticed, that the influence of a negation element which 
+makes the Aktionsart stative, is not accounted for here, but in the negation 
+insertion rules, because the negation element is not represented by a variable, 
+so the information is not available at this point (but see also the section on 
+Negation). It should also be noticed that the properties of the surface 
+subject argument are not involved in this calculation. Properties of that 
+argument seem to
+be involved in the (non)-habituality of a clause.\\
+The value for {\em specQ} is accounted for in the appropriate subgrammars, i.e. 
+those for NP, PREPP, PREPPROP etc..\\
+{\em Class} is an inherent attribute of VERB and has to be
+filled in the dictionary.\\
+In the rules below, conditions on category CNVAR should still be added; CNVAR 
+does not have the attribute {\em specQ}, but it behaves as if it would have 
+{\em yesspec} for that attribute.\\
+
+{\bf Overview of the rules}:
+\begin{enumerate}
+\item Taktactivity1\\
+VERB: non ergative, durativeclass\\
+ARGs: object absent or idiompart or EMPTY\\
+EX.: Jan slaapt, Jan eet
+\item Taktactivity2\\
+VERB: movementclass\\
+ARGs: directional argument absent or idiompart or EMPTY\\
+EX.: Jan duwt, Jan duwt de kar, Jan reed
+\item Taktactivity3\\
+VERB: non ergative, durativeclass\\
+ARGs: object or prepobject present, not EMPTY or idiompart, nospec\\
+EX.: Jan eet boterhammen
+\item Taktactivity4\\
+VERB: movementclass\\
+ARGs: directional argument OPENPREPPPROPVAR present, not EMPTY or idiompart
+      and nospec\\
+EX.: Jan duwde karren naar de stallen, Jan reed naar klanten
+\item Taktactivity5\\
+VERB: non ergative, movementclass\\
+ARGs: object or prepobject present, not EMPTY or idiompart, nospec\\
+      directional argument OPENPREPPPROPVAR present, yesspec\\
+EX.: Jan duwde karren mest naar de schuur
+\item Taktaccomplishment1\\
+VERB: non ergative, durativeclass\\
+ARGs: object or prepobject present, not EMPTY or idiompart, yesspec\\
+EX.: Jan eet een appel
+\item Taktaccomplishment2\\
+VERB: non ergative, movementclass\\
+ARGs: object or prepobject present, not EMPTY or idiompart, yesspec\\
+      directional argument OPENPPREPPPROPVAR present, not EMPTY or 
+      idiompart, yesspec\\
+EX.: Jan duwde de kar naar de stad
+\item Taktaccomplishment3\\
+VERB: ergative, movementclass\\
+ARGs: directional argument OPENPPREPPPROPVAR present, not EMPTY or 
+      idiompart, yesspec\\
+EX.: Jan reed naar Groningen
+\item Taktstative1\\
+VERB: stativeclass\\
+ARGs: -\\
+EX.: Jan houdt van Marie
+\item Taktachievement1\\
+VERB: momentaryclass\\
+ARGs: -\\
+EX.: De bom ontploft, Jan sterft, Jan bereikte de top
+\end{enumerate}
+
+\subsection{Temporal adverbial sentence substitution}
+There is one substitution rule for temporal adverbial sentences: 
+Rtempadvsentsubstitution. It substitutes a SENTENCE that is temporal (i.e. the 
+attribute {\em temporal} is {\em true}) which means that it contains a temporal 
+conjunction, for a SENTENCEVAR.\\
+These adverbial sentences function as other non-sentential adverbials with 
+respect to the `time rules': they are part of the {\em conditions} of those 
+rules. In this sense, they are {\em independent} with respect to the clause 
+they are inserted in! Because of this independency, they are not subject to  
+superdeixis adaptation rules. I think they are neither involved in cluster 
+transformations, but they seem to be subject to control rules (cf. Jan Odijk, 
+Rdoc ?) 
+which motivates their substitution in the proposition substitution class and 
+not in the `normal' substitution class with the other temporal adverbials.\\
+The temporal conjunction is inserted in the {\em mood rules} and in those rules 
+the attributes {\em conjdeixis, conjaspect} and {\em conjretro} will get their 
+appropriate values based on temporal properties of the conjunction and temporal 
+properties of the clause. In those rules will be taken care of the measures
+forseen 
+for CONJP in Rdoc.\ 53.
+\subsection{Aspect rules}
+We distinguish three kinds of ASPECT: {\em perfective, imperfective} and 
+{\em habitual}. Habitual aspect rules will not have been written before 1-7-88, 
+because research on {\em Genericity and Habituality} is still going on at this 
+moment. Each language has at least one rule for perfective and one for 
+imperfective aspect. Sometimes, there are more rules because of syntactic or 
+M-rule-notation 
+reasons (see section on language specific aspects). Aspect rules 
+spell out syntactically the {\bf obligatory} relation between the interval E 
+for the event and an interval R in the time model. In most languages this 
+distinction is reflected morphologically or syntactically, but in some 
+languages, e.g. Dutch it is not, although it turned out that this is not true 
+in a strict sense (see the next section on retrospective rules). The question 
+arises then if such a distinction is necessary within a framework designed for 
+translation. {\bf In Rosetta we made the choice that this distinction is 
+translation relevant.} So, Dutch has a perfective and imperfective aspect rule, 
+too. We could have decided to let Dutch have one ambiguous rule, splitting up 
+in the TRANSFER components, but the distinction between perfective and 
+imperfective aspect turned out to be necessary to account for {\em 
+retrospective aspect} and a special way to express {\em past} in Dutch.
+The descriptions of perfective and imperfective aspect are repeated here and 
+illustrated by the pictures in figure ~\ref{figperfaspect} and 
+~\ref{figimperfaspect}
+ and the examples (~\ref{experfaspect}) and (~\ref{eximperfaspect})
+respectively:  
+\begin{description}
+  \item [perfective aspect]:
+Expression of the relation: E $\subseteq$ R.
+  \item [imperfective aspect]:
+Expression of the relation: R $\subset$ E
+\end{description}
+
+\begin{figure}[htbp]
+\begin{picture}(40,5)
+\put(4,3){\vector(1,0){28}}
+\put(28,1,5){S}
+\put(12,2.5){\line(0,1){1}}
+\put(20,2.5){\line(0,1){1}}
+\put(28,2.5){\line(0,1){1}}
+\put(12,2.5){\line(1,0){8}}
+\put(15,1,5){R}
+\put(14,4){\line(1,0){3}}
+\put(14,3){\line(0,1){1}}
+\put(17,3){\line(0,1){1}}
+\put(15,4.5){E}
+\end{picture}  
+\caption{Perfective aspect}
+\label{figperfaspect}
+\end{figure}
+\begin{figure}[htbp]
+\begin{picture}(40,5)
+\put(4,3){\vector(1,0){28}}
+\put(28,1,5){S}
+\put(12,2.5){\line(0,1){1.5}}
+\put(20,2.5){\line(0,1){1.5}}
+\put(28,2.5){\line(0,1){1}}
+\put(12,2.5){\line(1,0){8}}
+\put(15,1,5){R}
+\put(11,4){\vector(1,0){10}}
+\put(15,4.5){E}
+\end{picture}
+\caption{Imperfective aspect}
+\label{figimperfaspect}
+\end{figure}
+\begin{lxam}\label{experfaspect}
+&a&&John read a book yesterday\\
+&b&&Juan ley\'{o} un libro ayer\\
+&c&&Jan las gisteren een boek/Jan heeft gisteren een boek gelezen
+\end{lxam}
+\begin{lxam}\label{eximperfaspect}
+&a&&John was reading a book yesterday\\
+&b&&Juan le\'{i}a un libro ayer\\
+&c&&Jan las gisteren een boek
+\end{lxam}
+It should be noticed that the notions {\em Aktionsart} and {\em Aspect} are 
+related. Perfective aspect is associated with accomplishment and achievement, 
+imperfective aspect with activity (and stative) and habitual with stative.
+ The value of Aktionsart is based 
+on lexical properties of the verb and the presence/absence of arguments and 
+their properties. The difficulty of the calculation is caused by the difficult 
+classification of the verbs, caused by the problem of knowledge of the world.
+For example, is {\em explode} {\em momentary} or {\em durative}? It depends on 
+how you look at it. Aspect is also a way to express how you look at an event: 
+as going on or `open' with emphasis on the reference time (imperfective) or 
+`closed' which results in emphasis on the event time (perfective). In some 
+languages this is done lexically (different verbs), in others morphologically 
+(tense) or `syntactically' (periphrastic tense). It is the same problem that 
+arises mutatis mutandis with NPs and the {\em count/mass}-distinction.\\
+
+The imperfective aspect rules have a condition that a durative adverbial is not 
+allowed. A durative adverbial expresses the `temporal length' of the event and 
+in that case the event cannot be seen as `open' or going on anymore. The 
+temporal length of the event that is referred to by the speaker is the length 
+indicated by the referential adverbial.\\
+(Note that the addition of a measure phrase to a mass noun also yields a count 
+interpretation: e.g.{\em drie kilo goud}.)\\
+\begin{lxam}
+&a&&Terwijl Jan gisteren uit het raam sprong,\\
+&&&werkte Andr\'{e} (*3 uur) aan zijn proefschrift,\\
+&&&waardoor hij het te laat in de gaten kreeg.\\
+&b&&Terwijl het gisteren een gekkenhuis was hier,\\
+&&&werkte Andr\'{e} toch 3 uur aan zijn proefschrift.
+\end{lxam}
+
+The rules presuppose a 
+representation of the interval R, expressed by a referential (retro or 
+non-retro) adverbial variable, but this is not involved here, because it is 
+also involved in the deixis rules and can be handled there. It is also not 
+involved here, because we 
+decided to drop the obligation of having a referential adverbial in every clause
+, especially in dependent clauses. This might turn out to be wrong, because 
+some conditions on certain combinations cannot be expressed anymore. In that 
+case we will have to add an attribute {\em superaspect} next to {\em 
+superdeixis}. Note that this attribute would not express the aspect value of 
+the higher clause, but the aspect value of the referential adverbial of the 
+higher clause!  For example:\\
+
+\begin{lxam}
+&&&He ate a sandwich at 3 o'clock
+\end{lxam}
+This sentence is considered to have perfective aspect and {\em 3 o'clock} is 
+considered to represent a singleton interval, a point. As {\em eat a sandwich} 
+is not considered to represent a singleton interval, i.e. it has some duration, 
+it is rather difficult to see that {\em eat a sandwich} is a subset of {\em 3 o
+'clock}. This sentence is mostly interpreted as {\em starting} `to eat at 3 o'
+clock' and sometimes {\em finishing} `to eat at 3 o'clock'.\\
+But as these conditions have more to do with a more or less 
+acceptable view on the world, we will let this aspect of interpretation
+out of consideration for the 
+moment.
+\subsection{Retrospective rules}
+The retrospective rules form an optional rule class that express the idea that 
+the interval R, to which the interval E is related by an aspect relation, lasts 
+{\em until}
+ some point Rs that can be part of some other interval R'. We can also say 
+that from this point we look into the past: retrospective.
+It is this point 
+Rs that will be related to S by the deictic relation (see section on deixis 
+rules). This can be illustrated by the pictures in figure 
+~\ref{figretroperfaspect} and ~\ref{figretroimperfaspect} and by the 
+corresponding examples (~\ref{exretroperfaspect}) and 
+(~\ref{exretroimperfaspect}):
+\begin{figure}[htbp]
+\begin{picture}(40,5)
+\put(4,3){\vector(1,0){28}}
+\put(19.5,4){Rs}
+\put(28,1,5){S}
+\put(12,2.5){\line(0,1){1}}
+\put(20,2.5){\line(0,1){1}}
+\put(28,2.5){\line(0,1){1}}
+\put(12,2.5){\line(1,0){8}}
+\put(15,1,5){R}
+\put(14,4){\line(1,0){3}}
+\put(14,3){\line(0,1){1}}
+\put(17,3){\line(0,1){1}}
+\put(15,4.5){E}
+\put(18,1.5){\line(1,0){4}}
+\put(18,1.5){\line(0,1){1.5}}
+\put(22,1.5){\line(0,1){1.5}}
+\put(19.5,0.5){R'}
+\end{picture}  
+\caption{Retrospective and perfective aspect}
+\label{figretroperfaspect}
+\end{figure}
+\begin{lxam}\label{exretroperfaspect}
+&a&&Yesterday at 3 o'clock, John had worked here for 1000 hours since he moved\\
+&&&to Eindhoven.\\
+&b&&Ayer a las tres, Juan hab\'{i}a trabajado aqui por 1000 horas desde que\\
+&&&se mud\'{o} a Eindhoven.\\
+&c&&Gisteren om 3 uur had Jan hier 1000 uur gewerkt sinds hij naar Eindhoven\\
+&&&verhuisde.
+\end{lxam}
+\begin{figure}[htbp]
+\begin{picture}(40,5)
+\put(4,3){\vector(1,0){28}}
+\put(19.5,4.5){Rs}
+\put(28,1,5){S}
+\put(12,2.5){\line(0,1){1.5}}
+\put(20,2.5){\line(0,1){1.5}}
+\put(28,2.5){\line(0,1){1}}
+\put(12,2.5){\line(1,0){8}}
+\put(15,1,5){R}
+\put(11,4){\vector(1,0){10}}
+\put(15,4.5){E}
+\put(18,1.5){\line(1,0){4}}
+\put(18,1.5){\line(0,1){1.5}}
+\put(22,1.5){\line(0,1){1.5}}
+\put(19.5,0.5){R'}
+\end{picture}  
+\caption{Retrospective and imperfective aspect}
+\label{figretroimperfaspect}
+\end{figure}
+\begin{lxam}\label{exretroimperfaspect}
+&a&&Yesterday at 3 o'clock, John had been working for 15 hours.\\
+&b&&Ayer a las tres, Juan llevaba trabajando por 15 horas.\\
+&c&&Gisteren om 3 uur werkte Jan al 15 uur.
+\end{lxam}
+In cases without retrospective aspect the point Rs is supposed to be 
+part of the first referential interval, R.\\
+ In general, the retrospective relation is expressed 
+by a periphrastic tense, called {\em perfect tense}. But this is not always the 
+case and that depends on the combination with perfective or imperfective aspect
+. A combination with imperfective aspect implies that the event {\em may} be 
+going on at Rs: it may be `unfinished', a combination with perfective aspect 
+implies that  the event has been `finished' at Rs. In some languages, e.g. Dutch
+ and Spanish, the equivalent of the perfect tense expresses only the `finished' 
+variant, i.e. it is perfective. How these languages deal with the unfinished 
+variant is different: Spanish has another periphrastic tense {\em llevar 
++ gerundio}, Dutch uses an `onvoltooide tijd', but both require that the 
+interval R to which the event is related is specified, which means that there 
+exists an overt retrospective adverbial that is aspectually {\em perfective}, 
+i.e. that it is `closed' and expresses exactly the duration of the 
+interval from Rs into the past: e.g. {\em al 3 uur}.\\
+So these rules spell out the appropriate tense in perfective and imperfective 
+cases and require the presence of a retrospective adverbial, that must be {\em 
+perfective}, in an imperfective clause. If an overt adverbial is not present in 
+the sentence, an abstract adverbial (`PAST') has to be inserted in analysis by 
+the {\em Tempemptydeletion transformations} (see also section below).
+\subsection{Finiteness transformations}
+This a an obligatory transformation class. It determines if a clause will be 
+{\em finite} or {\em infinite}. This is 
+necessary to know before the {\em deixis 
+rules}, because they spell out {\em tense forms} in which case it is necessary 
+to know if the verb will get a finite or infinite form. The actual forms with 
+respect to {\em modus}, i.e. if the verb is in {\em indicative, subjunctive, 
+infinitive} or {\em gerund} form, are spelled out in the {\em mood rules}. The 
+finiteness transformations are transformations, because finiteness is not 
+translation relevant: finite forms can be translated into infinite forms:\\
+
+\begin{lxam}
+&&&Hij denkt {\em gisteren hard te hebben gewerkt}
+\end{lxam}
+\begin{lxam}
+&&&He thinks {\em that he worked hard yesterday}
+\end{lxam}
+In generation, therefore, always an ambiguity is created, or better: (most of 
+the time
+temporary) paraphrases are created.
+Main sentences are not allowed for having an infinite 
+form and dependent clauses can be filtered out in the proposition substitution 
+rules if the verb pattern of the higher clause does not allow for an infinite 
+or finite complement clause. 
+\subsection{Deixis and superdeixis rules}
+The deixis and superdeixis rules form one obligatory rule class. The deixis 
+rules are for the independent clauses, the superdeixis rules for the dependent 
+clauses as was already motivated in section 2.\\
+In terms of the time model they express the relation between Rs, element of 
+some interval R, and S, the point of speech. This relation can be 
+{\em simultanuous} 
+or {\em before}, represented by the term {\em present deixis} and 
+{\em past deixis} respectively. The relation {\em after}, represented by the 
+term {\em future} is left out of consideration for the moment.\\
+Figures ~\ref{figpresdeixis} and ~\ref{figpastdeixis} illustrate this in 
+picture forms.
+
+\begin{figure}[htbp]
+\begin{picture}(40,5)
+\put(4,3){\vector(1,0){28}}
+\put(12,2.5){\line(0,1){1}}
+\put(20,2.5){\line(0,1){1}}
+\put(12,2.5){\line(1,0){8}}
+\put(15,1.5){R}
+\put(18,2.5){\line(0,1){1}}
+\put(17.5,1.5){Rs = S}
+\put(14,4){\line(1,0){5}}
+\put(14,3){\line(0,1){1}}
+\put(19,3){\line(0,1){1}}
+\put(15,4.5){E}
+\end{picture}  
+\begin{picture}(40,5)
+\put(4,3){\vector(1,0){28}}
+\put(12,2.5){\line(0,1){1.5}}
+\put(20,2.5){\line(0,1){1.5}}
+\put(12,2.5){\line(1,0){8}}
+\put(15,1.5){R}
+\put(18,2.5){\line(0,1){1}}
+\put(17.5,1.5){Rs = S}
+\put(11,4){\vector(1,0){10}}
+\put(15,4.5){E}
+\end{picture}
+\begin{picture}(40,5)
+\put(4,3){\vector(1,0){28}}
+\put(19.5,4){Rs = S}
+\put(12,2.5){\line(0,1){1}}
+\put(20,2.5){\line(0,1){1}}
+\put(12,2.5){\line(1,0){8}}
+\put(15,1,5){R}
+\put(14,4){\line(1,0){3}}
+\put(14,3){\line(0,1){1}}
+\put(17,3){\line(0,1){1}}
+\put(15,4.5){E}
+\put(18,1.5){\line(1,0){4}}
+\put(18,1.5){\line(0,1){1.5}}
+\put(22,1.5){\line(0,1){1.5}}
+\put(19.5,0.5){R'}
+\end{picture}  
+\begin{picture}(40,5)
+\put(4,3){\vector(1,0){28}}
+\put(19.5,4.5){Rs = S}
+\put(12,2.5){\line(0,1){1.5}}
+\put(20,2.5){\line(0,1){1.5}}
+\put(12,2.5){\line(1,0){8}}
+\put(15,1,5){R}
+\put(11,4){\vector(1,0){10}}
+\put(15,4.5){E}
+\put(18,1.5){\line(1,0){4}}
+\put(18,1.5){\line(0,1){1.5}}
+\put(22,1.5){\line(0,1){1.5}}
+\put(19.5,0.5){R'}
+\end{picture}  
+\caption{Present deixis}
+\label{figpresdeixis}
+\end{figure}
+\begin{figure}[htbp]
+\begin{picture}(40,5)
+\put(4,3){\vector(1,0){28}}
+\put(28,1,5){S}
+\put(12,2.5){\line(0,1){1}}
+\put(20,2.5){\line(0,1){1}}
+\put(28,2.5){\line(0,1){1}}
+\put(12,2.5){\line(1,0){8}}
+\put(15,1.5){R}
+\put(18,2.5){\line(0,1){1}}
+\put(17.5,1.5){Rs}
+\put(14,4){\line(1,0){5}}
+\put(14,3){\line(0,1){1}}
+\put(19,3){\line(0,1){1}}
+\put(15,4.5){E}
+\end{picture}  
+\begin{picture}(40,5)
+\put(4,3){\vector(1,0){28}}
+\put(28,1,5){S}
+\put(12,2.5){\line(0,1){1.5}}
+\put(20,2.5){\line(0,1){1.5}}
+\put(28,2.5){\line(0,1){1}}
+\put(12,2.5){\line(1,0){8}}
+\put(15,1.5){R}
+\put(18,2.5){\line(0,1){1}}
+\put(17.5,1.5){Rs}
+\put(11,4){\vector(1,0){10}}
+\put(15,4.5){E}
+\end{picture}
+\begin{picture}(40,5)
+\put(4,3){\vector(1,0){28}}
+\put(19.5,4){Rs}
+\put(28,1,5){S}
+\put(12,2.5){\line(0,1){1}}
+\put(20,2.5){\line(0,1){1}}
+\put(28,2.5){\line(0,1){1}}
+\put(12,2.5){\line(1,0){8}}
+\put(15,1,5){R}
+\put(14,4){\line(1,0){3}}
+\put(14,3){\line(0,1){1}}
+\put(17,3){\line(0,1){1}}
+\put(15,4.5){E}
+\put(18,1.5){\line(1,0){4}}
+\put(18,1.5){\line(0,1){1.5}}
+\put(22,1.5){\line(0,1){1.5}}
+\put(19.5,0.5){R'}
+\end{picture}  
+\begin{picture}(40,5)
+\put(4,3){\vector(1,0){28}}
+\put(19.5,4.5){Rs}
+\put(28,1,5){S}
+\put(12,2.5){\line(0,1){1.5}}
+\put(20,2.5){\line(0,1){1.5}}
+\put(28,2.5){\line(0,1){1}}
+\put(12,2.5){\line(1,0){8}}
+\put(15,1,5){R}
+\put(11,4){\vector(1,0){10}}
+\put(15,4.5){E}
+\put(18,1.5){\line(1,0){4}}
+\put(18,1.5){\line(0,1){1.5}}
+\put(22,1.5){\line(0,1){1.5}}
+\put(19.5,0.5){R'}
+\end{picture}  
+\caption{Past deixis}
+\label{figpastdeixis}
+\end{figure}
+
+The rules spell out a {\em present } or {\em past tense} of the most left verb 
+in SVO-languages and the most right verb in SOV-languages in finite clauses
+in case of {\em present} or {\em past (super)deixis} respectively. In infinite 
+clauses the tense remains {\em omega}. The rules for finite clauses are 
+prefixed with {\em fin-}, the infinite ones with {\em infin-}.\\
+Most languages use next to the {\em past tense} also a periphrastic tense with 
+{\em have} and translation
+equivalents to express {\em past}. In English (and probably Spanish)
+this phenomenon
+seems to be restricted to {\em infinite} clauses, but in Dutch (and French)
+it even seems 
+to be prefered in finite clauses in some cases. A general constraint is that 
+the clauses  have {\em perfective aspect} in these cases! \\
+
+English:\\
+
+\begin{lxam}
+&a&&John believes Bill to have stolen that book yesterday\\
+&b&*&John believes that Bill has stolen that book yesterday\\
+&c&&John believes that Bill stole that book yesterday
+\end{lxam}
+Spanish:\\
+
+\begin{lxam}
+&a&&Juan lamenta haber robado ese libro ayer\\
+&b&?&Juan lamenta que haya robado ese libro ayer\\
+&c&&Juan lamenta que robara ese libro ayer
+\end{lxam}
+Dutch:\\
+
+\begin{lxam}
+&a&&Jan denkt gisteren hard gewerkt te hebben\\
+&b&&Jan denkt dat hij gisteren hard gewerkt heeft\\
+&c&?&Jan denkt dat hij gisteren hard werkte
+\end{lxam}
+The (super)deixis 
+rules for these cases have a postfix {\em -spec}, for `special'. These rules 
+correspond to their counterparts that spell out {\em past tense}, i.e. they are 
+translated into each other.\\
+The deixis and superdeixis rules have conditions on the deixis attribute of the 
+referential (not retrospective) adverbial, if present. As was already explained 
+in section 2, the deixis rules require the presence of a referential adverbial, 
+the superdeixis rules do not and do not allow for deictic adverbials. 
+The deixis rules require that it is
+{\em omega deictic} or agree in deixis value with the kind of (super)deixis rule
+that is applied. Because of these conditions, all deixis rules have at least 3 
+subrules, i.e. for every possible syntactic category a temporal adverbial can 
+have ( ADVP, PREPP or SENTENCE). Superdeixis rules have at least one subrule 
+more: for the case there is no temporal adverbial present.\\
+The rules are mapped onto four IL-expressions: {\em present deixis, past deixis
+, present superdeixis} and {\em past superdeixis}.\\
+There is one additional deixis rule for imperatives that corresponds to the IL-
+expression {\em no deixis}. It is assumed that imperatives are {\em finite} and 
+have {\em perfective aspect} and {\em omega tense}.
+\subsection{Superdeixis adaptation transformations}
+The task of the superdeixis adaptation transformations is to check the 
+compatability of the superdeixis of an already substituted propositional 
+argument and the (super)deixis value of the clause. That this check was not 
+provided {\em in}
+ the substitution rules is due to the fact that they are ordered 
+{\em before} (super)deixis rules.\\
+Next to this task they set the value of the attributes superdeixis and deixis
+of that propositional argument to relieve the surface parser. See also section 
+2.2.3.\\
+It is an obligatory transformation class, although it could be optional,
+strictly spoken. But it is the kind of optionality that {\em is obligatory if 
+possible}. This means that for 
+every transformation in this class there should also be
+a filter. As there will be many transformations in this class, namely for every 
+syntactic category a propositional complement can have, I decided to write a so 
+called `default' or `complement' transformation rule for the case there is no 
+propositional complement in the clause: {\em Tnosuperdeixisadaptation}.
+Each other superdeixis adaptation rule has a subroutine for the case 
+superdeixis is {\em omega}, i.e. the complement clause is {\em independent} and 
+no checks are needed, for the case superdeixis is {\em past} and for the case 
+superdeixis is {\em present}. The last two are split up again for {\em finite} 
+and {\em infinite} clauses, because of the second task of these rules: in 
+finite clauses the deixis value is given the value of the superdeixis attribute 
+in behalf of the surface parser.\\
+Until now, only rules for propositional complements of category SENTENCE and 
+ADJPPROP have been written.
+\subsection{Temporal adverbial substitution}
+The rule class {\em substitution rules} contains rules for the substitution of 
+temporal adverbials of category ADVP and PREPP. As already explained in section 
+2, these adverbials are {\em not scope-bearing} elements (except for frequency 
+adverbials and maybe the durative adverbials (see section ~\ref{Neg}))
+and have an opposite neutral surface order in SVO- and SOV-
+languages. The {\em substitution order condition}
+ should account for this phenomenon!
+The adverbial variable insertion rules already accounted for the neutral order 
+of the adverbials. Topicalisation rules can shift these variables to shift 
+position. Shift transformations (wh- and relativisation) should shift them also 
+to shift position if necessary and movement transformations such as 
+{\em NPoverADV} in Dutch can change the order with respect to arguments.\\
+The rules have conditions on the Aktionsart of the clause
+for durative adverbials and 
+sometimes on aspect and retrospectivity for referential adverbials.  This also 
+could have been done earlier in the 
+latter case, but not in the case of the 
+durative adverbials, because the insertion of a NEG-element has influence on 
+the Aktionsart value. The NEG-insertion rule is part of the substitution rule 
+class. See also section ~\ref{Neg}.
+\subsection{Deletion of abstract adverbials}
+Every sentence (not clause!) contains at least one referential adverbial. If 
+not, an abstract one must be present. This adverbial should be interpreted as 
+being bound by some adverbial in the context. There are two abstract 
+not-retrospective referential
+adverbs, one for {\em past} and one for {\em present}, and one 
+retrospective referential adverb (`PAST').\\
+These abstract adverbials should be deleted in generation. The transformations 
+that account for this deletion are optional, 
+but obligatory if possible, so after each transformation a filter is added.
+In analysis these transformations insert the abstract adverbials. To avoid too
+many ambiguities, the special PASCAL functions are used to find out if no other 
+referential adverbial of the same kind is present and to put them
+into the right 
+(neutral) place.
+\subsection{Adaptation transformations in behalf of the surface parser}
+These transformations were already described in section 2.2.3.
+\section{The `time rules' for ADJP}
+\subsection{Introduction}
+The `time rules' for ADJP can be seen as a subset of the `time rules' for the 
+projection of VERB to CLAUSE. The main difference is that there are no rules 
+that spell out {\em tense}. The `time rules' for ADJP are also spread through 3 
+subgrammars: ADJPPROPformation, ADJPPROPtoADJPFORMULA and ADJPFORMULAtoADJPPROP
+. The result of ADJPPROPformation can be input for the subgrammar 
+XPPROPtoCLAUSE for the path to derive: {\em dat hij ziek is} etc.\\
+There are more `time rules' in Dutch than in English and Spanish, because in 
+Dutch it is allowed to have rather heavy ADJPs before the NOUN. In English and 
+Spanish they should be placed behind the NOUN and in those cases relative 
+clauses seem to be prefered. I assumed that in thoses cases the ADJP in English 
+and Spanish will be derived from a CLAUSE under deletion of the (untensed) VERB 
+{\em be} and {\em ser/estar} respectively. We could have done that in Dutch too
+, but we did not. The resulting translation equivalents are illustrated by the 
+following examples:\\
+
+\begin{lxam}
+&a&&de [zieke] ezel\\
+&b&&the [ill] donkey\\
+&c&&el burro [enfermo]
+\end{lxam}
+\begin{lxam}
+&a&&de [gisteren zieke] ezel\\
+&b&&the donkey [that was ill yesterday]\\
+&c&&el burro [que estaba enfermo ayer]
+\end{lxam}
+\begin{lxam}
+&a&&de [gisteren al 3 uur zieke] ezel\\
+&b&&the donkey [that had been ill for 3 hours yesterday]\\
+&c&&el burro [que ya estaba enfermo por 3 horas ayer]
+\end{lxam}
+\nopagebreak[11]
+\subsection{The control expressions}
+\subsubsection{The control expressions per subgrammar for Dutch}
+(An asterisk `*' indicates that this rule is planned but that it will not be
+implemented before 1-7-88.)\\
+
+\nopagebreak[10]
+{\bf ADJPPPROPformation}\\
+.\\
+{\em RC: Temporal adverbial variable insertion rules }\\
+\{RADJdurvarinsertion $|$ RADJretrovarinsertion $|$ RADJrefvarinsertion\}\\
+.\\
+.\\
+{\em TC: Aktionsartcalculation transformations }\\
+.TADJaktstative1\\ 
+.\\
+.\\
+
+\nopagebreak[19]
+{\bf ADJPPROPtoADJPFORMULA}\\
+.\\
+{\em RC: Proposition substitution rules }\\
+.\{..........$|$ RADJtempadvsentsubstitution $|$ ........\}\\
+.\\
+.\\
+.\\
+{\em RC: Aspect rules }\\
+.(RADJaspectimperfective $|$  *RADJaspecthabitual)\\
+{\em RC: Retrospective rules }\\
+.[ RADJretroimperfective ]\\
+{\em Deixis rules }\\
+.(RADJpresentdeixis $|$ RADJpastdeixis $|$\\
+\ \ RADJpresentsuperdeixis $|$ RADJpastsuperdeixis)\\
+{\em TC: Superdeixisadaptation transformations }\\
+.(TADJnosuperdeixisadaptation $|$ TADJsuperdeixisadaptation\\
+.[(TADJdeixispresadaptation  $|$ TADJdeixispastadaptation)]\\ 
+.\\
+.\\
+
+\nopagebreak[9]
+{\bf ADJPFORMULAtoADJPPROP}
+.\\
+{\em RC: Substitution rules }\\
+.\{...... $|$ RADJtempadvsubstitution1 $|$ RADJtempadvsubstitution2 $|$ ....\}\\
+{\em TC: Aspectneutralization transformations }\\
+. TADJaspectneutralization\\
+{\em TC: Retroneutralization transformations }\\
+. [ TADJretroneutralization ]\\
+. FADJretroneutralization
+\nopagebreak[15]
+\subsubsection{The control expressions per subgrammar for Spanish}
+(An asterisk `*' indicates that this rule is planned but that it will not be
+implemented before 1-7-88.)\\
+
+{\bf ADJPPROPformation}\\
+.\\
+{\em RC: Temporal adverbial variable insertion rules }\\
+\{RADJdurvarinsertion $|$ RADJretrovarinsertion $|$ RADJrefvarinsertion\}\\
+.\\
+.\\
+{\em TC: Aktionsartcalculation transformations }\\
+.TADJaktstative1 \\ 
+.\\
+.\\
+
+\nopagebreak[10]
+{\bf ADJPPPROPtoADJPFORMULA}\\
+.\\
+.\\
+{\em RC: Aspect rules }\\
+.(RADJaspectimperfective $|$ *RADJaspecthabitual)\\
+{\em Deixis rules }\\
+.(RADJpresentsuperdeixis $|$ RADJpastsuperdeixis)\\
+{\em TC: Superdeixisadaptation transformations }\\
+. (TADJnosuperdeixisadaptation $|$ TADJsuperdeixisadaptation)\\
+.\\
+
+\nopagebreak[4]
+{\bf ADJPFORMULAtoADJPPROP}
+.\\
+{\em TC: Aspectneutralization transformations }\\
+. TADJaspectneutralization
+\nopagebreak[15]
+\subsubsection{The control expressions per subgrammar for English}
+(An asterisk `*' indicates that this rule is planned but that it will not be
+implemented before 1-7-88.)\\
+
+{\bf ADJPPROPformation}\\
+.\\
+{\em RC: Temporal adverbial variable insertion rules }\\
+\{RADJdurvarinsertion $|$ RADJretrovarinsertion $|$ RADJrefvarinsertion\}\\
+.\\
+.\\
+{\em TC: Aktionsartcalculation transformations }\\
+.TADJaktstative1\\ 
+.\\
+.\\
+
+\nopagebreak[11]
+{\bf ADJPPROPtoADJPFORMULA}\\
+.\\
+.\\
+{\em RC: Aspect rules }\\
+.(RADJaspectimperfective $|$ *RADJaspecthabitual)\\
+{\em Deixis rules }\\
+.(RADJpresentsuperdeixis $|$ RADJpastsuperdeixis)\\
+{\em TC: Superdeixisadaptation transformations }\\
+. (TADJnosuperdeixisadaptation $|$ TADJsuperdeixisadaptation)\\
+.\\
+.\\
+
+\nopagebreak[4]
+{\bf ADJPFORMULAtoADJPPROP}
+.\\
+{\em TC: Aspectneutralization transformations }\\
+. TADJaspectneutralization
+\subsection{The classes}
+\subsubsection{Temporal adverbial variable insertion}
+As the ADJPPROPformation subgrammar must be isomorphic with the 
+VERBPPROPformation subgrammar, because an ADJPPROP can be the input for the 
+XPPROPtoCLAUSE subgrammar where it is given a clausal structure with the 
+auxiliary verb {\em be} and translation equivalents, it also has rules for the 
+introduction of temporal adverbial variables. The difference with the rules in 
+the VERBPPROPformation subgrammar is that the variables are not inserted to the 
+right or left of the ADJP-node analogous to the VERBP-node, but {\em into} the 
+ADJP-node as is done with all modifiers of an ADJP..
+\subsubsection{Aktionsart calculation}
+The Aktionsart of ADJPPROPs is always {\em stative}. The transformation could 
+be omitted, if the CLAUSE that is made out of an ADJPPROP by a clause formation 
+rule would be given that value in that rule. The value now is copied from the 
+ADJPPROP-node to the CLAUSE-node.
+\subsubsection{Temporal adverbial sentence substitution}
+This rule substitutes a temporal adverbial SENTENCE for a SENTENCEVAR. It only 
+exists in Dutch, because the ADJP-structure in English and Spanish is not so 
+rich. If such `rich' ADJPs would be derived from sentences in Dutch, this rule 
+should disappear.
+\subsubsection{Aspect rules}
+ADJPPROPS only allow for {\em imperfective aspect} and {\em habitual aspect}.
+Habitual aspect is left out of consideration here, because research on this 
+topic is still going on at this moment. The (intuitive) reason for not allowing 
+for {\em perfective aspect} is te `ongoing' and `open' nature of adjectives 
+which can be shown by their resistence against combination with durative 
+adverbials, e.g in:\\
+
+\begin{lxam}
+&&?&de [drie jaar zieke] man
+\end{lxam}
+Another reason is that the paraphrases with a relative clause tend to have also 
+imperfective aspect. This can only be shown in languages that have different 
+aspectual forms for the auxiliary verb {\em `be'}. Spanish is such a 
+language:\\
+
+\begin{lxam}
+&a&&Vi al hombre enfermo\\
+&b&&Vi al hombre que estaba enfermo\\
+&c&?&Vi al hombre que estuvo enfermo
+\end{lxam}
+This last example is not an incorrect Spanish expression, but probably not the 
+most correct paraphrase for the first example.
+\subsubsection{Retrospective rules}
+These rules exist only for Dutch, because they require the presence of a 
+retrospective referential adverbial which is not possible in an ADJPPROP in 
+English and Spanish. Only the rule for imperfective aspect can be relevant here
+, because we assumed only imperfective and not perfective aspect for ADJPPROPs.
+This can also be illustrated
+in the following examples as an adverbial with {\em al} 
+indicates imperfective retrospective aspect of the clause:\\
+
+\begin{lxam}
+&a&&de [al drie jaar zieke] man (retro, imperfective)\\
+&b&&de [(al) sinds 1972 zieke] man (retro, imperfective)\\
+&c&?&de [sinds 1972 3 jaar zieke] man (retro, perfective)
+\end{lxam}
+To get a retrospective interpretation the presence of the adverbial is needed.
+This is always the case with imperfective, but not with perfective aspect.
+Cf. the following paraphrase examples:\\
+
+\begin{lxam}
+&a&&de [zieke] man\\
+&b&*&de man [die (al een poosje) ziek was] (retro, imperfective)\\
+&c&*&de man [die ziek geweest is] (retro, perfective)
+\end{lxam}
+\begin{lxam}
+&a&&de [al drie jaar zieke] man (retro, imperfective)\\
+&b&&de man [die al drie jaar ziek was] (retro, imperfective)\\
+&c&*&de man [die al drie jaar ziek geweest is] (retro, perfective)
+\end{lxam}
+Again, if the Dutch `rich' ADJPPROPs would be derived from sentences, these 
+rule class should disappear here.
+\subsubsection{Deixis and superdeixis rules}
+These rules resemble the clausal rules, but cannot spell out (periphrastic) 
+tense. So one rule for present and one for past (super)deixis is enough. All 
+grammars have rules for present and past {\em super}deixis, but only the Dutch 
+grammar contains {\em deixis} rules for ADJPPROPs. The reason is that Dutch 
+ADJPPROPs can contain deictic adverbials and therefore can be {\em temporally 
+independent}. The deixis rules are only applicable if an overt deictic 
+adverbial is present; in all other cases the ADJPPROP is assumed to be {\em 
+temporally dependent}. The superdeixis value of the ADJPPROP should be checked 
+with the superdeixis value of the NP or CN it is inserted in.\\
+Again, if the Dutch `rich' ADJPPROPs would be derived from sentences, the {\em 
+deixis} rules could be omitted here. 
+\subsubsection{Superdeixis adaptation transformations}
+In case an ADJ can have a propositional argument which is substituted before 
+the `time rules', the superdeixis of that propositional argument should be 
+checked and, if necessary, adapted in behalf of the surface parser just in the 
+way this is done for the clausal path.
+\subsubsection{Temporal adverbial substitution}
+If temporal adverbials in ADJPPROPs are allowed, as e.g. in Dutch, adverbial 
+substitution rules are needed. They substitute ADVPs and PREPPs for ADVPVARs 
+and PREPPVARs respectively.\\
+Again, if the Dutch `rich' ADJPPROPs would be derived from sentences, these 
+rules would not be necessary.
+\subsubsection{Adaptation transformations in behalf of the surface parser}
+The surface parser does not set values for the attributes {\em aspect}, {\em 
+retro} and {\em deixis}. The value for aspect has to be set to {\em 
+imperfective} (and later also to {\em habitual}) in analysis in all grammars.
+In Spanish and English, the value for {\em deixis} always remains {\em omega} 
+and the value for {\em retro} {\em false}. In Dutch, these attributes have to 
+be set. 
+\subsection{Isomorphy with CLAUSE}
+ADJPPROPs are assumed to be `isomorphic' with relative clauses to a certain 
+extent. It has already become clear above that this is more the case in Dutch 
+than in English and Spanish. That Dutch has more possibilities seems to
+be explained 
+by its SOV-
+character: arguments and adverbials are placed 
+to the left of the head, the ADJ, 
+whereas in English and Spanish they are placed to the right.This means that 
+they stand between 
+the ADJ and the NOUN in English, 
+which seems not to be allowed, because ADJ and NOUN 
+should be adjacent, cf. the ungrammaticality of (~\ref{EngADJP}).\\
+\begin{lxam}\label{EngADJP}
+&&*&The [ill yesterday] donkey
+\end{lxam}
+In Spanish however, most of the ADJPs are placed behind the NOUN, so the 
+adjacency of ADJ and NOUN cannot be the reason for the unacceptability of
+(~\ref{SpanADJP}).\\
+\begin{lxam}\label{SpanADJP}
+&&?&El burro [enfermo ayer]
+\end{lxam}
+To get an overview of the correspondencies I listed them in the tables 
+~\ref{dutchcor} and ~\ref{spengcor} below.
+The first is for Dutch, the other for English and Spanish.
+Note that I left out the special past (super)deixis rules, because they only 
+apply to perfective cases, although they correspond also to the IL-expression 
+{\em Lpast(super)deixis}.
+\begin{table}[htbp]
+\begin{tabular}{|l|l|l|}  \hline
+\multicolumn{2}{|c|}{DUTCH} & 
+   \multicolumn{1}{c|}{IL}\\ \hline
+\multicolumn{1}{|c|}{CLAUSE} &
+   \multicolumn{1}{c|}{ADJPPROP} &
+   \multicolumn{1}{c|}{-}\\  \hline \hline
+Rdurvarinsertion & RADJdurvarinsertion & Ldurvarinsertion\\ \hline
+Rrefvarinsertion & RADJrefvarinsertion & Lrefvarinsertion\\ \hline
+Rretrovarinsertion & RADJretrovarinsertion & Lretrovarinsertion\\ \hline \hline
+Raspectimperfective & RADJaspectimperfective & Laspectimperfective
+                                                        \\ \hline \hline
+Rretroimperfective & RADJretroimperfective & Lretro\\ \hline \hline
+Rfinpresentdeixis  & RADJpresentdeixis & Lpresentdeixis\\ \cline{1-1}
+Rinfinpresentdeixis  &    &   \\ \hline
+Rfinpastdeixis   & RADJpastdeixis & Lpastdeixis\\ \cline{1-1}
+Rinfinpastdeixis &    &    \\ \hline
+Rfinpresentsuperdeixis & RADJpresentsuperdeixis & Lpresentsuperdeixis 
+                                                       \\ \cline{1-1}
+Rinfinpresentsuperdeixis &    &  \\ \hline
+Rfinpastsuperdeixis & RADJpastsuperdeixis & Lpastsuperdeixis\\ \cline {1-1}
+Rinfinpastsuperdeixis &   &   \\ \hline \hline
+Rtempadvsentsubstitution & RADJtempadvsentsubstitution & Ltempsubst
+                                                       \\ \cline{1-2}
+Rtempadvsubstitution1 & RADJtempadvsubstitution1 &   \\ \cline{1-2}
+Rtempadvsubstitution2 & RADJtempadvsubstitution2 &  \\ \hline \hline
+\end{tabular}
+\caption{Correspondencies between the CLAUSE and the ADJPPROP in Dutch}
+\label{dutchcor}
+\end{table}
+\begin{table}[htbp]
+\begin{tabular}{|l|l|l|}  \hline
+\multicolumn{2}{|c|}{SPANISH/ENGLISH} & 
+   \multicolumn{1}{c|}{IL}\\ \hline
+\multicolumn{1}{|c|}{CLAUSE} &
+   \multicolumn{1}{c|}{ADJPPROP} &
+   \multicolumn{1}{c|}{-}\\  \hline \hline
+Rdurvarinsertion & RADJdurvarinsertion & Ldurvarinsertion\\ \hline
+Rrefvarinsertion & RADJrefvarinsertion & Lrefvarinsertion\\ \hline
+Rretrovarinsertion & RADJretrovarinsertion & Lretrovarinsertion\\ \hline \hline
+Raspectimperfective & RADJaspectimperfective & Laspectimperfective
+                                                               \\ \hline \hline
+Rfinpresentsuperdeixis & RADJpresentsuperdeixis & Lpresentsuperdeixis 
+                                                       \\ \cline{1-1}
+Rinfinpresentsuperdeixis &    &  \\ \hline
+Rfinpastsuperdeixis & RADJpastsuperdeixis & Lpastsuperdeixis\\ \cline {1-1}
+Rinfinpastsuperdeixis &   &   \\ \hline \hline
+\end{tabular}
+\caption{Correspondencies between the CLAUSE and the ADJPPROP in English and 
+Spanish}
+\label{spengcor}
+\end{table}
+\section{Temporal adverbials}
+With respect to the proposal in Rdoc.\ 53 there are not many changes. The most 
+important fact is, that the rules that compose (and analyse) temporal 
+adverbials will not have been written at 1-7-88. Only rules for
+a few, very simple 
+adverbials, i.e. bare adverbs and the abstract adverbs, have been written for 
+testing purposes.\\
+Temporal adverbials can be of the syntactic categories ADVP, PREPP and SENTENCE
+as is illustrated by the following examples:\\
+
+ADVP:\\
+\begin{lxam}
+&&&gisteren, 3 uur lang, al 3 uur, tomorrow, ayer, abstract adverbs
+\end{lxam}
+PREPP:\\
+\begin{lxam}
+&&&for 3 hours, in 3 uur, om 3 uur, op maandag, at 3 o'clock, a las tres
+\end{lxam}
+SENTENCE:\\
+\begin{lxam}
+&&&toen Pietje nog werkte, while John was asleep, cuando Carmen estaba\\
+&&&en casa
+\end{lxam}
+The category CONJP from Rdoc. 53 has been substituted by SENTENCE. For the 
+reasons, see section 2.2.1.\\
+The semantic heads of these phrases are the ADV, the PREP or the temporal 
+conjunction of the sentence. These are the most important parts for the 
+determination of the temporal properties of the whole phrase. They are basic 
+expressions and marked for their temporal properties in the lexicon. The 
+relevant attributes of ADVP and PREPP should get their proper values in the 
+ADVP- and PREPP-subgrammar respectively. The temporal sentence will get the 
+proper values in the {\em mood rules} that insert the temporal conjunction. How 
+the assignment of the values should be done can be read in the paper {\em Time 
+adverbials in the Machine Translation System of Rosetta3} by Lilian Kopinga.\\
+The abstract adverbials are inserted in analysis by the 
+ref- and retrodeletion transformations. After that, they are treated as ADVPs.
+The records can be found in the auxiliary domains.\\
+It should be noticed that temporal adverbials do not have category NP as e.g. 
+could be supposed for {\em drie uur} in Dutch. 
+It is assumed that that these adverbials are derived from 
+ADVPs such as {\em drie uur lang} or PREPPs such as {\em gedurende drie uur} by 
+deleting the ADV or PREP. The reason for this treatment is the fact that the 
+other languages most of the time have a preposition in these cases and a choice 
+has to be made: deletion in Dutch or insertion in other languages. However, 
+the construction {\em with} ADV or PREP also exists in Dutch and they can be 
+seen as paraphrases in many cases.\\
+\begin{lxam}
+&a&&Hij werkte 3 uur.\\
+&b&&Hij werkte 3 uur lang.
+\end{lxam}
+Moreover,
+as three different syntactic categories 
+for temporal adverbials already caused writing of so many subrules, I decided 
+to delete the ADV or PREP in Dutch. 
+\section{Modality and Negation}
+Modality and negation are both complicating factors in the treatment of time in 
+a translation system. Modality is already a translation problem, but the modal 
+verbs in many languages have syntacic restrictions on tense which complicates 
+the treatment of time.\\
+Negation is involved in the calculation of Aktionsart: 
+negative sentences seem to have a {\em stative} Aktionsart. So rules that 
+have conditions on Aktionsart also have to reckon with the possibility of a 
+negation element in the clause.
+\subsection{Modality}
+As already mentioned in Rdoc. 53, modal verbs cause problems in the treatment 
+of time in a translation system. I see two reasons for that:
+\begin{enumerate}
+  \item The definition of `modality'. I never saw a satisfying one and there 
+exists much confusing terminology. For the treatment of time it is important to 
+determine the class of so-called `modal verbs', which is rather difficult.
+Most 
+languages have a set of `modal verbs'. These sets show some overlap, but are 
+never the same. If these modal verbs should get a special treatment with 
+respect to time, it must be defined which verbs are modal and what 
+the translation equivalents are.
+  \item The syntactic and morphological behaviour of modal verbs:\\ 
+Modal verbs do not always have a full paradigm with respect to tense. 
+They have a status between full verb and auxiliary verb. In some languages, 
+they are more like auxiliary verbs, e.g. in English (`syntactic modals'). 
+In other languages, they behave more like full verbs, e.g. in Dutch and Spanish
+. 
+\end{enumerate}
+I did some contrastive research on the sets of modal verbs
+which is resumed in table 
+~\ref{modals}.
+\begin{table}[htbp]
+\begin{tabular}{|l|l|l|l|l|l|} \hline
+\multicolumn{2}{|c|}{DUTCH} & 
+  \multicolumn{2}{c|}{ENGLISH} & 
+  \multicolumn{2}{c|}{SPANISH} \\ \hline
+\multicolumn{6}{|c|}{Epistemic modals}\\ \hline
+cat & b.e. & cat & b.e. & cat & b.e.\\ \hline
+VERB & kunnen & VERB & may/might & VERB & poder\\
+ADJ & mogelijk & ADJ & possible & ADJ & posible\\ 
+ADV & misschien & ADV & maybe & ADV & tal vez\\
+    &           &     & perhaps &   & quiz\'{a}s\\ \hline
+VERB & moeten & VERB & must & VERB & deber\\
+     &        &      &  have to &   & tener que\\
+     &        &      & need     &   &          \\
+ADJ & noodzakelijk & ADJ & necessary & ADJ & necesario\\ \hline \hline
+\multicolumn{6}{|c|}{Root modals}\\ \hline 
+cat  & b.e. & cat & b.e. & cat & b.e.\\ \hline
+VERB & kunnen & VERB & can/could & VERB & poder\\
+PREPP & in staat & ADJ & able & ADJ & capaz de\\ \hline
+VERB & moeten & VERB & must & VERB & deber \\
+     &        &      & have to &   & tenere que\\
+ADJ & verplicht & ADJ & obliged & ADJ & obligatorio\\ \hline
+VERB & willen & VERB & want & VERB & querer\\ \hline
+VERB & mogen &      &       & VERB & poder\\
+ADJ? & toegestaan & ADJ? & allowed & ADJ? & permitido\\ \hline
+VERB & zullen  & VERB & shall/will & Tense & futuro 
+                                         \\ \cline{4-4} \cline{6-6}
+     &         &      & would      &       & condicional\\ \hline
+\end{tabular}
+\caption{Translation equivalents of modals}
+\label{modals}
+\end{table}
+If we have a look at the translation equivalents of modal verbs, we see that in 
+cases a modal verb does not allow for a certain tense (as the expression of 
+some time) an alternative with {\em be} + adjective or adverb can be chosen.
+For this kind of problems the {\em isomorphic subgrammars} were designed in 
+Rosetta. And in combination with the possibility of {\em subgrammar switch}, 
+designed for the {\em graag/like}-case, where the semantic head can become 
+syntactically subordinate, i.e. a modifier (in case of adverbs) or an auxiliary 
+verb (e.g. in case of syntactic modals), all problems with modal verbs can be 
+solved except for the normal problem of correspondency of basic expressions,
+of course. The syntactic 
+status is language-specific and handled in the grammars concerned. It should 
+only be guaranteed that if there exists a modal verb with a deficient paradigm, 
+there also exists a synonym, an adjective or adverb, that can account for
+the missing tenses.\\
+Just as with other verbs it has to be indicated for modal verbs if they take  
+only {\em temporally dependent} arguments or allow also for {\em temporally 
+independent} arguments. This is done by listing the verbpatterns concerned in 
+special sets in the auxiliary domain. In general, I think that the `epistemic 
+modals' allow for independent complements and that the `root modals' do not.\\
+A more general preference mechanism should account for the 
+wish that a verb as translation of a verb is prefered to an adjective or adverb
+.\\
+A nice outcome of this approach is that the special start, verbpattern and time 
+rules for modals of Rosetta2 are not necessary anymore.\\
+For more
+examples of modals and their translation equivalents the reader is referred 
+to Rdoc.\ 53, section 7.2.
+\subsection{Negation}
+\label{Neg}
+A negation element in a clause can cause trouble in the treatment of time, 
+because it seems to change the type of event, i.e. it changes the value 
+of the attribute Aktionsart to {\em stative}. This can be illustrated by the 
+following examples as a durative adverbial {\em 3 uur lang} combines with 
+stative or activity Aktionsart and {\em in 3 uur} with accomplishment 
+or achievement in Dutch
+\footnote{Note that contrastive readings are excluded here}:\\
+\begin{lxam}
+&a&&dat Jan 3 jaar lang ziek was\\
+&b&*&dat Jan in 3 jaar ziek was
+\end{lxam}
+\begin{lxam}
+&a&&dat Jan in 3 jaar een boek schreef\\
+&b&*&dat Jan 3 jaar lang een boek schreef
+\end{lxam}
+\begin{lxam}
+&&&dat Jan 3 jaar lang niet ziek was
+\end{lxam}
+\begin{lxam}\label{negaccomp}
+&a&*&dat Jan in 3 jaar geen boek schreef\\
+&b&&dat Jan 3 jaar lang geen boek schreef
+\end{lxam}
+In these examples is assumed that the events {\em Jan ziek zijn} and {\em Jan 
+een boek schrijven} are first negated and that after that the durative 
+adverbial is added. But it is also possible to add first the durative adverbial 
+and then the negation element. In that case example (~\ref{negaccomp})a has a 
+correct interpretation, although the clause would be better if {\em in 3 jaar} 
+and {\em geen boek} were inverted:\\
+\begin{lxam}
+&&&dat Jan geen boek in 3 jaar schreef
+\end{lxam}
+It seems that this problem is an ordinary scope problem. We decided that the 
+negation insertion rule sets the value of Aktionsart to {\em stative} and 
+that the substitution rules for durative adverbials have conditions on 
+Aktionsart. The order of substitution then will determinate the right 
+interpretation.\\
+This means that the conditions on Aktionsart for durative adverbials are now 
+part of the {\em substitution} rules and not of the adverbial variable 
+insertion rules as in earlier proposals.\\
+It turned out that the durative adverbials are scope-sensitive with respect to 
+negation and the place to handle that is the substitution rule class. The 
+different orders can be achieved by movement and shift transformations and 
+topicalisation rules.\\
+The result is that the grammars of English and Spanish now also account for all 
+of the following examples, whereas in earlier proposals the b- or c-examples 
+were not accounted for.\\
+\begin{lxam}
+&a&&He wrote a book in three years\\
+&b&&He did not write a book in three years\\
+&c&&He did not write a book for three years
+\end{lxam}
+\begin{lxam}
+&a&&Escribi\'{o} un libro en tres a\~{n}os\\
+&b&&No escribi\'{o} un libro en tres a\~{n}os\\
+&c&&No escribi\'{o} un libro por tres a\~{n}os
+\end{lxam}
+\section{Language-specific aspects}
+Until now the treatment of temporal expressions was dealt with in a general 
+way. In this section some language-specific aspects will be elaborated. This 
+section is dedicated to the `time rules' for the clause, 
+as in the section on 
+the `time rules' for ADJP, most of the language-specific details were mentioned 
+already. Most of the language-specific differences can be found in the rules 
+and transformations that do something for (periphrastic) tense and not in the 
+rules that insert variables or substitute for them. Some of the 
+language-specific aspects were already mentioned in sections above, but are 
+repeated here.
+\subsection{Dutch}
+{\bf Aspect rules}\\
+Dutch does not have a systematic morphological tense form distinction for 
+aspect. Therefore, the rules for {\em perfective} and {\em imperfective} 
+aspect are both applicable, except for the general condition for imperfective 
+aspect that does not allow for the presence of a durative adverbial.
+The reason I did not choose
+for the option of one ambiguous aspect rule was that 
+this distinction is needed for the treatment of {\em retrospectivity}.\\
+
+{\bf Retrospective rules}
+Retrospectivity is expressed by the tense {\em voltooide tijd} in Dutch. But 
+this tense also expresses {\em perfectivity}. In case of imperfective 
+retrospectivity, Dutch uses an {\em onvoltooide tijd}. Imperfective 
+retrospectivity requires an overt adverbial specifying the retrospective 
+interval on the time-axis. In case of perfective retrospectivity this 
+retrospective interval could be the whole `past' from a specific point. This 
+interval is represented by the abstract imperfective (i.e. `open')
+adverbial `PAST' (meaning `in the past'). The following 
+examples illustrate this:\\
+\begin{lxam}
+&a&&Hij heeft hier PAST drie huizen gebouwd (retro, perfective)\\
+&b&&Hij heeft hier sinds 1972 drie huizen gebouwd (retro, perfective)
+\end{lxam}
+\begin{lxam}
+&a&*&Hij werkt hier nu (retro, imperfective)\\
+&b&&Hij werkt hier nu al drie jaar (retro, imperfective)
+\end{lxam}
+To account for these phenomena, there are 2 retrospective rules in the Dutch
+M-grammar, one for imperfective aspect and one for perfective aspect. The rule 
+for perfective aspect inserts the auxiliary verb {\em hebben} or {\em zijn} 
+depending on the properties of the most right verb and gives that 
+verb the modus {\em past participle}. The rule for imperfective aspect does not 
+change attribute values of the verb(s), but checks on the retrospective 
+adverbial present. The rules have the same semantics, as the difference in 
+perfective and imperfective aspect is already accounted for by the aspect rules
+.\\
+Note that if this were a grammar for Dutch that was not meant to be used in the 
+Rosetta translation system, the solution for aspect and retrospectivity chosen 
+here is not the most natural one.\\  
+
+{\bf Finiteness transformations}\\
+The Dutch grammar contains a rule for {\em finite} and one for {\em infinite} 
+clauses. The rule for infinite clauses has two results: it makes two temporary 
+paraphrases that differ in the value for the attribute {\em VRcompl}. One
+clause will be the complement of a raising verb and the other not. 
+The assignment of a value for this  attribute was added on request of Jan Odijk
+for effciency reasons.\\
+
+{\bf Deixis rules}\\
+Dutch has a special rule for past deixis in finite independent clauses that  
+English and maybe Spanish do not have. It presupposes perfective aspect and is 
+necessary to get the following translation equivalents:\\
+\begin{lxam}
+&a&&Jan heeft gisteren gewerkt\\
+&b&&John worked yesterday\\
+&c&&Juan trabaj\'{o} ayer
+\end{lxam} 
+The rule resembles the rule for perfective retrospectivity and inserts the 
+auxiliary verb {\em hebben} or {\em zijn} depending on the properties of the 
+most right verb and gives that verb the modus {\em past participle}.
+The auxiliary verb is given {\em present tense}! In other languages such a 
+rule only exists for infinite clauses.  Of course, in Dutch too.\\
+\begin{lxam}
+&a&&Jan schijnt gisteren gewerkt te hebben\\
+&b&&John believes Bill to have hit him yesterday\\
+&c&&Juan lamenta haber escrito esa carta ayer
+\end{lxam}
+{\bf Passive {\em geworden} deletion}\\
+In Dutch the past participle of the verb of the passive form {\em worden} has 
+to be deleted in generation and inserted in analysis:\\
+\begin{lxam}
+&a&&Jan wordt geslagen\\
+&b&*&Jan is geslagen geworden\\
+&c&&Jan is geslagen
+\end{lxam}
+An alternative solution would be to delete the verb {\em worden} in a passive 
+clause in all the rules that make a past participle, but that would complicate 
+these already complicated rules even more. Because this is an optional rule 
+that should be applied if possible, it is followed by a filter.\\
+
+{\bf Adaptation transformations}\\
+The {\em aspect neutralization transformations} always create an ambiguity with 
+respect to perfective and imperfective aspect in analysis. 
+The {\em retro neutralization rule} 
+also always create an ambiguity for the attribute {\em retro}. A restriction 
+on the presence/absence of the auxiliary verb {\em hebben/zijn} is not possible 
+because of the possibility of imperfective retrospectivity (see above). 
+I found the formulation of conditions on the retrospective adverbials at this 
+point of the derivation too difficult because of the rather diverse 
+possibilities for the place of these adverbials in the S-tree. The {\em deixis
+retro adaptation rule} in Dutch also works for finite clauses. 
+\subsection{English}
+{\bf Aspect rules}\\
+English expresses {\em perfective aspect} with {\em simple tense forms} and 
+{\em imperfective aspect} with {\em progressive tense forms}
+\footnote{Note that the progressive tense also has an interpretation as `local 
+tense' corresponding to {\em aan het VERB(infinitief) zijn} in Dutch and 
+{\em estar VERB(gerundio)} in Spanish} except for stative 
+and modal verbs. The result is two rules for imperfective aspect: one for the 
+progressive tense, inserting the auxiliary verb {\em be} with the relation 
+{\em progaux} and giving the most left verb the modus {\em ingform}, and one 
+for stative and modal verbs that leave the tense form simple. We cannot 
+generalize over this phenomenon, because in Spanish the translation equivalents 
+of these verbs can have imperfective and perfective aspect forms.\\
+\begin{lxam}
+&a&&John wrote a letter (perfective)\\
+&b&&John wrote a letter in 2 hours (perfective)
+\end{lxam}
+\begin{lxam}
+&a&&John was writing a letter (imperfective)\\
+&b&*&John was writing a letter in 2 hours (imperfective)
+\end{lxam}
+\begin{lxam}
+&a&&John was ill (perfective, imperfective)\\
+&b&&John was ill for 2 hours (perfective, *imperfective)
+\end{lxam}
+{\bf Retrospectivity rules}\\
+Retrospectivity in English is always expressed by the {\em perfect tense}.
+There is only one rule that inserts the auxiliary verb {\em have} and gives the 
+most left verb the modus {\em past participle}.\\
+\begin{lxam}
+&a&&John has written a letter (retro, perfective)\\
+&b&&John has been writing a letter for 2 hours (retro, imperfective)
+\end{lxam}
+Verbs that do not allow for a 
+past participle form such as e.g. modal verbs are excluded in this rule. 
+This means that if English is the target language, there must be another path 
+in an isomorphic subgrammar where the retrospective rule does apply.\\
+\begin{lxam}
+&a&&Hij had het kunnen doen\\
+&b&*&He had `could' do it\\
+&c&&He had been able to do it
+\end{lxam} 
+
+{\bf Finiteness transformations}\\
+There are rules for finite and infinite clauses. In the finite clause the
+auxiliary verb {\em do} is inserted with relation {\em auxrel} except for the 
+case the most left verb is a modal verb, {\em have} or {\em be}, i.e. all kinds 
+of auxiliary verbs. This auxiliary verb {\em do} will be deleted in declarative 
+sentences later, but is needed in questions and negative clauses. this is 
+illustrated by the following examples:\\
+\begin{lxam}
+&&&Does he leave?
+\end{lxam}
+\begin{lxam}
+&a&&Is he leaving?\\
+&b&&Is he hit?\\
+&c&&Has he been hit?\\
+&d&&Can he leave?
+\end{lxam}
+\begin{lxam}
+&&&He does not leave.
+\end{lxam}
+\begin{lxam}
+&a&&He is not leaving.\\
+&b&&He is not hit.\\
+&c&&He has not been hit.\\
+&d&&He cannot leave.
+\end{lxam}
+If {\em be} or {\em have} are {\em main} verbs {\em do} is also 
+inserted but removed by other rules. The result is two rules for the finite 
+case: one that inserts {\em do} and one that does not.\\
+
+{\bf Deixis rules}\\
+English has a special rule for past deixis in infinite clauses: past is 
+expressed by the auxiliary verb {\em have}. The result is that the following 
+sentences are now considered to be paraphrases:\\
+\begin{lxam}
+&a&&John believes Bill to have been there yesterday\\
+&b&&John believes that Bill was there yesterday
+\end{lxam}
+
+{\bf Adaptation rules}\\
+The {\em aspect neutralization transformation} always creates an ambiguity for 
+perfective and imperfective aspect in analysis.\\
+The {\em retro neutralization transformation} only sets the value for the 
+attribute retro to {\em true} in analysis if {\em have} is present.\\
+
+{\bf Modal verbs}\\
+I assumed that in the proposition substitution rules for the arguments of modal 
+verbs the modal verb is inserted as an auxiliary verb into its argument clause.
+This seemed to be an advantage, because the `time rules' could generalize over 
+auxiliaries instead of specifying which verb it was each time.\\
+An alternative would be to let the modal verb be a main verb and use the 
+attribute {\em subc} to formulate the conditions on the auxiliary and modal 
+verbs in the `time rules' and not to prune the SENTENCE-node of the argument 
+clause in the substitution rules, but in a separate rule, e.g.
+in the {\em sentenceok 
+rule class}  
+\subsection{Spanish}
+{\bf Aspect rules}\\
+Spanish distinguishes different aspectual forms for the past tense: 
+{\em imperfecto} and {\em pret\'{e}rito}. In the aspect rules temporary 
+paraphrases are made for the value of the attribute {\em aspecto} of the VERB.
+These will be solved in the deixis rules.\\
+\begin{lxam}
+&a&&Juan trabaj\'{o} (past, perfective)\\
+&b&&Juan trabajaba (past, imperfective)\\
+&c&&Juan trabaja (present, perfective or imperfective)
+\end{lxam}
+
+{\bf Retrospectivity rules}\\
+The tense {\em perfecto} is - just as in Dutch - only used in the perfective 
+case to express retrospectivity. It might be expected that the auxiliary verb 
+{\em haber} has a {\em perfective} form, but in modern Spanish it has an 
+{\em imperfective} form now, probably because the presence of {\em haber} 
+already indicates the perfectivity. The rule for perfective retrospectivity 
+inserts the verb {\em haber} and gives the modus attribute of the most left 
+verb the value {\em participio pasado}.
+In the imperfective case another 
+periphrastic tense with the verb {\em llevar} is used in case of non-stative 
+Aktionsart. The rule for this case inserts {\em llevar} and gives the modus of 
+the most left verb the value {\em gerundio}. For the imperfective case with 
+stative Aktionsart the adverb {\em ya} (translation into Dutch: {\em al}) is 
+inserted to the left of the most left VERB. This adverb does not form a 
+constituent with the adverbial as in Dutch.\\
+\begin{lxam}
+&a&&Juan ha trabajado aqu\'{i} desde 1972/PAST (retro, perfective)\\
+&b&&Juan lleva trabajando aqu\'{i} desde hace
+tres a\~{n}os (retro, imperfective)\\
+&c&&Juan ya est\'{a} enfermo desde hace tres a\~{n}os (retro, imperfective)
+\end{lxam}
+{\bf Finiteness transformations}\\
+There is a rule for {\em finite} and a rule for {\em infinite} clauses. The 
+rule for infinite clauses has two results. One clause will be the complement of 
+a restructuring verb and one clause will not. The attribute for this efficiency 
+measure is called {\em restructuring}.\\
+
+{\bf Deixis rules}\\
+Spanish  also has a special past deixis rule for infinite clauses that inserts 
+the verb {\em haber} and gives the modus attribute of the most left verb the 
+value {\em participio pasado}.\\
+\begin{lxam}
+&a&&Juan lamenta haber hecho eso ayer\\
+&b&&Juan lamenta que hizo eso ayer
+\end{lxam}
+Maybe it should also have one for finite clauses, but the opinions are not very 
+clear. It seems that Spanish is changing in the direction French also changed:
+The {\em perfecto} (Fr: {\em pass\'{e} compos\'{e}}) is getting the meaning of 
+the {\em pr\'{e}terito} (Fr: {\em pass\'{e} simple}). But for the time being, 
+I did not add this rule as there is always a correct alternative with the 
+{\em pr\'{e}terito} and we only develop a generation component for Spanish.\\
+\begin{lxam}
+&a&?&Juan ha venido ayer.\\
+&b&&Juan vino ayer
+\end{lxam}
+{\bf Adaptation transformations}\\
+The {\em aspect neutralization transformation} always creates an ambiguity for 
+perfective and imperfective aspect in analysis.\\
+The {\em retro neutralization transformation} also always creates an ambiguity 
+for the attribute {\em retro} in analysis.\\
+
+{\bf Names of attributes and values}\\
+The names of attributes and values are not always in English, because Spanish 
+names were already chosen in the morphological component. I listed the deviant 
+names in table ~\ref{spannames}.
+\begin{table}[htbp]
+\begin{tabular}{|l|l|l|l|} \hline
+\multicolumn{2}{|c|}{Spanish} & 
+  \multicolumn{2}{c|}{English}\\ \hline
+attribute & value & attribute & value\\ \hline
+supertiempo & presente & superdeixis & presentdeixis\\
+            & pasado   &             & pastdeixis\\
+            & omegatiempo &          & omegadeixis\\ \hline
+tiempo      & presente & deixis      & presentdeixis\\
+            & pasado   &             & pastdeixis\\
+            & omegatiempo &          & omegadeixis\\ \hline
+tiempo      & presente & tense      & presenttense\\
+            & pasado   &             & pasttense\\
+            & omegatiempo &          & omegatense\\ \hline
+aspecto     & perfectivo & aspect    & perfective\\
+            & imperfectivo  &        & imperfective\\
+            & omegaaspecto &         & omegaaspect\\ \hline
+modo        & indicativo   & modus   & indicative\\
+            & subjuntivo   &         & subjunctive\\
+            & imperativo   &         &             \\
+            & infinitivo   &         & infinitive\\
+            & gerundio     &         & ingform\\
+            & PtcPas       &         & participle\\
+            & omegamodo    &         & omegamodus\\ \hline
+\end{tabular}
+\caption{Deviant names of attributes and values in Spanish}
+\label{spannames}
+\end{table}
+\section{Assumptions}
+The `time rules' assume things about the rest of the M-grammar, the S-parser 
+and the morphological component. These things are summed up below.
+\subsection{Assumptions about the rest of the M-grammar}
+The following assumptions about the rest of the M-grammar have been made:
+\begin{enumerate}
+  \item For the Aktionsartcalculation transformations it is necessary that all 
+consituents that can be arguments of a verb are specified for the attribute 
+{\em specQ}. This holds for NP(VAR), PREPPPROP(VAR), (VAR)PREPP etc. An 
+exception is CN(VAR): it is assumed to behave as if it had {\em yesspec} for 
+this attribute, so the category does not need this attribute.
+  \item There are superdeixischecks in all substitution rules except for the 
+proposition substitution rules. For the latter ones we have the 
+superdeixisadaption transformations. The checks and adaptations in the 
+substitution rules should be written
+along the lines of the superdeixisadaptation 
+transformations.
+   \item The negation insertion rule changes the value of Aktionsart of the 
+Clause to {\em stative}.
+   \item There exist special substitution rules for {\em graag} in Dutch and 
+the syntactic modals in English.
+   \item The PREPP and ADVP subgrammars take care of the percolation and 
+computation of the values of the relevant temporal attributes. This should be 
+done as described in Kopinga(1987).
+    \item There exist two-place-moodrules that make SENTENCEs with temporal 
+conjunctions and take care of the percolation and computation of the values of 
+the relevant temporal attributes.
+\end{enumerate}
+\subsection{Assumptions about the S-parser}
+The following assumptions have been made about the S-parser:
+\begin{enumerate}
+  \item The attribute {\em superdeixis} of all categories remains {\em omega}.
+  \item Temporal adverbials have the relation {\em tempadvrel} and have been 
+specified for the temporal attributes. This holds for categories ADVP, PREPP, 
+SENTENCE and NP (in Dutch).
+  \item The following attributes of SENTENCE have been specified:
+\begin{enumerate}
+  \item Finiteness:\\
+ finite: if modus of VERB is indicative, subjunctive or imperative\\
+infinite: if modus of VERB is infinitive, ingform, participle (present or 
+past)\\
+  \item Deixis:\\
+presentdeixis: if tense of VERB is present tense\\
+pastdeixis: if tense of VERB is past tense\\
+omegadeixis: else\\
+  \item Aspect: always omegaaspect
+  \item retro: always false
+  \item Aktionsart:\\
+if VERB class is stative $\rightarrow$ [stative]\\
+if VERB class is durative $\rightarrow$ [stative, activity, accomplishment]\\
+if VERB class is movement $\rightarrow$ [stative, activity, accomplishment]\\
+if VERB class is momentary $\rightarrow$ [stative, achievement]
+\end{enumerate}
+\end{enumerate}
+\subsection{Assumptions about the morphological component}
+It is assumed that the morphological component spells out tense forms of VERB 
+on basis of the attributes {\em tense} and {\em modus} and in Spanish 
+additionally {\em aspecto} and {\em futuro}.\\
+Some generalisations can be made:
+\begin{itemize}
+  \item If a VERB has {\em omegatense} and in Spanish also {\em nofuturo} and 
+{\em omegaaspecto}, then the modus is in the set [{\em infinitive, past 
+participle, present participle, ingform, gerundio or imperative}]
+  \item If a VERB has {\em presenttense} or {\em pasttense}, then the modus is 
+{\em indicative} or {\em subjunctive}
+  \item If in Spanish a VERB has {\em presenttense}, then aspecto is 
+{\em omegaaspecto}
+  \item If in Spanish a VERB has {\em pasttense} and modus is {\em subjunctive},
+then aspecto is {\em omegaaspecto}.
+\end{itemize}
+\newpage
+\section{The auxiliary domain w.r.t. the `time rules'}
+In the auxiliary domains of the M-grammars some keys for abstract adverbials 
+and auxiliary verbs, some records for abstract adverbials and sets of 
+verbpatterns that allow for independent or dependent complement clauses are 
+summed up. I listed the Dutch ones below; the Spanish and English ones only 
+differ in the keys for auxiliary verbs, not-temporal aspects of the records
+or in names (Spanish!).\\
+
+\nopagebreak[8]
+LANGUAGE: DUTCH\\
+
+KEYS\\
+presrefemptykey: REF(present) = `S'\\ 
+pastrefemptykey: REF(past) \\
+retrorefemptykey: PAST\\
+hebbenbverbkey: auxiliary verb for perfect tense\\
+zijnbverbkey: auxiliary verb for perfect tense\\
+
+\nopagebreak[25]
+STANDARD RECORDS\\
+
+ ADVONprsrfempty  : ADVrecord \\
+The record of the ADV above presrefempty. Used in tempemptydeletion.\\
+\{\\
+req = [pospol,negpol,omegapol]\\
+env = [pospol,negpol,omegapol]\\
+comparatives = [noComp]\\
+superlatives = [noSup]\\
+subcs = [TempAdv]\\
+Qstatus = false\\
+form = positive\\
+eORenForm = NoForm\\
+class = reference\\
+deixis = presentdeixis\\
+aspect = perfective\\
+retro = false\\
+mood = declxpmood\\
+thetaadv = thetaadv1\\
+advpatterns = []\\
+prepkey = 0\\
+temporal = true\\
+possnietnp = false\\
+thanas = omegacompl\\
+\}
+\pagebreak
+\nopagebreak[23]
+ ADVONpstrfempty  : ADVrecord\\
+The record of the ADV above pastrefempty. Used in tempemptydeletion.\\
+\{\\
+req = [pospol,negpol,omegapol]\\
+env = [pospol,negpol,omegapol]\\
+comparatives = [noComp]\\
+superlatives = [noSup]\\
+subcs = [TempAdv]\\
+Qstatus = false\\
+form = positive\\
+eORenForm = NoForm\\
+class = reference\\
+deixis = pastdeixis\\
+aspect = perfective\\
+retro = false\\
+mood = declxpmood\\
+thetaadv = thetaadv1\\
+advpatterns = []\\
+prepkey = 0\\
+temporal = true\\
+possnietnp = false\\
+thanas = omegacompl\\
+\}\\
+
+\nopagebreak[23]
+ ADVONrtrrfempty  : ADVrecord\\
+The record of the ADV above retrorefempty. Used in tempemptydeletion.\\
+\{\\
+req = [pospol,negpol,omegapol]\\
+env = [pospol,negpol,omegapol]\\
+comparatives = [noComp]\\
+superlatives = [noSup]\\
+subcs = [TempAdv]\\
+Qstatus = false\\
+form = positive\\
+eORenForm = NoForm\\
+class = reference\\
+deixis = omegadeixis\\
+aspect = imperfective\\
+retro = true\\
+mood = declxpmood\\
+thetaadv = thetaadv1\\
+advpatterns = []\\
+prepkey = 0\\
+temporal = true\\
+possnietnp = false\\
+thanas = omegacompl\\
+\}\\
+
+\nopagebreak[22]
+ADVPONprsrfempty  : ADVPrecord\\
+The record of the ADVP above the ADV for
+presrefempty. Used in tempemptydeletion.\\
+\{\\
+req = [pospol,negpol,omegapol]\\
+env = [pospol,negpol,omegapol]\\
+class = reference\\
+deixis = presentdeixis\\
+aspect = perfective\\
+retro = false\\
+superdeixis = omegadeixis\\
+actsubcefs = [TempAdv]\\
+Qstatus = false\\
+mood = declxpmood\\
+thetaadv = thetaadv1\\
+advpatternefs = []\\
+temporal = true\\
+Radvb = false\\
+possnietnp = false\\
+thanas = omegacompl\\
+thanascompl = false\\
+\}
+\pagebreak
+\nopagebreak[22]
+ADVPONpstrfempty  : ADVPrecord\\
+The record of the ADVP above the ADV for
+pastrefempty. Used in tempemptydeletion.\\
+\{\\
+req = [pospol,negpol,omegapol]\\
+env = [pospol,negpol,omegapol]\\
+class = reference\\
+deixis = pastdeixis\\
+aspect = perfective\\
+retro = false\\
+superdeixis = omegadeixis\\
+actsubcefs = [TempAdv]\\
+Qstatus = false\\
+mood = declxpmood\\
+thetaadv = thetaadv1\\
+advpatternefs = []\\
+temporal = true\\
+Radvb = false\\
+possnietnp = false\\
+thanas = omegacompl\\
+thanascompl = false\\
+\}\\
+
+\nopagebreak[22]
+ADVPONrtrrfempty  : ADVPrecord\\
+The record of the ADVP above the ADV for
+retrorefempty. Used in tempemptydeletion.\\
+\{\\
+req = [pospol,negpol,omegapol]\\
+env = [pospol,negpol,omegapol]\\
+class = reference\\
+deixis = omegadeixis\\
+aspect = imperfective\\
+retro = true\\
+superdeixis = omegadeixis\\
+actsubcefs = [TempAdv]\\
+Qstatus = false\\
+mood = declxpmood\\
+thetaadv = thetaadv1\\
+advpatternefs = []\\
+temporal = true\\
+Radvb = false\\
+possnietnp = false\\
+thanas = omegacompl\\
+thanascompl = false\\
+\}\\
+
+The set of relations for SENTENCE used in the superdeixisadaptation 
+transformations to determine the set of complement sentences.\\
+
+BASETYPE synrel\\
+\begin{tabular}{lcl}
+sentencerels & & \\
+& = & \\
+& & [\\
+& & complrel, prepobjrel, leftdislocrel, subjrel, extraposrel\\
+& & ]
+\end{tabular}
+\newpage
+The set of verbpatterns with a propositional argument that only allow for 
+dependent complements.\\
+
+SETTYPE synpatternSETTYPE\\
+\begin{tabular}{lcl}
+tempdepcomplvps & & \\
+& = & \\
+& & [\\
+& & synAANNP\_OPENOMTESENT, synAANNP\_OPENTESENT,\\
+& & synAANNP\_QSENT, synAANNP\_THATSENT,\\
+& & synASIFCLOSEDADJPPROP, synDONP\_OPENTESENT,\\
+& & synEMPTY\_CLOSEDTESENT,\\
+& & synEMPTY\_HETOPENTESENT,\\
+& & synEMPTY\_HETTHATSENT,\\
+& & synEMPTY\_OPENOMTESENT, synEMPTY\_OPENTESENT,\\
+& & synEMPTY\_QSENT, synEMPTY\_THATSENT,\\
+& & synHETOPENOMTESENT, synHETOPENTESENT,\\
+& & synHETTHATSENT, synIONP\_HETOPENOMTESENT,\\
+& & synIONP\_HETTHATSENT, synIONP\_OPENTESENT,\\
+& & synIONP\_QSENT, synIONP\_THATSENT,\\
+& & synOPENOMTESENT, synOPENTESENT,\\
+& & synPREPOPENTESENT, synPREPQSENT,\\
+& & synPREPTHATSENT, synQSENT, synTHATSENT ,\\
+& & synCLOSEDINFSENT, synCLOSEDTESENT,\\
+& & synOPENINFSENT, synHETASIFCLOSEDADJPPROP,\\
+& & synTHATSENT\_LOCOPENPREPPPROP\\
+& & ]
+\end{tabular}
+\newpage
+The set of verbpatterns with a propositional argument that allow for 
+independent complements\\
+
+SETTYPE synpatternSETTYPE\\
+\begin{tabular}{lcl}
+tempindepcomplvps & & \\
+ &  = & \\ 
+& & [\\
+& & synAANNP\_OPENTESENT,\\
+& & synAANNP\_QSENT, synAANNP\_THATSENT,\\
+& & synASIFCLOSEDADJPPROP, synDONP\_OPENTESENT,\\
+& & synEMPTY\_CLOSEDTESENT,\\
+& & synEMPTY\_HETOPENTESENT,\\
+& & synEMPTY\_HETTHATSENT,\\
+& & synEMPTY\_OPENTESENT,\\
+& & synEMPTY\_QSENT, synEMPTY\_THATSENT,\\
+& & synHETOPENTESENT,\\
+& & synHETTHATSENT, \\
+& & synIONP\_HETTHATSENT, synIONP\_OPENTESENT,\\
+& & synIONP\_QSENT, synIONP\_THATSENT,\\
+& & synOPENTESENT,\\
+& & synPREPQSENT,synPREPOPENTESENT,\\
+& & synPREPTHATSENT, synQSENT, synTHATSENT ,\\
+& & synCLOSEDINFSENT, synCLOSEDTESENT,\\
+& & synOPENINFSENT, synHETASIFCLOSEDADJPPROP,\\
+& & synTHATSENT\_LOCOPENPREPPPROP\\
+& & ]
+\end{tabular}
+\newpage
+\section{Special functions w.r.t. the `time rules'} 
+Three special functions have been used in the `time rules' that have been 
+implemented by now:
+\begin{itemize}
+\item QUOTE\_temprefnotfound(mu): BOOLEAN
+\item QUOTE\_tempdurnotfound(mu): BOOLEAN
+\item QUOTE\_tempretronotfound(mu): BOOLEAN
+\end{itemize}
+They look if a reltree with relation {\em tempadvrel} and category ADVP(VAR), 
+PREPP(VAR) or SENTENCE(VAR) exist in a reltreelist (mu), with some 
+properties:\\
+
+temprefnotfound: class = {\em reference} and retro = {\em false}\\
+tempdurnotfound: class = {\em durative}\\
+tempretronotfound: class = {\em reference} and retro = {\em true}\\
+
+For category SENTENCE(VAR) the attributes are {\em conjclass} and 
+{\em conjretro}.
+The functions are {\em true} as such a reltreelist has {\em not} been found.
+In a new version of the M-rule notation it is possible to express this with the 
+WITH-statement.
+\newpage
+\section{Concluding remarks}
+This document is the documentation for the `time rules' that have been written 
+for 1-7-1988.\\
+It turned out that there was a lot to say about these rules `that spell out the
+tense and check the compatability of time adverbials and the tense'. Besides 
+the fact that the translation of tense is a well-known translation problem, so 
+that it could be expected that the attuning of the grammars would take its 
+toll, the amount of rules has grown a lot more than was expected. There are 
+several reasons for that and they can be summarized as follows:
+\begin{itemize}
+  \item The rules were split up and spread through the grammar because of 
+syntactic and/or grammar-internal attuning reasons.
+  \item Rules had to be added or complicated to relieve the inefficient surface
+parser.
+  \item The M-rule notation forced me to split up many rules into subrules that 
+have a lot in common and only differ in a syntactic category or an attribute 
+name.
+\end{itemize}
+The result is that the `time rules' for the Dutch clause take up a whole 
+document file if printed with \LaTeX, which seems a little bit out of 
+proportion for just the rules that spell out tense and check some time 
+adverbials.\\
+
+At the time of writing this document only rules for Dutch have been tested, but
+it has not been possible to test all the rules, because the rules that account 
+for the proper time adverbials (ADVP- and  PREPP-subgrammar and mood rules for 
+adverbial sentences) have not been written yet. The rules for English and 
+Spanish will be tested as far as possible during the months May and June. 
+\newpage
+\begin{thebibliography}{99}
+\bibitem{time} Lisette Appelo, `The translation of temporal expressions 
+in Rosetta3'. Rdoc.\ nr.\ 53.
+\bibitem{coling} Lisette Appelo (1986), `A Compositional Approach to the 
+Translation of Temporal Expressions in the Rosetta System', Philips Research 
+M.S.\ 13.677, Proceedings of the 11th International Conference on Computational 
+Linguistics, August 25 - 29, 1986, Bonn.
+\bibitem{subg} Lisette Appelo en Carel Fellinger, `Subgrammatica's en 
+regelklassen'. Rdoc.\ nr.\ 67.
+\bibitem{acl} Lisette Appelo, Carel Fellinger and Jan Landsbergen (1987), 
+`Subgrammars, Rule classes and Control in the Rosetta Translation System'. 
+Philips Research M.S.\ 14.131. Proceedings of the 3rd Conference ACL, 
+Copenhagen.
+\bibitem{lilian} Lilian Kopinga (1987), `Time adverbials in the Machine 
+Translation System of Rosetta3', final paper for studies of French at the VU. 
+\end{thebibliography} 
+\end{document}
+
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

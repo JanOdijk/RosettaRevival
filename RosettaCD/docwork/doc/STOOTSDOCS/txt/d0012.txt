@@ -1,0 +1,479 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta2
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  M-RULES 
+
+         Author       :  Jan Landsbergen
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  0012
+
+         Date         :  85/11/27
+
+         Status       :  approved
+
+         Supersedes   :  
+
+         Distribution :  project
+
+         Clearance    :  Philips
+
+         Keywords     :  M-rule, notation, model, parameter
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta                         Doc.nr: 0012                date:85/11/27
+$NP 1
+$UC _
+$LD 4
+$SC &%
+
+
+
+
+_1. Introduction_
+ 
+$ In R0011, section 2.1, it is stated that an M-rule R%i% must define two
+functions:$
+       F%Ri%, from n-tuples of S-trees to sets of S-trees,
+       F%Ri%', from S-trees to sets of n-tuples of S-trees.
+(the number of arguments n is fixed for each rule)
+$ F%Ri% is for the generative application of the rule, F%Ri%' for the 
+analytical application. The two functions must be each other's reverse.$
+$ There is no official notation for M-rules in Rosetta2, only a provisional
+one. There was no need
+to have one, as the rules were "hand-compiled" into Pascal. However, it was
+the intention to try out the provisional notation and to use this experience
+for developing a future notation that could be compiled automatically.$
+$ In this document the provisional notation is specified. The actual rules
+of the Rosetta2 grammars may contain other elements than the ones described
+here, in some cases they even contain parts formulated in natural language.$
+
+$NP
+_2. S-tree models_
+
+$ As we will see in the next section, the structural condition and action of
+an M-rule is expressed by means of S-tree models. An S-tree model defines a
+set of S-trees, which are called instances of the model. An S-tree model can
+be briefly characterized as an S-tree with variables in it. If the variables
+are replaced by values (of the right type) the result is an S-tree.$
+
+I will define S-tree models by means of rewrite rules.
+
+The syntactic categories of this small grammar will be underlined.
+
+_S-tree model_         ==> _treevar_  |  
+                         _node model_ "[" _reltreelist model_ "]";
+
+_reltreelist model_    ==> _empty reltreelist_  | 
+                         _nonempty reltreelist_;
+
+_empty reltreelist_    ==> eps ;
+
+_nonempty reltreelist_ ==> _reltreelistvar_  |
+                          _optreltreevar_  |
+                          _relation model_ "/" _S-tree model_  |
+                          _reltreelistvar_  _nonempty reltreellist_  |
+               _relation model_ "/" _S-tree model_ "," _nonempty reltreelist_ |
+                          _optreltreevar_ "," _nonempty reltreelist_; 
+
+_node model_      ==>  _nodevar_  |
+                     "VERB" "{" _VERBrecvar_ "}"  |
+                     "NOUN" "{" _NOUNrecvar_ "}"  |
+                     etc., for all categories in SYNCATS that have at least 
+                     one corresponding attribute.
+                     ....
+                     C "{" "}" for the categories C that have no corresponding 
+                     attributes.
+   
+_nodevar_         ==>  "N%1%"  |  "N%2%"  |  "N%3%"  | .....
+
+_reltreelistvar_  ==>  "mu%1%"  | "mu%2%"  | .....
+
+_relation model_  ==> _relationvar_ | _relation_
+
+_relationvar_     ==> "rel%1%"  |  "rel%2%"  | .....
+
+_treevar_         ==> "T%1%"  |  "T%2%"  | .....
+
+_optreltreevar_   ==> "sig%1%"  | "sig%2%"  | .....
+
+_relation_        ==> "subjrel" | "objrel" | "headrel" | .....
+                    (for all relations in SYNRELS)
+
+_VERBrecvar_      ==> "VERBrec%1%"  |  "VERBrec%2%"  | .....
+
+_NOUNrecvar_      ==> "NOUNrec%1%"  |  "NOUNrec%2%"  | .....
+etc.;
+$ for all categories in SYNCATS there is a number of "recvars" 
+(record variables). There
+may be various categories with the same attributes, e.g. CL (clause) and SENT
+(sentence). Then both _CLrecvar_ and _SENTrecvar_ may be rewritten as 
+Clrec%1%, CLrec%2%, etc.$
+
+Examples of S-tree models:
+
+T%1%
+VERB{ VERBrec2 } [ ]
+NP{ NOMrec1 } [ det/ ART{ ARTrec1 }[ ], head/ T%1%, mu%1% ]
+N%1%[ mu%1%, N%2%[ sig%2%, sig%3% ] ]
+$NP
+
+_3. Form of the M-rules_
+
+$ An M-rule R%i% consists of 5 parts:$
+1. Enumeration of model variables
+2. left and right S-tree models
+3. Parameters and their values
+4. The generative condition and action
+5. The analytical condition and action
+
+$ ad 1. In practice the model variables are not enumerated, but are deduced
+from the S-tree models in which they occur. However, for the definition of
+the function of the M-rules it is convenient to have an explicit list 
+of the model variables, to be referred to as MV%1%,...., MV%k%.$
+$ We distinguish three kinds of model variables with regard to the
+models in which they occur: left (model) variables, right (model) variables
+and common (model) variables.$
+$ Each variable has a unique type, i.e. a class of possible values. Record
+values have "records" as their values, 
+in the Pascal sense of the word. The notion "record"
+is used to denote the complete set of attribute-values of an S-tree node,
+corresponding to a specific category. The field-identifiers of these records
+are the attributes. So the model variable VERBrec%1% denotes verb records,
+of which the field-identifiers are the attributes corresponding to the 
+category VERB.$
+$ Given a sequence of model variables in some arbitrary but fixed order:
+MV%1%, ... , MV%k%, we can define value sequences for them, of length k,
+which contain at place i a possible value of MV%i%. We will distinguish
+left value sequences (lvs's) for the left variables, right value sequences
+(rvs's) for the right variables, common value sequences (cvs's) for the common
+variables.$
+
+$ ad 2. For an n-ary M-rule n left S-tree models are specified and one right
+S-tree model. In the generative interpretation of the rule the 
+left S-tree models indicate the expected global structure 
+of the input trees, the right S-tree model indicates the global structure of
+the output tree. In the analytical interpretation of the rule the right S-tree
+model indicates the global structure of the input tree, the left S-tree models
+indicate the global structure of the n output trees. $
+$ The left S-tree models m%1%,...,m%n% (together) 
+contain the left variables and the
+common variables (not the right variables). The right S-tree models
+contain the right variables and the common variables (not the left variables).$
+
+$ ad 3. In an M-rule parameters may be used (optionally). 
+They are a special kind of internal 
+variables with a finite (and small)
+set of possible values, which has to be specified by enumeration. 
+They give the possibility to combine a number of
+similar M-rules into one rule (scheme).$
+$ (Indices of syntactic variables (S-trees of category VAR) are a special kind
+of parameters that we leave out of consideration here.)$
+$ Given the sequence of parameters P%1%, ... , P%k% of an M-rule parameter
+value sequences (pvs's) can be defined in a way analogous to the way in which
+value sequences are defined for model variables.$
+$ The name of the rule scheme together with a pvs defines a particular 
+instance of the rule. The node of the syntactic derivation tree is in such
+a case labelled by the name of the rule and the parameter values. In
+generation an M-rule is called for a particular pvs, the pvs in the derivation 
+tree. In analysis the M-rule decides for which pvs's the rule is applicable.$
+$ It is worth noting that the current use of parameters is under discussion
+and may be changed in the future.$
+ 
+$ ad 4. The generative condition C%gen% and the generative action A%gen%.$
+$ C%gen% is a proposition in terms of left variables, common variables and
+parameters (and possibly additional terms).$
+$ A%gen% assigns new values to right variables and common variables
+in terms of left variables, common variables and parameters. A%gen% must be
+applicable in all cases that C%gen% holds. (The assignments to left variables
+are obligatory, the assignments to common variables may be left out if
+their values should remain unaltered.)$
+$ In mathematical terms, C%gen% defines a function from left value sequences,
+common value sequences and parameter value sequences to truth values. 
+A%gen% defines a function from left value sequences, common value sequences
+and parameter value sequences to common value sequences and right value 
+sequences. This is a partial function, but applicable in all cases that
+C%gen% holds. So, if C%gen%(lvs, cvs, pvs) holds, then A%gen%(lvs, cvs, pvs)
+delivers a sequence rvs, cvs.$ 
+$ The generative condition may be empty and is then interpreted as true. The
+generative action may be empty (if there are no right variables) and
+is then interpreted as the "identity function". In that
+case the rule performs only the structural change prescribed by the models.$
+
+$ ad 5. The analytical condition C%an% and the analytical action A%an%.$
+$ C%an% is a proposition in terms of right variables, common variables and
+parameters (and possibly additional terms).$
+$ A%an% assigns new values to left variables and common variables
+in terms of right variables, common variables and parameters. A%an% must be
+applicable in all cases that C%an% holds.$
+$ In mathematical terms, C%an% defines a function from right value sequences,
+common value sequences and parameter value sequences to truth values. 
+A%an% defines a function from right value sequences, common value sequences
+and parameter value sequences to common value sequences and left value 
+sequences. This is a partial function, but applicable in all cases that
+C%an% holds. So, if C%an%(rvs, cvs, pvs) holds, then A%an%(rvs, cvs, pvs)
+delivers a sequence lvs, cvs.$
+$ The analytical condition may be empty and is then interpreted as true. The
+analytical action may be empty (if there are no left variables) and
+is then interpreted as the identity function. In that
+case the rule performs only the structural change prescribed by the models.$
+
+$ The generative and the analytical condition and action are the only
+"direction sensitive" parts of the M-rule. Thanks to that, the
+reversibility condition on M-rules can be reduced to the following
+condition:$
+$RL 3
+    lvs, rvs, pvs, cvs%1%, cvs%2%:
+       C%gen%(lvs, cvs%1%, pvs) and <rvs, cvs%2%> = A%gen%(lvs, cvs%1%, pvs)
+<===>  C%an%(rvs, cvs%2%, pvs)  and <lvs, cvs%1%> = A%an%(rvs, cvs%2%, pvs)
+ 
+$ In actual practice there may be reasons to break this condition.$
+
+$ The language in which the generative and analytical conditions and actions
+are expressed has not yet been completely fixed. In practice it is close to 
+a subset of Pascal, but in some complicated rules other - less formal -
+formulations occur. It is our aim to use the experience with Rosetta2 to
+arrive at a completely formalized notation.$ 
+$NP
+
+_4. Interpretation of M-rules_
+
+$ As we have seen in section 2, S-tree models may be regarded as S-trees in
+which parts have been replaced by model variables. It will be obvious that
+if in a given S-tree model we replace the model variables by corresponding
+values, the result is an S-tree. We define two functions, INST%L% and
+INST%R%, for performing this "instantiation".$
+$ INST%L% operates on a left S-tree model, a left value sequence and a
+common value sequence. INST%L%(m,lvs,cvs) is the S-tree that results if
+in m the left and the common variables are replaced by the values in the
+sequences lvs and cvs.$
+$ INST%R% is defined analogously for a right S-tree model m, a right value
+sequence and a common value sequence. INST%R%(m,rvs,cvs) 
+is the S-tree that results if
+in m the right and the common variables are replaced by the values in the
+sequences rvs and cvs.$   
+
+$ We have to define yet what the possible values of the different kinds of
+model variables are:$
+- a value of a node variable N%i% is a node (of an S-tree).
+- a value of a reltreelist variable mu%i% is a reltreelist, i.e. a (possibly
+  empty) sequence of pairs relation/S-tree.
+- a value of a relation variable rel%i% is a syntactic relation.
+- a value of tree variable T%i% is an S-tree.
+- a value of an optreltree variable sig%i% is a pair relation/ S-tree or 
+  the empty reltreelist.
+- a value of a VERBrecord variable VERBrec%i% is a verb record, i.e. a complete
+  specification of the values of the attributes in ATS%VERB%.
+  The values of the other record variables for the other syntactic categories
+  are defined analogously.
+
+$ Be given an M-rule with left models m%1%,...,m%n%, right model m and
+a sequence of left, right and common variables and parameters. We will
+denote the possible value sequences for these variables and parameters by
+lvs, rvs, cvs and pvs. With the help of the instantiation functions 
+the generative function
+F%Ri% and the analytical function F%Ri%' can be defined for this M-rule. 
+If R%i% is a rule scheme, with parameters, F%Ri% is called for a
+particular parameter value sequence pvs. In that case the result of F%Ri%' 
+consists not only of S-tree tuples, but contains for each tuple a pvs as well.$
+
+$RL 9
+F%Ri%(t%1%,...,t%n%, pvs) =%def%
+                          { t | _E_ lvs, cvs%1%, cvs%2%, rvs  :
+                              pvs in possible-sequences-of-parametervalues
+                              and t%1% = INST%L%(m%1%, lvs, cvs%1%)
+                              ..............
+                              and t%n% = INST%L%(m%n%, lvs, cvs%1%) 
+                              and C%gen%(lvs,cvs%1%,pvs) 
+                              and <rvs, cvs%2%> = A%gen%(lvs, cvs%1%, pvs)
+                              and t = INST%R%(m, rvs, cvs%2%)          } 
+
+$RL 9
+F%Ri%'( t ) =%def%
+               {(<t%1%, ... , t%n%>, pvs) | _E_ lvs, cvs%1%, cvs%2%, rvs :
+                              pvs in possible-sequences-of-parametervalues
+                              and t = INST%R%(m, rvs, cvs%2%)      
+                              and C%an%(rvs,cvs%2%,pvs) 
+                              and <lvs, cvs%1%> = A%an%(rvs, cvs%2%, pvs)
+                              and t%1% = INST%L%(m%1%, lvs, cvs%1%)
+                              ..............
+                              and t%n% = INST%L%(m%n%, lvs, cvs%1%)    }
+$NP
+
+_5. Effective procedures for the analytical and the generative rule_
+
+
+$ The design of effective procedures for F%Ri% and F%Ri%' will involve a
+kind of inverse procedure for the instantiation functions. This matching
+procedure will have as its arguments a model m and an S-tree t and will
+deliver a set of value sequences for the model variables in m. Each value
+sequence in this set must instantiate m into t. In Rosetta2 no general
+match procedure has been incorporated, but each M-rule has been compiled
+into Pascal by hand.$
+
+$ (There exists a preliminary - hand-written - 
+version of the definition announced here, but
+it seems better to elaborate it in the future, in parallel with
+a new notation for M-rules. It is not relevant for the documentation 
+of Rosetta2.)$
+$NP
+
+_6. Examples of M-rules_
+
+
+We will first give an example of a very simple rule, without parameters.
+
+$RL 19
+RVP2a.
+
+m%1%: CL0{CLrec%1%} [ headrel/ VERB {VERBrec%1%}, argrel/ T%1%, argrel/ T%2% ]
+
+m:    CL1{CLrec%1%} [subjrel/ T%1%, headrel/ VERB{VERBrec%1%}, objrel/ T%2% ]
+
+
+_GEN COND_
+         vp2a in VERBrec%1%.vps  
+
+    _ACTION_
+         CLrec%1%.vps := [vp2a]
+
+_AN COND_
+         vp2a in CLrec%1%.vps  and
+         vp2a in VERBrec%1%.vps
+
+   _ACTION_
+         CLrec%1%.vps := []
+
+_Comments_
+
+$ Each verb has a specific set of
+verb patterns (specified in VERBrec%1%.vps) 
+which tells what kind of arguments the VERB may have (e.g. an
+NP or a complement sentence) and what kind of relations (subject, object,
+indirect object) must be associated with them. Vp2a is the verb
+pattern of an ordinary transitive verb with a subject and an object.$
+$ The S-tree models contain four model variables: T%1% and T%2% are S-tree
+variables, CLrec%1% is a record variable of the type associated with
+both category CL0 and CL1. Records of that type consist of attribute-value
+pairs corresponding to these categories. VERBrec%1% is a record
+variable of the type associated with the category VERB. T%1% and T%2% are tree
+variables.$  
+$ The (generative) rule is applicable to an S-tree of category CL%0%,
+with a VERB as its head and 
+two arguments, T%1% and T%2%.$
+$ The result of the rule is a CL1, in which T%1% is the subject and T%2%  
+the object. The verb pattern vp2a is
+assigned to the attribute vps of the clause record. Notice that this is
+not necessarily redundant information. 
+VERBrec%1%.vps contains all verb patterns that
+a verb may have. CLrec%1%.vps contains the verb pattern that has been
+actually chosen. $
+$ The analytical rule is not strictly the reverse of the generative rule. 
+According to the analytical condition CLrec%1% may contain more than one
+verb pattern, whereas the generative action creates a set of verb patterns
+consisting of vp2a only. This is one of the "tricks" used in Rosetta2 to
+solve the conflict between the reversibility idea and the necessity of
+efficient parsing and generation. These tricks will be discussed in
+a separate paper.$
+
+$ The second M-rule, a realistic example from the current M-grammar, is
+a rule with parameters, of which the previous example is a special case.
+It is a rule scheme with 5 instances, one for each possible value of
+the parameter vppar.The generative rule will always be activated for one of
+the possible parameter values. (M-GENERATOR will find this 
+parameter value in the
+node of the derivation tree. The analytical rule (i.e. the analytical
+condition and action) will be applied for each of 
+the parameter values.$
+$NP
+ 
+RVP2.
+
+m%1%: CL0{CLrec%1%} [ headrel/ VERB {VERBrec%1%}, argrel/ T%1%, 
+                  argrel/ T%2%, mu%1% ]
+
+m:    CL1{CLrec%1%} [subjrel/ T%1%, headrel/ VERB{VERBrec%1%}, rel%2%/ T%2% ]
+
+parameter vppar (verbpatterntype); valueset: [vp2a, vp2c, vp2d, vp2e, vp2f]
+          
+
+_GEN COND_
+         vppar in VERBrec%1%.vps  and
+         emptyargs(mu%1%, VERBrec%1%.aantalargs-2)
+
+    _ACTION_
+         CLrec%1%.vps := [vppar];
+         if vppar = vp2a then rel%2% := objrel     
+         else if vppar =vp2e then rel%2% := predrel
+         else rel%2% := complrel;
+
+_AN COND_
+         vppar in CLrec%1%.vps  and
+         ((vppar = vp2a and rel%2% = objrel) or
+          (vppar = vp2e and rel%2% = predrel) or
+          (vppar in [vp2c,vp2d,vp2f] and rel%2% = complrel))
+
+   _ACTION_
+         CLrec%1%.vps := [];
+         mu%1% := makeemptyargs(VERBrec%1%.aantalargs - 2)
+
+_Comments_
+
+$ The function emptyargs checks whether mu%1% consists of the right number
+of  argrel/EMPTY  pairs. In the analytical action a number of argrel/EMPTY
+pairs is created. This number must be equal to the total number of arguments
+of the verb minus the 2 arguments used in this pattern.$
+$NP
+
+
+
+                        CONTENTS
+
+
+1. Introduction
+
+2. S-tree models
+
+3. Form of the M-rules
+
+4. Interpretation of M-rules
+
+5. Effective procedures for the analytical and the generative rule
+
+6. Examples of M-rules
+
+

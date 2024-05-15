@@ -1,0 +1,1360 @@
+h40327
+s 01339/00001/00000
+d D 1.2 92/02/21 15:49:03 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 92/02/11 11:50:10 rous 1 0
+c date and time created 92/02/11 11:50:10 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+DUTCH 84
+&
+
+The following shift rules exist:
+
+\begin{description}
+\item[Twhshift1a, Twhshift1b] for the actual shifting
+\item[Twhshift0] to pass structures where shifting does not apply
+\item[Twhshift2] for shifting out of a subordinate clause
+\end{description}
+\newpage
+\begin{verbatim}
+%
+% TRANSFORMATION TWhshift1a
+< m1:CLAUSE{CLAUSErec1}[I1:sig1, I2:mu1 ]
+>
+
+< m :CLAUSE{CLAUSErec2}[I1:sig1, I3:mu11]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: ALL(sig1, leftdislocrel/..)
+       I2: NOT EXIST(mu1,[I21:rel1/..])
+           I21: rel1 IN [leftdislocrel, shiftrel]
+       I3: NOT EXIST(mu11, [leftdislocrel/..])  AND
+           QUOTE_FIRSTrel(mu11, shiftrel)         (* not really necessary *)
+      >
+
+<
+
+(* temporarily put off too many ambiguitiues!
+   SUBRULE   preadvrel; it shifts the leftmost wh preadvrel 
+      <mu1 :[I6:mu6, preadvrel/I8::NPVAR{NPVARrec1}, I7:mu7] >
+      <mu11:[shiftrel/I8::NPVAR{NPVARrec1}, I6:mu6, I7:mu7]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..)
+           I61: QUOTE_Srelprec(rel6, preadvrel) 
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7,[I72:rel2/..])
+           I71: QUOTE_Srelprec(Preadvrel,rel7)
+           I72: rel2 IN [reflrel, postsubjrel]
+       I8: NPVARrec1.mood = wh
+      >
+
+      COMP
+         <
+          C1: NPVARrec1.cases * [Accusative, Dative] <> []  AND
+              NPVARrec1.cases * [Rcase]   = []              AND
+              ((CLAUSErec1.synvpefs *  AUX_objvps + AUX_indobjvps <> []) OR
+               (CLAUSErec1.adjuncts * [benfactNP] <> [])
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: NPVARrec1.cases * [Accusative, Dative] <> []  AND
+              NPVARrec1.cases * [Rcase]   = []              
+              C11: CLAUSErec2.synvpefs * AUX_objvps + AUX_indobjvps <> []
+              A11: CLAUSErec1 := CLAUSErec2;
+                   CLAUSErec1.synvpefs := 
+                      CLAUSErec2.synvpefs * AUX_objvps + AUX_indobjvps;
+              C12: CLAUSErec2.adjuncts * [benfactNP] <> []
+              A12: CLAUSErec1 := CLAUSErec2;
+          A1: @
+         >
+*)
+
+   SUBRULE  (* subjrel *)
+      <mu1 :[I6:mu6, I8:subjrel/T1, I7:mu7] >
+      <mu11:[I8:shiftrel/T1, I6:mu6, I7:mu7] >
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [subjrel/..])
+           I61: QUOTE_Srelprec(rel6, subjrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I72:rel2/..])
+           I71: QUOTE_Srelprec(Subjrel, rel7)
+           I72: rel2 IN [subjrel, postsubjrel]
+       I8: (T1.CAT IN [NPVAR] WITH T1.REC.mood IN [wh, relativexpmood]) OR
+           (T1.CAT IN [CNVAR])                                          OR
+           (T1.CAT IN [NP] WITH
+            ((T1.REC.mood = wh)   AND
+             (QUOTE_VARinNP(T1)
+             )
+            )
+           )
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.finiteness = finite AND
+              (T1.CAT IN [NPVAR, CNVAR, NP] WITH 
+                (T1.REC.cases * [Nominative, Accusative] <> []  AND
+                 T1.REC.cases * [Rcase]   = []            
+                )
+              )
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: CLAUSErec2.finiteness = finite AND
+              (T1.CAT IN [NPVAR, CNVAR, NP] WITH (
+               T1.REC.cases * [Nominative, Accusative] <> []  AND
+               T1.REC.cases * [Rcase]   = []    )
+              )
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+   SUBRULE  (* postsubjrel *)
+      <mu1 :[I6:mu6, I8:postsubjrel/T1, I7:mu7] >
+      <mu11:[I8:shiftrel/T1, I6:mu6, I7:mu7] >
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [postsubjrel/..]) AND
+           (NOT EXIST(mu6, [subjrel/..])           OR 
+            EXIST(mu6, [subjrel/I62::NP{NPrec1}[mu10]])
+           )
+           I61: QUOTE_Srelprec(rel6, postsubjrel)
+           I62: NPrec1.NPhead IN [ecNP] 
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [erposrel/..])
+                AND NOT EXIST(mu7, [I72:rel2/..])
+           I71: QUOTE_Srelprec(postsubjrel, rel7) 
+           I72: rel2 IN [subjrel, postsubjrel,tempadvrel]
+       I8: (T1.CAT IN [NPVAR] WITH T1.REC.mood = wh)                     OR
+           (T1.CAT IN [NP] WITH
+            ((T1.REC.mood = wh)   AND
+             (QUOTE_VARinNP(T1)
+             )
+            )
+           )
+      >
+
+      COMP
+         <
+          C1: (T1.CAT IN [NPVAR, CNVAR, NP] WITH
+               (T1.REC.cases * [Nominative] <> []  AND
+                T1.REC.cases * [Rcase]  = []       
+               )
+              )                                                 AND
+              (CLAUSErec1.thetavp IN [vp100, vp120, vp123] OR
+               CLAUSErec1.synvpefs * AUX_VRvps <> []) AND
+              CLAUSErec1.PROsubject = false
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: (T1.CAT IN [NPVAR, CNVAR, NP] WITH
+               (T1.REC.cases * [Nominative] <> []  AND
+                T1.REC.cases * [Rcase]  = []       
+               )
+              )                                                 AND
+              (CLAUSErec2.thetavp IN [vp100, vp120, vp123] OR
+               CLAUSErec2.synvpefs * AUX_VRvps <> []) AND
+              CLAUSErec2.PROsubject = false
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+
+   SUBRULE  (* tempadvrel *)
+      <mu1 :[I6:mu6, tempadvrel/I8::ADVPVAR{ADVPVARrec1}, I7:mu7 ]>
+      <mu11:[shiftrel/I8::ADVPVAR{ADVPVARrec1}, I6:mu6, I7:mu7 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..)
+           I61: QUOTE_Srelprec(rel6, tempadvrel)
+       I7: ALL(mu7, I71:rel7/..)
+           I71: QUOTE_Srelprec(tempadvrel, rel7 )  AND rel7 <> reflrel
+       I8: ADVPVARrec1.mood IN [wh,topicxpmood] AND 
+           tempadv IN ADVPVARrec1.actsubcefs
+      >
+
+      COMP
+         <
+          C1: true
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: true
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+
+   SUBRULE  (* sentadvrel *)
+      <mu1 :[I6:mu6, sentadvrel/I8::ADVPVAR{ADVPVARrec1}, I7:mu7 ]>
+      <mu11:[shiftrel/I8::ADVPVAR{ADVPVARrec1}, I6:mu6, I7:mu7 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..)
+           I61: QUOTE_Srelprec(rel6, sentadvrel)
+       I7: ALL(mu7, I71:rel7/..)
+           I71: QUOTE_Srelprec(sentadvrel, rel7 )
+       I8: ADVPVARrec1.mood IN [wh,topicxpmood] AND 
+           [sentadv, causadv] * ADVPVARrec1.actsubcefs <> []
+      >
+
+      COMP
+         <
+          C1: true
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: true
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+
+
+   SUBRULE  (* subjvpadvrel graag, analysis only*)
+      <mu1 :[I6:mu6, subjvpadvrel/I8::ADVP{ADVPrec1}[mu10], I7:mu7 ]>
+      <mu11:[shiftrel/I8::ADVP{ADVPrec1}[mu10], I6:mu6, I7:mu7 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..)
+           I61: QUOTE_Srelprec(rel6, subjvpadvrel)  
+       I7: ALL(mu7, I71:rel7/..)
+           I71: QUOTE_Srelprec(subjvpadvrel, rel7 ) AND [rel7] * 
+                                     [subjvpadvrel, tempadvrel] = []
+       I8: [subjvpadv] * ADVPrec1.actsubcefs <> []
+      >
+
+      DECOMP
+         <
+          C1: ADVPrec1.advpatternefs * [synOPENINFSENT,synCLOSEDINFSENT] <>[]
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+   SUBRULE  (* sentadvrel toevallig, analysis only*)
+      <mu1 :[I6:mu6, sentadvrel/I8::ADVP{ADVPrec1}[mu10], I7:mu7 ]>
+      <mu11:[shiftrel/I8::ADVP{ADVPrec1}[mu10], I6:mu6, I7:mu7 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..)
+           I61: QUOTE_Srelprec(rel6, sentadvrel) 
+       I7: ALL(mu7, I71:rel7/..)
+           I71: QUOTE_Srelprec(sentadvrel, rel7 ) AND [rel7] * 
+                                     [subjvpadvrel, tempadvrel] = []
+       I8: [sentadv, causadv] * ADVPrec1.actsubcefs <> []
+      >
+
+      DECOMP
+         <
+          C1: ADVPrec1.advpatternefs * [synOPENINFSENT,synCLOSEDINFSENT] <>[]
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+
+
+   SUBRULE  (* defRadvrel hier zwemt hij  *)
+      <mu1 :[I6:mu6, defRadvrel/RADVP{RADVPrec1}[head/I8::ADVPVAR{ADVPVARrec1}], I7:mu7 ]>
+      <mu11:[shiftrel/RADVP{RADVPrec1}[head/I8::ADVPVAR{ADVPVARrec1}], I6:mu6, I7:mu7 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [tempadvrel/..])
+           I61: QUOTE_Srelprec(rel6, defRadvrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I72:rel8/..])
+           I71: QUOTE_Srelprec(defRadvrel, rel7)
+           I72: rel8 IN [erposrel, erqrel]
+       I8: ADVPVARrec1.mood IN[wh, topicxpmood] AND 
+           ADVPVARrec1.Radvb = true AND
+           locadv IN ADVPVARrec1.actsubcefs
+      >
+
+      COMP
+         <
+          C1: true
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: true
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+
+
+   SUBRULE  (* locadvrel thuis zwemt hij *)
+      <mu1 :[I6:mu6, locadvrel/I8::ADVPVAR{ADVPVARrec1}, I7:mu7 ]>
+      <mu11:[shiftrel/I8::ADVPVAR{ADVPVARrec1}, I6:mu6, I7:mu7 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) 
+           I61: QUOTE_Srelprec(rel6, locadvrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I72:rel8/..])
+           I71: QUOTE_Srelprec(locadvrel, rel7)
+           I72: rel8 IN [erposrel, erqrel,tempadvrel]
+       I8: ADVPVARrec1.mood IN[wh, topicxpmood] AND 
+           ADVPVARrec1.Radvb = false AND
+           locadv IN ADVPVARrec1.actsubcefs
+      >
+
+      COMP
+         <
+          C1: true
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: true
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+
+   SUBRULE  (* tempadvrel, PREPPVAR *)
+      <mu1 :[I6:mu6, tempadvrel/I8::PREPPVAR{PREPPVARrec1}, I7:mu7 ]>
+      <mu11:[shiftrel/I8::PREPPVAR{PREPPVARrec1}, I6:mu6, I7:mu7 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..)
+           I61: QUOTE_Srelprec(rel6, tempadvrel)
+       I7: ALL(mu7, I71:rel7/..)
+           I71: QUOTE_Srelprec(tempadvrel, rel7 )
+       I8: PREPPVARrec1.mood IN [wh,relativexpmood, topicxpmood] AND 
+           temp IN PREPPVARrec1.actsubcefs
+      >
+
+      COMP
+         <
+          C1: true
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: true
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+
+   SUBRULE  (* locadvrel, PREPPVAR *)
+      <mu1 :[I6:mu6, locadvrel/I8::PREPPVAR{PREPPVARrec1}, I7:mu7 ]>
+      <mu11:[shiftrel/I8::PREPPVAR{PREPPVARrec1}, I6:mu6, I7:mu7 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..)
+           I61: QUOTE_Srelprec(rel6, locadvrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7,[I72:rel8/..])
+           I71: QUOTE_Srelprec(locadvrel, rel7)
+           I72: rel8 IN [erposrel,erqrel, tempadvrel]
+       I8: PREPPVARrec1.mood IN [relativexpmood, wh, topicxpmood] AND 
+           loc IN PREPPVARrec1.actsubcefs
+      >
+
+      COMP
+         <
+          C1: true
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: true
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+
+
+   SUBRULE  (* erposrel  *)
+      <mu1 :[I6:mu6, I8:erposrel/RADVP{RADVPrec1}[mu10], I7:mu7 ]>
+      <mu11:[I8:shiftrel/RADVP{RADVPrec1}[mu10], I6:mu6, I7:mu7 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [erposrel/..])
+           I61: QUOTE_Srelprec(rel6, erposrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [erposrel/..])
+           I71: QUOTE_Srelprec(erposrel, rel7)
+       I8: RADVPrec1.mood = wh OR
+           EXIST(mu10,[I81:../T1])
+           I81:(T1.CAT IN [NPVAR] WITH 
+                    T1.REC.mood IN [relativexpmood, topicxpmood]) OR
+                (T1.CAT IN [CNVAR])
+      >
+
+      COMP
+         <
+          C1: true
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: true
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+
+   SUBRULE  (* erposrel,VARPREPP  *)
+      <mu1 :[I6:mu6, I8:erposrel/VARPREPP{VARPREPPrec1}[mu10], I7:mu7 ]>
+      <mu11:[I8:shiftrel/VARPREPP{VARPREPPrec1}[mu10], I6:mu6, I7:mu7 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [erposrel/..])
+           I61: QUOTE_Srelprec(rel6, erposrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [erposrel/..])
+           I71: QUOTE_Srelprec(erposrel, rel7)
+       I8: VARPREPPrec1.mood = wh OR
+           EXIST(mu10, [../RADVP{RADVPrec1}[I81:head/T1 ]])
+           I81: (T1.CAT IN [NPVAR] WITH 
+                      T1.REC.mood IN [relativexpmood,topicxpmood]) OR
+                (T1.CAT IN [CNVAR])                                      
+                
+      >
+
+      COMP
+         <
+          C1: true
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: true
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+
+
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TWhshift1
+\item[* relevant examples:]
+\begin{description}
+    \item[preadvrel]   Wie heeft hij aan elkaar voorgesteld?
+    \item[subjrel]      Wie heeft hem gezien
+    \item[postsubjrel] Wie heeft er een boek gekocht?
+    \item[tempadvrel] Wanneer heeft hij het boek gekocht? 
+    \item[locadvrel] Waar heeft hij het boek gekocht?
+    \item[objrel] Wat heeft hij gekocht
+    \item[indobjrel] Wie heeft hij een boek gegeven
+    \item[predrel/ADJP] Hoe groot is hij geworden
+    \item[predrel/NPVAR] Wat is dat?
+    \item[predrel, NP] Wat is hij geworden
+\end{description}
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 24-FEB-1988 15:22:26  
+\item[* author:] Jan Odijk
+\item[* copied from:] --
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] In analysis the synvpefs
+is reduced in accordance with the relation/cat introduced. In generation this
+reduction does not take place. 
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Twhshift1b
+< m1:CLAUSE{CLAUSErec1}[I1:sig1, I2:mu1 ]
+>
+
+< m :CLAUSE{CLAUSErec2}[I1:sig1, I3:mu11]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: ALL(sig1, leftdislocrel/..)
+       I2: NOT EXIST(mu1,[I21:rel1/..])
+           I21: rel1 IN [leftdislocrel, shiftrel]
+       I3: NOT EXIST(mu11, [leftdislocrel/..])  AND
+           QUOTE_FIRSTrel(mu11, shiftrel)         (* not really necessary *)
+      >
+
+<
+
+   SUBRULE (* objrel *)
+      <mu1 :[ mu9, predrel/VERBP{VERBPrec1}
+                     [I6:mu6, I8:objrel/T1, I7:mu7 ], mu12 ]>
+      <mu11:[ I8:shiftrel/T1, mu9, 
+               predrel/VERBP{VERBPrec1}[ I6:mu6, I7:mu7], mu12 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [objrel/..])
+           I61: QUOTE_VPrelprec(rel6, objrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [objrel/..])
+           I71: QUOTE_VPrelprec(objrel, rel7)
+       I8: (T1.CAT IN [NPVAR] WITH T1.REC.mood 
+                      IN [wh, topicxpmood, relativexpmood])              OR
+           (T1.CAT IN [CNVAR] )                                          OR
+           (T1.CAT IN [NP] WITH
+            ((T1.REC.mood = wh)   AND
+             (QUOTE_VARinNP(T1)
+             )
+            )
+           )
+      >
+
+      COMP
+         <
+          C1: (
+               T1.CAT IN [NP, NPVAR, CNVAR] WITH (
+                T1.REC.cases * [Accusative,Nominative] <> [] AND
+                T1.REC.cases * [Rcase] = []  )
+              )                                           AND
+              CLAUSErec1.synvpefs * AUX_objvps <> []
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+
+      DECOMP
+         <
+          C1: (
+               T1.CAT IN [NP, NPVAR, CNVAR] WITH (
+                T1.REC.cases * [Accusative, Nominative] <> [] AND
+                T1.REC.cases <> [Nominative]   (*to speed up*)  AND 
+                T1.REC.cases * [Rcase] = []  ) 
+              )                                        AND
+              CLAUSErec2.synvpefs * AUX_objvps <> []
+          A1: CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.synvpefs :=  CLAUSErec2.synvpefs * AUX_objvps ;
+         >
+
+   SUBRULE (* indobjrel *)
+      <mu1 :[ mu9, predrel/VERBP{VERBPrec1}
+                     [I6:mu6, I8:indobjrel/T1, I7:mu7 ], mu12 ]>
+      <mu11:[ I8:shiftrel/T1, mu9, 
+               predrel/VERBP{VERBPrec1}[ I6:mu6, I7:mu7], mu12 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [I62:rel2/..])
+           I61: QUOTE_VPrelprec(rel6, indobjrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I62:rel2/..])
+           I71: QUOTE_VPrelprec(indobjrel, rel7)
+       I8: (T1.CAT IN [NPVAR] WITH T1.REC.mood 
+                 IN [wh, topicxpmood, relativexpmood])                  OR
+           (T1.CAT IN [CNVAR])                                          OR
+           (T1.CAT IN [NP] WITH
+            ((T1.REC.mood = wh)   AND
+             (QUOTE_VARinNP(T1)
+             )
+            )
+           )
+       I62: rel2 IN [aanobjrel, voorobjrel, indobjrel]
+      >
+
+      COMP
+         <
+          C1: (T1.CAT IN [NP, NPVAR, CNVAR] WITH (
+                T1.REC.cases * [Dative] <> [] AND
+                T1.REC.cases * [Rcase] = []  )
+              )                                                AND
+              ((CLAUSErec1.synvpefs * AUX_indobjvps <> []) OR
+               (CLAUSErec1.adjuncts * [benfactNP] <> [])
+              )
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+
+      DECOMP
+         <
+          C1: (T1.CAT IN [NP, NPVAR, CNVAR] WITH (
+                T1.REC.cases * [Dative] <> [] AND
+                T1.REC.cases * [Rcase] = []  )
+              )                                       
+              C11: CLAUSErec2.synvpefs * AUX_indobjvps <> []
+              A11: CLAUSErec1 := CLAUSErec2;
+                   CLAUSErec1.synvpefs :=  CLAUSErec2.synvpefs * AUX_indobjvps ;
+              C12: CLAUSErec2.adjuncts * [benfactNP] <> []
+              A12: CLAUSErec1 := CLAUSErec2;
+         A1: @
+         >
+
+
+   SUBRULE (* aanobjrel *)
+      <mu1 :[ mu9, predrel/VERBP{VERBPrec1}
+                     [I6:mu6, I8:aanobjrel/VARPREPP{VARPREPPrec1}[mu5], I7:mu7 ], mu12 ]>
+      <mu11:[ I8:shiftrel/VARPREPP{VARPREPPrec1}[mu5], mu9, 
+               predrel/VERBP{VERBPrec1}[ I6:mu6, I7:mu7], mu12 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [I62:rel2/..])
+           I61: QUOTE_VPrelprec(rel6, aanobjrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I62:rel2/..])
+           I71: QUOTE_VPrelprec(aanobjrel, rel7)
+       I8: (VARPREPPrec1.mood = wh 
+            OR EXIST(mu5,[I81:../T1]) OR
+            EXIST(mu5, [errel/RADVP{}[I81:../T1]])
+           )                             AND 
+           aan IN VARPREPPrec1.actsubcefs
+            I81: (T1.CAT IN [NPVAR] WITH 
+                       T1.REC.mood IN [wh,relativexpmood, topicxpmood]) OR
+                 (T1.CAT IN [CNVAR])                                          OR
+           (T1.CAT IN [NP] WITH
+            ((T1.REC.mood = wh)   AND
+             (QUOTE_VARinNP(T1)
+             )
+            )
+           )
+       I62: rel2 IN [aanobjrel, voorobjrel, indobjrel]
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.synvpefs * AUX_aanobjvps <> []
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+
+      DECOMP
+         <
+          C1: CLAUSErec2.synvpefs * AUX_aanobjvps <> []
+          A1: CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.synvpefs :=  CLAUSErec2.synvpefs * AUX_aanobjvps ;
+         >
+
+
+   SUBRULE (* voorobjrel *)
+      <mu1 :[ mu9, predrel/VERBP{VERBPrec1}
+                     [I6:mu6, I8:voorobjrel/VARPREPP{VARPREPPrec1}[mu5], I7:mu7 ], mu12 ]>
+      <mu11:[ I8:shiftrel/VARPREPP{VARPREPPrec1}[mu5], mu9, 
+               predrel/VERBP{VERBPrec1}[ I6:mu6, I7:mu7], mu12 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [I62:rel2/..])
+           I61: QUOTE_VPrelprec(rel6, voorobjrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I62:rel2/..])
+           I71: QUOTE_VPrelprec(voorobjrel, rel7)
+       I8: (VARPREPPrec1.mood = wh
+            OR EXIST(mu5,[I81:../T1]) OR
+            EXIST(mu5, [errel/RADVP{}[I81:../T1]])
+           )                                  AND 
+            voor IN VARPREPPrec1.actsubcefs
+            I81: (T1.CAT IN [NPVAR] WITH 
+                    T1.REC.mood IN [wh,relativexpmood,topicxpmood]) OR
+                 (T1.CAT IN [CNVAR])                                         OR
+                 (T1.CAT IN [NP] WITH
+                  ((T1.REC.mood = wh)   AND
+                   (QUOTE_VARinNP(T1)
+                   )
+                  )
+                 )
+       I62: rel2 IN [aanobjrel, voorobjrel, indobjrel]
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.synvpefs * AUX_voorobjvps <> [] OR
+              CLAUSErec1.adjuncts * [benfactPP] <> []
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+
+      DECOMP
+         <
+          C1: true
+              C11: CLAUSErec2.synvpefs * AUX_voorobjvps <> []
+              A11: CLAUSErec1 := CLAUSErec2;
+                   CLAUSErec1.synvpefs :=  CLAUSErec2.synvpefs * AUX_voorobjvps ;
+              C12: CLAUSErec2.adjuncts * [benfactPP] <> []
+              A12: CLAUSErec1 := CLAUSErec2
+          A1: @
+         >
+
+
+
+   SUBRULE (* byobjrel *)
+      <mu1 :[ mu9, predrel/VERBP{VERBPrec1}
+                     [I6:mu6, I8:byobjrel/VARPREPP{VARPREPPrec1}[mu5], I7:mu7 ], mu12 ]>
+      <mu11:[ I8:shiftrel/VARPREPP{VARPREPPrec1}[mu5], mu9, 
+               predrel/VERBP{VERBPrec1}[ I6:mu6, I7:mu7], mu12 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [byobjrel/..])
+           I61: QUOTE_VPrelprec(rel6, byobjrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [byobjrel/..])
+           I71: QUOTE_VPrelprec(byobjrel, rel7)
+       I8: (VARPREPPrec1.mood = wh  
+            OR EXIST(mu5, [I81:../T1]) OR
+            EXIST(mu5, [errel/RADVP{}[I81:../T1]])
+           )                                       AND 
+           doorby IN VARPREPPrec1.actsubcefs
+           I81: (T1.CAT IN [NPVAR] 
+                     WITH T1.REC.mood IN [wh,relativexpmood,topicxpmood]) OR
+                (T1.CAT IN [CNVAR])                                         OR
+                (T1.CAT IN [NP] WITH
+                 ((T1.REC.mood = wh)   AND
+                  (QUOTE_VARinNP(T1)
+                  )
+                 )
+                )
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.voice IN [passive, Dooractive]
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+
+      DECOMP
+         <
+          C1: CLAUSErec2.voice IN [Passive, DoorActive]
+          A1: CLAUSErec1 := CLAUSErec2;
+         >
+
+
+
+   SUBRULE (* predrel, ADJP *)
+      <mu1 :[ mu9, predrel/VERBP{VERBPrec1}
+                     [I6:mu6, predrel/I8::ADJP{ADJPrec1}[mu8], I7:mu7 ], mu12 ]>
+      <mu11:[ shiftrel/I8::ADJP{ADJPrec1}[mu8], mu9, 
+               predrel/VERBP{VERBPrec1}[ I6:mu6, I7:mu7], mu12 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [I62:rel2/..])
+           I61: QUOTE_VPrelprec(rel6, predrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I62:rel2/..])
+           I71: QUOTE_VPrelprec(predrel,rel7 )
+       I8: ADJPrec1.mood = wh
+       I62: rel2 IN [predrel, locargrel, dirargrel, prepobjrel]
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.synvpefs * AUX_adjppredvps <> []
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+
+      DECOMP
+         <
+          C1: CLAUSErec2.synvpefs * AUX_adjppredvps <> []
+          A1: CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.synvpefs :=  CLAUSErec2.synvpefs * AUX_adjppredvps ;
+         >
+
+
+   SUBRULE (* predrel, NP *)
+      <mu1 :[ mu9, predrel/VERBP{VERBPrec1}
+                     [I6:mu6, predrel/I8::NP{NPrec1}[mu8], I7:mu7 ], mu12 ]>
+      <mu11:[ shiftrel/I8::NP{NPrec1}[mu8], mu9, 
+               predrel/VERBP{VERBPrec1}[ I6:mu6, I7:mu7], mu12 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [I62:rel2/..])
+           I61: QUOTE_VPrelprec(rel6, predrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I62:rel2/..])
+           I71: QUOTE_VPrelprec(predrel, rel7)
+       I8: NPrec1.mood = wh   
+       I62: rel2 IN [predrel, locargrel, dirargrel, prepobjrel]
+   >
+
+      COMP
+         <
+          C1: NPrec1.cases * [Accusative] <> [] AND
+              NPrec1.cases * [Rcase] = []       AND
+              CLAUSErec1.synvpefs * AUX_nppredvps <> []
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1.cases * [Accusative] <> [] AND
+              NPrec1.cases * [Rcase] = []       AND
+              CLAUSErec2.synvpefs * AUX_nppredvps <> []
+          A1: CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.synvpefs :=  CLAUSErec2.synvpefs * AUX_nppredvps ;
+         >
+
+
+   SUBRULE (* predrel, NPVAR *)
+      <mu1 :[ mu9, predrel/VERBP{VERBPrec1}
+                     [I6:mu6, I8:predrel/T1, I7:mu7 ], mu12 ]>
+      <mu11:[ I8:shiftrel/T1, mu9, 
+               predrel/VERBP{VERBPrec1}[ I6:mu6, I7:mu7], mu12 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [I62:rel2/..])
+           I61: QUOTE_VPrelprec(rel6, predrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I62:rel2/..])
+           I71: QUOTE_VPrelprec(predrel, rel7)
+       I8: (T1.CAT IN [NPVAR] WITH T1.REC.mood IN [wh,relativexpmood]) OR
+           (T1.CAT IN [CNVAR])                                         OR
+           (T1.CAT IN [NP] WITH
+            ((T1.REC.mood = wh)   AND
+             (QUOTE_VARinNP(T1)
+             )
+            )
+           )
+       I62: rel2 IN [predrel, locargrel, dirargrel, prepobjrel]
+   >
+
+      COMP
+         <
+          C1: (T1.CAT IN [NP, NPVAR, CNVAR] WITH (
+                T1.REC.cases * [Accusative] <> [] AND
+                T1.REC.cases * [Rcase] = []  )
+              )                                         AND
+              CLAUSErec1.synvpefs * [synzijn] <> []
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+
+      DECOMP
+         <
+          C1: ( T1.CAT IN [NP, NPVAR, CNVAR] WITH (
+                 T1.REC.cases * [Accusative] <> [] AND
+                 T1.REC.cases * [Rcase] = []  )
+              )       AND
+              CLAUSErec2.synvpefs * [synzijn] <> []
+          A1: CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.synvpefs :=  CLAUSErec2.synvpefs * [synzijn];
+         >
+
+
+   SUBRULE (* locargrel, VARPREPP *)
+      <mu1 :[ mu9, predrel/VERBP{VERBPrec1}
+                     [I6:mu6, I8:locargrel/VARPREPP{VARPREPPrec1}[mu10], I7:mu7 ], mu12 ]>
+      <mu11:[ I8:shiftrel/VARPREPP{VARPREPPrec1}[mu10], mu9, 
+               predrel/VERBP{VERBPrec1}[ I6:mu6, I7:mu7], mu12 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [I62:rel2/..])
+           I61: QUOTE_VPrelprec(rel6, locargrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I62:rel2/..])
+           I71: QUOTE_VPrelprec(locargrel, rel7)
+       I8: (VARPREPPrec1.mood = wh 
+            OR EXIST(mu10,[I81:../T1]) OR
+            EXIST(mu10, [errel/RADVP{}[I81:../T1]])
+           )                        AND 
+           loc IN VARPREPPrec1.actsubcefs
+            I81: (T1.CAT IN [NPVAR] WITH 
+                     T1.REC.mood IN [wh,relativexpmood,topicxpmood]) OR
+                 (T1.CAT IN [CNVAR])                                         OR
+                 (T1.CAT IN [NP] WITH
+                  ((T1.REC.mood = wh)   AND
+                   (QUOTE_VARinNP(T1)
+                   )
+                  )
+                 )
+       I62: rel2 IN [predrel, locargrel, dirargrel, prepobjrel]
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.synvpefs * AUX_locargvps <> []  OR
+              CLAUSErec1.adjuncts * [locadjunct] <> []
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+
+      DECOMP
+         <
+          C1: true
+              C11:CLAUSErec2.synvpefs * AUX_locargvps <> []
+              A11: CLAUSErec1 := CLAUSErec2;
+                   CLAUSErec1.synvpefs :=  CLAUSErec2.synvpefs * AUX_locargvps ;
+              C12: CLAUSErec2.adjuncts * [locadjunct] <> []
+              A12: CLAUSErec1 := CLAUSErec2;
+         A1: @
+         >
+
+
+   SUBRULE (* locargrel, PREPP[PREP NP[NOUN PREPP[PREP X1]]] 
+              in afwachting van x1 verblijf ik *)
+      <mu1 :[ mu9, predrel/VERBP{VERBPrec1}
+                     [I6:mu6, 
+                      locargrel/I4::PREPP{PREPPrec1}
+                                  [mu13,
+                                   objrel/NP{NPrec1}
+                                       [head/CN{CNrec1}
+                                          [head/NOUN{NOUNrec1}[mu14],
+                                           postmodrel/PREPP{PREPPrec2}
+                                                     [mu15,
+                                                      I8:objrel/NPVAR{NPVARrec1}
+                                                     ]
+                                          ]
+                                       ],
+                                   mu2
+                                  ],
+                      I7:mu7 
+                     ],
+              mu12 
+            ]
+      >
+      <mu11:[ shiftrel/I4::PREPP{PREPPrec1}
+                                  [mu13,
+                                   objrel/NP{NPrec1}
+                                       [head/CN{CNrec1}
+                                          [head/NOUN{NOUNrec1}[mu14],
+                                           postmodrel/PREPP{PREPPrec2}
+                                                     [mu15,
+                                                      I9:objrel/NPVAR{NPVARrec2}
+                                                     ]
+                                          ]
+                                       ],
+                                   mu2
+                                  ],
+              mu9, 
+              predrel/VERBP{VERBPrec1}[ I6:mu6, 
+                                        I7:mu7
+                                      ], mu12 
+            ]
+      >
+   MATCHCONDITIONS
+      <
+       I4: loc IN PREPPrec1.actsubcefs
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [I62:rel2/..])
+           I61: QUOTE_VPrelprec(rel6, locargrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I62:rel2/..])
+           I71: QUOTE_VPrelprec(locargrel, rel7)
+       I8: NPVARrec1.mood IN [topicxpmood] 
+       I9: NPVARrec2.mood IN [declxpmood] 
+       I62: rel2 IN [predrel, locargrel, dirargrel, prepobjrel]
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.synvpefs * AUX_locargvps <> [] 
+          A1: CLAUSErec2 := CLAUSErec1;
+              NPVARrec2 := NPVARrec1;
+              NPVARrec2.mood := declxpmood;
+         >
+
+      DECOMP
+         <
+          C1: CLAUSErec2.synvpefs * AUX_locargvps <> []
+          A1: CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.synvpefs :=  CLAUSErec2.synvpefs * AUX_locargvps ;
+              NPVARrec1 := NPVARrec2;
+              NPVARrec1.mood := topicxpmood;
+         >
+
+
+
+   SUBRULE (* dirargrel, VARPREPP *)
+      <mu1 :[ mu9, predrel/VERBP{VERBPrec1}
+                     [I6:mu6, I8:dirargrel/VARPREPP{VARPREPPrec1}[mu10], I7:mu7 ], mu12 ]>
+      <mu11:[ I8:shiftrel/VARPREPP{VARPREPPrec1}[mu10], mu9, 
+               predrel/VERBP{VERBPrec1}[ I6:mu6, I7:mu7], mu12 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [I62:rel2/..])
+           I61: QUOTE_VPrelprec(rel6, dirargrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I62:rel2/..])
+           I71: QUOTE_VPrelprec(dirargrel, rel7)
+       I8: (VARPREPPrec1.mood = wh 
+            OR EXIST(mu10,[I81:../T1]) OR
+            EXIST(mu10, [errel/RADVP{}[I81:../T1]])
+           )                        AND 
+           dir IN VARPREPPrec1.actsubcefs
+            I81: (T1.CAT IN [NPVAR] WITH 
+                      T1.REC.mood IN [wh,relativexpmood, topicxpmood]) OR
+                 (T1.CAT IN [CNVAR])                                         OR
+                 (T1.CAT IN [NP] WITH
+                   ((T1.REC.mood = wh)   AND
+                    (QUOTE_VARinNP(T1)
+                   )
+                  )
+                 )
+       I62: rel2 IN [predrel, locargrel, dirargrel, prepobjrel]
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.synvpefs * AUX_dirargvps <> []  OR
+              CLAUSErec1.adjuncts * [diradjunct] <> []
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+
+      DECOMP
+         <
+          C1: true
+              C11: CLAUSErec2.synvpefs * AUX_dirargvps <> []
+              A11: CLAUSErec1 := CLAUSErec2;
+                   CLAUSErec1.synvpefs :=  CLAUSErec2.synvpefs * AUX_dirargvps ;
+              C12: CLAUSErec2.adjuncts * [diradjunct] <> []
+              A12: CLAUSErec1 := CLAUSErec2;
+          A1: @
+         >
+
+
+   SUBRULE (* prepobjrel, VARPREPP *)
+      <mu1 :[ mu9, predrel/VERBP{VERBPrec1}
+                     [I6:mu6, I8:prepobjrel/VARPREPP{VARPREPPrec1}[mu10], I7:mu7 ], mu12 ]>
+      <mu11:[ I8:shiftrel/VARPREPP{VARPREPPrec1}[mu10], mu9, 
+               predrel/VERBP{VERBPrec1}[ I6:mu6, I7:mu7], mu12 ]>
+
+   MATCHCONDITIONS
+      <
+       I6: ALL(mu6, I61:rel6/..) AND NOT EXIST(mu6, [I62:rel2/..])
+           I61: QUOTE_VPrelprec(rel6, prepobjrel)
+       I7: ALL(mu7, I71:rel7/..) AND NOT EXIST(mu7, [I62:rel2/..])
+           I71: QUOTE_VPrelprec(prepobjrel, rel7)
+       I8: (VARPREPPrec1.mood  IN [wh, topicxpmood]) 
+            OR EXIST(mu10,[I81:../T1]) 
+                (* errel removed JO must go via erposrel *)
+            I81: (T1.CAT IN [NPVAR] WITH 
+                     T1.REC.mood IN [wh,relativexpmood,topicxpmood]) OR
+                 (T1.CAT IN [CNVAR])                                         OR
+                 (T1.CAT IN [NP] WITH
+                  ((T1.REC.mood = wh)   AND
+                   (QUOTE_VARinNP(T1)
+                   )
+                  )
+                 )
+       I62: rel2 IN [predrel, locargrel, dirargrel, prepobjrel]
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.synvpefs * AUX_prepobjvps <> [] 
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+
+      DECOMP
+         <
+          C1: CLAUSErec2.synvpefs * AUX_prepobjvps <> []
+          A1: CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.synvpefs :=  CLAUSErec2.synvpefs * AUX_prepobjvps ;
+         >
+
+
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Twhshift1b
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 26-MAY-1988 16:01:28  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Twhshift0
+< m1:CLAUSE{CLAUSErec1}[I1:mu1, predrel/VERBP{VERBPrec1}[I2:mu2 ], I3:mu3 ]
+>
+
+< m :CLAUSE{CLAUSErec1}[I1:mu1, predrel/VERBP{VERBPrec1}[I2:mu2 ], I3:mu3 ]
+>
+
+
+   MATCHCONDITIONS
+      <
+       I1: NOT EXIST(mu1,[I11:../T1])                OR 
+           (EXIST(mu1, [I11:shiftrel/T1])  AND
+            CLAUSErec1.synvpefs * AUX_VRvps <> [])   OR
+           ( EXIST(mu1, [I11:subjrel/T1]) AND
+             CLAUSErec1.finiteness = infinite
+           )
+       I2: NOT EXIST(mu2,[I11:../T1]) 
+       I3: NOT EXIST(mu3,[I11:../T1])  AND
+           NOT EXIST(mu3, [extraposrel/I5::SENTENCE{SENTENCErec1}[I4:mu4]])
+       I4: EXIST(mu4, [I11:shiftrel/T1])
+       I5: SENTENCErec1.mood = declarative
+       I11: (T1.CAT IN [NP, PREPPVAR, VARPREPP, ADJP, ADVPVAR, ADVP, NPVAR] 
+                    WITH T1.REC.mood IN [wh,relativexpmood, topicxpmood]) OR
+            (T1.CAT IN [CNVAR])
+(* en cnvar's etc. onder RADVP in een VARPREPP ?? *)
+      >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Twhshift0
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 5-APR-1988 12:43:57  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Twhshift2
+< m1:CLAUSE{CLAUSErec1}[ I1:mu1, extraposrel/I2::SENTENCE{SENTENCErec1}
+                                           [ I3:shiftrel/T1,
+                                             I4:mu2
+                                           ] 
+                       ]
+>
+
+< m :CLAUSE{CLAUSErec1}[ I3:shiftrel/T1,
+                         I1:mu1, 
+                         extraposrel/I2::SENTENCE{SENTENCErec1}[I4:mu2] 
+                       ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: NOT EXIST(mu1, [I11:rel1/..])
+       I2: SENTENCErec1.mood = declarative
+       I3: (T1.CAT IN [ PREPPVAR, VARPREPP, ADJP, ADVPVAR, NPVAR] 
+                    WITH T1.REC.mood IN [wh, relativexpmood,topicxpmood] ) OR
+           (T1.CAT IN [CNVAR])                                             OR
+           ((T1.CAT IN [NP])          AND
+            (QUOTE_VARinNP(T1))
+           )
+       I4: NOT EXIST(mu2, [I11:rel1/..])
+       I11: rel1 IN [shiftrel, leftdislocrel]
+      >
+
+<
+   SUBRULE (* 1 *)
+      <T1: T2 >
+      <T1: T2 >
+
+   MATCHCONDITIONS
+      <
+       T1: (T2.CAT IN [ PREPPVAR, VARPREPP, ADJP, ADVPVAR, NPVAR] 
+                    WITH T2.REC.mood IN [wh, relativexpmood,topicxpmood] ) OR
+           (T2.CAT IN [CNVAR])
+      >
+
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+   SUBRULE (* 2 *)
+      <T1: NP{NPrec1}[mu3, I6:detrel/T3, mu4] >
+      <T1: NP{NPrec1}[mu3, I6:detrel/T3, mu4]  >
+
+   MATCHCONDITIONS
+      <
+       I6: T3.CAT IN [NPVAR]
+                    WITH T3.REC.mood IN [wh, topicxpmood, relativexpmood]
+      >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Twhshift2
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 5-APR-1988 13:08:08  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+%%
+
+E 2
+E 1

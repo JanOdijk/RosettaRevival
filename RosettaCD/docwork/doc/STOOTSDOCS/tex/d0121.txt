@@ -1,0 +1,1557 @@
+R0121.tex
+   \documentstyle{Rosetta}
+   \begin{document}
+      \RosTopic{formalism}
+      \RosTitle{M-rule notation}
+      \RosAuthor{Ren\'{e} Leermakers}
+      \RosDocNr{0121}
+      \RosDate{17-10-86}
+      \RosStatus{concept}
+      \RosSupersedes{-}
+      \RosDistribution{Project}
+      \RosClearance{Project}
+      \RosKeywords{M-rule, notation, compiler}
+      \MakeRosTitle
+\section{Introduction}
+In this document I propose a notation for M-rules. The notation 
+descends from the notation used in Rosetta2, which is described in 
+R0012. Also, it reflects to a certain extent the structure of the 'fixed 
+subgrammars' of doc. R0068.
+In particular, a rule is composed of a number of subrules, which again
+may contain subrules, etcetera. The subrule mechanism is to structure the
+various paths through a rule and as a means to control matching ambiguities, 
+in order make automatic compilation feasible.
+
+In the presented notation it is possible to write M-rules, transformations and
+filters and to combine them into subgrammars through regular expressions. The 
+compiler will separately translate each M-rule and transformation and 
+cross-check correspondences with subgrammar regular expressions.
+
+In section~\ref{Td} a language is developed for talking about tree descriptions.
+Also, in this section, matching is discussed briefly; the matching
+algorithm is given in appendix~\ref{Alg}.
+In section~\ref{Syn}, the formal
+syntax of rules and subgrammars is given, followed by some examples in 
+section~\ref{Ex}.
+In section~\ref{Sem}, the semantics of the notation is desribed, closely 
+following the example of section~\ref{Ex}. 
+Finally, in section~\ref{Dis} attention is paid to the differences between the 
+present notation with its Rosetta2 predecessor.
+\section{Tree descriptions}\label{Td}
+\subsection{Nomenclature}
+Below a number of definitions are given, to facilitate talking about (the
+model) part of the syntax of M-rules, in the next section.
+
+A tree T is a pair $<$N,L$>$, where L is 
+a sequence of (any number of) trees and N, called node, is a set of 
+attribute-value pairs. The first attribute is the category attribute 'cat',
+the value of which determines which other attributes exist. One of the
+attributes of Rosetta s-trees, the 'relation', is treated differently
+from the others. In a sense it is an inherited attribute, whereas the
+others are synthesized and summarize information about the tree itself.
+The son-list of an stree is therefore said to consist of rel-trees, which
+are pairs of a relation (rel) and an s-tree.
+
+A tree description Td may be labeled (shorthand L-Td) or bare (B-Td).
+A labeled tree description L-Td is a pair
+\begin{quote}
+$<${\em l}$_{i}$,B-Td$>$,
+\end{quote}
+where {\em l}$_{i}$ is a label and B-Td a bare description, which is a pair
+or a tree variable:
+\begin{quote}
+B-Td = $<$Nd,Ld$>$ or B-Td = T$_{i}$
+\end{quote} 
+The tree variable T$_{i}$ has trees as possible values.
+Here Nd is a node description and Ld a list description (see below).
+A match condition Mc is a pair
+\begin{quote}
+Mc = $<${\em l}$_{i}$,cond$>$
+\end{quote}
+of a label and a condition. A match condition with the same label as a labeled 
+tree description is said to belong to this description, and its condition is
+a function of the values of the variables inside the tree description to 
+truth values. Hence, labels are used as pointers to and from match conditions
+and descriptions of some kind. 
+
+Like Td's, node and list descriptions may be labeled or bare.
+A labeled node description L-Nd is a pair 
+\begin{quote}
+L-Nd = $<${\em l}$_{i}$,B-Nd$>$,
+\end{quote}
+and a bare node description is defined as
+\begin{quote}
+B-Nd = $<$cat,R$_{i}$$>$ or B-Nd = N$_{i}$
+\end{quote}
+where cat is the category of the node, R$_{i}$ is a record variable and
+N$_{i}$ is a node variable. A record variable has as value the set of 
+attribute-value pairs of a tree-node, except for the category attribute. 
+A node variable N$_{i}$ has entire tree-nodes, including the category
+attribute, as values. Conditions on
+the attributes of a record variable inside an L-Nd can be specified by a
+match conditions with the same label.
+
+Similarly, a labeled list description is related to the bare description as
+\begin{quote}
+L-Ld = $<${\em l}$_{i}$,B-Ld$>$,
+\end{quote}
+and a B-Ld is defined as a tuple of items It$_{i}$ :
+\begin{quote}
+B-Ld = $<$It$_{1}$,..,It$_{N}$$>$.
+\end{quote}
+An item can be labeled or not. A labeled item is a pair
+\begin{quote}
+L-It = $<${\em l}$_{i}$,B-It$>$.
+\end{quote}
+A bare item can be a mu variable, a sigma variable, or a labeled list 
+description, or a rel-tree description:
+\begin{quote}
+B-It = $\mu_{i}$ or $\sigma_{i}$ or L-Ld or RTd.
+\end{quote}
+A RTd can not be labeled and is a pair
+\begin{quote}
+RTd = $<$reld,B-Td$>$,
+\end{quote}
+where reld is either a relation, reld = rel, or a variable, reld = rel$_{i}$.
+
+The values of the list variables $\mu_{i}$ and $\sigma_{i}$ are lists of trees, of 
+any length in the case of $\mu_{i}$, with maximum length 1 in the case of 
+$\sigma_{i}$.
+
+Match conditions that belong to labeled list descriptions may contain conditions
+on single list variables. In particular, I suggest the predicates
+\begin{quote}
+   EXIST(listvar,Ld), ALL(listvar,item)
+\end{quote}
+where item and Ld are as described above and 'listvar'=$\mu_{i}$,$\sigma_{i}$.
+The first predicate is true if a part of 'listvar' can be matched with the 
+list description LD (see below). In the second predicate the item may only 
+consist of one rel-tree description and is true if 'listvar' is empty or else 
+if its elements can all be matched with this RTd.
+\subsection{Matching}\label{Mat}
+A matching function can be defined, that performs the
+match between a tree and a tree description. By matching is meant the
+determination of wether and how a tree belongs to the ensemble described by the
+tree description. The 'how' part of matching means that the procedure results
+in appropriate value-assignments to the variables in the tree description. 
+The matching procedure involves two different checks. 
+The first check involves the structural compatibility of the tree with the tree
+description. Secondly, those match conditions are checked, that have labels
+corresponding to those occurring in the tree description, thereby restraining
+the possible values of the labeled parts of the description.
+
+Match conditions of labeled list descriptions may, next to conditions
+involving variables inside the list description, contain directives
+steering the matching process. These directives may be seen as conditions on
+the match itself, in the following sense. 
+The possible matches of a list description of 
+{\em m} items with some list of {\em n} rel-tree's can be denoted as
+an {\em m}-tuple I = $<I_{1},..,I_{m}>$ of integers, denoting that 
+item $i$ contains $I_{i}$ rel-trees. The various matches can be ordered
+as 
+\begin{quote}
+$I < I'$, 
+iff $\exists_{i}\forall_{j<i}$[$I_{i} < I'_{i}$ $\wedge$ $I_{j} = I'_{j}$].
+\end{quote}
+Now the matching directives can be seen as conditions involving this ordering.
+In particular, there are (for now) two such directives, one asking for
+the smallest match, the other for the largest. They are called {\em lefttoright}
+and {\em righttoleft}, respectively, which names indicate the direction in which
+the matching process of a list description will proceed in the two cases. 
+In the {\em lefttoright} mode, the first item is matched with the least number 
+of rel-trees, next the second item, and so on. If some item cannot be matched 
+successfully, the item before it is matched with more rel-trees, etcetera.
+In the {\em righttoleft} mode, the last item of the list description is the 
+first to be matched.
+The algorithm is sketched in appendix~\ref{Alg}, and results in at most one 
+match always.
+\section{M-rule notation syntax}\label{Syn}
+In this section the formal syntax of M-rules and transformations will be 
+described. The models part of the syntax, i.e. the part describing how tree 
+descriptions are to be built, is isomorphic to the definition of tree 
+descriptions in section~\ref{Td}.
+
+Rules and transformations consist of subrules, as in doc. R0068. Thus, a rule 
+consists of a models part, explicating the variables m$_{i}$ and m, and either 
+a section describing subrules or a section containing compositional and 
+decompositional condition-action pairs (if it is a primitive rule). A subrule 
+in its turn consists of a models part, which in the case of subrules explicates
+certain parts of 'parent' tree descriptions, and either (sub)subrules or 
+condition-action pairs. The subrule mechanism is not meant to intertwine two
+semantically different but syntactically similar M-rules. Instead, rule 
+parametrization is the mechanism serving this purpose.
+
+M-rules are organized into subgrammars, and the subgrammars form a grammar.
+Thus, in the syntax, the grammar description consists of a number of 
+subgrammar descriptions. A subgrammar description consists of a regular 
+expression of M-rule and transformation names, together with the definitions of 
+these M-rules and transformations.
+\subsection{Grammar}
+First the bare grammar will be given. Attributes will be used to do things
+like checking label names. Constraints that are handled by attributes are
+discussed in section~\ref{Con}.
+\begin{quote}
+\begin{tabbing}
+~~~~~~~~~~~~~~~~~~~~~~~~\=~~~~~~~~\=~~~~~~~~~~~\=\\
+utt:           \> ruledef$\mid$subgrammardef\\
+ruledef:       \> "\%".(RULE$\mid$"TRANSFORMATION"$\mid$"FILTER").rulename.\\
+               \>     \> leftmodels.rightmodel.[matchconds].\\
+               \>     \> [parameters].[preaction].\\
+               \>     \> (subrules$\mid$comcapairs.decomcapairs)."\&"\\
+leftmodels:    \> "$<$".labeledTD.\{labeledTD\}."$>$"\\
+rightmodel:    \> "$<$".labeledTD."$>$"\\
+labeledTD:     \> label.":".bareTD\\
+bareTD:        \> ((labeledND$\mid$bareND).[(labeledLD$\mid$"[".[bareLD]."]")]
+                     $\mid$treevar)\\
+labeledND:     \> label."::".bareND\\
+labeledLD:     \> label.":". "[".bareLD."]" \\
+bareND:        \> (catname."\{".catrecname."\}"$\mid$nodevar)\\
+bareLD:        \> item.\{",".item\}\\
+item:          \> (labeleditem$\mid$bareitem)\\
+labeleditem:   \> label.":".bareitem\\
+bareitem:      \> muvar$\mid$sigmavar$\mid$labeledLD$\mid$RTD\\
+LD:            \> labeledLD$\mid$bareLD\\
+RTD:           \> reld."/".bareTD\\
+reld:          \> (relname$\mid$relvar)\\
+matchconds:    \> "MATCHCONDITIONS"."$<$". \{label.":".\\
+               \>  \> [LEFTTORIGHT$\mid$RIGHTTOLEFT].[andcond]\}."$>$"\\
+andcond:       \> orcond.\{"and".orcond\}\\
+orcond:        \> (matchboolean$\mid$booleanexpr).\\
+               \>     \> \{"or".(matchboolean$\mid$booleanexpr)\}\\
+booleanexpr:   \> (pascalexpr$\mid$condrecord)\\
+matchboolean: \> (["NOT"]."EXIST""(".(muvar$\mid$sigmavar).",".LD.")" $\mid$\\
+               \>     \> ["NOT"]."ALL"."(".(muvar$\mid$sigmavar).",".item.")")\\
+parameters:    \> "PARAMETERS"."$<$".\{parname.":".partype\}."$>$"\\
+preaction:     \> "PREACTION".recordassignment\\
+assignrecord:  \> catrecname.":="."\{".{attributename.":".attributevalue}."\}"\\
+condrecord:    \> catrecname."="."\{".{attributename.":".attributevalue}."\}"\\
+subrules:      \> "SUBRULE".leftsubmodels.rightsubmodels.[matchconds].\\
+               \>     \> (subrules$\mid$comcapairs.decomcapairs)\\
+leftsubmodels: \> "$<$"\{labeledTD$\mid$labeledLD\}"$>$"\\
+rightsubmodels:\> "$<$"\{labeledTD$\mid$labeledLD\}"$>$"\\
+comcapairs:    \> "COMP".capairs\\
+decomcapairs:  \> "DECOMP".capairs\\
+capairs:       \> "$<$".\{condition.[capairs].action\}."$>$"\\
+condition:     \> Clabel.":".andcond\\
+action:        \> Alabel.":".(statements$\mid$"@")\\
+statements:    \> \{pascalstatement$\mid$assignrecord\}\\
+treevar:       \> "T1"$\mid$"T2"$\mid$"T3".....\\
+muvar:         \> "mu1"$\mid$"mu2"$\mid$"mu3".....\\
+sigmavar:      \> "sig1"$\mid$"sig2"$\mid$"sig3".....\\
+nodevar:       \> "N1"$\mid$"N2"$\mid$"N3".....\\
+relvar:        \> "rel1"$\mid$"rel2"$\mid$"rel3".....\\
+Clabel:        \> "C1"$\mid$"C2"$\mid$"C3".....\\
+Alabel:        \> "A1"$\mid$"A2"$\mid$"A3".....\\
+label:      \> "I1"$\mid$"I2"$\mid$"I3"..... $\mid$"m"$\mid$"m1"$\mid$"m2".....
+                                       $\mid$"T1"$\mid$"T2"$\mid$"T3".....\\ 
+            \>     \>$\mid$"R"$\mid$"L"$ \mid$"mu1"$\mid$"mu2"$\mid$"mu3"..... 
+                         $\mid$"sig1"$\mid$"sig2"$\mid$"sig3".....\\
+rulename:      \> identifier\\
+catname:       \> identifier\\
+catrecname:    \> identifier\\
+relname:       \> identifier\\
+parname:       \> identifier\\
+partype:       \> identifier\\
+subgrammardef: \> "\%".subgrammarname.RE."\&"\\
+RE: \> (rulename $\mid$ RE.".".RE $\mid$ RE."$\mid$".RE $\mid$ "[".RE."]"
+              $\mid$ "\{".RE."\}")\\
+subgrammarname:\> identifier\\
+\end{tabbing}
+\end{quote}
+\subsection{Further constraints}\label{Con}
+A number of comments are in order. Many of these concern restrictions on the
+above grammar that can be implemented with attributes. 
+
+Catname, relname, and partype should be identifiers that are declared 
+in the domain (see doc. R0128). The catrecname identifier of a node 
+description should be chosen as the catname identifier of that description, 
+followed by the string 'rec', followed by a number. 
+
+The RE (regular expression) part of a subgrammar definition is defined in a way
+that will in general lead to ambiguous interpretations of the input. These 
+ambiguities will lead to identical interpretations, however, and will be 
+suppressed by the compiler.
+
+Models and submodels are of two types, left and right. The left (sub)models
+are written first, between angular brackets, and the right ones next, also
+between angular brackets. In subrules, there may be no right or no left
+submodels. This is indicated by angular brackets enclosing nothing.
+
+There are a number of requirements concerning label identifiers. The labels
+left models start with, have the names "m1", "m2" ..... , whereas the right 
+model has the label "m". Left(right) submodels start with label names that are
+identical to some variable in a left(right) model, or in a left(right) 
+submodel that is higher in the hierarchy. The same model label may be used at
+more than one level. E.g. a submodel may be labeled by m1. In this case
+the submodel replaces the 'higher' (sub)model with the same label.
+Note that, according to the above grammar, 
+a label can only have the same values as a muvar, a sigmavar or a Tvar. A left
+or right submodel is said to explicate the variable its label is identical to.
+Labels of tree, node, and list descriptions other than the ones just mentioned,
+have the names "I1", "I2", ... . I-labels are local, in the sense that
+they are only known at one sub-rule level. Hence, identical labels can be
+used in many places. The scope of a description variable consists of all 
+subrules of the (sub)rule it was first used in.
+The labels of match conditions should refer to labels appearing in the 
+(sub)models just preceding the conditions, or possibly to labels inside the 
+second argument of an EXIST or ALL predicate in another match condition. An
+exception is formed by the R,L labels. The match conditions following L refer to
+all preceding left (sub)models and match conditions concerning all right 
+(sub)models follow the label R. EXIST and ALL predicates used in conditions
+of condition-action pairs can not have labeled arguments.
+
+Variables of left(right) (sub)models are called left(right) variables. Variables
+can be both left and right, and are then called common. (Nomenclature as
+in R0012).
+
+Matching directives (lefttoright,righttoleft) are to appear only after a label
+belonging to a labeled {\em list} description.
+
+Boolean expressions and statements are to be written according to the pascal 
+syntax. It will be a very limited subset of pascal, but I did not include the
+restrictions in the syntax as yet. Assignments can be made to record variables,
+record-variable fields and relation variables, i.e. to all attributes except
+for the category. Also the boolean expressions express conditions on these
+attributes only. Record attributes are prefixed by a recordname and a period.
+
+In the compositional conditions, boolean expressions are a proposition 
+in terms of left and common attributes and parameters. The compositional 
+action statements are assignments, separated by semi-colons, that together
+assign values to the right attributes, that are not common. 
+In the decompositional sections, conditions are in terms of right and common
+attributes and assignments are made to left attributes and parameters. A number
+of help functions may be used in the rule actions, such as copy 
+functions (see R0128). If other functions are needed in actions or conditions, 
+they may be introduced. Such functions can then be included in the notation, 
+but in the future we could also devise a means to construct user-defined 
+functions via an M-rule like notation.
+\section{Examples}\label{Ex}
+This section displays a few Rosetta2 M-rules (see R0016), written according to 
+the syntax of the previous section. The examples will be explained in 
+section~\ref{Expl}. The first example is a simple rule, RSHIFT3. I changed it 
+somewhat to make it symmetric (only VAR and NP are shifted).
+\begin{verbatim}
+%TRANSFORMATION RSHIFT3
+<m1: CL6{CL6rec1}[mu1,
+                  obj/SUBSENT{SUBSENTrec1}[I1:conj/CONJ{CONJrec1},
+                                           I2:rel1/T1,
+                                           mu3
+                                          ]
+                 ]
+>
+<m: CL7{CL7rec1}[shift/T1,
+                 mu1,
+                 obj/SUBSENT{SUBSENTrec2}[conj/CONJ{CONJrec1},
+                                          mu3
+                                         ],
+                 mu2
+                ]
+>
+MATCHCONDITIONS
+   <I1:CONJrec1.key=datconjkey
+    I2:(rel1=shift) or (rel1=subj)
+   >
+SUBRULE
+    <T1:VAR{VARrec1}>
+    <T1:VAR{VARrec1}>
+    COMP
+       C1:true
+       A1:SUBSENTrec2:=SUBSENTrec1;
+          SUBSENTrec2.mood:=declarative
+    DECOMP
+       C1:true
+         C2:EXIST(mu3,subj/T2)
+         A2:rel1:=shift
+         C3:NOT EXIST(mu3,subj/T2)
+         A3:rel1:=subj
+       A1:SUBSENTrec1:=SUBSENTrec2
+SUBRULE
+    <T1:NP{NPrec1}>
+    <T1:NP{NPrec1}>
+    COMP
+       C1:NPrec1.mood=whinterr
+       A1:SUBSENTrec2:=SUBSENTrec1;
+          SUBSENTrec2.mood:=declarative
+    DECOMP
+      C1:NPrec1.mood=whinterr
+        C2:EXIST(mu3,subj/T2)
+        A2:rel1:=shift
+        C3:NOT EXIST(mu3,subj/T2)
+        A3:rel1:=subj
+      A1:SUBSENTrec1:=SUBSENTrec2;SUBSENTrec1.mood:=whinterr
+&
+\end{verbatim}
+Another simple example is RARGSUBST4. I left out the substorder predicate. It
+could be worked out, however.
+\begin{verbatim}
+%RULE RARGSUBST4
+<m1:I1::OPENADJP{OPENADJPrec1}[I2:arg/VAR{VARrec1},mu1]
+ m2:CL2{CL2rec1}[mu2,subj/VAR{VARrec2},mu3,
+                 pred/VAR{VARrec3},mu4
+                ]
+>
+<m:CL2{CL2rec1}[mu2,subj/VAR{VARrec2},mu3,
+                I3:pred/ADJP{ADJPrec1}[mu1],mu4
+               ]
+>
+MATCHCONDITIONS
+  <I1:NOT(OPENADJPrec1.evorm)
+   I2:VARrec1 = {index:LEVEL soort:othervar 
+                }
+   L:VARrec1.index = VARrec2.index
+   I3:NOT(ADJPrec1.evorm)
+  >
+PREACTION
+      VARrec3:= {index:LEVEL soort:othervar persoon:3
+                 getal:enkelvoud
+                };         \# this syntax is obligatory here \#
+COMP
+   C1:true
+   A1:ADJPrec1.supertense:=omegatense;
+      ADJPrec1:=OPENADJPrec1
+DECOMP
+   C1:true
+   A1:VARrec3:= {index:LEVEL soort:othervar persoon:3
+                 getal:enkelvoud
+                };
+                VARrec1:=VARrec2;
+                OPENADJPrec1:=ADJPrec1
+&
+\end{verbatim}
+Another example is RTIJD3 and is more difficult. It has parameters and more
+complicated subrules. Its semantics
+should be the same as the Rosetta2 version (R0016), including the help functions
+makereflpro, makepart, testpart, testreflpro.
+
+\begin{verbatim}
+%RULE RTIJD3
+<m1: I1::CL2{CL2rec1}[subj/VAR{VARrec1},head/VERB{VERBrec1},mu1]>
+<m: I2::CL3{CL3rec1}[subj/VAR{VARrec1},mu2,head/VERB{VERBrec2},mu1]>
+MATCHCONDITIONS
+  <I1:CL2rec1.soort = bijvbijzin
+   I2:CL3rec1.vps * [vpmodal1,vpmodal2] = [] and
+      CL3rec1 = {tijd:cltijdpar supertense:supertensepar} and 
+      CL3rec1.soort in [voltdwbijzin, tegdwbijzin]
+  >
+PARAMETERS
+   <supertensepar:supertensetype
+    cltijdpar:cltijdtype
+   >
+SUBRULE
+    <>
+    <mu2:[I1:refl/REFLPRO{REFLPROrec1},I2:part/PART{PARTrec1}]
+    >
+    MATCHCONDITIONS
+       <I1:REFLPROrec1= {P:3 G:enkelvoud}
+        I2:PART.key = VERBREC2.part
+       >
+   COMP
+     C1:VERBREC1.part<>0 and cltijdpar = voltdwcltijd
+     A1:CL3rec1:=CL2rec1;VERBrec2:=VERBrec1;
+        CL3rec1:= {soort:voltdwbijzin tijd:voltdwcltijd};
+        VERBrec2.tijd:=VoltDw;
+        REFLPROrec1:= {P:3 G:enkelvoud};
+        PARTrec1.key:=VERBrec1.part
+   DECOMP
+      C1:true;
+      A1:VERBrec1:=VERBrec2;CL2rec1:=CL3rec1;
+         VERBrec1.tijd:=omegatijd;CL2rec1.soort:=bijvbijzin
+SUBRULE
+    <>
+    <mu2:[refl/REFLPRO{REFLPROrec1}]
+    >
+    MATCHCONDITIONS
+    <mu2: REFLPROrec1 = {P:3  G:enkelvoud}
+    >
+    COMP
+       C1:VERBREC1.part = 0 and cltijdpar = voltdwcltijd
+       A1:CL3rec1:=CL2rec1;VERBrec2:=VERBrec1;
+          CL3rec1.soort:=voltdwbijzin;CL3rec1.tijd:=voltdwcltijd;
+          VERBrec2.tijd:=VoltDw;
+          REFLPROrec1:= {P:3 G:enkelvoud}
+    DECOMP
+       C1:true;
+       A1:VERBrec1:=VERBrec2;CL2rec1:=CL3rec1;
+       VERBrec1.tijd:=omegatijd;CL2rec1.soort:=bijvbijzin
+
+SUBRULE
+    <>
+    <mu2:[part/PART{PARTrec1}]
+    >
+    MATCHCONDITIONS
+       <mu2:PART.key = VERBREC2.part
+       >
+   COMP
+     C1:VERBREC1.part<>0 and cltijdpar <> voltdwcltijd
+     A1:CL3rec1:=CL2rec1;VERBrec2:=VERBrec1;
+        CL3rec1.soort:=voltdwbijzin;CL3rec1.tijd:=voltdwcltijd;
+        VERBrec2.tijd:=VoltDw;
+        PARTrec1.key:=VERBrec1.part
+   DECOMP
+     C1:true;
+     A1:VERBrec1:=VERBrec2;CL2rec1:=CL3rec1;
+        VERBrec1.tijd:=omegatijd;CL2rec1.soort:=bijvbijzin
+SUBRULE
+    <>
+    <mu2:[]
+    >
+    MATCHCONDITIONS
+       <>
+    COMP
+         C1:VERBREC1.part = 0 and cltijdpar <> voltdwcltijd
+         A1:CL3rec1:=CL2rec1;VERBrec2:=VERBrec1;
+            CL3rec1.soort:=voltdwbijzin;CL3rec1.tijd:=voltdwcltijd;
+            VERBrec2.tijd:=VoltDw;
+    DECOMP
+         C1:true;
+         A1:VERBrec1:=VERBrec2;CL2rec1:=CL3rec1;
+            VERBrec1.tijd:=omegatijd;CL2rec1.soort:=bijvbijzin
+&
+\end{verbatim}
+The last example is RADVSUBST1. It has a pre-action and matching directives.
+I left out the EMPTY's, because they are no longer needed (I think) and they
+break the symmetry in the original rule. Only part of the original rule is
+dispayed.
+\begin{verbatim}
+%RULE RADVSUBST1
+<m1:CL5{CL5rec1}[mu2]
+ m2:N1[subj/VAR{VARrec1},mu1]
+>
+<m:CL5{CL5rec1}I2:[mu3,mod/T1,I3:mu4]
+>
+MATCHCONDITIONS
+  <m2:VARrec1.soort=othervar 
+   I2:RIGHTTOLEFT
+   I3:NOT EXIST(mu4,mod/ADVSENT)
+  >
+PREACTION VARrec1:= {index:LEVEL
+                     soort:othervar
+                     persoon:3
+                     getal:enkelvoud
+                    }
+SUBRULE
+   <m2:OPENADVP{OPENADVPrec1}[subj/VAR{VARrec1},mu1]>
+   <T1:ADVP[mu1]>
+   SUBRULE
+        <mu2:[I1:mu3,mu4]>
+        <>
+        MATCHCONDITIONS
+          <mu2:RIGHTTOLEFT
+           I1:ALL(mu3,I2:rel1/T2)
+           I2:(rel1= subj) or (rel1 =refl) or (rel1 = indobj) 
+              or (rel1=aux) or (rel1=head)
+          >
+        COMP
+          C1:OPENADVPrec1.soort=tijdadv and CL5rec1.soort=hoofdzin
+          A1:@
+        DECOMP
+          C1:true
+          A1:VARrec1:= {index:LEVEL soort:othervar persoon:3 
+                       getal:enkelvoud}
+    SUBRULE
+        <mu2:[I1:mu3,mu4]>
+        <>
+        MATCHCONDITIONS
+          <mu2:RIGHTTOLEFT
+           I1:ALL(mu3,I2:rel1/T2)
+           I2:(rel1= subj) or (rel1 =refl) or (rel1 = indobj) 
+              or (rel1=aux) or (rel1=head) or (rel1=mod)
+          >
+        COMP
+          C1:OPENADVPrec1.soort <> tijdadv and CL5rec1.soort=hoofdzin
+          A1:@
+        DECOMP
+          C1:true
+          A1:VARrec1:= {index:LEVEL soort:othervar persoon:3 
+                       getal:enkelvoud}
+
+etc. for CL5rec1.soort<>hoofdzin and m2=OPENPP,OPENPPVAR
+
+&
+\end{verbatim}
+\section{Semantics}\label{Sem}
+Below, first an informal explanation of the semantics of M-rules, written 
+according to the above syntax, is given. In particular, the examples of 
+section~\ref{Ex} are discussed. Subsequently, the semantics is defined in a more
+formal way, in the spirit of the meaning definition of fixed subgrammars in 
+doc. R0068 and of the interpretation prescriptions of M-rules as given in R0012.
+\subsection{Informal explanations}\label{Expl}
+First we will give an operational view on what the computer will do when 
+executing a rule. Afterwards, the examples of the previous section will be 
+discussed one at the time.
+
+On executing a rule, say in the compositional direction, the input models (
+the left models, i.e. between the first pair of angular brackets) are matched
+with the input trees. The program will be satisfied when one match is found that
+satisfies all match conditions. When there exist several successful
+matches, the matching strategy will determine which one is found first.
+If there is no matching directive or when this directive is {\em lefttoright},
+the left-most item of a list description is matched with an as small as
+possible left-most part of the relevant input tree sonlist. 
+If this match succeeds, including the check on the item match conditions 
+(if present), the item to the right is matched with an as small as possible 
+left part of the remainder of the input rel-tree list, etcetera.
+If an item match does not succeed with any part of the remaining rel-tree list,
+it is tried wether the item to the left of it has a match different from the 
+one found before, i.e. a longer one. 
+This is possible only if this item is not a rel-tree description. 
+If a different match is found, the item to the right is investigated again, 
+otherwise the item to the left is revisited.
+The process continues until either a match of all items has been found, or
+all possibilities have been explored.
+If a match is found, it will be the smallest one, in terms of the ordering
+introduced in section~\ref{Mat}. If the matching directive belonging to a
+list description is {\em righttoleft} then the matching starts with the last
+item of the list, and the largest possible match will be found. For more
+details, see the algorithm in the appendix.
+
+When a successful match of all input trees with the respect to the models
+and matchconditions has been found, the program goes on to investigate
+subrules, if present, or else it will go to the condition-action pairs.
+In subrules the matching process proceeds as before. If a variable is 
+explicated in the left submodel section, i.e. between the first pair of
+angular brackets of a subrule, its value is matched with the explicating 
+submodel. Again the
+program stops matching when a match is found that respects all match conditions.
+If there are more subrules at the same level they are all investigated. This
+will in general give rise to multiple results. As long as a subrule contains 
+subrules, the matching process proceeds again and again. If a rule or subrule 
+contains no subrules the condition-action (C-A) pairs are executed. In 
+principle, an action is performed if the corresponding condition is true. 
+C-A pairs can be nested, however, and if they are
+sequences of actions are performed after checking corresponding conditions. 
+For instance, in RHIFT3 above, if C1 and C2 hold, then A2;A1 is
+executed, and if C1 and C3 hold then A3;A1 is executed. If both hold, both
+are executed, and the rule will have multiple results. Before the actions
+are executed, however, the output tree is created with default attributes.
+(These defaults are declared in the domainT file, see R0128.)
+This output tree is simply the right model with the relevant right submodels 
+substituted in it.
+
+In the decompositional direction, the input tree is matched with the right
+model, i.e. the model between the second pair of angular brackets of a rule,
+and subsequently with explicating right submodels, which are also between
+the second pair of angular brackets of subrules. Finally output trees
+are generated with default attributes, according to the left models and
+submodels, and changed according to the C-A pairs.
+\subsubsection{RSHIFT3}
+RSHIFT3 has one left model and one right model. The left model has a unique
+match. The right one has more than one in sentences with more obj's. In
+this unlikely case the first one in the actual rel-tree list is matched
+with the obj/SUBSENT first. Only if this does not succeed, others are
+investigated. In the actual implementation, use will be made of some
+knowledge about 'unique' relations, i.e. relations that can occur only
+once in a rel-tree list. This information should be provided via the domainT
+file (see section~\ref{Dis}). In RSHIFT3, only two rel-tree items are labeled, 
+by I1 and I2. 
+The match of m1 will be unsuccessful if the match conditions can not be made to
+hold. If the match succeeds (of m1 in the compositional reading, of m in the
+decompositional one) the subrules are investigated. In the case of RSHIFT3
+the two subrules exclude each other. If in the preceding match, T1 was assigned
+a tree with category VAR, the first subrule applies. In case this category
+was NP, the second subrule may succeed. Suppose T1 is a VAR, then the match
+of the first subrule succeeds (with the first $<$T1:VAR\{VARrec1\}$>$ in
+the compositional reading, with the second in the decompositional case), 
+as there are no match conditions. In the compositional case, the rule as
+a whole will yield a result now, because the compositional condition-action
+pair gives no new restrictions. A tree will be created according to m, with
+the substitution T1=VAR\{VARrec1\}, and the actions after A1 will be performed.
+Also the decompositonal rule will give a result, but the actions depend on
+wether mu3 has a subj in it or not.
+\subsubsection{RARGSUBST4}
+This rule is very simple. While matching m2 the first occurrence of a pred
+will be matched with the pred/VAR part. A new feature is the L label in the
+match conditions. It precedes a condition concerning attributes of more than
+one left model. In submodels one can likewise use R for the right submodels.
+I hope this feature will not be needed (it is not in this rule; it is used
+only for illustration), because it will lead to inefficiencies. This comes about
+because of the restarting of the matching processes of both m1 and m2, which is
+necessary if the L-condition fails. 
+The preaction of RARGSUBST4 and its decompositional action show the 
+syntax of a record assignment. In the preaction, this syntax is obligatory,
+in C-A actions record fields may also be assigned values individually. 
+Record conditions can be written in a way similar to record assignments, as is 
+illustrated by match condition I2. 
+Note, furthermore, the I1 label. It labels only the node OPENADJP, and not the
+whole tree (whose label is m1). So node labeling is done with "::" between the 
+label and the labeled. Tree labeling, rel-tree labeling, mu labeling and sigma
+labeling is done with ":". Rel-tree list labeling is done according to
+{\em label:[rel-tree list]}, i.e. with square brackets around the list.
+Finally, comments can be written inside a rule, as illustrated here, by putting
+\#'s around it.
+\subsubsection{RTIJD3}
+This rule has parameters. Their types should be declared in the domainT file
+as types. Its subrules contain decompositional submodels only. These are
+explicating the rel-tree variable mu2 in four different ways. Note that
+in the first subrule labels are introduced to facilitate match conditions,
+with the same names as the highest-level labels. In the other subrules, mu2
+itself is used as a match condition label.
+\subsubsection{RADVSUBST1}
+In RADVSUBST1 a labeled tree-list appears, in the model m, with label I2.
+The corresponding match condition contains a matching directive. This causes
+the matching process in the decompositional rule to first match the last mod 
+in the sonlist of the input tree with the mod/T1. Note that the first level
+subrules, of which only one has been displayed, redefine the model m2. Of 
+course, any tree satisfying the subrule version should also satisfy the rule 
+version. I invented this redefinition mechanism because of foreseeable
+implementation problems with node variable explicating subrules, such as 
+N1:OPENADVP\{OPENADVPrec1\}. 
+Also, this rule contains the predicate ALL, which is true if all of the elements
+of the first argument can be matched with the second. Note that in the second
+argument of the ALL in this rule, a label I2 is introduced to refer to further
+(match) conditions on the relation variable rel1. In the sub-subrules again
+a {\em righttoleft} directive is used, leading to matches with mu3 as large as 
+possible, and mu4 as small as possible.
+\subsection{Formal semantics}
+As in R0068, the meaning of a (sub)rule is a pair of functions, a compositional
+one called {\em COM} and a decompositional one, called {\em DECOM}. The function
+{\em COM} maps tuples of strees into sets of strees, whereas {\em DECOM} maps 
+strees into sets of tuples of strees. This mapping is accomplished ultimately 
+by two kinds of 'actions'. One is the matching of strees with tree descriptions,
+accomplished by a function called UNIFY in R0068, which is named {\em match} 
+in the following. The other was absent in R0068, and comes from the 
+condition-action pairs of primitive (sub)rules. 
+In R0068, all model variables where thought to be common variables.
+Also, there were no external parameters. If left and right variables and 
+external parameters do exist, then one needs explicit assignments to
+make all variables and parameters assume values. Thus, there is a (partial) 
+compositional function {\em comcap}, effected by the compositional 
+condition-action pairs, from left and common variable values and parameter
+values to sets of right variable values. 
+Analogously, there is a reverse function {\em decomcap} which does the same, 
+but with left and right interchanged, and which may also assign values to
+external parameters. 
+Note that there are no explicit assignments to common variables.
+The idea is that common variables should be used only if they are truly common
+to left and right tree descriptions. 
+
+The symbol {\em match} will denote throughout the function that maps the value 
+of a variable m$_{i}$, T$_{i}$, $\mu_{i}$, or $\sigma_{i}$  
+into a value sequence of the variables appearing in an explicating description
+of the variable. If the match is not successful, the value of {\em match} will
+be the empty sequence.
+For instance, initially, the left model variables 
+m$_1$, m$_2$, ... are assigned strees as values, in the compositional
+reading of the rule. Then, if the match is successful, {\em match}(m$_i$) is a 
+sequence of values, one for each variable appearing in the tree description 
+explicating m$_i$. 
+These variables may be further explicated in a subrule, and a further
+match may map each variable value to explicating variable values.
+The function {\em COM} consists of a match of all explicated variables,
+followed by a call of {\em comcap} to give right variables their values.
+{\em This section is still incomplete. It will be worked out later.}
+\section{Discussion}\label{Dis}
+There are a few note-worthy deviations between the notation proposed above
+and the preliminary one used in Rosetta2. Firstly, conditions have been 
+separated into match conditions and C-A conditions. Match conditions
+influence the matching process of the models with the input tree(s)
+whereas C-A conditions steer the actions to be performed on the output tree(s).
+Secondly, conditions involve only parameters, relation variables, and node
+attributes, but not the category. So conditions like N1.cat = subj are no
+longer accepted. The subrule mechanism, however, can be used to express these
+things. The reason for not allowing N1.cat is that in the implementation it is
+not clear how to map N1 onto a pascal variable, because of its varying type.
+The third aspect that should be noted concerns the ambiguities. In Rosetta2,
+the matching process could render multiple results. Here, the matching halts
+when a match is found. In return, the matching strategy can be influenced by
+matching directives. A rule as a whole can now only give multiple results 
+because of multiple successful paths through subrules and/or multiple paths 
+through the C-A sections. Lastly, there is now a formal interplay between
+the notation and the specification of the domain T. For instance, attributes
+will always have their default values if have not been assigned a value.
+Also copy functions may be used, if they are defined in the domain. In the
+future this interplay could very well become tighter. More linguistic 
+information (e.g. about the possible structures of rel-tree lists) will
+surely enable the compiler to enhance efficiency.
+\appendix
+\section{Algorithm}\label{Alg} 
+In this appendix, the match algorithm is sketched. Throughout, we will
+denote the node description of a tree description as Nd[Td], its list
+description as Ld[Td], etcetera. 
+The match condition belonging to some 
+description is simply denoted as 'matchcond'. A non-labeled description
+has matchcond = true.
+The main matching function is the one matching a tree with a tree description:
+
+\begin{tabbing}
+function matchtree(var Td:tree-description;T:tree):boolean;\\
+var match:boolean;\\
+begin\\
+match:=true;
+if Td$ =$T$_{i}$ then begin match:=true;T$_{i}$:=T end;\\
+else match:=matchnode(Nd[Td],N[T]) and matchlist(Ld[Td],L[T]);\\
+matchtree:=match and matchcond(Td)\\
+end;\\
+\end{tabbing}
+This function uses two functions, matchnode and matchlist, which are defined 
+below. 
+\begin{tabbing}
+function matchnode(var Nd:node-description;N:node):boolean;\\
+var match:boolean;\\
+begin\\
+if \= Nd=N$_{i}$ then\\
+   \> begin\\
+   \> match:=matchcond(Nd);\\
+   \> if match then N$_{i}$:=N\\
+   \> end\\
+else\\
+   \> begin\\
+   \> match:=(N.cat=cat[Nd]) cand matchcond(Nd);\\
+   \> if match then R$_{i}$[Nd]:=N.rec\\
+   \> end;\\
+matchnode:=match
+end;\\
+\end{tabbing}
+
+\begin{tabbing}
+function matchlist(var Ld:list-description;L:tree-list):boolean;\\
+begin\\
+if matchcond.directive(Ld)=RIGHTTOLEFT then matchlist:= rightmatch(Ld,L)\\
+else matchlist:= leftmatch(Ld,L)\\
+\{so, if there is no matchcond or no directive then a left match is chosen\}\\
+end;\\
+\end{tabbing}
+So, matchlist calls either leftmatch or rightmatch:
+
+\begin{tabbing}
+function leftmatch(var Ld:list-description;L:tree-list):boolean;\\
+\{performs a left-most match between Ld and L\}\\
+var \= match,firstmatch,lastmatch:boolean;\\
+    \> Lsep(arator):0..length(L); M,N:integer;\\
+    \> Ldrest:list-description; Lrest:tree-list;\\
+begin\\
+N:=length(Ld);M:=length(L);\\
+if N=0 and M=0 then match:=true\\
+else \{Ld consists of a non-empty sequence It$_{1}$..It$_{N}$\}\\
+    \> begin\\
+    \> Lsep:=-1; match,lastmatch:=false; Ldrest:=It$_{2}$..It$_{N}$;\\
+    \> while \= not(match) and (Lsep$<>$M) do \\
+    \>       \> begin\=\\
+    \>       \> \{$\forall_{i<Lsep}$[L(1)..L(i) does not match It$_{1}$\\
+    \>       \>         \> or L(i+1)..L(M) does not match It$_{2}$..It$_{N}$];\\
+    \>       \> iff match then L(1)..L(Lsep) matches It$_{1}$ and \\
+    \>       \>          \> L(Lsep+1)..L(M) matches It$_{2}$..It$_{N}$\\
+    \>       \> \}\\
+    \>       \> firstmatch:=false;\\
+    \>       \> while not(firstmatch) and (Lsep $<>$ M) do \\
+    \>       \>          \> begin\\
+    \>       \>          \> Lsep:=Lsep+1;\\
+    \>       \>          \> firstmatch:=matchitem(It$_{1}$,L(1)..L(Lsep))\\
+    \>       \>          \> \{$\forall{i<Lsep}$\=[L(1)..L(i) does not match 
+                                                                     It$_{1}$\\
+    \>       \>      \> \> or L(i+1)..L(M) does not match It$_{2}$..It$_{N}$];\\
+    \>       \>          \> iff firstmatch then L(1)..L(Lsep) matches It$_{1}$\\
+    \>       \>          \> \}\\
+    \>       \>          \> end;\\
+    \>       \> Lrest:=L(Lsep+1)..L(M);\\
+    \>       \> lastmatch:=leftmatch(Ldrest,Lrest);\\
+    \>       \> \{iff lastmatch then L(Lsep+1)..L(M) matches 
+                                                            It$_{2}$..It$_{N}$\\
+    \>       \> \}\\
+    \>       \> match:=firstmatch and lastmatch \\
+    \>       \> end;\\
+    \> match:=match and matchcond(Ld)\\
+    \> \{if match then L(1)..L(Lsep) matches It$_{1}$ and \\
+    \>       \> L(Lsep+1)..L(M) matches It$_{2}$..It$_{N}$ \\
+    \> and $\forall_{i<Lsep}$[L(1)..L(i) does not match It$_{1}$ \\
+    \>       \> or L(i+1)..L(M) does not match It$_{2}$..It$_{N}$]; \\
+    \> if not(match) then $\forall_{i\leq M}$[L(1)..L(i) does not match 
+                                                                  It$_{1}$ \\
+    \>       \> or L(i+1)..L(M) does not match It$_{2}$..It$_{N}$] \\
+    \> \} \\
+    \> end; \\
+leftmatch:=match \\
+end; \\
+\end{tabbing}
+\begin{tabbing}
+function rightmatch(var Ld:list-description;L:tree-list):boolean; \\
+\{performs a right-most match between Ld and L\} \\
+var \= match,firstmatch,lastmatch:boolean; \\
+    \> Lsep(arator):0..length(L); M,N:integer; \\
+    \> Ldrest:list-description; Lrest:tree-list; \\
+begin \\
+N:=length(Ld);M:=length(L); \\
+if N=0 and M=0 then match:=true\\
+else \{Ld consists of a non-empty sequence It$_{1}$..It$_{N}$\}\\
+    \>begin \\
+    \>Lsep:=M+1; match,lastmatch:=false; Ldrest:=It$_{1}$..It$_{N-1}$; \\
+    \>while \= not(match) and (Lsep$<>$0) do \\
+    \>      \>begin \= \\
+    \>      \> \{$\forall_{i>Lsep}$[L(i+1)..L(M) does not match It$_{N}$ \\
+    \>      \>    \> or L(1)..L(i) does not match It$_{1}$..It$_{N-1}$]; \\
+    \>      \> iff match then L(Lsep+1)..L(M) matches It$_{N}$ and \\
+    \>      \>    \> L(1)..L(Lsep) matches It$_{1}$..It$_{N-1}$\\
+    \>      \> \} \\
+    \>      \> firstmatch:=false;\\
+    \>      \> while not(firstmatch) and (Lsep$<>$0) do \\
+    \>      \>    \> begin\\
+    \>      \>    \> Lsep:=Lsep+1;\\
+    \>      \>    \> firstmatch:=matchitem(It$_{N}$,L(Lsep+1)..L(M))\\
+    \>      \>    \> \{$\forall_{i>Lsep}$\=[L(i+1)..L(M) does not match 
+                                                                   It$_{N}$\\
+    \>      \>    \> \> or L(1)..L(i) does not match It$_{1}$..It$_{N-1}$];\\
+    \>      \>    \> iff firstmatch then L(Lsep+1)..L(M) matches It$_{N}$\\
+    \>      \>    \> \}\\
+    \>	    \>    \> end;\\
+    \>      \> Lrest:=L(1)..L(Lsep);\\
+    \>      \> lastmatch:=rightmatch(Ldrest,Lrest);\\
+    \>      \> \{iff lastmatch then L(1)..L(Lsep) matches It$_{1}$..It$_{N-1}$\\
+    \>      \> \}\\
+    \>      \>match:=firstmatch and lastmatch\\
+    \>      \>end;\\
+    \> match:= match and matchcond(Ld)\\
+    \>\{if match then L(Lsep+1)..L(M) matches It$_{N}$ \\
+    \>   \> and L(1)..L(Lsep) matches It$_{1}$..It$_{N-1}$ \\
+    \>and $\forall_{i>Lsep}$[L(i+1)..L(M) does not match It$_{N}$\\
+    \>   \> or L(1)..L(i) does not match It$_{1}$..It$_{N-1}$]; \\
+    \> if not(match) then $\forall_{i\leq M}$[L(i+1)..L(M) does not match 
+                                                                   It$_{N}$\\
+    \>   \>or L(1)..L(i) does not match It$_{1}$..It$_{N-1}$] \\
+    \>\} \\
+    \> end; \\
+rightmatch:=match \\
+end; \\
+\end{tabbing}
+The functions leftmatch and rightmatch make use of the function matchitem:
+\begin{tabbing}
+function matchitem(var It:item;L:tree-list):boolean;\\
+\{It is a muvar, a sigmavar, a rel-tree description, or a list description\}\\
+var \= match:boolean;\\
+    \> RT:rel-tree;\\
+begin\\
+match:=false;\\
+if It=$\mu_{i}$ then begin match:=true;$\mu_{i}$:=L end;\\
+if It=$\sigma_{i}$ then if length(L)$\leq$1 then begin match:=true;
+                                                      $\sigma_{i}$:=L end; \\
+if It=RTd then \\
+    \> begin \= \\
+    \> if length(L)=1 then  \\
+    \>       \> begin \\
+    \>       \> RT:=elem(L); \\
+    \>       \> if rel[RT]=rel$_{i}$ then begin 
+                                           match:= true;rel$_{i}$:=RT.rel end;\\
+
+    \>       \> else match:= (reld[RTd]=RT.rel)\\
+    \>       \> match:= match and matchtree(Td[it],RT.T) \\
+    \>       \> end \\
+    \> end \\
+if It=Ld then match:=matchlist(Ld,L);\\
+matchitem:=match and matchcond(It)\\
+end; \\
+\end{tabbing}
+\end{document}
+
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.2 - released  SEP-1986}
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1986 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

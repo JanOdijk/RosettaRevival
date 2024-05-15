@@ -1,0 +1,357 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3.formalism
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Language generation and isomorphic translation
+
+         Author       :  Rene@' Leermakers
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  82
+
+         Date         :  86/02/03
+
+         Status       :  informal
+
+         Supersedes   :  ...
+
+         Distribution :  project
+
+         Clearance    :  project
+
+         Keywords     :  isomorphy,subgrammars
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright (c) Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 0082                    date:86/02/03
+$LD 4
+$Np 1
+$CH 1,Introduction
+$QM
+In this document we will try to address to hard but not unimportant questions
+about the performance of the translation system: What sentences can be analyzed
+and which analyzed sentences can be translated? Clearly the most satisfactory
+answer to both questions would be "all!", but at present there is even no way
+to give an answer like "all but". We will try to make some progress using the
+concept of subgrammars and some related notions, developed in Rene@'(68).
+A subgrammar system as defined there can be interpreted as the 
+specification of a (parallel) program for the generation of all sentences of 
+the language. The program may be viewed as evaluating the t fields of all 
+possible stage hierarchies, or alternatively, as evaluating 
+primitive-subgrammar derivation trees.
+$NL
+In section 2, it is discussed what properties are required of subgrammar 
+programs, or processes, in order to guarantee the correctness of the grammar,
+in the sense that it correctly produces the desired language.
+$NL
+In sections 3 and 4, it is investigated what additional properties are needed 
+in order to guarantee the isomorphy of two M-grammars. These properties relate 
+to the primitive subgrammars of the two M-grammars and the translations between
+the two and involve extra conditions within the sets of primitive subgrammars 
+of each M-grammar.
+$CH 2, Subgrammar processes
+In Rene@'(68) a subgrammar was defined as the tuple
+$UM
+
+SG%k% = <O%k%,I%k%,SG%k.0%,SG%k.1%,..,SG%k.n%>,
+
+together with the conditions
+
+   {O%k.0%,..,O%k.n%} is a category set;          (revised)
+
+   EXIST(int1..intm)[O%k%=UNION(O%k.int1%,..,O%k.intm%)];
+
+   FORALL(A in I%k%)EXIST(int1..intm)EXIST(B%int1%..B%intm%)
+   [(FORALL(j)[B%intj% in I%k.intj%]) and (A=UNION(B%int1%,..,B%intm%))];
+
+   FORALL(i)[(O%k.i%<=O%k%) or (EXISTS(j)[O%k.i% in I%k.j%])];
+
+$QM
+$MA 3
+FORALL(i)FORALL(A in I%k.i%)[(EXISTS(B in I%k%)[A<=B])or(EXISTS(j)[A=O%k.j%])].
+$UM
+
+$QM
+$MA 0
+I prefer to somewhat refine the notion category set compared to Rene@'(68); its
+elements should have no strees in common.
+$NL
+In Rene@'(72) an example was given with four main subgrammars, one of which was
+specified further:
+$UM
+
+   O%0%=UTT               I%0%={BVAR}
+      O%0.0%=SENT            I%0.0%={CL}
+      O%0.1%=CL              I%0.1%={NP,BVERB,VAR,BTENSE} 
+         O%0.1.0%=CL(init)      I%0.1.0%={BVERB,VAR(m,s),VAR(n,s),...}
+         O%0.1.1%=CL(init,subst)I%0.1.1%={CL(init),NP(m,s),NP(n,s),...}
+         O%0.1.2%=CL            I%0.1.2%={CL(init,subst),BTENSE}
+      O%0.2%=NP              I%0.2%={BNOUN,CL}
+      O%0.3%=UTT             I%0.3%={SENT}
+
+$QM
+We will now interpret these kind of specifications as claims about the grammar
+as a program. The claim is that a subgrammar program, or process, will produce 
+_all_ strees in its output ensemble if _all_ strees of elements of its input 
+set are begin fed into it, given enough time, and that each stree that is an
+element of a member of the input set is needed for at least one output stree.
+So the claims in the example are that the grammar program will generate all 
+utterances from all basic strees, SG%0.3% must make all utterances from all 
+sentences, SG%0.0% all sentences from all clauses, and so on. The above 
+conditions on input and output ensembles can be given a nice interpretation as 
+relations between the inputs and outputs of subprocesses and the process as a 
+whole. In fact, as we will find in section 2.1, it follows in general, that a 
+subgrammar process consisting of sub-subgrammar processes running in parallel 
+and communicating all relevant results to one another, will satisfy the claims 
+implied by its specifications, if the sub processes do so and if the input and 
+output ensembles satisfy the ensemble conditions. 
+Restrictions on the freedom of the subgrammar production system might
+be realized by not allowing messages from certain processes to certain others.
+Note that the above sort of claims imply that the meaning functions decom%k%
+are total, whereas the com%k% are partial functions in general.
+$NL
+The ultimate proof of the correctness of a given grammar thus comes down to
+$NL
+1. Proof the ensemble conditions at each level,
+$NL
+2. Proof directly the claims of lower-level subgrammar processes.
+$MA 3
+If possible for Mrules else for more primitive subgrammar processes. 
+$MA 0
+$NL
+Dividing a grammar into subgrammars in this way gives at least a hold to 
+proving that a grammar correctly describes the language. Both proof steps will 
+in general involve both mathematical and linguistic evidence.
+$CH 2.1, Ensemble conditions
+Below we list each ensemble condition together with its interpretation in 
+terms of processes.
+$UM
+
+{O%k.0%,..,O%k.n%} is a category set:
+
+No stree is produced more than once, i.e. by more than one subprocess.
+
+EXIST(int1..intm)[O%k%=UNION(O%k.int1%,..,O%k.intm%)]:
+
+$QM
+Each stree to be produced by the whole process is produced by one subprocess.
+$NL
+As a consequence, the input sets of subprocesses delivering these strees, and
+only these, are needed for the (direct) production of the whole process's 
+output.
+$UM
+
+FORALL(i)FORALL(A in I%k.i%)[(EXISTS(B in I%k%)[A<=B])or(EXISTS(j)[A=O%k.j%])]:
+
+$QM
+Every stree which is proper input for a subprocess can be delivered to that
+subprocess, either because it is proper input of the whole process, or output
+of another subprocess. 
+$NL
+We can conclude that, if there are no cycles, i.e. if no two strees are needed 
+for each other's construction, the input of the whole process is sufficient to 
+yield all output, if the same holds for the subprocesses.
+$UM
+
+FORALL(i)[(O%k.i%<=O%k%) or (EXISTS(j)[O%k.i% in I%k.j%])]:
+
+$QM
+Every stree produced by a subprocess is either proper output of the whole 
+process or proper input for another subprocess. 
+$NL
+Subprocesses do not produce too much, so that their inputs are really needed 
+for the output of the whole process, if they are really needed for the outputs 
+of the subprocesses.
+$UM
+
+FORALL(A in I%k%)EXIST(int1..intm)EXIST(B%int1%..B%intm%)
+[(FORALL(j)[B%intj% in I%k.intj%]) and (A=UNION(B%int1%,..,B%intm%))]:
+
+$QM
+Each stree which is a proper input for the whole process is proper input for at
+least one subprocess. 
+$NL
+We can conclude that all input strees are needed to construct all output. 
+$UM
+
+$QM
+So the input set is necessary and sufficient for the production of the output,
+if the same holds for all subprocesses. Note that we implicitly assumed the
+production system to be free. If one chooses to restrict this freedom, one will
+have to investigate how the correctness of the grammar is affected.
+$CH 3,Globally primitive subgrammars.
+It seems possible to increase the demands on the processes corresponding to
+primitive subgrammars by the following:
+$UM
+
+a. Each tuple of strees satisfying I%k% leads to an output stree in O%k%, and
+   all such tuples are needed for the construction of O%k%, so that both
+   decom%k% and com%k% are total functions.
+b. The union of the set of all primitive output ensembes and all primitive 
+   input sets (of the whole M-grammar) is a category set; no stree can be an
+   element of two different ensembles.
+
+$QM
+At first sight the last demand could seem too strong, but as we explain below,
+it can always be satisfied. If it holds we will call these subgrammars globally
+primitive, while their input and output ensembles will be called primitive.
+$CH 3.1,Primitive ensembles
+Here we will give a construction of the set of primitive ensembles.
+A primitive ensemble is defined to be either
+$NL
+1. a basic primitive ensemble, which is an ensemble of basic strees such that
+all attributes of every stree are identical, or
+$NL
+2. the output ensemble of an globally primitive subgrammar, which has only 
+primitive ensembles in its input tuple.
+$NL
+So, in order to find all primitive ensembles of a grammar, one starts with
+the set of basic primitive ensembles. Then one is to subdivide all primitive
+subgrammars by splitting the input tuples (and the output ensemble accordingly)
+in such a way that resulting tuples contain as many primitive ensembles as 
+possible. Subgrammars with only primitive ensembles in the input set are 
+globally primitive and their output ensembles are added to the set of
+primitive ensembles. This process proceeds until the set of input ensembles
+of all primitive input tuples equals the union of the set of all output 
+ensembles and the set of basic primitive ensembles. Then condition b. is
+satisfied.
+$NL
+The interpretation of a primitive ensemble is that it consists of strees that
+are indistinguishable for the grammar. 
+The grammar may now be characterized at this lowest possible level by
+$NL
+$NP
+1. the set of all primitive ensembles G
+$NL
+2. for each primitive ensemble P, sets of so-called primitive connections
+$MA 3
+C&i&(P), which are those elements of G of which the i&th& input ensemble is 
+equal to P.
+$MA 0
+$NL
+The primitive connections can be seen as the basic building blocks for
+building d-trees. They give an algebra-like structure to G, which we will want
+to be preserved by the translation. 
+$CH 4,Isomorphic translation
+Translation takes place at the level of Mrules. Just like the whole grammar,
+each Mrule may be characterized by the set of primitive ensembles it contains.
+We will call these sets (and also the Mrules themselves) by M1,M2,..... .
+A translation of one grammar to the other is effected by two functions: 
+$NL
+1.a function T1 that assigns to each basic expression in one grammar a set of 
+basic expressions in the other.
+$NL
+2.a function T2 that assigns to each Mrule in one grammar a set of Mrules 
+in the other.
+$NL
+We will want the translation to be isomorphic, by which we mean that the 
+translation of every well-formed Mrule derivation tree, which is a set of 
+d-trees of the other grammar, contains at least one well-formed element.
+$CH 4.1,Translation function
+At the level of primitive ensembles the two functions T1 and T2 induce a single
+function T from primitive ensembles of one grammar to sets of primitive 
+ensembles of the other. For a basic primitive ensemble P one has (accents 
+denote the goal language)
+$NL
+1.T(P)%def%={P'%1%,..,P'%n%} such that 
+$NL
+$MA 2
+FORALL(P'%i%)EXISTS(t' in P'%i%)EXISTS(t in P)[ t' in T1(t) ] and
+$NL
+FORALL(t in P)FORALL(t' in T1(t))EXISTS(P'%i%)[ t' in P'%i% ]
+$NL
+$MA 0
+For a non-basic primitive ensemble, T is defined as
+$NL
+2.T(P)%def%=UNION(M'i%1%,..,M'i%n%) such that
+$NL
+$MA 2
+{M'i%1%,..,M'i%n%} = T2(Mj) where P in Mj.
+$NL
+$MA 0
+The T function indicates in what way sets of strees that are indistinguishable
+by one grammar can in principle be translated into indistinguishable sets of
+the other grammar.
+$CH 4.2,Isomorphy
+We will now try to find a criterium sufficient to guarantee isomorphy between
+two grammars. 
+$NL
+The well-formedness of a d-tree implies that the Mrules can be replaced by 
+globally primitive subgrammars, such that the (primitive) output ensemble
+of each such subgrammar equals its parent's input ensemble it is connected to.
+$NL
+Hence, isomorphy is guaranteed if the translation of each 'globally 
+primitive' d-tree yields at least one such d-tree, which has fitting input and
+output ensembles everywhere. This will be so if the basic building blocks
+of these primitive d-trees, the primitive connections, are preserved by the
+translation. It seems that we need the following condition for translation
+(in both directions):
+$UM
+
+   FORALL(P%1%)FORALL(P%2% in C&i&(P%1%))FORALL(P'%1% in T(P1))
+   EXISTS(P'%2% in INTERSECTION(C'&i&(P'%1%),T(P%2%)).
+   
+$QM
+Then at each stage in the derivation process, i.e. at each node in the
+derivation tree, at least one stree is produced. Indeed, at basic level,
+at least one basic primitive ensemble will be instantiated by a translated
+basic expression. Furthermore, by virtue of the above condition, every 
+translated node will have at least one globally primitive subgrammar that can 
+consume its input, and which because of demand a. of section 3 will produce 
+output. At the top of the derivation tree, at least one utterance will be 
+produced.
+$CH 5,Discussion
+We have tried to show at two levels why a continued decomposition of a grammar
+can be useful.
+$NL
+Firstly, in section 2, we showed that such a decomposition can be a handle to
+proof that the grammar indeed describes the language one wants to describe.
+Ultimately, however, the proof of a grammar's correctness will still rely on 
+the soundness of linguistic evidence needed to proof the ensemble conditions 
+and the correctness of lower-level subgrammars.
+In this section it is rather essential that the meaning of subgrammars is that
+of a free production system of sub-subgrammars. However, the ensemble 
+conditions as we wrote them, are apt for ordering subgrammar application 
+through category names, as in Rosetta2. 
+$NL
+Secondly, in the sections 3 and 4, we tried to show how an internal division 
+of Mrules could in principle be used to prove isomorphy of translation between 
+two Mgrammars. Of course, there is a problem with the primitive level which we
+had to construct in order to be able to formulate the proof requirements. The
+rulewriter does not (want to) know about this level, and the degree of 
+decomposition is too large to make a human proof possible.
+Perhaps a program could be developed to proof isomorphy given the sets of 
+M-rules of two grammars, and the translation functions.

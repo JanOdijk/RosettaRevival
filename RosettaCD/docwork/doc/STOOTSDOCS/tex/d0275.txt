@@ -1,0 +1,1160 @@
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.software}
+   \RosTitle{A dictionary for testing purposes}
+   \RosAuthor{Joep Rous}
+   \RosDocNr{275}
+   \RosDate{September 21, 1988}
+   \RosStatus{concept}
+   \RosSupersedes{270}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Dictionary, testing}
+   \MakeRosTitle
+\section  {Introduction}
+In this document we will describe the dictionaries that are relevant for 
+testing the trajectory from the layout modules up to and including the
+transfer modules. First a short overview of the dictionaries
+is given, next there is a section that deals with the structure of the 
+dictionary compiler. In Chapter 4 the syntax of the dictionary file will be 
+given, elucidated with some examples. The usage of the compiler is described
+in Chapter 5. Finally, in Chapter 6 it is explained
+how the keys that are used in the dictionary files can be defined\footnote{In 
+the examples of chapter 4 I will use integer keys instead of the string keys 
+which are introduced in chapter 6}.
+
+\section {Overview}
+\subsection {FIXIDDICT}
+In Rosetta3 the FIXIDDICT lexicon is used for recognizing {\em fixed idioms}
+in the input sentence. It contains a list of all the fixed idioms that
+Rosetta3 must be able to deal with. Idioms can be treated as {\em fixed
+idioms} if they obey the following criteria: \\
+\begin {enumerate}
+  \item The words of the idiom always occur in a fixed order (e.g. "by and 
+large", "op en top").
+  \item No other words can occur in between the idiom words.
+  \item All idiom words, except the last one, are unchangeable, that is, not
+sensible for inflection and/or derivation. The last word of the idiom may
+take inflectional or derivational {\em suffixes}. (e.g. "kant en klaar" can be
+treated as a fixed idiom, but "heer des huizes" cannot be a fixed idiom)
+\end {enumerate}
+
+If an idiom from the FIXIDDICT lexicon appears in the input sentence it is
+treated by the Rosetta3 morphological module as if it were one single word.
+Of course, the non-idiom reading is also tried by the system.
+
+\subsection {MDICT}
+The MDICT lexicon of Rosetta3 is used to make the transition from strings to
+fkeys and vice versa. It contains 5-tuples of the form: 
+\begin{verbatim}
+   <stem, FON, CC, AG, fkey>
+
+   Key: {(stem, fkey, FON)}
+
+\end{verbatim}
+
+Here, FON specifies the phonetical information associated with the word, CC
+specifies the context condition and AG specifies whether the entry is only
+relevant for analysis, generation or for both.
+
+(Notice: a stem may also be a fixed idiom, e.g. "by and large")
+
+\subsection {SDICT}
+After the analytical segmentation fkeys are translated into skeys. The
+fkey-skey mapping is specified in the SDICT lexicon. E.g. the lexicon contains
+information for translating the fkey of "lopen" into the skeys belonging to
+"lopen", "oplopen", "aflopen", etc.. This is accomplished by specifying a set
+of pairs $<$skey, fkey$>$. Moreover, with each pair $<$skey, fkey$>$ a kind of 
+condition on the context can be specified. This condition must be satified 
+before the translation will be made. The context condition can be specified
+by means of a number of fkeys, of which the appearance in the input sentence is
+obligatory. In generation, the condition is not relevant because the M-grammar
+guarantees that it is satisfied by the M-grammar.
+
+For efficiency reasons we give the fkey and skey of most of the
+$<$skey, fkey$>$ pairs the same value.
+Only in cases where we have an 1 to n relation between fkey and skey their 
+value will be different. In the implementation SDICT contains only these 
+deviating $<$skey, fkey$>$ pairs. If the morphological analyzer cannot find an
+fkey in SDICT it assumes that the corresponding  skey has the same value (in
+generation the same holds for skeys and fkeys resp.).
+
+\subsection {BLEX}
+The BLEX dictionary contains, as it did in Rosetta2, pairs 
+\begin{verbatim}
+$<$skey, basic S-tree record$>$
+\end{verbatim}
+
+\subsection {ILDICT}
+The ILDICT lexicon of Rosetta3 is used to translate skeys in the 
+corresponding mkeys ( = meaning keys ). The structure of the lexicon
+entries is as follows:
+
+\begin{verbatim}
+   <AG, skey, mkey, md, spref, mpref>
+
+   Key: {(skey,mkey)}
+
+\end{verbatim}
+Here, {\em md} is a meaning description of the entry, {\em spref} specifies 
+an order between entries 
+with the same skey and {\em mpref} specifies an order between entries with the
+same mkey. The attribute {\em AG} indicates whether the current entry is to be
+used in analysis, in generation or in both.
+
+\subsection{SEMI-IDDICT}
+
+The SEMI-IDDICT lexicon defines a relation between basic expressions with a 
+literal interpretation and their corresponding semi-idiomatic counterparts. The
+dictionary contains tuples of the form (cf. document r0269):
+
+\begin{verbatim}
+   < skey-litteral, skey-argument, nr-argument, skey-semiidiom >
+
+   Key: {(skey-semiidiom), (skey-litteral, skey-argument, nr-argument)}
+
+\end{verbatim}
+
+\subsection{IDDICT}
+
+The IDDICT lexicon defines a relation between a sequence of basic 
+expressions which are used in the idiom and a basic expression for the
+idiom as a whole. The
+dictionary contains tuples of the form:
+
+\begin{verbatim}
+   < skey-sequence, idiom-pattern, skey-idiom >
+
+   Key: {(skey-sequence, idiom-pattern), (idiom-pattern, skey-idiom)}
+
+\end{verbatim}
+
+\section {The dictionary compiler}
+
+The 7 lexicons that were mentioned in the previous sections should all be 
+filled in a consistent way, e.g. if an idiom is present in FIXIDDICT it also
+should appear in MDICT, each BLEX entry should have at least one corresponding
+MDICT entry, etc.. It seemed to us that the linguist  filling the lexicon would 
+get a better overview if (s)he could specify all information for 
+all lexicons in one single dictionary in a clear way. 
+
+The idea is that each dictionary entry is specified according to a fixed syntax,
+which allows the user to specify in each dictionary-entry information for each 
+of the 7 Rosetta3 lexicons.
+The NEWDICTGEN compiler checks this and extracts from each entry specification 
+the information needed to add one or more entries to the Rosetta3 lexicons.
+One can look upon this process as a kind of normalization action that is 
+performed by the dictionary compiler.
+
+The dictionary will contain attribute values of which the type has been defined
+in Domain T. The compiler checks whether these attribute values
+are compatible with the current Domain. For that purpose the domain compiler
+generates a number of PASCAL modules which are able to convert attribute
+values of type STRING to the corresponding values which are defined in the
+PASCAL version of Domain T. If this conversion fails the compiler knows that
+it is an erroneous attribute value. 
+
+This first version of the compiler is not very subtle in the sense that it does 
+not perform any consistency checks as mentioned in the first alinea of this 
+section. That is, however, no fundamental problem but merely a lack of time. 
+The consistency checks can easily be incorporated in the compiler in the 
+future.
+
+\section {The dictionary syntax}
+
+At the most global level the syntax of the dictionary is: 
+
+\begin {tabbing}
+   \= Dictionary \= :: \= \kill
+   \> Dictionary \> :: \{ Entry-part \} "@" \\
+   \> Entry-part \> :: MDICT-part ":" SDICT-part [ ":" SEMI-IDDICT-part ]\\
+   \>            \>    \>[":" IDDICT-part ] ":" ILDICT-part ":" BLEX-part ";" 
+
+\end {tabbing}
+
+\subsection {The MDict part}
+
+The syntax of the MDICT-part is as follows:
+
+\begin {tabbing}
+   \= MDICT-part \= \kill
+   \> MDICT-part \> :: [ [ AG switch ] string-part [ fon-spec ] [ CC-spec ] ] \\
+   \> fon-spec   \> :: "$<$" identifier \{ "," identifier \} "$>$" \\
+   \> CC-spec    \> :: identifier \\
+   \> AG-switch  \> :: "/" ( "A" $\mid$ "G" $\mid$ "AG" )
+
+\end {tabbing}
+
+The {\em MDICT-part} is optional because it must be possible to specify 
+an abstract BLEX entry.
+The {\em string-part} in an {\em MDICT-part} specification may not contain 
+blanks and the string must at least contain one non-blank character. If the 
+string is a fixed idiom, the words of the idiom should be separated by an 
+underscore symbol "\_". At one place in the idiom the character "\#" may appear. 
+This character is a directive for the compiler not to put the complete idiom in 
+the FIXIDDICT lexicon but just the idiom string up to the "\#" character. 
+A reserved character, e.g.
+":" , "/" or "\#", in a string should be preceded by a backslash "\\" character.
+
+In the
+{\em fon-spec} part the attribute values according to the phonetical 
+information should be specified. Unfortunately, the phonetical information type 
+has not yet been included in the DOMAIN-T specification.
+
+The {\em AGswitch} part specifies whether the string is relevant for
+Analysis (={\bf /A}), Generation (={\bf /G}) or both (={\bf /AG}).
+
+\begin{verbatim}
+Example :
+
+     Duitsland               : ........................
+     actrice < true, false > : ........................
+     op_en_top               : ........................
+     kant_en_kla#ar          : ........................
+
+     an      CCvowel         : ........................
+     a       CCcons          : ........................
+     
+\end{verbatim}
+
+\subsection {The SDict part}
+
+The syntax of the SDICT-part is:
+
+\begin {tabbing}
+   \= SDICT-part \= \kill
+   \> SDICT-part \> :: skey [ "," fkey [ context-set ] ] \\
+   \> context-set \> :: "$<$" cckey \{ "," cckey \} "$>$" \\
+   \> cckey       \> :: dictionary-key \\
+   \> skey        \> :: dictionary-key \\
+   \> fkey        \> :: dictionary-key
+\end {tabbing}
+
+In the Rosetta3 system the value of an fkey is by default the same as the
+value of the corresponding skey. This fact is expressed in the above syntax
+specification, if the fkey is omitted the compiler assumes that it has the
+same value as the skey.
+Only in the case that an fkey corresponds with a number of skeys it is 
+allowed to specify the fkey. If the compiler discovers that an fkey is
+specified it takes the MDICT-part specification of the entry as comment.
+Therefore, the fkey in these entries should refer to an entry that does have a 
+correct MDICT-part. E.g. the verbs "lopen", "aflopen", "oplopen" could have
+the following entries:
+
+\begin{verbatim}
+   loop    : 525      : ..........
+   loop_af : 526, 525 : ..........
+   loop_op : 527, 525 : ..........
+\end{verbatim}
+
+In this example, the stem "loop" corresponds with fkey and skey 525. However,
+the stem of the verb "aflopen" is also "loop" and corresponds with fkey 525,
+whereas the skey is 526. The verb "oplopen" corresponds with fkey 525 and skey 
+527.
+
+In the above example we could also specify conditions on the context, because
+the particle "af" should be present if fkey 525 is to be translated in skey 526
+. Suppose the fkey value of "af" is 201 and that of "op" is 604 then the 
+entries could also look like:
+
+\begin{verbatim}
+   loop    : 525              : ..........
+   loop_af : 526, 525 < 201 > : ..........
+   loop_op : 527, 525 < 604 > : ..........
+\end{verbatim}
+
+Notice that the strings "loop\_af" and "loop\_op" will not be found in MDICT 
+because the MDICT-parts of these two entries will be viewed as comment.
+
+Verbs with a particle, like "afkondigen" and "aankondigen", of which 
+the form without the particle ("kondigen") does not exist, should be specified 
+as follows:
+
+\begin {verbatim}
+   kondigen{_af}  : 932, 932 <201> : ...........
+   kondigen_aan   : 933, 932 <620> : ...........
+\end{verbatim}
+
+The entry for the verb "afkondigen" is now used to define the fkey and the 
+stem of the verb ( therefore "\_af" must placed between comment brackets ). 
+
+\subsection {The Semi-IdDict part}
+
+The syntax of the Semi-IdDict-part is:
+
+\begin {tabbing}
+   \= Semi-IdDict-part \= \kill
+   \> Semi-IdDict-part \> :: sidkey-specs \\
+   \> sidkey-specs\> :: sidkey-spec \{ "," sidkey-spec \} \\
+   \> sidkey-spec \> :: "\#"arg-nr "=" arg-skey sid-skey sid-mkey \\
+   \> arg-nr      \> :: dictionary-key \\
+   \> arg-skey    \> :: dictionary-key \\
+   \> sid-skey    \> :: dictionary-key \\
+   \> sid-mkey    \> :: dictionary-key
+\end {tabbing}
+
+It is obvious that the semi-idiom part has to be an optional part of
+a lexicon entry. This fact has already been expressed by the definition of the
+{\em Entry-part} ( the first definition of section 4).
+The {\em arg-nr} part specifies the argument position of
+the semi-idiom argument, whereas the {\em arg-skey} part specifies the skey of 
+the argument. For each semi-idiom a specific skey is introduced. This skey
+is specified in the {\em sid-skey} part. The corresponding mkey is specified
+in the {\em sid-mkey} part.
+\begin{verbatim}
+Examples:
+
+les        : 234 : ..............;
+voordracht : 745 : ..............;
+geef       : 23  : #2=234 567 6789,
+                   #2=745 890 2332 : ................;
+\end{verbatim}
+
+
+\subsection {The IdDict part}
+
+The syntax of the IdDict-part is:
+
+\begin {tabbing}
+   \= IdDict-partttt \= \kill
+   \> IdDict-part \> :: id-specs \\
+   \> id-specs    \> :: id-spec \{ "," id-spec \} \\
+   \> id-spec     \> :: skey-seq idpattern-set id-skey id-mkey \\
+   \> skey-seq   \> :: "$<$" arg-skey \{ arg-skey \} "$>$"\\
+   \> idpattern-set\> :: "[" idpattern \{ idpattern \} "]" \\
+   \> arg-skey    \> :: dictionary-key \\
+   \> id-skey    \> :: dictionary-key \\
+   \> id-mkey    \> :: dictionary-key \\
+   \> idpattern  \> :: identifier
+\end {tabbing}
+
+The idiom part is an optional part of
+a lexicon entry as can be deduced from the definition of the
+{\em Entry-part} ( the first definition of section 4).
+An idiom specification consists of a sequence of skeys which occur in the
+idiom (the {\em skey-seq} part), the set of idiom patterns which define the 
+ways in which the idiom can be used in a sentence (the {\em idpattern-set} 
+part), one specific skey for the idiom ({\em the id-skey}) and its 
+corresponding mkey ({\em id-mkey}).
+\begin{verbatim}
+Examples:
+
+pijp       : 234 : ..............;
+Maarten    : 745 : ..............;
+aan        : 1256: ..............;
+geef       : 23  : <23 234 1256 745> [ synidpat1 synidpat2 ] 23567 789
+                 : ..............;
+\end{verbatim}
+\subsection {The ILDict part}
+
+The syntax of the ILDICT-part is:
+
+\begin {tabbing}
+   \= ILDICT-part \= :: \= \kill
+   \> ILDICT-part \> :: [ mkey-specs ] \\
+   \> mkey-specs  \> :: mkey-spec \{ "," mkey-spec \} \\
+   \> mkey-spec   \> :: mkey ["A"$|$"G"] ["s" pref] ["m" pref] [""" md """] \\
+   \> mkey        \> :: dictionary-key \\
+   \> pref        \> :: number \\
+   \> md          \> :: string \\
+\end {tabbing}
+
+The ILDICT-part is optional because certain basic expressions are introduced
+syncategorematically in the M-grammar. By means of the of the attribute "A" or
+"G" it can be specified whether the translation is relevant for analysis or
+for generation only. If the attribute is omitted the translation will be 
+possible in both analysis and generation. The compiler uses the default value 
+0 if the value of the preference bonusses ( {\em pref } ) is omitted. The "m"
+preference bonus is used to distinguish between the alternatives during the
+mkey $\rightarrow$ skey translation, whereas the "s" preference bonus is used 
+to order alternatives during the skey $\rightarrow$ mkey translation.
+
+\begin{verbatim}
+Examples:
+
+   loop : 525 : 10987 s1 "gaan"       ,
+                10988 s2 "hard-lopen" 
+                : BVERB(.........);
+   loop : 788 : 12345 s1 "het lopen",
+                54321 s2 "van geweer"
+                : BNOUN(.........);
+\end{verbatim}            
+                                
+
+\subsection {The BLex part}
+
+The syntax of the BLEX-part is:
+
+\begin {tabbing}
+   \= BLEX-part \= \kill
+   \> BLEX-part \> :: [ category "(" [ attrvalue \{ "," attrvalue \} ] ")" ] \\
+\end {tabbing}
+
+The order and values of the attribute in the BLEX-part specification should be 
+according to DOMAIN-T. 
+\begin{verbatim}
+Example:
+
+welk :176: 32400 :
+         BDET (
+         {req:}             omegapol,
+         {possnietnp:}      false,
+         {definite:}        indef,
+         {posspred:}        false,
+         {possnumbers:}     [singular, plural],
+         {posscomas:}       [count, mass],
+         {detnpmood:}       wh,
+         {eFormation:}      RegEformation,
+         {enFormation:}     false);
+vulkaan :207: 457890 : BNOUN (
+         {req:}              omegapol,
+         {pluralforms:}      [enPlural],
+         {genders:}          [mascgender],  {*morph* ++} 
+         {class:}            omegaTimeAdvClass,
+         {deixis:}           omegadeixis,
+         {aspect:}           omegaAspect,
+         {retro:}            false,
+         {sexes:}            [],                    {9/3}
+         {subcs:}            [othernoun],
+         {temporal:}         false,
+         {possgeni:}         false,
+         {animate:}          inanimate,
+         {human:}            nohuman,              {9/3}
+         {posscomas:}        [count],
+         {thetanp:}          omegathetanp,
+         {nounpatterns:}     [],
+         {prepkey:}          0,
+         {personal:}         true);
+\end{verbatim}
+
+The BLEX-part is optional because it is possible that
+several MDICT entries correspond with one and the same BLEX entry. In these 
+cases the BLEX-part should be specified in one of the dictionary entries, e.g.
+the determiners "a" and "an" in ENGLISH should be specified as:
+
+\begin{verbatim}
+   a   CCcons   : 512 : :DET();
+   an  CCvowel  : 512 : :;
+
+\end{verbatim}
+
+\section { Compiler usage }
+
+At the moment the lexicon is divided into a number of sub-lexicons. Each
+sub-lexicon contains entries with a specific syntactical category, i.e.:
+
+\begin{verbatim}
+  bnoun.dict
+  bverb.dict
+  badv.dict
+  badj.dict
+  prep.dict
+  particle.dict
+  pronoun.dict
+  conj.dict
+  misc.dict
+\end{verbatim}
+
+Each of these sub-lexicons must obey the syntax which is defined in the previous
+sections of this document.
+
+The correctness of the sub-lexicons, that is, the correctness according to
+the lexicon syntax and the correctness according to DOMAIN-T, can be checked
+by means of the following command:
+
+\begin{verbatim}
+   lbuild dutch:blexbnoun.isf
+or
+   sbuild english:blexprep.isf
+etc.
+\end{verbatim}
+
+The final Rosetta3 lexicons ( that is, blex, fixid, sdict, siddict, iddict, 
+mdict and 
+ildict) for a specific language can be created by entering one single command, 
+as follows:
+
+\begin{verbatim}
+   lbuild dutch:blex.isf
+\end{verbatim}
+
+\section{Key definitions}
+
+The syntax definitions of the previous sections specified that the keys
+of the lexicons should be {\em dictionary-keys}. In this section we will give
+a definition of the the term dictionary-key.
+
+In order to improve the readability of the dictionary we allow dictionary keys
+to be of type string preceded by a dollar character `\$':
+\begin {tabbing}
+   \= dictionary-key \= \kill
+   \> dictionary-key \> :: ("\$" string) $\mid$ integer \\
+\end {tabbing}
+(To be as flexible as possible, we also allow the user to specify the internal
+integer dictionary key value. This, however, may cause errors because the
+integer value may already be used by the dictionary compiler.)
+
+\begin{verbatim}
+Examples:
+
+   loop : $s_loop_verb : $m_loop_gaan s1 "gaan"       ,
+                         $m_loop_hard s2 "hard-lopen" 
+                : BVERB(.........);
+   loop : $s_loop_noun : $m_het_lopen s1 "het lopen",
+                         $m_loop_v_geweer s2 "van geweer"
+                : BNOUN(.........);
+\end{verbatim}            
+
+There will be 3 types of dictionary keys:
+\begin{enumerate}
+   \item dictionary-{\em fkeys}
+   \item dictionary-{\em skeys}
+   \item dictionary-{\em mkeys}
+\end{enumerate}
+
+All fkeys and skeys should be
+specified in file {\bf language:skeydef.kdf}
+and
+mkeys in {\bf interlingua:mkeydef.kdf}. The syntax of these key definition 
+files is as follows:\\
+
+\begin {tabbing}
+   \= KeyDefinition \= :: \= \kill
+   \> KeyDefinition \> :: \{ string \} "@" \\
+   \> string        \> :: (letter $\mid$ cypher $\mid$ "\_") \{ letter $\mid$ cypher $\mid$ "\_" \} \\
+\end {tabbing}
+
+\section {Conclusions}
+The dictionary approach presented in this document has certainly some 
+disadvantages. It has not the userfriendly userinterface of the 
+Editor-Generator we previously had in mind,  instead, the standard text editor
+must be used. 
+The approach is not intended for a dictionary with a large number of 
+entries. If the number of entries in the dictionary grows, the entry look-up 
+speed for the user will decrease .
+
+An advantage is that we have no serious B-LEX conversion problems ( cf. document 196) .
+If DOMAIN-T is altered in such a way that it is incompatible with
+the dictionary it will not be possible to integrate it. Because
+the dictionaries depend on the DOMAIN-T file the RBS-system will try to 
+generate 
+new Rosetta3 dictionaries if DOMAIN-T changes. This will fail, however, if
+they are incompatible. The user can only put his stuff into the archive if he 
+also updates the lexicons.
+
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1 (RWR-102-RO-90#1-RO)}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

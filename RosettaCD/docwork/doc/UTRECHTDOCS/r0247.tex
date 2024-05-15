@@ -1,0 +1,1495 @@
+\documentstyle{Rosetta}
+ 
+\begin{document}
+   \RosTopic{General}
+   \RosTitle{Using Van Dale For Rosetta}
+   \RosAuthor{J.P. Medema, H.E. Smit}
+   \RosDocNr{R0247}
+   \RosDate{April 11, 1988}
+   \RosStatus{Informal}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Philips}
+   \RosKeywords{Mapping, Van Dale, Rosetta Dictionaries}
+   \MakeRosTitle
+%
+%
+\setlength{\parskip}{2mm}
+\setlength{\parindent}{0mm}
+\hyphenation{Engels Ne-der-lands}
+ 
+\section{Introduction}
+ 
+\subsection{General}
+ 
+The dictionaries of Rosetta will be developed using the Van Dale dictionaries 
+as much as possible. Therefore, in this document we present 
+possibilities and problems of using
+these files for this purpose. 
+ 
+The report is divided into four chapters of which the introduction is one.
+In the introduction --besides a general overview-- also a `solution' of an 
+earlier mentioned problem with dictionaries in Rosetta3 is given.
+ 
+Chapter two describes the relation between the several Van Dale dictionaries
+in relationship with the use of them creating the Rosetta dictionaries. It also
+describes several programs made (or to be made) for formalization of the Van 
+Dale dictionaries.
+ 
+In chapter three a more or less detailed description is given of how to convert 
+the Van Dale dictionaries to Rosetta dictionaries (as far as possible --if
+possible at all). A formal description of the Rosetta dictionaries is given and 
+the constructs used in the Van Dale dictionaries are explained.
+ 
+The attributes of the Rosetta dictionaries and a proposal to fill them on the 
+basis of the Van Dale dictionaries is given in the last chapter, chapter four. 
+As much as possible is described how to fill the Dutch attributes (whether 
+automatically or not).
+ 
+\subsection{The Conversion Problem}
+ 
+The conversion problem (as described in \cite{ro:conv}) is (in short) the 
+following:
+the structure of the Rosetta dictionaries cannot change without making 
+conversion programs {\em by hand}. This is an effort which will return every 
+time the structure changes. This change occurs too often to do it by hand.
+ 
+It (the problem) is thought to be solved using a commercially available 
+database management 
+system instead of a self-implemented database. This approach has several 
+advantages of which the next is the most important. Most of those 
+database systems do have a program which can convert tables (automatically)
+from one format into another. This solves the problem in the aforementioned 
+report. 
+ 
+Furthermore, there are DBMSs which can check several 
+database requirements. These requirements can be of a tuple, intertuple, and 
+intertable level. This means that several check programs (for checking the 
+requirements) are not to be written but only to be specified.
+ 
+\newpage
+\section{The Use Of Van Dale Dictionaries}
+ 
+\subsection{In General}
+ 
+A detailed description of the N-N dictionary of Van Dale can be found in 
+document \cite{sm:descr}. The other dictionaries have not been described in a
+document, but have been investigated too. For the N-E, a {\em syntax} has 
+been written.
+ 
+The N-N gives (of course) a vocabulary that fits for Dutch. The N-E has been 
+based 
+mainly on the same vocabulary; both files share the majority of their entry 
+words. The E-N has been based on an English vocabulary. This means that 
+the E-N is
+{\em not} the reverse of the N-E. So, the N-E gives English words that fit as 
+translation for the set of words that are characteristic for the Dutch language
+(and for the Dutch culture, way of living etc.), which does not imply that 
+these words form a good vocabulary for English. The same holds for the 
+translations in the E-N: these words will not form a good vocabulary for Dutch
+(Examples: words like ``tea-things'', ``tea-shop'' and ``tea-lead'' can be found
+in the E-N, but their translations, resp. ``theeboel'', ``theewinkel'' and 
+``theelood'', which are correct Dutch words, cannot be found in the N-E or 
+N-N. It seems that only 40 \% of the translations\footnote{This 
+is a very rough estimate, however.} in the E-N can be found 
+in the N-E ).
+ 
+The ideal situation would be to {\em merge} both files, but this is extremely 
+difficult, because all `new' Dutch words should have the right attributes, 
+like {\em article} (for nouns) and 
+{\em conjugation} (for verbs). Also, one should try to avoid that 
+certain words occur in the dictionary {\em twice}.\footnote{Say, we have the 
+word 
+{\em bank} in the Dutch vocabulary --from the cross-section of N-N and N-E--, 
+and get the same string from the E-N as translation. How do we know 
+whether or not this word
+is a `new' meaning? And if not, to which of the meanings of ``bank'' that we 
+already had does it belong? 
+Of course, evaluating several hundreds of thousands translations
+`by hand' in such a way is {\em not} possible!}
+ 
+Another possibility is to use {\em two separate} dictionaries: the N-E for 
+translating Dutch into English and the E-N for translating English into Dutch
+(which implies that there is no real IL at dictionary-level). Now, there is 
+no merging problem, but there are still problems to give all attributes of the
+translations their values. For Dutch this will be impossible: some Dutch 
+attributes have {\em several} frequent values. 
+The attribute {\em pluralforms} for nouns for instance has two frequent
+values: {\em en-plural} and {\em s-plural}, which do not correspond to
+certain stem-endings and thus cannot be filled automatically. 
+Therefore, all Dutch nouns that are given as translations 
+in the E-N should be evaluated in order to get a proper filling.
+In the limited time of Rosetta3, this will not be possible.
+ 
+A {\em weaker} solution would be to take only {\em one} 
+of the bilingual dictionaries,
+which will result in an unnatural vocabulary for one of the languages. We
+do not have the problem of merging the original 90.000 words with the 
+translations (although there might be some overlap among the translations 
+themselves), but we still have to assign the right values to the attributes 
+of the words that are give as translation in one of the two languages. 
+ 
+Fortunately, English is (compared to Dutch) very regular
+in the attributes that are given in the Van Dale dictionaries (like 
+{\em pluralform, conjugation, article,} etc.).
+Therefore it seems possible to use the N-E as base for the Rosetta 
+dictionaries.
+The English translations will form the English dictionary (which, of course,
+will be not as good an English vocabulary as the words of the E-N), and the 
+(morphological) attributes can be assigned automatically, which means that the 
+`new' English vocabulary will have at least the same amount of attributes 
+as the E-N.
+The E-N will also serve as source of information, because we can retrieve 
+information about irregular morphological forms from it.
+The N-N contains information about various attributes, like: 
+{\em article, pluralform,} etc. of nouns, 
+{\em conjugationclass, particles, reflexives,} etc. of verbs, etc.
+Because the N-N and N-E share most of the words, this information can be 
+transferred to the N-E (probably, not the N-E itself but the intersection 
+of N-E and N-N will be the base for the Rosetta dictionary).
+ 
+In Rosetta, dictionaries should contain very detailed information which is not
+in all cases present in the Van Dale dictionaries. Information that cannot be 
+found in the Van Dale dictionaries is for instance: 
+information about verbpatterns, nounpatterns, the type of adverbs, etc.
+Of course this information should be added to the dictionaries, which has to
+be done by hand. It will be clear that this cannot be done for the complete
+N-E vocabulary with the limited manpower in our project.
+A complete overview of what has to be done for each attribute of nouns, 
+verbs, adjectives and adverbs can be found in chapter four.
+ 
+\subsection{Mapping N-N And N-E}
+The two Van Dale dictionaries used for the Dutch Rosetta dictionaries are 
+of course not
+equal in content. This holds for some parts of the entries (like
+translation --~in N-E~--, morphological information --~in N-N) but, 
+unfortunately, 
+this is also the case at another level. These differences occur at varying 
+places:
+ 
+\begin{description}
+  \item [{\bf Different Sets Of Entries}]\hspace{1cm}\\ 
+        The set of entries of the two mentioned dictionaries are not the same.
+        Even worse, N-E $\setminus$ ( N-E $\cap$ N-N ) $\neq \emptyset$ 
+        {\em and}   N-N $\setminus$ ( N-N $\cap$ N-E )
+        $\neq \emptyset$. This means that only the words in the overlap can be 
+        processed automatically.\footnote{This is the case because words 
+        in the N-E which aren't present in the N-N don't have morphological 
+        information, while words in the N-N which aren't present in the N-E 
+        don't have a translation.}
+  \item [{\bf Joined Entries}]\hspace{1cm}\\
+        Some words (like ``jus'') had several entries in the N-N because of the
+        different pronunciation of the various meanings. This difference is
+        not present in the N-E where the two words form one entry. What has to 
+        be done with these words is either separate them in the N-E or join
+        them in the N-N (of which the latter seems to be the easiest).
+  \item [{\bf Different Roman Subdivision}]\hspace{1cm}\\
+        An entry can have a roman subdivision in the N-E that differs from the 
+        one in the N-N. There are words (like ``ka'') which have a subdivision 
+        in the N-N while not in the N-E. The opposite also occurs (see 
+        ``kakken''). These words can be used --~as given in the N-E~-- if the 
+        morphological information is specified at the top of the entry (behind 
+        the first G-code) and not in a roman subdivision {\em and} if the word 
+        has at 
+        least one translation.\footnote{Which implies that not every roman 
+        subdivision has translations.}
+  \item [{\bf Different Meaning Subdivision}]\hspace{1cm}\\
+        An entry can have a meaning subdivision in the N-E that differs from 
+        the one in the N-N. There are words (like ``kolokwint'') which have more
+        subdivisions in the N-N than in the N-E. The opposite also occurs (cf. 
+        ``kogel''). These words can be used (as given in the N-E) if the 
+        morphological information specified at the top of the entry (behind 
+        the GI-code) doesn't affect one of the meanings (like it does in ``in 
+        bet. 3 g.mv.'' -- in meaning 3 no plural) {\em and} if it has at least 
+        one translation.
+\end{description}
+ 
+All these `inconsistencies' have as result that the total amount of words will
+reduce. At the time this report was made, it wasn't known yet how many words
+would be `equal' (that is, usable). However, a simple check program showed that 
+over 20\% of the words (of the letters ``p'', ``s'', ``v'') were different in 
+one of the ways mentioned above. These differences were mainly due to the 
+different sets of entries.
+ 
+\subsection{Formalizing Dictionaries}
+ 
+In this section the programs that will help filling the morphological 
+attributes are described. These attributes are the only ones which can be 
+filled automatically. Therefore, two kinds of programs are made:
+ 
+\begin{itemize}
+  \item Programs that {\em restructure} the information of the Van Dale; these
+        programs rewrite the information in codes that can easily be mapped 
+        on attributes of the Rosetta dictionaries. These programs also
+        {\em check} the information of the Van Dale as far as possible.
+        Their names start with ``Set'' because they set certain attributes.
+  \item Programs that check on {\em comment}; these programs are used for
+        categories that do not have information that can be restructured.
+        In fact these programs yield lists of entry-word that are irregular
+        in some respect. Their names start with ``Get'' because they retrieve
+        information.
+\end{itemize}
+ 
+Both kinds of programs will be explained in more detail in the next sections.
+ 
+\subsubsection{Restructuring}
+ 
+Restructuring of information is only useful when the majority of the words
+of a category have this information. This is the case with information
+about the pluralforms of nouns and the conjugation of verbs in the N-N.
+Other information, like the kind of article that a noun can have, is already
+coded in the N-N and therefore does not need to be restructured.
+ 
+The following programs rewrite morphological information of N-N
+in terms of (codes that map directly on) Rosetta attributes:
+ 
+\begin{itemize}
+  \item {\bf SetPlural} - This program rewrites the pluralforms of 
+        nouns 
+        in the corresponding values of the Rosetta attribute {\em pluralforms}.
+        In some cases, pluralforms
+        hold for only one of the meanings of the entry-word; this is also 
+        detected by the program. 
+  \item {\bf SetConj} - This program rewrites the information of verbs: it 
+        yields the stem of a verb, and fills the attributes {\em conjclasses, 
+        particle, reflexivity, perfauxs}. 
+\end{itemize}
+ 
+Both programs also yield a list of entry-words with {\em faults};
+these lists contains also (grammatical) {\em comment}
+which can be useful for the filling of other attributes (SetPlural
+for instance, yields a list that contains many --often irregular--
+diminutiveforms).\footnote{With respect to 
+this kind of information, the programs can be compared with those of the 
+type that check on {\em comment}.}
+ 
+Adjectives and adverbs lack systematic information about inflection; for these 
+categories a program will be written that checks on comment only.
+ 
+\subsubsection{Comment}
+ 
+For Dutch, the adjectives and adverbs of the N-N are checked; verbs and 
+nouns do not need extra check-programs because lists of words with all kinds of 
+comment are yielded --as side-effect-- by the programs that restructure the 
+information (see 2.3.1).
+ 
+For English, all open categories of the E-N are checked on grammatical 
+comment only. Checks are made on G-codes (all G-codes that are followed by 
+{\em more} information than merely a category-number) and on the appearance of 
+CI-, CR- and CV-codes. Of course, the resulting lists contain {\em raw} 
+material and need to be adapted.
+ 
+\subsubsection{Results}
+ 
+The original information of Van Dale has been split up in files per category
+(see \cite{sm:descr}). 
+The restructuring-programs of the last section take category-files as input
+and yield new files. In principle, this results in 
+{\em two} files: one with the new lemma's, and one with
+a list of entry-words that couldn't be restructured because of errors, missing
+information, etc. 
+It seems best to rectify these errors in (the copy of) the original files,
+so that these lemma's can be handled by all (following) programs. By doing 
+this, entry-words that have a wrong category-number (like ``aanmoedigen'', 
+``boze'', ``doling'', etc.) will come in the right category-file. This 
+feedback-mechanism will --after repeated application-- result in files 
+without errors.
+ 
+Thus, we get the following {\em stages} in our files:
+\begin{enumerate}
+  \item the copies of the original files (and files with rectifications,
+        based on the error-files under 4),
+  \item the rectified versions of (the copies of) the original files,
+  \item the files per category
+  \item the `restructured' category files (with separate file with errors)
+\end{enumerate}
+ 
+and the following programs:
+\begin{itemize}
+  \item {\em Rectify}. Input: original files, files with rectifications 
+        (derived from error-files under 4); output: files under 2.
+  \item {\em Categories}. Input: files under 2; output: files under 3.
+  \item {\em Set....} or {\em Get....}. Input: files under 3; output: 
+        files under 4 and error-files (which may lead to new 
+        rectification-files).
+\end{itemize}
+ 
+Of course, errors may appear at other levels than those mentioned. This can 
+also lead to adaptations in the rectification-files.
+ 
+\newpage
+\section{From Van Dale To Rosetta Dictionaries}
+ 
+This section deals with the conversion of the Van Dale files to Rosetta 
+dictionaries. 
+It does not treat the conversion in detail (i.e., of the attributes; see 
+section 2.3) but it shows how the global constructs used in the Van Dale 
+dictionaries will 
+be mapped on the Rosetta dictionary structure. First, a detailed structure 
+definition is given of the Rosetta dictionaries. Next, the constructs used in 
+the Van Dale dictionaries are treated. Finally, the mapping between both
+dictionaries is discussed, which is illustrated by various examples.
+ 
+\subsection{The Rosetta Dictionaries}
+ 
+In this section the Rosetta dictionaries are described. Of 
+course, more detailed information can be found in other reports 
+(like \cite{la:r2},
+\cite{fe:r2}, \cite{la:r3},and \cite{os:r3}). 
+ 
+At the moment, the Rosetta translation system is being developed for two 
+different functions: for the translation of {\em phrases}
+(i.e. sentences, or parts of sentences), and for the translation of
+{\em (single) words}. For the latter, not all attributes that are
+specified for the Rosetta dictionaries are needed.
+The information that can be found in the N-E or N-N is mainly 
+{\em morphologically}, and 
+corresponds to a high extent with what we need for the translation of words.
+Thus, we can use the N-E (with the aforementioned additions) without much extra
+work for the translation of words. For this purpose, all {\em syntactic} 
+attributes can be filled with default values, because they will never be
+evaluated.
+ 
+To derive a Rosetta dictionary that is filled good enough for the translation 
+of words from the Van Dale files, the following activities are required:
+\begin{itemize}
+  \item A database structure is needed. This has been designed and made 
+        (see below). 
+  \item We need a program to fill the database with the information of 
+        N-E and N-N.
+  \item Some (large) programs are needed to restructure the information
+        in the N-N for Dutch verbs and Dutch nouns. 
+        Other (smaller) programs 
+        are needed for Dutch adjectives and adverbs and English nouns, 
+        verbs and adjectives; in all these cases the N-N and E-N resp. contain
+        information for a limited group of entry-words, namely the ones that 
+        are irregular. All programs are described in section 2.3.
+\end{itemize}
+ 
+Of course the same activities are required as a first step towards the 
+ultimate Rosetta dictionaries.
+ 
+The Van Dale files will {\em not} be used to fill the closed categories of the
+Rosetta dictionaries because the words of these categories are not filled in a 
+very consistent way by Van Dale (see, for instance, \cite{od:cert}).
+ 
+The Rosetta dictionaries are `monolingual' dictionaries; this means that they
+should describe only the meaning of words (in IL). During the translation of 
+words, a dictionary is only used in the first half of a translation. The other 
+half is done by means of a dictionary (of the target language) that is 
+organized in the same way but which is used the other way around to obtain the
+word(s) in the target language.
+ 
+Within the Rosetta dictionaries there is a difference between the theoretical 
+model\footnote{This one is simple to understand.} and the practical 
+model.\footnote{This one yields a quicker program.} These two models are 
+described in the following two sections.
+After that, some possible improvements on the Rosetta dictionaries are given.
+In the last sub-section the completeness of the dictionaries is discussed.
+ 
+\subsubsection{In Theory}
+ 
+The Rosetta dictionaries consist of four dictionaries (relevant here) per 
+language (at the moment, Rosetta is developped for three languages). 
+The dictionaries are structured in tables which are defined as follows:
+ 
+{\bf Database Definition}
+\begin{verbatim}
+Rosetta Dict = (  M-Dict  = {( stem   : String,
+                               fkey   : Natural,
+                               Phon   : PhonType,
+                               rest   : RestType1 )} ,
+      
+                  S-Dict  = {( fkey   : Natural,
+                               skey   : Natural,
+                               rest   : RestType2 )} ,
+      
+                  B-Lex   = {( skey   : Natural,
+                               cat    : SynCatInfo )} ,
+          
+                  Il-Dict = {( skey   : Natural,
+                               desamb : String,
+                               mkey   : Natural,
+                               rest   : RestType3)}
+               )
+\end{verbatim}
+{\bf Database Keys}
+\begin{verbatim}      
+      Key (M-Dict)  = {(stem,fkey,phon)}
+      Key (S-Dict)  = {(skey)}
+      Key (B-Lex)   = {(skey)}
+      Key (Il-Dict) = {(skey,mkey),(skey,desamb)}
+\end{verbatim}
+\newpage
+{\bf Entity Relationship Diagram}
+\begin{verbatim}      
+                       MDict
+                         |n 
+                         |
+                         |
+                         |                   m,n IN {1,2,3,...}
+                         |
+                         |
+                         |m
+         IlDict-n----1-SDict-1----1-BLex
+\end{verbatim}      
+ 
+There is a relation between the keys of the various tables which is depicted by 
+their names. The dictionaries all have a distinct purpose. M-Dict is used for 
+conversion from string to number during the segmentation phase. That 
+number is used in the next phases. Here (in the segmentation phase), the 
+phonetic information is used. In S-Dict the splitting of the various verbs 
+(including 
+the particle) is arranged. B-Lex contains the syntactic and morphological 
+category information for every S-Dict entry. In Il-Dict each of the meanings of
+an S-Dict entry has a separate entry. 
+ 
+The key-to-key mapping within one table is described in the following table 
+(where an arrow denotes the direction of the mapping and an asterix 
+that there can be a mapping on more than one key --which, in this case, means 
+that more ambiguities can be a result): 
+ 
+\begin{center}
+ \begin{tabular}{|l||c|c|c|}\hline
+               & MDict                      
+                       & SDict                          
+                                & IlDict                               \\ \hline
+ In analysis   & str $\rightarrow$ fkey     
+                       & fkey $\rightarrow$ skey$^{\bf \ast}$ 
+                                & skey $\rightarrow$ mkey$^{\bf \ast}$ \\
+ In generation & str$^{\bf \ast} \leftarrow$ fkey 
+                       & fkey $\leftarrow$ skey  
+                                & skey$^{\bf \ast} \leftarrow$ mkey    \\ \hline
+\end{tabular}
+\end{center}
+ 
+\subsubsection{In Practice}
+ 
+The difference between the theoretical and the practical model is the use 
+of the technique of entry reduction by means of table skipping. This is, in 
+short, the skipping of intermediate tables when possible. This is 
+possible when 
+the intermediate tables have a 1-to-1 mapping of certain keys. The technique has
+as a result that the total number of entries reduces. It has two main 
+advantages: 
+the searches on the database are quicker and the storage of it is smaller. It 
+has, however, also impact on the database constraints, the programs using the 
+database and the key value ranges:
+ 
+\begin{itemize}
+   \item There are more (and other) database constraints needed to handle more 
+         relations and to guarantee the completeness of the database.
+   \item Programs will become more elaborate, because of the `exception' 
+         handling of not finding a key. 
+   \item Key value ranges must be disjunct for all relevant tables.
+\end{itemize}
+      
+In the Rosetta dictionaries, the technique is used for words which do not
+need a division in S-Dict. For these words the fkey is used in both B-Lex and 
+Il-Dict, instead of an skey. The key values of skeys and fkeys must be 
+disconjunct, otherwise searching in B-Lex or Il-Dict can give wrong results. 
+Searching for fkeys in S-Dict which are unsuccessful, imply (using the database 
+constraints) the use of the fkey value as skey value in B-Lex and Il-Dict. 
+The current programs are built using this technique.
+ 
+The two models can, happily enough, be mapped on each other. As can be seen in 
+the following examples, words without a division in S-Dict are present there in 
+the first model while they are missing in the second. For each of these missing 
+words the value of their fkey is used.
+ 
+\begin{verbatim}
+           M-Dict           S-Dict                 B-Lex
+      
+       I   "x" -> 12        12 -> 26               12 -> ....
+           "y" -> 26        26 -> 12               26 -> ....
+                            26 -> 27               27 -> ....
+      
+      II   "x" -> 12                               12     -> ....
+           "y" -> 26        26 -> 100012           100012 -> ....
+                            26 -> 100027           100027 -> ....
+\end{verbatim}
+ 
+The database definition of the practical model is the same as in the theoretical
+model except 
+for two name changes: `skey' is renamed to `key' in both B-Lex and Il-Dict. This
+also applies for the keys of the same tables. The entity relationship diagram,
+however, has changed radically (because of the S-Dict skipping). 
+ 
+\begin{verbatim}
+                       MDict
+                      /n |n \n
+                     /   |   \
+                    /    |    \
+                   /     |     \             m,n IN {0,1,2,...}
+                  /      |      \            p   IN {0,1}
+                 /       |       \
+                /        |        \
+               /         |         \
+              /          |          \
+             /m          |m          \p
+         IlDict-n----p-SDict-p----p-BLex
+\end{verbatim}
+ 
+Furthermore, there are some extra requirements (because m,n, and p can 
+be zero)
+to maintain the completeness of the database ($\oplus$ stands for an exclusive 
+or):
+ 
+\begin{itemize}
+  \item The entryword is either present in S-Dict or in both B-Lex and Il-Dict:
+ 
+        $ \forall_{x \in {\rm MDict}} [
+             \exists_{y \in {\rm SDict}} [ x.{\rm fkey} = y.{\rm fkey} ] \oplus
+             \exists_{y \in {\rm BLex}, z \in {\rm IlDict}}
+                    [ x.{\rm fkey} = y.{\rm key} = z.{\rm key} ] ]
+        $
+  \item An entry in S-Dict (sub-word) has both a translation and syntactic  
+        information:
+ 
+        $ \forall_{x \in {\rm SDict}} [
+             \exists_{y \in {\rm IlDict}} [ x.{\rm skey} = y.{\rm key} ] \wedge
+             \exists_{y \in {\rm BLex}}  [ x.{\rm skey} = y.{\rm key} ] ]
+        $
+  \item Translations and syntactic information are either for a word or for a 
+        sub-word:
+ 
+        $ \forall_{x \in {\rm BLex} \vee x \in {\rm TrLex}} [
+             \exists_{y \in {\rm MDict}} [ x.{\rm key} = y.{\rm fkey} ] \oplus
+             \exists_{y \in {\rm SDict}} [ x.{\rm key} = y.{\rm skey} ] ]
+        $\\
+\end{itemize}
+ 
+\subsubsection{Future Improvements}
+ 
+In this section some ideas about the structure of the Rosetta dictionaries 
+are dealt with. These ideas were found during the investigation for and the 
+writing
+of this report. The first idea deals with the deletion of B-Lex while the 
+second 
+gives a way to reduce the size of the new S-Dict. Both changes have impact on 
+the formalism as well.
+ 
+\begin{description}
+  \item [{\bf No B-Lex}]\hspace{1cm}\\
+        Because of the fact that B-Lex and S-Dict have the same key (in the
+        theory model) these tables can be combined. This has several advantages:
+ 
+        \begin{itemize}
+            \item The theoretical and the practical model will be one again.
+                  This means that the database requirements will be far more 
+                  simple.
+            \item The extra search needed in the practice model is not needed 
+                  any more because every fkey can be found in S-Dict. This
+                  means that programs will be quicker.
+            \item There are less tables. Because of that, it will be easier to
+                  write programs, maintain the tables, etc.
+        \end{itemize}
+ 
+  \item [{\bf Reduce Size S-Dict}]\hspace{1cm}\\
+        If the previous suggestion is followed, then the size of S-Dict will
+        be less than the size of S-Dict and B-Lex before the change. It is,
+        however, possible to reduce the total size even more by introducing
+        a new table which contains the different syntactic records (which, in
+        earlier days, were all -with duplications- in B-Lex). 
+ 
+        This table, RecLex, will then hold no
+        equal syntactic category information records. This will reduce the 
+        size considerably.\footnote{This is the case because the size of 
+        these records is  
+        quite large and certain records are rather frequent.} The programs 
+        will, in contrast to the suggested model, perhaps be slower because 
+        of one more database access (the one in RecLex) which, however, will be 
+        (partly) compensated by quicker searches because of the reduced size.
+ 
+\newpage
+{\bf Database Definition}
+\begin{verbatim}
+     Rosetta Dicts = (  M-Dict  = {( stem   : String,
+                                     fkey   : Natural,
+                                     phon   : PhonType,
+                                     rest   : RestType1 )} ,
+           
+                        S-Dict  = {( fkey   : Natural,
+                                     skey   : Natural,
+                                     rkey   : Natural,
+                                     rest   : RestType2)} ,
+           
+                        RecLex  = {( rkey   : Natural,
+                                     cat    : SynCatInfo )} ,
+                
+                        Il-Dict = {( skey   : Natural,
+                                     desamb : String,
+                                     mkey   : Natural,
+                                     rest   : RestType3)}
+                     )
+\end{verbatim}         
+{\bf Database Keys}
+\begin{verbatim}
+     Key (M-Dict)  = {(stem,fkey,phon)}
+     Key (S-Dict)  = {(skey)}
+     Key (RecLex)  = {(rkey),(cat)}
+     Key (Il-Dict) = {(skey,mkey),(skey,desamb)}
+\end{verbatim}           
+{\bf Entity Relationship Diagram}
+\begin{verbatim}           
+     M-Dict--1-------n--S-Dict--n------1--RecLex
+               fkey      |        rkey
+                         n
+                         |  s
+                         |  k
+                         |  e                 m,n IN {0,1,2,...}
+                         |  y
+                         m
+                         |
+                       Il-Dict
+\end{verbatim} 
+     
+        The suggested RecLex can also be added in the current practical model.
+        There, it could be either a table `behind' B-Lex (making B-Lex a table
+        with pairs of keys as tuples) containing only the different records, 
+        or it could be a change on B-Lex where B-Lex would adopt the function of
+        RecLex and S-Dict would be extended with an extra key `rkey' which 
+        gives the syntactic category record (in B-Lex).
+\end{description}
+ 
+\subsubsection{Completeness}
+The completeness of the tables is necessary in the three mentioned models 
+(this can be derived using both the entity relationship diagrams and the 
+requirements). However, for some special cases (like `empties') this 
+completeness is violated. 
+ 
+A solution to this problem would be to use special keys for those cases and 
+to modify the 
+requirements by adding exceptions for the appropriate keys. This would, however,
+disturb the compactness of the model because of the need for more separate 
+requirements. Furthermore, these requirements would be more elaborate.
+ 
+Another solution would be to add so-called dummy entries to maintain the
+completeness of the tables. This approach has several advantages:
+\begin{itemize}
+   \item The model is still clear and compact.
+   \item The dictionaries are easier to use (because of less exception handling)
+         in the robust mode of Rosetta. This, because then every database entry          does have a representation.
+\end{itemize}
+ 
+\subsection{Van Dale Constructs}
+ 
+In the Van Dale dictionary several constructs are used to organize the 
+information of an entry. The description of the entry (in detail) is done
+in \cite{sm:descr}.\footnote{There, only the entry of the N-N dictionary is 
+described.} The
+constructs are described here in a more general way to give a global idea of
+the possible organization of an entry:
+ 
+\begin{itemize}
+  \item {\bf Roman sub-division}\\
+        The entry has been divided in two or more so-called roman sub-entries.
+        This is done because of the sub-category difference. It is achieved by 
+        means of the GR-code and more than one RR-code. For example, the Dutch 
+        verb ``aankondigen'' is both reflexive and intransitive. For this reason
+        the entry has been split in two parts,  
+        one part for each sub-category.
+  \item {\bf Meaning Ambiguity}\\
+        The entry (or roman sub-entry) has been divided in more meanings. 
+        These are marked by NN-codes. E.g. the Dutch noun ``briljant'' is 
+        divided for the  meanings of ``diamond'' and (as used in printing) of 
+        ``half non-pareil''.
+  \item {\bf Spelling Variant}\\
+        The spelling variants (behind a VV-code which is not followed
+        by a GV-code or behind a SI-code) only differ in the spelling 
+        (or perhaps a phonetic attribute) with respect to the entry. 
+        Syntactical behaviour, meaning and translation should be exactly the 
+        same. E.g. the Dutch (well..., more or less) noun ``jioe-jitsoe'' has 
+        two spelling variants: ``djioe-djitsoe'' and ``jiu-jitsu''. 
+  \item {\bf Form Variant}\\
+        The form variant (behind VV-code but {\em with} GV-code) does not only 
+        differ in spelling (and phonetic attributes) but also has a different  
+        syntactic behaviour (e.g. a different gender). There are two kinds of
+        form variants: the first, having the same meaning and translation;
+        the second, with {\em only} the same (English) translation. An example
+        of both classes: 
+        \begin{enumerate}
+           \item ``spekkie'' (more or less the Dutch equivalent of 
+                 ``marshmallow'') has a form variant ``spek'' with
+                 a different plural form (``-s'' and ``-en'' respectively).
+           \item ``schenker'' (``donor'', masculine) has a form variant 
+                 ``schenkster'' (``donor'', feminine). Both forms have, however,
+                 different meanings and grammatical information but the same  
+                 English translation.
+        \end{enumerate}
+  \item {\bf More Entries With Same String}\\
+        The two (or more) entries have the same string but a different category.
+        An example are the Dutch words ``briljant'' (noun, for meaning see 
+        above) and ``briljant'' (adjective, ``brilliant''). 
+  \item {\bf Syntactic Differences}\\
+        A word can have syntactic differences between several meanings.
+        In the Van Dale dictionaries this is marked quite badly. E.g. the Dutch
+        noun ``aardworm'' has three meanings from which one (which depicts the 
+        class of animals) does not have a plural form (the other two have).
+        It is marked at the top of the entry behind the GI-code by 
+        ``in bet. 3 g.mv.'' (in meaning 3 no plural).
+\end{itemize}
+ 
+\subsection{Mapping Van Dale On Rosetta Dictionaries}
+ 
+\subsubsection{Method}
+ 
+The mapping of the two systems (models, dictionaries, etc.) has some
+interesting aspects with respect to the Rosetta dictionaries. These are the
+result of the special structure of the dictionaries: information is given in
+layers (tables). The following two items are special within the Rosetta 
+dictionaries while they cannot be found (at least not directly) in the Van Dale.
+ 
+\begin{itemize}
+  \item {\bf Phonetic Attribute Ambiguity}\\
+        This ambiguity occurs when, for example, a noun can be inflected by a 
+        rule that generates two forms. E.g. the Dutch noun ``spons'' has two 
+        plural forms, ``sponsen'' and ``sponzen'', although its set of plural
+        formings has only one element. This is due to the phonetic attribute 
+        `change'.
+  \item {\bf Verb With Particle}\\
+        Particles are separated from their verb. For example, the Dutch verbs
+        ``aankondigen'' and ``afkondigen'' will not be found in M-Dict. Only
+        a verb with stem ``kondig'' will be present. Which particle can be used 
+        (in this case {\em must} be used) can be found using S-Dict. There, the 
+        key associated with ``kondig'' will give two keys: one as reference to 
+        the syntactic category record with obliged use of ``aan'' and the
+        other to such a record with ``af'' (which are the correct particles).
+\end{itemize}
+ 
+These two items form, together with the previous mentioned Van Dale constructs,
+the list of items which the dictionary generator should be able to handle. So, 
+for each of the items a solution (implementation) is given for the correct 
+(possible) conversion. 
+ 
+\begin{itemize}
+  \item {\bf Meaning Ambiguity}\\
+        This is solved in the step from S-Dict to Il-Dict. Here, with one S-Dict
+        entry there can be more Il-Dict entries with the same skey.
+  \item {\bf Roman sub-division}\\
+        For each roman sub-entry there is an entry in S-Dict with the same fkey
+        as the entry has in M-Dict.
+  \item {\bf Spelling Variant}\\
+        Spellings variants are all stored in M-Dict and all mapped to the same
+        S-Dict entry (having equal fkeys).
+  \item {\bf Form Variant}\\
+        Both entry and form variant occur in M-Dict, S-Dict and Il-Dict 
+        separately. In Il-Dict they `share' the desambiguation strings.
+        However, for both kinds of form variants there is a different solution 
+        concerning the mkeys:
+        \begin{description}
+           \item [Same meaning] entry and form variant share the mkey(s).
+           \item [Different meaning] entry and form variant have a disjunct
+                 set of mkeys which, however, are mapped on the same word (in
+                 English, that is).
+        \end{description}
+  \item {\bf More Entries With Same String}\\
+        Words with the same string are treated as one roman entry (per word
+        a sub-entry).
+  \item {\bf Syntactic Differences}\\
+        Such a word is treated as a roman entry (with the syntactic 
+        differences in different sub-entries).
+  \item {\bf Phonetic Attribute Ambiguity}\\
+        These words are doubled\footnote{Or quadrupled in case of double 
+        ambiguity -- this really happens: see ``gannef''.} in M-Dict where only 
+        the phonetic parts of the entry differ.
+  \item {\bf Verb With Particle}\\
+        Verbs with the same stem are only present once in M-Dict. In S-Dict 
+        these words will be split for having a different syntactic category 
+        information record (viz. a different particle). 
+\end{itemize}
+ 
+In the following example dictionary the principles as described above are
+`implemented'. Some overlap of principles is visible in certain words but this 
+is avoided as much as possible.
+ 
+\subsubsection{Example Dictionary}
+ 
+Below, an example dictionary which treats at least one example of each different
+construct in the Van Dale dictionary is given. Also, the special Rosetta 
+dictionary features are treated in these examples.\vspace{3mm}
+ 
+\begin{tabular}{|l||c|c|c|c|c|c|c|c|c||}    \hline
+  Van Dale entry   &a&c&d&e&f&m&p&r&s     \\ \hline
+  aankondigen      & & & & & & &x& &      \\
+  aardworm         &x& & & & & & & &x     \\
+  afkondigen       &x& & & & & &x&x&      \\
+  briljant$^1$     &x& & & & &x& & &      \\
+  briljant$^2$     & & & & & &x& & &      \\
+  djioe-djitsoe    & & &x& & & & & &      \\
+  jioe-jitsoe      & & &x& & & & & &      \\
+  ju-jitsu         & & &x& & & & & &      \\
+  pannespons       & &x& & & & & & &      \\
+  schenker         &x& & & &x& & & &      \\ 
+  spekkie          & & & &x& & & & &      \\ \hline
+\end{tabular}
+%\hspace{.2cm}
+\shortstack{\vspace{-15mm}
+\begin{tabular}{l@{\hspace{1mm}=\hspace{1mm}}l}
+   a & ambiguous within sub-entry\\
+   c & phonchange can have both values\\
+   d & diff. string with same meaning\\
+   e & form-variant with equal meaning\\
+   f & form-variant with diff. meaning\\
+   m & more entries with the same string\\
+   p & verb with particle\\
+   r & roman sub-division of entry\\
+   s & syntax diff. between meanings
+\end{tabular}
+}
+ 
+\vspace{3mm}
+The table above is converted into the database. This datebase is made by 
+applying the 
+earlier mentioned transformation rules. In the first table (M-Dict) 
+a don't-care is represented as an ``x''. True and false are represented by 
+``T'' and ``F'' respectively. 
+ 
+\begin{verbatim}
+M-Dict
+    
+    stem               fkey              SC (sjwa-change)
+ 
+    "aardworm"         F-aardworm        xx
+    "briljant"         F-briljant        xx
+    "djioe-djitsoe"    F-jioe-jitsoe     xx      {spell. var. jioe-jitsoe}
+    "jioe-jitsoe"      F-jioe-jitsoe     xx
+    "ju-jitsu"         F-jioe-jitsoe     xx      {spell. var. jioe-jitsoe}
+    "kondig"           F-kondig          xx      {af- and aan-kondigen}
+    "pannespons"       F-pannespons      xF      {sponsen}
+    "pannespons"       F-pannespons      xT      {sponzen}
+    "schenker"         F-schenker        xx
+    "schenkster"       F-schenkster      xx      {form variant diff. mean.}
+    "spek"             F-spek            xx      {form variant equal mean.}
+    "spekkie"          F-spekkie         xx
+\end{verbatim}
+\begin{verbatim}
+ 
+S-Dict
+    
+   fkey             skey
+    
+   F-aardworm       S-aardworm1      {1 and 2: syntax diff. -- see B-Lex}
+   F-aardworm       S-aardworm2
+   F-briljant       S-briljant1      {1 and 2: more entries -- see B-Lex}
+   F-briljant       S-briljant2
+   F-jioe-jitsoe    S-jioe-jitsoe 
+   F-kondig         S-aankondig1     {1 and 2: roman - see B-Lex}
+   F-kondig         S-aankondig2
+   F-kondig         S-afkondig
+   F-pannespons     S-pannespons
+   F-schenker       S-schenker
+   F-schenkster     S-schenkster
+   F-spek           S-spek
+   F-spekkie        S-spekkie
+\end{verbatim}
+\begin{verbatim}
+ 
+B-Lex
+    
+   skey
+    
+   S-aardworm1                     { EnPlural }
+   S-aardworm2                     { NoPlural }
+   S-aankondig1                    { <ov.ww.> }
+   S-aankondig2                    { <wk.ww.> }
+   S-afkondig
+   S-briljant1                     { <zn.>}
+   S-briljant2                     { <bn.>}
+   S-jioe-jitsoe
+   S-pannespons
+   S-schenker
+   S-schenkster
+   S-spek                          { EnPlural }
+   S-spekkie                       { SPlural  }
+\end{verbatim}
+\begin{verbatim}
+ 
+Il-Dict
+    
+   skey            desamb                         mkey
+    
+   S-aardworm1    "regenworm"                    M-01
+   S-aardworm1    "mens"                         M-02
+   S-aardworm2    "<dierk.> klasse"              M-03
+   S-aankondig1   "officieel bekendmaken"        M-04
+   S-aankondig1   "te kennen geven"              M-05
+   S-aankondig1   "inluiden"                     M-06
+   S-aankondig1   "meedelen"                     M-07
+   S-aankondig1   "het verschijnen bekendmaken"  M-08
+   S-aankondig1   "<kaartspel>"                  M-09
+   S-aankondig2   "zich openbaren"               M-10
+   S-afkondig     ""                             M-11
+   S-briljant1    "diamant"                      M-12
+   S-briljant1    "<druk.; vero.>"               M-13
+   S-briljant2    ""                             M-14
+   S-jioe-jitsoe  ""                             M-15
+   S-pannespons   ""                             M-16
+   S-schenker     "gever"                        M-17
+   S-schenker     "mbt. dranken"                 M-18
+   S-schenkster   "gever"                        M-19
+   S-schenkster   "mbt. dranken"                 M-20
+   S-spek         ""                             M-21
+   S-spekkie      ""                             M-21
+\end{verbatim}
+ 
+\subsubsection{Interesting Combinations}
+ 
+Some interesting combinations of entries with different qualities (like
+roman subdivision, meaning ambiguity, form variant(s), particles, etc.)
+are given here. Since it would take a lot of time to find all possible 
+combinations (whether they exist or not) only {\em some} are given.
+ 
+\begin{itemize}
+  \item The entries ``vorst$^1$'', ``vorst$^2$'',
+        and ``vorstin'' together form an interesting combination. The first is
+        a noun without a form variant and with a roman subdivision. The second
+        entry is a noun with a form variant (``vorstin'') but without a roman 
+        subdivision. The third entry already exists as a form variant but
+        also has a meaning ambiguity. The table scheme looks as follows:\newpage
+        \begin{verbatim}
+             M-Dict         S-Dict         Il-Dict
+ 
+                            S-vorst1I      M1
+             "vorst"        S-vorst1II     M2
+                            S-vorst2       M3
+             "vorstin"      S-vorstin      M4
+                                           M5
+             
+        \end{verbatim}
+  \item The entry ``acanthus'' is 
+        a noun with a spelling variant {\em and} a form variant. 
+        The table scheme looks as follows:\\
+        \begin{verbatim}
+             M-Dict         S-Dict         Il-Dict
+ 
+             "acanthus"     S-acant(h)us
+             "acantus"                     M1
+             "akant"        S-akant
+        \end{verbatim}
+  \item The entry ``chic'' is 
+        a noun with a spelling variant {\em and} roman subdivision. 
+        The table scheme looks as follows:\\
+        \begin{verbatim}
+             M-Dict         S-Dict         Il-Dict
+ 
+             "chic"         S-I            M-1
+             "sjiek"        S-II           M-2
+        \end{verbatim}
+  \item The entries ``corrector$^1$'' and ``corrector$^2$'',
+        also form an interesting combination. The first is
+        a noun with a spelling variant. The second entry is a noun with a 
+        spelling variant (``korrektor'') and a form variant (``correctrice'') 
+        that has a spelling variant too (``korrektrice'').\footnote{Remarkable 
+        is that both entries are in reverse order in the N-E.}
+        The table scheme looks as follows:\\
+        \begin{verbatim}
+             M-Dict         S-Dict         Il-Dict
+ 
+             "corrector"    S-cor1         M-1
+             "korrektor"    S-cor2         
+             "correctrice"  S-cor3         M-2
+             "korrektrice"  
+        \end{verbatim}
+\end{itemize}
+ 
+\subsection{Structure English Dictionary}
+Within the described method, the N-E dictionary of the Van Dale is used 
+as source for the {\em English} vocabulary. This will result in a rather 
+unnatural 
+dictionary, and when used in the reverse way (for translation of English words
+in Dutch), there is no desambiguation.\footnote{The use of the generated 
+dictionaries in the reverse way never was an objective.} Also, it is possible 
+that ambiguities 
+exist longer than necessary. As can be seen in the English Rosetta dictionaries 
+derived from the example Dutch dictionary, the amount of mkeys and skeys is 
+quite large in comparison with the Dutch dictionary.
+ 
+\begin{verbatim}
+IlDict                 S-Dict             M-Dict
+ 
+   M-01  ""  S-01         S-01  F-07         F-01  "announce"
+   M-02  ""  S-19         S-02  F-17         F-02  "bid"
+   M-02  ""  S-02         S-03  F-07         F-03  "brilliant"
+   M-03  ""  S-03         S-04  F-01         F-04  "cupbearer"
+   M-04  ""  S-04         S-05  F-10         F-05  "diamond"
+   M-05  ""  S-05         S-06  F-01         F-06  "donor"
+   M-05  ""  S-20         S-07  F-01         F-07  "earthworm"
+   M-06  ""  S-06         S-08  F-01         F-08  "half non-pareil"
+   M-06  ""  S-21         S-09  F-02         F-09  "herald"
+   M-07  ""  S-07         S-10  F-15         F-10  "indicate"
+   M-08  ""  S-08         S-11  F-14         F-11  "jiujitsu"
+   M-09  ""  S-09         S-12  F-05         F-12  "jujitsu"
+   M-10  ""  S-10         S-13  F-08         F-13  "marshmallow"
+   M-11  ""  S-11         S-14  F-03         F-14  "proclaim"
+   M-12  ""  S-12         S-15  F-11         F-15  "reveal"
+   M-13  ""  S-13         S-16  F-16         F-16  "scourer"
+   M-14  ""  S-14         S-17  F-06         F-17  "worm"
+   M-15  ""  S-15         S-18  F-04
+   M-15  ""  S-22         S-19  F-17
+   M-16  ""  S-16         S-20  F-15
+   M-17  ""  S-17         S-21  F-09
+   M-18  ""  S-18         S-22  F-12
+   M-19  ""  S-17         S-23  F-13
+   M-20  ""  S-18
+   M-21  ""  S-23
+\end{verbatim}
+ 
+\newpage
+\section{Filling Dutch Attributes}
+ 
+Under the present circumstances, the attributes of the open categories `bverb',
+`bnoun', `badj' and `badv' cannot 
+--like those of the closed categories-- be filled by hand, because there are 
+too many words belonging to these categories. Therefore, all possibilities to
+fill attributes in a `clever' way are mentioned in this overview. 
+ 
+In each of the next sections, all attributes of one of the open categories are 
+listed. Note that the suggested default values (in the `records') 
+have a preliminary status and may change in the future. 
+ 
+\subsection{The attributes of BNOUN}
+ 
+The domain of BNOUN:
+ 
+\begin{verbatim}
+BNOUNrecord      =
+                  <
+                   req:          polarityEFFSETtype:[pospol, 
+                                                     negpol, omegapol]
+                   env:          polarityEFFSETtype:[pospol, 
+                                                     negpol, omegapol]
+ 
+                   pluralforms:  pluralformSETtype:[enPlural, sPlural]
+                   genders:      genderSETtype:[omegagender]  
+ 
+                   class:        timeadvclasstype:omegaTimeAdvClass
+                   deixis:       deixistype:omegadeixis
+                   aspect:       aspecttype:omegaAspect
+                   retro:        retrotype:false
+ 
+                   sexes:        sexSETtype:[]                        
+                   subcs:        nounsubcSETtype:[othernoun]
+                   temporal:     temporaltype:false
+                   possgeni:     possgenitype:false
+                   animate:      animatetype:Omegaanimate
+                   human:        humantype:Omegahuman                 
+                   posscomas:    posscomaSETtype:[count]
+                   thetanp:      thetanptype:omegathetanp
+                   nounpatterns: synpatternSETtype:[]
+                   prepkey:      keytype:0
+                   personal:     personaltype:true
+ 
+                   KEY              
+                  >
+\end{verbatim}
+ 
+\begin{itemize}
+  \item {\bf req:} words that have a non-default value can be found in 
+        linguistic literature.
+ 
+  \item {\bf env:} words that have a non-default value can be found in 
+        linguistic literature.
+ 
+  \item {\bf pluralforms:} the majority of the nouns is filled correctly by the 
+        program {\em SetPlural}. Approximately 0.1 \% will need evaluation; 
+        most of these are irrelevant with respect to the attribute {\em 
+        pluralforms} (like `vaak mv.' etc), some are irregular diminutives 
+        (which should be used for the `dimforms' attribute, which is not yet 
+        in the domain). Also many FONmarkers get their value in this 
+        program.\footnote{Almost all {\em relevant} cases can be found (the 
+        attribute is not relevant for words like ``dikkerd'' that would get the 
+        same inflected forms for the value {\em sjwa equals false}.}
+ 
+  \item {\bf genders:} can be filled automatically by using the category 
+        numbers of the Van Dale.
+ 
+  \item {\bf class:} has to be done by hand; papers of trainees (\cite{po:tp},
+        \cite{ko:ta}) contain interesting material.
+        Maybe a pre-selection can be made on strings like ``maat'' or 
+        ``maataanduiding'' or ``eenheid'', etc.
+ 
+  \item {\bf deixis:} has to be done by hand; papers of trainees (\cite{po:tp},
+        \cite{ko:ta}) contain interesting material.
+        Maybe a pre-selection can be made on strings like ``maat'' or 
+        ``maataanduiding'' or ``eenheid'', etc.
+ 
+  \item {\bf aspect:} has to be done by hand; papers of trainees (\cite{po:tp},
+        \cite{ko:ta}) contain interesting material.
+        Maybe a pre-selection can be made on strings like ``maat'' or 
+        ``maataanduiding'' or ``eenheid'', etc.
+ 
+  \item {\bf retro:} has to be done by hand; papers of trainees (\cite{po:tp},
+        \cite{ko:ta}) contain interesting material.
+        Maybe a pre-selection can be made on strings like ``maat'' or 
+        ``maataanduiding'' or ``eenheid'', etc.
+ 
+  \item {\bf sexes:} maybe a quite good level of filling can be achieved by 
+        using several parts of information of the Van Dale:
+\begin{enumerate}
+     \item the category numbers `08' and `09', that are used for neuter words 
+           that denote female or male persons, like ``joch'', 
+           ``jochie'', ``animeermeisje'', etc.
+     \item words with BB-codes beginning with ``man'' or ``vrouw'' can be 
+           evaluated; the same holds for BB-codes (that begin with) with 
+           ``pers'', etc. See also the attribute {\em human}.
+     \item the synonyms of the words mentioned in 1. and 2. can be evaluated.
+     \item of course, `de'-words often have a value for sexes that corresponds 
+           with the value for {\em genders}. Then, we only need to check the
+           value of {\em animate} to see whether or not they are indeed living 
+           creatures.
+           Note that the `het'-words have been done in 1 (see above).
+\end{enumerate}
+  \item {\bf subcs:} has to be done by hand; the special values can (probably) 
+        be found in a thesaurus or by checking special features in the N-N,
+        like (the strings):
+        ``titel'', ``beroep'', ``eenheid'', ``maat'', etc.
+  \item {\bf temporal:} has to be done by hand; papers of trainees (\cite{po:tp},
+        \cite{ko:ta}) may help.
+        Maybe a pre-selection can be made on ``maat'' or ``maataanduiding'' or 
+        ``eenheid'', etc.
+  \item {\bf possgeni:} has to be done by hand. The non-default value seems to 
+        be limited to {\em few} words, which probably can be extracted from a
+        thesaurus.
+  \item {\bf animate:} maybe some words can be found by searching strings
+        ``dier'', ``vogel'', etc. Of course there is a relation with the 
+        attributes {\em human} and {\em sexes}, etc. (both are subsets 
+        of {\em animate}). 
+  \item {\bf human:} maybe some words can be found by searching strings
+        ``pers'', ``iem.'', etc. See also {\em sexes}.
+  \item {\bf posscomas:} the `mass'-value corresponds to a high 
+        degree to the feature `g.mv.' in the Van Dale. Also, words that do not 
+        have a feature for plural at all in the Van Dale are candidate for the 
+        value `mass'.
+  \item {\bf thetanp:} has to be done by hand, but probably a lot of nouns with 
+        interesting values can be derived from verbs (compare: ``pogen'' vs. 
+        ``poging'').
+  \item {\bf nounpatterns}: has to be done by hand. A lot of nouns with 
+        interesting values can be derived from verbs, (compare: ``pogen'' vs. 
+        ``poging'').
+  \item {\bf prepkey:} has to be done by hand, but a lot of nouns with 
+        interesting values can be derived from verbs. Also, the 
+        `combination category' of the N-N may help to find nouns that can 
+        be combined with prepositions.
+  \item {\bf personal:} words like``winter'' have a non-default value, because 
+        of 
+        constructions like ``het is winter''. It is not clear whether or not 
+        these words can be found and how many of them exist.
+\end{itemize}
+ 
+\subsection{The attributes of BVERB}
+ 
+The domain of BVERB:
+ 
+\begin{verbatim}
+BVERBrecord    =
+                  <
+                    req:          polarityEFFSETtype:[pospol, 
+                                                      negpol, omegapol]
+                    env:          polarityEFFSETtype:[pospol, 
+                                                      negpol, omegapol]
+ 
+                    conjclasses:  conjclassSETtype:[3]  
+                    particle:     keytype:0  
+ 
+                    possvoices:   VoiceSETtype:[active, passive, 
+                                  DoorActive]     
+                    reflexivity:  reflexivetype:notreflexive
+                    synvps:       SynpatternSETtype:[]
+                    thetavp:      Thetavptype:omegathetavp
+                    CaseAssigner: CaseAssignertype:true
+ 
+                    subc:         verbsubcSETtype:[mainverb]
+                    perfauxs:     perfauxSETtype:[hebaux]   
+ 
+                    prepkey1:     keytype:0
+                    prepkey2:     keytype:0 
+ 
+                    controller:   controllertype:none
+                    verbraiser:   verbraisertype:noVR               
+                    IPP:          IPPtype:NOIPP                        
+ 
+                    classes:      classSETtype:[durative]
+ 
+                    KEY
+                  >
+\end{verbatim}
+ 
+\begin{itemize}
+  \item {\bf req:} there do not seem to be many verbs with negation; a program 
+        that checked examples in the Van Dale delivered  very few verbs that 
+        cannot occur without negation (it {\em did} deliver quite a few 
+        interesting idioms, however). Probably, investigation of linguistic 
+        literature will yield more verbs.
+         
+  \item {\bf env:} most verbs will have default value. Verbs with interesting 
+        non-default values can probably be found in literature.
+ 
+  \item {\bf conjclasses:} is done automatically by the program {\em SetConj}.
+         Also, almost all FONmarkers can be set by this program (in fact the 
+         only words that possibly do not get a proper value for FONmarker, 
+         are verbs that cannot be inflected; therefore the chance that a 
+         wrong value leads to consequences is very small). 
+ 
+  \item {\bf particle:} is done automatically by program {\em SetConj} that 
+        also fills {\em conjclasses}.
+ 
+  \item {\bf possvoices:} normally, reflexives and verbs that have `isaux' get 
+        the value `[active]'; non-reflexives with `hebaux' get 
+        `[active, passive, DoorActive]'. The verbs ``lezen'', ``voelen'', 
+        ``zien'', ``horen'', ``proeven'', ``ruiken'' get the value 
+        `[AanActive]'. Also verbs that {\em don't} have a past participle, 
+        like ``zullen'', cannot have a passive. Maybe the distinction 
+        `transitive' vs. `intransitive' in the N-N can be useful. 
+        Note that some verbs get a wrong value (when filled as stated here); 
+        ``bezitten'' gets a wrong value, so that wrong (or at least strange) 
+        sentences like ``een boek werd door hem bezeten'' 
+        can be analyzed. Sometimes (for example for ``kosten'') a wrong value 
+        does not yield 
+        problems because the grammar more or less `corrects' it.
+ 
+  \item {\bf reflexivity:} can be filled by program {\em SetConj}.
+        Also, a program has been made that checks examples on the string 
+        ``zich'' (but {\em not (yet)} on ``me'', ``je'', ``ons'' etc.). 
+        Also, \cite{an:s84} contains a list.
+ 
+  \item {\bf synvps:} has (probably) to be done by hand. Some preparations 
+        have been made to fill all attributes that express the `verbpattern': 
+        programs have been made that select verbs with example-sentences with 
+        specific complements, like `te' + inf., `dat'-sentences, etc.
+ 
+  \item {\bf thetavp:} has (probably) to be done by hand. Some preparations 
+        have been made to fill all attributes that express the `verbpattern': 
+        programs have been made that select verbs with example-sentences with 
+        specific complements, like `te' + inf., `dat'-sentences, etc.
+ 
+  \item {\bf CaseAssigner:} verbs with `hebaux' are case-assigners, verbs with
+        `isaux' are {\em not}. Some exceptions exist: ``vergeten'', ``volgen'', 
+        ``nalopen''.
+ 
+  \item {\bf subc:} a (small) list exists of non-default words.
+ 
+  \item {\bf perfauxs:} is done by program {\em SetConj}, that analyses
+        the string with the conjugation in the N-N that contains 
+        ``i.'', ``h.'', etc.
+ 
+  \item {\bf prepkey1:} by hand; the `combination category' of N-N may 
+        give a indication.
+ 
+  \item {\bf prepkey2:} by hand; the `combination category' of N-N may 
+        give a indication.
+ 
+  \item {\bf controller:} only relevant for verbs that have a bare infinitive
+        as complement (which is a limited number; the verbs can be found in the 
+        linguistic literature), and verbs that have {\em ``te''} + infinitive 
+        (most of which have been extracted from the Van Dale by a special 
+        program followed by some searching for synonyms).
+ 
+  \item {\bf verbraiser:} only relevant for a subset of the verbs that have a 
+        non-default value for the attribute `controller'.
+ 
+  \item {\bf IPP (infinitivum pro participium):} only relevant for a subset 
+        of the verbs that have a non-default value for the attribute 
+        `verbraiser' (all verbs that have a bare infinitive and some verbs 
+        that have {\em `te'} + infinitive are interesting).
+ 
+  \item {\bf classes:} has to be done by hand.
+\end{itemize}
+ 
+\subsection{The attributes of BADJ}
+ 
+The domain of BADJ:
+ 
+\begin{verbatim}
+BADJrecord       =
+                   <
+                    req:          polarityEFFSETtype:[pospol, 
+                                                      negpol, omegapol]
+                    env:          polarityEFFSETtype:[pospol, 
+                                                      negpol, omegapol]
+ 
+                    class:        timeadvclasstype:omegaTimeAdvClass
+                    deixis:       deixistype:omegadeixis
+                    aspect:       aspecttype:omegaAspect
+                    retro:        retrotype:false
+ 
+                    uses:         adjuseSETtype:[attributive, predicative,
+                                  nominalised] 
+                    eFormation:   eFormationtype:true  
+                    sFormation:   sFormationtype:true 
+                    eNominalised: eNominalisedtype:true  
+                    comparatives: comparativeSETtype:[erComp]  
+                    superlatives: superlativeSETtype:[stSup]  
+ 
+                    temporal:     temporaltype:false
+                    subcs:        adjsubcSETtype:[otheradj]
+                    reflexivity:  reflexivetype:notreflexive
+                    thetaadj:     thetaadjtype:omegathetaadj
+                    adjpatterns:  synpatternSETtype:[]
+                    prepkey:      keytype:0
+                    possadv:      possadvtype:true
+                    KEY
+                   >
+\end{verbatim}
+ 
+\begin{itemize}
+\item {\bf req:} words that have a non-default value can be found in 
+        linguistic literature.
+ 
+\item {\bf env:} words that have a non-default value can be found in 
+        linguistic literature.
+ 
+\item {\bf Qstatus:} list can be made based on several parts of the adverb list
+        made by A. Post.
+ 
+\item {\bf class:} only for `temporal' adj.; \cite{po:tp},
+        \cite{ko:ta} may be interesting.
+ 
+\item {\bf deixis:} only for `temporal' adj.; \cite{po:tp},
+        \cite{ko:ta}
+        may be interesting.
+ 
+\item {\bf aspect:} only for `temporal' adj.; \cite{po:tp},
+        \cite{ko:ta}
+        may be interesting.
+ 
+\item {\bf retro:} only for `temporal' adj.; \cite{po:tp},
+        \cite{ko:ta}
+        may be interesting.
+ 
+\item {\bf uses:} many can be found in the N-N.
+ 
+\item {\bf eFormation:} literature; retrograde list; some can be found in N-N
+      (behind GI-code).
+ 
+\item {\bf sFormation:} literature; retrograde list; some can be found in N-N.
+ 
+\item {\bf eNominalised:} literature; retrograde list; some can be found in N-N.
+ 
+\item {\bf comparatives:} irregular and some regular forms in N-N.
+ 
+\item {\bf superlatives:} compare `comparatives'.
+ 
+\item {\bf temporal:} has to be done by hand probably. See also {\em class}, 
+      {\em deixis}, etc. 
+ 
+\item {\bf subcs:} has to be done by hand.
+ 
+\item {\bf reflexivity:} probably only one: ``{\em zich} bewust van''; 
+      a program (especially made to detect interesting cases) did not find 
+      others. 
+ 
+\item {\bf thetaadj:} by hand; maybe some (half-)automatically (compare BVERB).
+ 
+\item {\bf adjpatterns:} by hand; maybe some (half-)automatically (comp. BVERB).
+ 
+\item {\bf prepkey:} by hand; maybe some (half-)automatically (compare BVERB).
+ 
+\item {\bf possadv:} probably automatically (for instance, `22' behind `GI').
+\end{itemize}
+ 
+\subsection{The attributes of BADV}
+ 
+The domain of BADV:
+ 
+\begin{verbatim}
+BADVrecord       =
+                  <
+                   req:          polarityEFFSETtype: [pospol, 
+                                                      negpol, omegapol]
+                   env:          polarityEFFSETtype: [pospol, 
+                                                      negpol, omegapol]
+ 
+                   comparatives: comparativeSETtype: [erComp]  
+                   superlatives: superlativeSETtype: [stSup]  
+ 
+                   subcs:        ADVsubcSETtype: [VPAdv]
+                   Qstatus:      Qstatustype: false
+ 
+                   class:        timeadvclasstype: omegaTimeAdvClass
+                   deixis:       deixistype: omegadeixis
+                   aspect:       aspecttype: omegaAspect
+                   retro:        retrotype: false
+ 
+                   advmood:      xpmoodtype: declxpmood
+                   thetaadv:     thetaadvtype: omegathetaadv
+                   advpatterns:  synpatternSETtype: []
+                   prepkey:      keytype: 0
+                   temporal:     temporaltype: false
+                   possnietnp:   possnietnptype: false
+                   thanas:       thanascompltype: omegacompl
+ 
+                   KEY
+                  >
+\end{verbatim}
+ 
+\begin{itemize}
+\item {\bf req:} words that have a non-default value can be found in 
+        linguistic literature (words like ``nauwelijks'' have `pospol').
+ 
+\item {\bf env:} maybe exceptions can be found in literature.
+ 
+\item {\bf  comparatives:} compare BADJ.
+ 
+\item {\bf  superlatives:} compare BADJ.
+ 
+\item {\bf  subcs:} can be found in adverb list made by A. Post.
+ 
+\item {\bf  class:} compare BADJ.
+ 
+\item {\bf  deixis:} compare BADJ.
+ 
+\item {\bf  aspect:} compare BADJ.
+ 
+\item {\bf  retro:} compare BADJ.
+ 
+\item {\bf  advmood:} literature (``waarom'', ``hoe'', etc).
+ 
+\item {\bf  thetaadv:} probably by hand.
+ 
+\item {\bf  advpatterns:} probably by hand.
+ 
+\item {\bf  prepkey:} probably by hand. Combination category in N-N may be 
+      useful.
+ 
+\item {\bf  temporal:} probably by hand.
+ 
+\item {\bf  possnietnp:} list can probably be derived from literature.
+ 
+\item {\bf  thanas:} (small) list can be found in literature.
+ 
+\end{itemize}
+ 
+\newpage
+\begin{thebibliography}{AAA99a}
+ \bibitem[ANS84]{an:s84} G. Geerts, W. Hasereyn, J. de Rooij, M.C. van den 
+  Toorn, eds., {\bf Algemene Nederlandse Spraakkunst}, {\em Wolters-Noordhoff},
+  1984.
+ \bibitem[FEL86]{fe:r2} C. Fellinger, {\bf On dictionaries in Rosetta2},
+  {\em Philips Research Labs}, Rosetta report 20, 1986.
+ \bibitem[MAR84]{ma:groot} W. Martin, ed., {\bf Groot woordenboek 
+  Engels -- Nederlands}, {\em Van Dale Lexicografie}, 1984.
+ \bibitem[MTO86]{mt:groot} W. Martin, G.A.J. Tops, eds., {\bf Groot woordenboek 
+  Nederlands -- Engels}, {\em Van Dale Lexicografie}, 1986.
+ \bibitem[KOP87]{ko:ta} L. Kopinga, {\bf Time Adverbials}, {\em
+  Free University of Amsterdam}, Senior thesis, 1987.
+ \bibitem[LAN85]{la:r2} S.P.J. Landsbergen, {\bf Dictionaries in Rosetta2},
+  {\em Philips Research Labs}, Rosetta report 15, 1985.
+ \bibitem[LAN86]{la:r3} S.P.J. Landsbergen, {\bf Dictionaries in Rosetta3},
+  {\em Philips Research Labs}, Rosetta report 125, 1986.
+ \bibitem[ODI86]{od:cert} J.E. Odijk, {\bf (Certain) Pronouns in Rosetta3},
+  {\em Philips Research Labs}, Rosetta report 148, 1986.
+ \bibitem[OSC87]{os:r3} J.E. Odijk \& A.Y. Schenk, {\bf Dictionaries in 
+  Rosetta3}, {\em Philips Research Labs}, Rosetta report 201, 1987.
+ \bibitem[POS87]{po:tp} A. Post, {\bf Temporal Predication}, {\em
+  University of Utrecht}, Senior thesis, 1987.
+ \bibitem[ROU87]{ro:conv} J.H.G. Rous, {\bf Conversion problems with B-LEX},
+  {\em Philips Research Labs}, Rosetta report 196, 1987.
+ \bibitem[SME87]{sm:descr} H.E. Smit \& J.P. Medema, {\bf Description Van 
+  Dale dictionary N~--~N}, {\em Philips Research Labs}, Rosetta report 174,
+  1987.
+ \bibitem[STE84]{st:groot} P.G.J. van Sterkenburg, ed., {\bf Groot woordenboek 
+  hedendaags Nederlands}, {\em Van Dale Lexicografie}, 1984.
+\end{thebibliography}
+ 
+\end{document}

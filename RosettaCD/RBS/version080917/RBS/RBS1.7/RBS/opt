@@ -1,0 +1,26 @@
+#! /bin/sh -e
+#
+# opt <component> <executable> <linker> <libraries>
+#
+#
+echo "opt: $1:$2"
+#
+trap 'echo "opt: Error during linking" ; exit 1' 0
+#
+$RBS_DIR/mopt $1 $2
+rm -f linkfile
+echo "#! /bin/sh -e" > linkfile
+echo "$3 -o $1/target/$2.exe \\" >> linkfile
+#
+fname=`get_fname RBS_logicals $1 $2.opt`
+if test "$fname"
+then cat $fname >> linkfile
+else echo "OPT: Could not find file $2.opt"
+     exit
+fi
+#
+echo "$4 1>> warnings 2>&1" >> linkfile
+chmod u+x linkfile
+echo "  "  >> warnings
+linkfile
+trap 0

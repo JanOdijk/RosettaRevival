@@ -1,0 +1,1047 @@
+R0211.tex
+
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{General}
+   \RosTitle{Local Dutch M-rules. Documentation.}
+   \RosAuthor{Margreet Sanders}
+   \RosDocNr{0211}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Linguists, Joep Rous}
+   \RosClearance{Project}
+   \RosKeywords{Local M-rules}
+   \MakeRosTitle
+%
+\newpage
+\section{Introduction}
+In this document the local Dutch M-rules are enumerated and explained. Also, 
+some general decisions  concerning local rules are mentioned, together with 
+problems related to specific rules. The rules themselves are not incorporated in 
+this document: they can be found under 
+[SANDERS.ROSETTA3.DUTCH.WORK]RLOCAL*.tex.
+In Appendix A, a full list is given of these files and the rules they contain.
+For syntactic categories that do not change in morphology (e.g.\ ART, CONJ, 
+ORDINAL, PREP) no rules have been written, since they can be translated as 
+basic expressions without any rule having applied to them.
+
+Most rules are written on an ad hoc basis. Some general decisions are mentioned 
+in the following section. All points on which further decisions should be made 
+are marked with an asterisk in the margin.
+
+\section{Goal of Local M-rules}
+The local rules written for Dutch are intended for the word translation mode, 
+i.e.\ when one word is entered into the computer, all suitable 
+translations (consisting of as many words as necessary) should be returned. 
+The rules are not meant to serve as
+robustness measures in the ordinary translation. It is as yet unclear whether 
+they could perhaps be used for that purpose.
+
+The translations returned by the computer should comprise all semantic 
+variants,
+but not variants determined solely by syntactic constraints. For example, the 
+attributive adjective {\em mooi} is given in this form only, and not also in 
+the form {\em 
+mooie}, since there are no semantic reasons for distinguishing the two. Of 
+course, {\em mooie} will be generated when a nominalised adjective is concerned
+(but see the remarks in the section on adjectives).
+It was decided to generate all `lexico-morphological' equivalents of output 
+words, i.e.\ 
+when for example an adjective has both an inflectional and a periphrastic 
+comparative, both are shown. This may be an implicit help for the user: when 
+only one form is shown, the other obviously does not exist for the word 
+concerned.
+A final choice concerns the symmetry between analysis and generation components. 
+In case the output exists of more than one word, symmetry is of course 
+impossible. Since the rule compiler does not yet allow for rules without a 
+DECOMP part, analysis of more than one input word still seems possible in 
+certain cases. This possibility should be removed as soon as possible.
+Another source of asymmetry is the decision to generate only 
+unambiguous forms once a certain word is disambiguated in the IL. For example, 
+the personal pronoun {\em mij\/} may be both an accusative and a dative. In IL, 
+the form is mapped onto both possibilities, and the generative component will 
+produce one {\em mij (acc)\/} and one {\em mij (dat)\/}. In implementation, certain 
+measures may be taken to prevent a proliferation of identical output. (The fact 
+that the cases of the two {\em mij\/}s differ cannot be seen by the user, since 
+the attribute values are not meant to be accessible to him or her.)
+
+In the rules described in this document, derivation is still disregarded.
+
+The organisation of the local M-rules (one subgrammar, one ruleclass ?) has not 
+been decided yet. Also, the way to get an expression through S-parser is still 
+unspecified.
+
+\section{The Rules}
+
+\subsection{Verbs}
+
+These rules form the present and past tense of indicatives, conjunctives and 
+participles, and make infinitives and imperatives. Also, a rule is added for 
+the eORenForm of participles.
+
+The correct placement of particles should be accounted for by the ParticlePlace 
+transformations, which apply optionally after Pres/Past Indic/Conj (both {\em opbel} and 
+{\em bel op} are possible), obligatory after VerbImp, and never after Pres/Past 
+Part and VerbInf. This strategy has not been formalized in any way yet.
+
+No decision has been taken yet on the mapping of tenses in different languages. 
+Also, rules will have to be added for the formation of periphrastic tenses of 
+verbs from conjugation class [0] (e.g.\ {\em buikspreken\/}, with translation 
+{\em ventriloquize\/}, a verb with full conjugation). It is unclear whether and how 
+participles for conjugation class [13] ({\em plegen}) should be produced.
+
+The subjunctive poses some problems: ANS claims that only the third person 
+singular has one. If that is true, then what should the translation be of other 
+subjunctive forms (esp.\ those coming from Spanish)?
+
+Finally, the eORen rule cannot refer to an attribute eFormation or eNominalised
+in verbs. Consequently, eORenFormation is allowed for all participles (present and 
+past) at the moment. It seems that some restrictions can be formulated based on 
+the conjugation class the verbs have. For remarks on the use of -e and -enForms, 
+see the discussion in section 3.4 on adjectives.
+
+\subsection{Nouns}
+
+The rules produce singular and plural forms of nouns. Nouns that have 
+[OnlyPlural] are dealt with in the singular rule. It is assumed that nouns with 
+[NoPlural] are also basically singular. A translation problem exists for nouns 
+that can take a plural in one language, but not in another 
+({\em joys - vreugde, anti aircraft guns - afweergeschut}).
+
+Propernouns that obligatorily take an article ({\em Rhine, Hebrides}) are listed 
+as BNOUNs in the dictionary. Propernouns that only take an article when they 
+are modified ({\em the beautiful Germany}) are converted into subnouns by the 
+rule RlocalBproperToSubnoun (cf. following section).
+
+The Noun rules also take care of genitive forms. It is assumed that an 
+inflectional genitive can only occur for a limited number of singular nouns:
+converted propernouns and the restricted set containing 
+{\em moeder, (?)huis\/}. An even more restricted set of nouns (those of the 
+former rule ending in -s when plural) also takes an 
+inflectional genitive when plural ({\em ouders'\/}).
+Other nouns get a periphrastic phrase with {\em van de/het\/}.
+
+\subsection{Propernouns}
+
+It is unclear what propernouns can do while remaining propernouns. Can they form 
+plurals and genitives, or must they be converted to (sub)nouns for that? The 
+current propernoun rules allow for the formation of all forms nouns can take, 
+but perhaps all plural rules should simply be discarded. Also, it is doubtful 
+whether [OnlyPlural] propernouns exist that do not take an article; no examples 
+could be found (propernouns that always take an article, are listed as BNOUNs 
+in the dictionary).
+
+\subsection{Adjectives}
+
+These rules take care of positives, comparatives and superlatives of 
+adjectives. Positives and comparatives may have NoForm or sForm ({\em vlug(s), 
+vlugger(s)}). It is not quite clear to what English rule the sForm corresponds. 
+Probably, the formpar can simply be discarded there, yielding the same 
+translation for both forms.
+
+It is assumed that adjectives that are [NoComp] in one language 
+will also be [NoComp] in other languages ({\em houten - wooden}). The rules 
+also introduce {\em meer\/} and {\em meest\/} for adjectives that do not take 
+an inflectional comparative or superlative. The AllerSuperlative will be 
+analysed only; in IL, only one superlative is recognised.
+
+The AdjeORen rule produces -e and -en endings for NoForm adjectives in all 
+degrees of comparison; the -eForm 
+both for attributive and nominalised adjectives, the -enForm only for the 
+latter. However, as was mentioned in section 2, attributive -e should not be 
+generated, since the distinction between attributive forms with and without a 
+final -e is 
+determined exclusively by syntactic considerations. On the other hand, it may 
+be useful for the user to know whether an adjective can take an attributive -e 
+ending, since not all adjectives do
+({\em tevreden\/}, as contrasted to the 
+nominalised form {\em tevredene\/}). This information would be more or less on 
+the same line as spelling out whether an adjective has both
+an inflectional and a
+periphrastic comparative. Finally, the use of only one formparameter
+for both attributive -e (no semantics) and nominalised -e (meaningful) does not 
+seem correct. 
+A well-formulated decision should be taken 
+here. This decision should hold for eORenFormation of the participles of verbs 
+and for determiners and adverbs as well.
+
+\subsection{Adverbs}
+
+As was mentioned in section 2, derivation has not been taken into account yet. 
+It has been proposed to give Dutch adverbs an empty suffix, in line with the 
+{\em -ly\/} 
+suffix for English adverbs. How full isomorphism can be achieved between both 
+languages with regard to adverbs is not quite clear yet.
+
+Adverbs can also form comparatives and superlatives. It is unclear whether the 
+generation of periphrastic comparatives, as provided for in the rules, is 
+really needed. English adverbs do not normally have an inflectional 
+comparative, and thus will not be input in the word translation mode. 
+Exceptions are the combined adjective/adverbs like {\em early - earlier}, which
+(perhaps accidentally) all translate into inflection comparatives ({\em vroeg - 
+vroeger}). The superlative of adverbs takes the obligatory article {\em het\/}:
+{\em het liefst, het meest priv\'{e}}. In analysis, superlatives without 
+article are necessarily allowed. Again, allerSuperlatives are accepted in 
+analysis only.
+
+With adverbs, only superlatives may have -e endings ({\em het liefst(e) 
+willen}). It is assumed that only inflectional superlatives can take a final -e;
+periphrastic superlatives of adverbs cannot. It is doubtful whether this 
+assumption is correct. However, it is also doubtful whether periphrastic 
+superlatives of adverbs need to be generated at all (cf.\ the remarks made on 
+this point in the previous section). Finally, the decision to generate -eForms 
+is not consistent with what was said on this point in section 2; therefore, the 
+decision asked for in the previous section should hold for adverbs as well.
+
+\subsection{Personal Pronouns}
+It is assumed that in IL, all 5 persons are distinguished both in singular and 
+in plural. Dutch person 0 must not be included separately, since it does not 
+have a meaning of its own. Instead, in generation all occurrences of person 2
+(sing) must be mapped onto both person 2 and person 0.
+
+Reduced forms are accepted in analysis, but will not be generated, except for 
+the generalised {\em je: one, you} and {\em ze: they}. Care should be taken 
+that morphology can handle all cases of the generalised perspros (
+{\em je (acc,dat)\/} and {\em ze (acc,dat)\/}). As was 
+mentioned in section 2, only unambiguous forms are generated with respect to 
+case: even though the input is {\em hem (acc,dat)\/}, the output will be 
+{\em hem (acc)\/} and {\em hem (dat)\/}.
+
+It is not clear yet whether all forms going with the 5th person {\em gij\/} can 
+be handled yet by the local m-rules and by morphology. Is {\em U\/} the dative/
+accusative of {\em gij\/}? If so, will all Dutch occurrences of {\em U\/} also 
+be mapped onto the English rule for {\em thou\/} or not? The same problem holds 
+with respect to the possessive adjectives formed from {\em gij\/} and 
+{\em U\/}. The alternative would be to treat {\em gij\/} and {\em thou\/} in 
+analysis only; however, this will make a translation of {\em gij zult niet 
+stelen\/} into {\em thou shalt not steal\/} impossible (unless perhaps the ten 
+commandments are listed in the dictionary as idioms).
+
+\subsection{Possessive Adjectives}
+
+The rules accept reduced forms in analysis, but generate only full possessive 
+adjectives. An exception is made for generalized {\em je\/} and {\em ze\/}, 
+which have {\em je\/} and {\em hun\/} as possessives, respectively.
+For {\em het\/} and {\em gij\/} no possessive forms exist; an extra 
+rule is added to produce {\em ervan\/} as translation of English {\em its\/}.
+It is assumed that in morphology a rule exists which spells out the possessive 
+form of {\em gij\/} as {\em Uw\/}. However, in that case all occurrences of 
+{\em Uw\/} will be ambiguous between the possessive of {\em U\/} and of 
+{\em gij\/} (cf. the discussion in the previous section). A formal decision on 
+this point should be taken. Finally, the rules produce both {\em ons\/} and 
+{\em onze\/}. Perhaps this decision should be reconsidered when the general 
+strategy concerning eORenFormation has been formulated.
+
+The third possadj rule accounts for the genitive forms of possessive 
+adjectives. Generalized personal pronouns, {\em jullie\/}, {\em gij\/} and 
+{\em het\/} do not have this form. Since English and Spanish do not have this 
+form either, no rules are added to produce an alternative solution.
+
+\subsection{Possessive Pronouns}
+
+Two separate rules are needed for analysis and for generation, since the 
+translation of English PossPros needs an article {\em mine $\rightarrow$ de/het
+mijne\/}, while in analysis only one word may be entered ({\em mijne\/}).
+Generalized personal pronouns, {\em gij\/} and {\em het\/} do not form 
+possessive pronouns. If {\em gij\/} is to be generated, morphology should have 
+a rule spelling out the posspro of {\em gij\/} as {\em (de) Uwe\/}, as 
+translation of English {\em thine\/}. 
+
+Since {\em jullie\/} does not have a posspro either, a 
+third rule is added to generate {\em die/dat van mij, jullie\/} etc. It could 
+be argued that this rule should be reserved exclusively for the second person 
+plural; however, there seems to be no harm in a few extra translations for the 
+other persons.
+
+No rule is formulated yet for -enForms of possessive pronouns, since the exact 
+meaning of e.g.\ {\em de mijnen\/} is not clear. Personally, I think these 
+forms are not simply plurals of {\em de mijne\/}, but have a distinct meaning 
+roughly paraphrased as {\em those who are near to me\/}. Consequently, I also 
+believe that {\em de mijne\/} is ambiguous between singular and plural 
+reference. In case the plural form indeed has its own meaning, it should be 
+entered in the dictionary as a basic expression; its correct translation into 
+English will be a problem.
+
+\subsection{Wh Possessive Adjectives}
+
+It is assumed that three different forms of {\em wie\/} exist: ([masc], sing), 
+([fem], sing) and ([], plur), to produce {\em wiens\/} and two times 
+{\em wier\/} respectively. English has only one {\em whose\/}.
+
+\subsection{Dem Possessive Adjectives}
+
+It was decided to deal with {\em diens\/} in analysis only, since translation 
+of {\em his\/} and {\em su\/} should not give rise to too many ambiguities.
+As it is, {\em his\/} will produce {\em zijn, de/het zijne, die/dat van hem\/}, 
+which seems quite enough to cover the meaning of {\em diens\/} as well. As is 
+apparent from the previous, it is assumed that the Dutch DEMPRO {\em die\/} has 
+as one of its possible translations the English PERSPRO {\em hij\/}. The Dutch 
+DemPossAdj rule should then be mapped onto the English PossAdj rule. If Dutch 
+demonstrative pronouns get an extra attribute  to distinguish {\em deze\/} from 
+{\em die\/}, this attribute should also be mentioned in the rule.
+
+\subsection{Determiners}
+
+As with adjectives and adverbs, determiners are also generated with -e and -en 
+forms, for attributive and nominalised use. Again, a decision as to the 
+correctness of this approach should be made.
+
+At the moment, no rule exists in morphology to form a genitive of determiners. 
+However, forms like {\em beider\/} and {\em aller\/} seem to exist as genitives 
+of {\em beiden\/} and {\em allen\/} respectively (does 
+{\em veler\/} exist too?). Are these forms indeed determiners, derived from a 
+nominalisation of {\em beide\/} and {\em alle\/}, or are they separate
+indefinite pronouns (which can form genitives)? Should determiners get an 
+attribute `possgeni'? Perhaps the same problem holds for {\em ieder(s)\/} and 
+{\em elk(s)\/}. 
+
+No rule exists at present to generate {\em \underline{de} meeste\/} as 
+translation of English {\em most\/}. When all determiners are listed in the 
+test dictionary, the rules will be scanned for other such deficiencies and 
+will be adapted to current needs.
+
+\subsection{Indefinite Pronouns}
+
+It is assumed that all indefinite pronouns that can have a genitive in other 
+languages (all pronouns referring to animate beings?), can also have one in 
+Dutch, except for {\em men\/}. English 
+{\em one's\/} is translated by a separate rule into {\em zijn\/}. Since 
+{\em one\/} was not only mapped onto {\em men\/}, but also onto {\em je\/}, 
+this means that the English IndefProGeni-rule should also be mapped onto the 
+Dutch PossAdj-rule to produce the desired {\em je (gen)\/}.
+
+When a full list of indefinite pronouns is available in the test dictionary, 
+the rules will be checked for completeness.
+
+\subsection{Wh Pronouns}
+
+This is a vacuous rule, needed only because of the difference made in English 
+between {\em who (nom, acc)\/} and {\em whom (acc)\/}.
+
+
+
+\newpage
+{\Large\bf Appendix}
+\appendix
+\section{List of Files with Local Dutch M-rules}
+
+{\bf RlocalVerb}
+\begin{enumerate}
+\item RlocalSimpleSubVerb
+\item TlocalParticleSpelling0 and 1
+\item RlocalVerbPresIndic
+\item RlocalVerbPastIndic
+\item TlocalParticlePlace0 and 1
+\item RlocalVerbPastPart
+\item RlocalVerbPresPart
+\item RlocalVerbInf
+\item RlocalVerbImp(numberpar)
+\item RlocalVerbPresConj
+\item RlocalVerbPastConj
+\item RlocalVerbeORen(eORenFormpar)
+\end{enumerate}
+
+\noindent
+{\bf RlocalNoun}
+\begin{enumerate}
+\item RlocalSimpleSubNoun
+\item RlocalNounSing
+\item RlocalNounPlur
+\item RlocalNounSingGeni1 and 2
+\item RlocalNounPlurGeni1 and 2
+\end{enumerate}
+
+\noindent
+{\bf RlocalPropernoun}
+\begin{enumerate}
+\item RlocalPropernounSing
+\item RlocalPropernounPlur
+\item RlocalPropernounSingGeni1 and 2
+\item RlocalPropernounPlurGeni1 and 2
+\item RlocalBProperToSubnoun
+\end{enumerate}
+
+\noindent
+{\bf RlocalAdj}
+\begin{enumerate}
+\item RlocalSimpleSubAdj
+\item RlocalBasicAdj(formpar)
+\item RlocalAdjComp(formpar)
+\item RlocalAdjSup
+\item RlocalAdjeORen(eORenFormpar)
+\end{enumerate}
+
+\noindent
+{\bf RlocalAdv}
+\begin{enumerate}
+\item RlocalSimpleSubAdv
+\item RlocalBasicAdv
+\item RlocalAdvComp
+\item RlocalAdvSup(eORenFormpar)
+\end{enumerate}
+
+\noindent
+{\bf RlocalPersPro}
+\begin{enumerate}
+\item RlocalPerspro(casespar)
+\end{enumerate}
+
+\noindent
+{\bf RlocalPossAdj}
+\begin{enumerate}
+\item RlocalPossAdj1, 2, and 3
+\end{enumerate}
+
+\noindent
+{\bf RlocalPossPro}
+\begin{enumerate}
+\item RlocalPossPro1, 2, and 3
+\end{enumerate}
+
+\noindent
+{\bf RlocalWhPossAdj}
+\begin{enumerate}
+\item RlocalWhPossAdj(sexespar, numberpar)
+\end{enumerate}
+
+\noindent
+{\bf RlocalDemPossAdj}
+\begin{enumerate}
+\item RlocalDemPossAdj
+\end{enumerate}
+
+\noindent
+{\bf RlocalDet}
+\begin{enumerate}
+\item RlocalDet(eORenFormpar)
+\end{enumerate}
+
+\noindent
+{\bf RlocalIndefPro}
+\begin{enumerate}
+\item RlocalIndefPro1(genitivepar) and 2
+\end{enumerate}
+
+\noindent
+{\bf RlocalWhPro}
+\begin{enumerate}
+\item RlocalWhPro
+\end{enumerate}
+
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.3 - released  feb-1987}
+% feb-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1987 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

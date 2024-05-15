@@ -1,0 +1,1288 @@
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.morphology.English}
+   \RosTitle{Rosetta3 English Morphology: Glue Rules and \\
+               Segmentation Rules}
+   \RosAuthor{Margreet Sanders}
+   \RosDocNr{423}
+   \RosDate{December 14, 1989}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{English, morphology, Glue rules, Segmentation Rules, 
+                documentation}
+   \MakeRosTitle
+
+\section{Introduction}
+When in analysis of an input sentence a word has to be analysed to find its 
+stem, several rules are needed in Rosetta. First, there are glue rules that 
+divide a word into its composing words. Then, the segmentation rules 
+divide the word into a possible stem and affixes, if any can be detected. 
+The result will usually be a whole set of possible combinations. Then, a 
+search is done for each of these stems whether the dictionary indeed contains 
+such a stem. If it does 
+not, the analysis found by the segmentation rules is discarded. If the stem is 
+found, the 
+information the dictionary gives on the attributes of the stem are used by 
+the lextree rules (also called W-parser) to check whether the combination of 
+stem and affixes is indeed allowed. The formal aspects of this system are 
+described in doc.\ 309 by Joep Rous, {\em Formal Specification of the Rosetta3 
+Morphological Components\/}. The lextree rules are described in doc.\ 306 by 
+Margreet Sanders, {\em Rosetta3 English Morphology: Lextree Rules\/}. The 
+current document describes the glue rules and the segmentation rules. 
+It can be seen as an updated version of doc.\ 115 by Agnes Mijnhout, {\em 
+Rosetta3 English Morphology, inflection\/}, sections 3.1 and 8 on glue rules 
+and sections 3.2 and 9 on segmentation rules.
+Document 115 contains a full description of English 
+morphology as it was implemented in Rosetta3 at the end of 1986. Since then, 
+there have been very few major changes. All major changes are explicitly 
+indicated in the present document. Minor changes and improvements have not been 
+indicated explicitly.
+
+\newpage
+\section{Glue Rules}
+Glue rules are rules that separate a word into two words by putting a GLUE 
+between them, analytically 
+speaking. They are distinct from segmentation rules, which divide a word into
+its stem and affixes and store the appropriate suffixkey or prefix key. In 
+analysis, the glue rules are applied first, because they decide what the words 
+are on which the segmentation rules will have to work. They are not iterative, 
+but may be n-ary, i.e.\ they may take more than two arguments at a time. For 
+English, there are only binary rules. The glue rules can be found in files 
+{\bf rglue.seg} and {\bf 
+mglue.seg}, containing right glue rules and middle glue rules respectively.
+The difference between these two kinds of rules is that middle glue rules 
+expect fully specified strings as arguments, while right glue rules separate a 
+word from the right-hand side of any partly specified string. This is indicated 
+by means of the `care-not' symbol {\bf *}, which stands for any string 
+(possibly empty). Left glue rules, that separate a 
+word from the left-hand side of a string, do not exist for English.
+An example of a right glue rule is the rule that separates the genitive {\em 
+'s\/} from a string:
+\begin{verbatim}
+/A  *s    +    's    :: *s's;
+\end{verbatim}
+In generation, the rule is read from left to right, and in analysis from right 
+to left. If a rule is prefixed by either /A or /G it works only in analysis or 
+generation, respectively. The `+' symbol stands for a GLUE. The M-grammar must 
+contain rules that remove the GLUE in analysis; the segmentation rules 
+interpret a GLUE as a sign that the strings on either side are separate words, 
+but the do not throw the GLUE away. In generation, the rules of the 
+M-grammar must explicitly introduce a GLUE if a contracted form is to be 
+produced. Glue rules may also use variables, i.e.\ the name of a predefined set 
+of strings, e.g.
+\begin{verbatim}
+VAR
+B  =  [he, she, it];
+
+TABLE
+(B)   +  has   :: (B)'s;
+\end{verbatim}
+The variable B is defined as a set consisting of the strings {\em he, she\/}
+and {\em it\/}. If any of these strings is followed by an {\em 's\/}, this {\em 
+'s\/} will be interpreted as the word {\em has\/} in analysis. Glue rules and 
+segmentation rules are sensitive to the distinction between upper and lower 
+case. Fortunately, the lay-out component that precedes the glue rules in 
+analysis replaces all sentence-initial upper cases by lower cases, so that only 
+upper case in the middle of a sentence has to be accounted for.
+
+\newpage
+\subsection{Middle Glue Rules}
+This section contains the contents of the file {\bf mglue.seg}.
+There are four kinds of rules:\\
+1) The first set of rules make the contracted form of an operator and a 
+negation. These rules were extended with a special rule for {\em cannot\/}: the 
+basic expression {\em n\`{o}t\/} is introduced there to be able to guide the 
+generation of either {\em cannot\/} or {\em can't\/} (when they are both formed 
+from the same words, M-grammar will never be able to select only one of 
+them in generation, and morphology should never have to filter out the 
+structures supplied by M-grammar, so it does not help to have one of the rules 
+in analysis only). For more comment, see also the relevant rule in M-grammar, 
+TCanNegIncorp in subgrammar CLAUSEtoSENTENCE. If M-grammar can deal with tag 
+questions, a similar strategy will be needed for the distinction between {\em 
+aren't\/} and {\em ain't\/}, both made from {\em am\/} + {\em not\/}.\\
+2) The second set of rules deals with the contraction of an operator and a 
+personal pronoun subject. These rules work only in generation, exept for the 
+rule contracting {\em I\/} + {\em am\/}. M-grammar must decide whether these 
+contracted forms are 
+ever needed. For analysis, any string is accepted as input, not just personal 
+pronouns. Thus, the analytical rules are left glue rules, and are described in 
+the next subsection. The generative rules have been adapted, so that the form 
+{\em It'd\/} is not generated any longer. Perhaps {\em It'll\/} must be 
+excluded too, but this has not been implemented yet. The slang form {\em 
+ain't\/} as contraction of any form of the verb {\em be\/} (not just {\em am\/})
+ and the negation is not dealt with.\\
+3) The third kind of rule deals with {\em wanna\/}-contraction.\\
+4) The last kind of rule is for {\em let's\/}.
+
+\begin{verbatim}
+
+TYPE  MGLUE2;
+
+VAR
+
+A = [I, you, he, she, it, we, you, they];
+B = [he, she, it];
+C = [you, we, they];
+D = [I, you, we, they];
+E = [I, you, he, she, we, you, they];
+
+TABLE
+
+   shall  + not :: shan't;       
+   should + not :: shouldn't;  
+   will   + not :: won't;        
+   would  + not :: wouldn't;  
+   can    + not :: can't;         
+   can    + n`ot :: cannot;
+   could  + not :: couldn't;
+   must   + not :: mustn't;  
+   might  + not :: mightn't;
+   ought  + not :: oughtn't;
+   used   + not :: usedn't;
+   need   + not :: needn't;
+   dare   + not :: daren't; 
+   do     + not :: don't;
+   does   + not :: doesn't;
+   did    + not :: didn't;
+   have   + not :: haven't;
+   has    + not :: hasn't;
+   had    + not :: hadn't;
+   are    + not :: aren't;
+   am     + not :: aren't;       (only in tag questions: aren't I?)
+   am     + not :: ain't;   
+   is     + not :: isn't;
+   was    + not :: wasn't;
+   were   + not :: weren't;
+
+/G   (A)   + will  :: (A)'ll;         
+/G   (E)   + had   :: (E)'d; 
+/G   (E)   + would :: (E)'d;          
+/G   (B)   + has   :: (B)'s;          
+/G   (B)   + is    :: (B)'s;
+      I    + am    ::  I'm;
+/G   (C)   + are   :: (C)'re;
+/G   (D)   + have  :: (D)'ve;         
+
+   want + to :: wanna;
+ 
+   let  + us :: let's;
+
+END
+
+\end{verbatim}
+
+\newpage
+\subsection{Right Glue Rules}
+This subsection contains the contents of the file {\bf rglue.seg}. There are 
+two sets of rules:\\
+1) rules to make genitive forms by adding a {\em 's\/}.\\
+2) analytical rules for contraction of an operator and any preceding string.
+
+There is a major problem with the rules of the first subset.
+Actually, these rules should be sensitive to phonetic information. The first
+rule attaches only an apostrophe if the string ends in an {\em s\/}. However, 
+irregular plurals ending in an {\em s\/} in pronunciation but not in writing 
+should
+also receive only an apostrophe: {\em beaux'\/} (at least according to the OED, 
+Quirk
+is not very clear on this point). This form is rejected by the rules:
+they attach {\em 's\/} if the string does not end in 
+an {\em s\/}. The constraint on the final {\em s\/} is not always correct 
+either: singular words (Quirk gives only examples
+with names)  ending in an {\em s\/}  in pronunciation
+should also receive {\em 's\/}: {\em Ross's, mistress's\/}. These forms 
+cannot be generated by the current rules.
+Furthermore, with singular words (again only examples with names in 
+Quirk) ending in a {\em z\/} in pronunciation, there is a
+choice between {\em ' } and {\em 's\/}: {\em Dickens'\/}  or {\em Dickens's\/}.
+ Only the first form
+of these two is generated by the rules. A rule is added that accepts 
+{\em Dickens's\/}. This rule will now incorrectly allow other strings in analysis
+too, however. The set NOTs was devised to be able to deal with abbreviations
+and numerals as well: it contains capitals and a period. Thus, the genitives
+{\em M.P.'s\/} and {\em NP's\/} and the form {\em 1960's\/} 
+can be dealt with too. This last
+item is given as an example of a genitive form in the OED, but Quirk claims
+that it can be plural as well, next to {\em 1960s\/}.
+
+In Rosetta3, phonetic constraints can be used to check segmentation processes.
+In that case, the dictionary must contain phonetic information, and this 
+information is checked against the phonetic constraints that have been 
+specified in the segmentation rule. However, such constraints are as yet 
+impossible for glue rules, which operate before the segmentation rules 
+(analytically speaking) and have no immediate possibility of checking any 
+specification in the dictionary. Hence, 
+there is no direct solution to the problem over over-acceptance but 
+under-production for strings 
+ending in {\em s's\/} yet. In doc.\ 115, it was suggested to treat genitive 
+{\em 's\/} as a segmentation phenomenon instead of a word contraction 
+phenomenon.
+At the time, it was thought that this would be problematic, because the 
+attribute specifying whether a genitive was needed should go with the NP-node, 
+but the actual {\em 's\/} attaches to the 
+noun. However, there already is a function CheckGen to check whether the last 
+element in the NP can take a {\em 's\/}. A function AddGen that sets the value 
+of a new attribute {\em gen-s\/} could easily be 
+added. Therefore, it seems to me that Agnes's suggestion should be taken 
+seriously.
+
+Although the rules of the second subset also clearly accept many forms that are 
+wrong, the conditions on what to accept and what not cannot be translated to a 
+simple table of rules. Other forms are inherently ambiguous: a string like 
+{\em He's eaten\/} could both be {\em He is eaten\/} and {\em He has eaten\/}. 
+The only operator that must always go with a specific 
+string is {\em am\/}; hence, the analytical glue rule for *{\em 'm\/} can be 
+more fully specified as a rule for {\em I'm\/}, and is incorporated in the 
+middle glue rules (see the previous subsection). 
+Note that M-grammar does not have any rules yet that can deal with subject - 
+auxiliary contraction, so these forms can only be dealt with by morphology now.
+\begin{verbatim}
+
+TYPE RGLUE2;
+
+VAR
+
+NOTs = [ a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r,
+         t, u, v, w, x, y, z, 
+         A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R,
+         T, U, V, W, X, Y, Z, 
+         ., 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+
+TABLE
+
+   *s      + 's :: *s';         
+   *S      + 's :: *S';
+   *(NOTs) + 's :: *(NOTs)'s;
+/A *s      + 's :: *s's;
+
+
+/A * + will   :: *'ll;
+/A * + had    :: *'d;
+/A * + would  :: *'d;
+/A * + has    :: *'s;
+/A * + is     :: *'s;
+/A * + are    :: *'re;
+/A * + have   :: *'ve;
+
+END
+\end{verbatim}
+
+\newpage
+\section{Segmentation Rules}
+As was explained in the introduction to this document, the segmentation rules 
+work after the glue rules in analysis, taking the words separated by the glue 
+rules as their domain. They divide a word into a possible stem and an affix.
+The rules are binary and iterative, and know some internal ordering of 
+application: first, 
+prefixes are removed; then, there is a check whether the resulting string 
+could be a compound,
+and finally suffixes are removed. Since Rosetta3 does not deal with 
+compounds yet, and 
+since English inflection only uses suffixes (derivation is hardly dealt with 
+yet), the suffix rules are the only rules to be described in this section.
+
+The suffix rules do not produce two separate words in analysis, but a word and 
+a suffix key. The suffix keys that exist for English are defined in {\bf 
+english:lsdomaint.dom}, together with some prefix keys that may be needed when 
+derivation is dealt with. The syntax of the rules is much the same as for left 
+glue rules:
+\begin{verbatim}
+*come   +   SFKirrpt   :: *came;
+\end{verbatim}
+The example rule says that the combination of the irregular past tense key and 
+all strings ending in {\em come\/} (become, come, overcome etc.) will gave 
+a new string ending in {\em came\/}, generatively speaking. Segmentation rules 
+may also contain variables, just as glue rules, and are also sensitive to the 
+distinction between upper and lower case. Note that the `+' 
+symbol in the segmentation rules does not stand for a GLUE. It is simply a 
+symbol to separate the two arguments of the rule. In analysis, the form {\em 
+*came\/} is thus recognised as a combination of a stem *{\em come\/} and the 
+suffix key SFKirrpt. After the segmentation rules a dictionary look-up follows, 
+in which the stem *{\em come\/} is connected to a full verb record. This record 
+ contains, amongst others, an attribute that indicates the conjugation 
+class(es) of 
+the verb. In the lextree rules it is checked whether this attribute is 
+compatible with the suffix key found by the segmentation rule (i.e.\ whether 
+*{\em come\/} has an irregular past tense). If the combination is indeed 
+allowed, the suffix key is `thrown away' and instead a special attribute value 
+is set. Hence, suffix keys play no role whatsoever in M-grammar.
+
+Because the order in which affixes can be attached to a stem is usually fixed, 
+a control expression has been written to state this constraint. 
+For English, it is very simple, because
+there can be only one suffix, except for the very irregular steps 
+of comparison of the adverbs {\em well\/} and {\em badly\/}, which have 
+themselves been derived from the adjectives {\em good\/} and {\em bad\/} by 
+means of a derivational suffix key.
+The distinction that used to exist between rsuffix (regular, recursive), 
+freefix (for fully specified combinations, without * ) and other suffix rules 
+(for irregular forms that change the stem) has been removed, now that a
+control expression has been defined.
+
+In the sections to follow, the segmentation rules as present in file 
+{\bf english:suffix.seg} are given in full. They are ordered more or less by 
+lexical category, giving first the rules for Verbs, then for Nouns, then for 
+Adjectives and Adverbs, and finally for Pronouns. There also is a section on 
+Derivation Rules. The variables that are 
+defined at the top of the file are reproduced here separately for each 
+category, for easier reference.
+
+
+\subsection{Control Expression}
+The control expression which indicates the order of application of the affix 
+rules for English can be found in file {\bf english:morphexpr.afxpr}. 
+\begin{verbatim}
+
+AFFIXEXPR =
+[
+( 
+SFKam | SFKis | SFKwas | SFKare | SFKwere | 
+SFKirrpp | SFKirring | SFKirrptpp | SFKirrS | SFKmodpt | 
+SFKirrnc | SFKirrpt | SFKirrpt2 | SFKirrpp2 | SFKirrpp3 | 
+SFKregptpp | SFKcdptpp | SFKcding | SFKreging | 
+SFKregS | SFKregEs | 
+( [ SFKirrcomp | SFKirrsuper ] SFKregly ) |
+( [ SFKirrcomp | SFKirrsuper ] SFKirregly ) |
+SFKnoly | 
+SFKregable | SFKcdable | SFKtruncable |
+SFKvoicingS | SFKirrplur | SFKlatplur | 
+SFKirrcomp | SFKirrsuper | SFKirrcomp2 | SFKirrsuper2 | 
+SFKcdcomp | SFKcdsuper | SFKregcomp | SFKregsuper | 
+SFKacc | SFKposs | SFKpredposs 
+)
+]
+EXPREND
+
+\end{verbatim}
+
+\newpage
+\subsection{Rules for Verbs}
+\subsubsection{Very Irregular Verbs}
+These rules are for the very irregular verbs {\em be, have\/}, and the modals.
+The numbers  in front of the verbs indicate the conjugation class. In the 
+lextree rules, this conjugation class will be used to determine whether the 
+combination of verb and suffix key as found in the segmentation rules 
+was correct. For ing-forms and present tense forms, there is no such check, and 
+the class has not been indicated. 
+
+The suffix keys used in the rules are:\\
+SFKam = for 1st person singular present tense of `be'\\
+SFKis = for 3rd person singular present tense of `be'\\
+SFKwas = for singular past tense of `be'\\
+SFKare = for plural present tense of `be'\\
+SFKwere = for plural past tense of `be'\\
+SFKirring = for -ing form of `be' and other verbs (see section 3.2.4)\\
+SFKirrptpp = for past and participle of `have' and other verbs (see section 
+3.2.3)\\
+SFKirrS = for s-form of `have' and other verbs (see section 3.3)\\
+SFKmodpt = for the past tense of modals.
+
+\begin{verbatim}
+(0) be   + SFKam       :: am;     
+(0) be   + SFKis       :: is;     
+(0) be   + SFKwas      :: was;    
+(0) be   + SFKare      :: are;    
+(0) be   + SFKwere     :: were;   
+(0) be   + SFKirrpp    :: been;  
+    be   + SFKirring   :: being;
+
+(2) have + SFKirrptpp  :: had;    (pt + pp)
+
+    have + SFKirrS     :: has;
+
+(12) can   + SFKmodpt    :: could;  (pt)
+(12) may   + SFKmodpt    :: might;  (pt)
+(12) shall + SFKmodpt    :: should; (pt)
+(12) will  + SFKmodpt    :: would;  (pt)
+(12) dare  + SFKmodpt    :: dared;  (pt)
+\end{verbatim}
+The form {\em dared\/} might also have been handled by the
+regular rule, but then a separate conjugation class would be necessary for
+{\em dare\/}, as the only regular modal. 
+For {\em durst\/}, see the irregular past tense rules below.
+
+
+\subsubsection{Regular Past and Perfect}
+These rules make past tense and past participle forms for regular verbs. Names
+ of the suffix keys used in these rules: \\
+SFKregptpp = regular past tense and past participle form\\
+SFKcdptpp  = consonant doubling past tense and past participle form.\\
+Several variables have been defined:
+\begin{description}
+\item[C] the set of consonants. If these letters precede `y', `y' changes 
+into `i' 
+if `ed' , `s', `er' or `est' is added. For the current rules, the set is 
+needed because of its importance for {\em -ed\/} attachment: \\
+{\em try - tried; stay - stayed\/}.
+\item[V] the set of vowels, excluding `y'. If these letters precede `y', 
+`y' doesn't change into `i'.
+\item[Else]  the set of all letters except `e' and `y'. This set allows normal 
+addition of `ed'; `e' and `y' are special if `ed', `er' or `est' is added.
+\item[D] the set of letters that can be doubled before `-ed'  and `-ing'.
+\end{description}
+Both C and Else may be too large; it may be the case that some forms 
+allowed by this formulation do not actually exist. 
+Especially `i' in Else may give unwarranted ambiguities in analysis of 
+regular past tenses and past participles (see the rule), but since there 
+is the `normal' verb {\em ski\/} ending in `i', it cannot be removed from 
+this set.
+
+\begin{verbatim}
+
+VAR
+
+C    = [b, c, d, f, g, h, j, k, l, m, n, p, q, r, s, t, v, w, x, z] ;
+V    = [a, e, i, o, u];
+Else = [a, b, c, d, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, 
+        u, v, w, x, z];
+D    = [b, d, f, g, k, l, m, n, p, r, s, t, z]; 
+
+
+TABLE
+
+(10)  *e             + SFKregptpp   :: *ed;        (pt + pp)
+(10)  *(C)y          + SFKregptpp   :: *(C)ied;    (pt + pp)
+(10)  *(V)y          + SFKregptpp   :: *(V)yed;    (pt + pp)
+(10)  *(Else)        + SFKregptpp   :: *(Else)ed;  (pt + pp)
+(11)  *(D)           + SFKcdptpp    :: *(D)(D)ed;  (pt + pp)
+(11)  *c             + SFKcdptpp    :: *cked;      (pt + pp)
+
+\end{verbatim}
+
+\subsubsection{Irregular Past and Perfect}
+This subsection descibes the rules that make past tense and past participle 
+forms  for irregular verbs. Between brackets is indicated whether the rule 
+is for a past tense (pt) or for a past participle (pp), or both. 
+The numbers  in front of the verbs indicate the conjugation class. In the 
+lextree rules, this conjugation class will be used to determine whether the 
+combination of verb and suffix key as found in the segmentation rules 
+was correct.  The rules are ordered on alphabetical ending of the stem, 
+so alphabetically when reading the stem from right to left.
+The names of the suffix keys are:\\
+SFKirrpt = irregular past tense form\\
+SFKirrpp = irregular past participle form\\
+SFKirrptpp = irregular past tense and past participle form\\
+SFKirrpt2 = second irregular past tense form\\
+SFKirrpp2 = second irregular past participle form\\
+SFKirrpp3 = third irregular past participle form \\
+SFKirrnc = irregular, no change of form
+\\[1 ex]
+\begin{verbatim}
+
+(2)   *lead          + SFKirrptpp  :: *led;       (pt + pp)
+(3)   *spread        + SFKirrnc    :: *spread;    (pt + pp)
+(1)   *tread         + SFKirrpt    :: *trod;      (pt)
+(1)   *tread         + SFKirrpp    :: *trodden;   (pp)
+(2)   *feed          + SFKirrptpp  :: *fed;       (pt + pp)
+(2)   *bleed         + SFKirrptpp  :: *bled;      (pt + pp)
+(2)   *speed         + SFKirrptpp  :: *sped;      (pt + pp)
+(2)   *breed         + SFKirrptpp  :: *bred;      (pt + pp)
+(3)   *shed          + SFKirrnc    :: *shed;      (pt + pp)
+(3)   *wed           + SFKirrnc    :: *wed;       (pt + pp, also regular)
+(3)   *bid           + SFKirrnc    :: *bid;       (pt + pp)
+(1)   *bid           + SFKirrpt    :: *bade;      (pt)
+(1)   *bid           + SFKirrpp    :: *bidden;    (pp)
+(5)   *forbid        + SFKirrpt2   :: *forbad;    (pt)
+(6)   *forbid        + SFKirrpp2   :: *forbid;    (pp)
+(3)   *rid           + SFKirrnc    :: *rid;       (pt + pp. also regular)
+(5)   *gild          + SFKirrpt2   :: *gilt;      (pt)
+(2)   *build         + SFKirrptpp  :: *built;     (pt + pp)
+(2)   *hold          + SFKirrptpp  :: *held;      (pt + pp)
+(2)   *stand         + SFKirrptpp  :: *stood;     (pt + pp)
+(2)   *bend          + SFKirrptpp  :: *bent;      (pt + pp)
+(2)   *lend          + SFKirrptpp  :: *lent;      (pt + pp)
+(2)   *spend         + SFKirrptpp  :: *spent;     (pt + pp)
+(2)   *rend          + SFKirrptpp  :: *rent;      (pt + pp)
+(2)   *send          + SFKirrptpp  :: *sent;      (pt + pp)
+(2)   *bind          + SFKirrptpp  :: *bound;     (pt + pp)
+(2)   *find          + SFKirrptpp  :: *found;     (pt + pp)
+(2)   *grind         + SFKirrptpp  :: *ground;    (pt + pp)
+(2)   *wind          + SFKirrptpp  :: *wound;     (pt + pp)
+(2)   *gird          + SFKirrptpp  :: *girt;      (pt + pp)
+
+(4)   *lade          + SFKirrpp    :: *laden;     (pp)
+(2)   *bide          + SFKirrptpp  :: *bode;      (pt + pp)
+(2)   *hide          + SFKirrptpp  :: *hid;       (pt + pp)
+(6)   *hide          + SFKirrpp2   :: *hidden;    (pp)
+(2)   *chide         + SFKirrptpp  :: *chid;      (pt + pp, also regular)
+(6)   *chide         + SFKirrpp2   :: *chidden;   (pp, also regular)
+(2)   *slide         + SFKirrptpp  :: *slid;      (pt + pp)
+(6)   *slide         + SFKirrpp2   :: *slidden;   (pp, as an adjective)
+(1)   *ride          + SFKirrpt    :: *rode;      (pt)
+(1)   *ride          + SFKirrpp    :: *ridden;    (pp)
+(2)   *stride        + SFKirrptpp  :: *strode;    (pt + pp)
+(7)   *stride        + SFKirrpp3   :: *stridden;  (pp, rare)
+(6)   *stride        + SFKirrpp2   :: *strid;     (pp)
+(2)   *flee          + SFKirrptpp  :: *fled;      (pt + pp)
+(1)   *see           + SFKirrpt    :: *saw;       (pt)
+(1)   *see           + SFKirrpp    :: *seen;      (pp)
+(1)   *lie           + SFKirrpt    :: *lay;       (pt)
+(1)   *lie           + SFKirrpp    :: *lain;      (pp)
+(1)   *shake         + SFKirrpt    :: *shook;     (pt)
+(1)   *shake         + SFKirrpp    :: *shaken;    (pp)
+(2)   *make          + SFKirrptpp  :: *made;      (pt + pp)
+(1)   *forsake       + SFKirrpt    :: *forsook;   (pt)
+(1)   *forsake       + SFKirrpp    :: *forsaken;  (pp)
+(1)   *take          + SFKirrpt    :: *took;      (pt)
+(1)   *take          + SFKirrpp    :: *taken;     (pp)
+(1)   *wake          + SFKirrpt    :: *woke;      (pt, also regular)
+(1)   *wake          + SFKirrpp    :: *woken;     (pp, also regular)
+(2)   *strike        + SFKirrptpp  :: *struck;    (pt + pp)
+(8)   *come          + SFKirrpt    :: *came;      (pt)
+(8)   *come          + SFKirrnc    :: *come;      (pp)
+(2)   *shine         + SFKirrptpp  :: *shone;     (pt + pp)
+(2)   *shoe          + SFKirrptpp  :: *shod;      (pt + pp)
+(5)   *dare          + SFKirrpt2   :: *durst;     (pt, archaic; see very 
+                                                   irregular verbs for 
+                                                   `dared')
+(1)   *rise          + SFKirrpt    :: *rose;      (pt)
+(1)   *rise          + SFKirrpp    :: *risen;     (pp)
+(2)   *lose          + SFKirrptpp  :: *lost;      (pt + pp)
+(1)   *choose        + SFKirrpt    :: *chose;     (pt)
+(1)   *choose        + SFKirrpp    :: *chosen;    (pp)
+(1)   *bite          + SFKirrpt    :: *bit;       (pt)
+(1)   *bite          + SFKirrpp    :: *bitten;    (pp)
+(1)   *smite         + SFKirrpt    :: *smote;     (pt)
+(1)   *smite         + SFKirrpp    :: *smitten;   (pp)
+(1)   *write         + SFKirrpt    :: *wrote;     (pt)
+(1)   *write         + SFKirrpp    :: *written;   (pp)
+(2)   *heave         + SFKirrptpp  :: *hove;      (pt + pp)
+(2)   *leave         + SFKirrptpp  :: *left;      (pt + pp)
+(1)   *cleave        + SFKirrpt    :: *clove;     (pt)
+(1)   *cleave        + SFKirrpp    :: *cloven;    (pp)
+(2)   *bereave       + SFKirrptpp  :: *bereft;    (pt + pp, also regular, 
+                                                   less common)
+(1)   *weave         + SFKirrpt     :: *wove;      (pt)
+(1)   *weave         + SFKirrpp     :: *woven;     (pp)
+(6)   *grave         + SFKirrpp2    :: *graven;    (pp, also regular)
+(2)   *stave         + SFKirrptpp   :: *stove;     (pt + pp, also regular)
+(2)   *reeve         + SFKirrptpp   :: *rove;      (pt + pp)
+(5)   *dive          + SFKirrpt2    :: *dove;      (pt AmE, 
+                                                    regular in BrE)
+(1)   *give          + SFKirrpt     :: *gave;      (pt)
+(1)   *give          + SFKirrpp     :: *given;     (pp)
+(6)   *rive          + SFKirrpp2    :: *riven;     (pp)
+(1)   *drive         + SFKirrpt     :: *drove;     (pt)
+(1)   *drive         + SFKirrpp     :: *driven;    (pp)
+(1)   *shrive        + SFKirrpt     :: *shrove;    (pt)
+(1)   *shrive        + SFKirrpp     :: *shriven;   (pp)
+(5)   *thrive        + SFKirrpt2    :: *throve;    (pt, also regular)
+(6)   *thrive        + SFKirrpp2    :: *thriven;   (pp, also regular)
+(1)   *strive        + SFKirrpt     :: *strove;    (pt)
+(1)   *strive        + SFKirrpp     :: *striven;   (pp)
+(6)   *prove         + SFKirrpp2    :: *proven;    (pp, also regular)
+(1)   *freeze        + SFKirrpt     :: *froze;     (pt)
+(1)   *freeze        + SFKirrpp     :: *frozen;    (pp)
+
+
+(2)   *dig           + SFKirrptpp   :: *dug;       (pt + pp)
+(2)   *hang          + SFKirrptpp   :: *hung;      (pt + pp, regular in 
+                                                    meaning
+                                                    `put to death') 
+(2)   *cling         + SFKirrptpp   :: *clung;     (pt + pp)
+(2)   *fling         + SFKirrptpp   :: *flung;     (pt + pp)
+(1)   *ring          + SFKirrpt     :: *rang;      (pt)
+(1)   *ring          + SFKirrpp     :: *rung;      (pp)
+(2)   *bring         + SFKirrptpp   :: *brought;   (pt + pp)
+(2)   *sling         + SFKirrptpp   :: *slung;     (pt + pp)
+(2)   *string        + SFKirrptpp   :: *strung;    (pt + pp)
+(2)   *wring         + SFKirrptpp   :: *wrung;     (pt + pp)
+(1)   *sing          + SFKirrpt     :: *sang;      (pt)
+(1)   *sing          + SFKirrpp     :: *sung;      (pp)
+(2)   *sting         + SFKirrptpp   :: *stung;     (pt + pp)
+(2)   *swing         + SFKirrptpp   :: *swung;     (pt + pp)
+
+(2)   *teach         + SFKirrptpp   :: *taught;    (pt + pp)  
+(2)   *beseech       + SFKirrptpp   :: *besought;  (pt + pp)
+(2)   *catch         + SFKirrptpp   :: *caught;    (pt + pp)
+
+(1)   *speak         + SFKirrpt     :: *spoke;     (pt)
+(1)   *speak         + SFKirrpp     :: *spoken;    (pp)
+(1)   *break         + SFKirrpt     :: *broke;     (pt)
+(1)   *break         + SFKirrpp     :: *broken;    (pp)
+(2)   *stick         + SFKirrptpp   :: *stuck;     (pt + pp)
+(2)   *seek          + SFKirrptpp   :: *sought;    (pt + pp)
+(2)   *think         + SFKirrptpp   :: *thought;   (pt + pp)
+(2)   *slink         + SFKirrptpp   :: *slunk;     (pt + pp)
+(1)   *drink         + SFKirrpt     :: *drank;     (pt)
+(1)   *drink         + SFKirrpp     :: *drunk;     (pp)
+(2)   *shrink        + SFKirrptpp   :: *shrunk;    (pt + pp)
+(1)   *shrink        + SFKirrpt     :: *shrank;    (pt)
+(1)   *shrink        + SFKirrpp     :: *shrunken;  (pp, as an adjective)
+(1)   *sink          + SFKirrpt     :: *sank;      (pt)
+(1)   *sink          + SFKirrpp     :: *sunk;      (pp)
+(5)   *stink         + SFKirrpt2    :: *stank;     (pt)
+(2)   *stink         + SFKirrptpp   :: *stunk;     (pt + pp)
+
+(2)   *deal          + SFKirrptpp   :: *dealt;     (pt + pp)
+(1)   *steal         + SFKirrpt     :: *stole;     (pt)
+(1)   *steal         + SFKirrpp     :: *stolen;    (pp)
+(2)   *feel          + SFKirrptpp   :: *felt;      (pt + pp) 
+(2)   *kneel         + SFKirrptpp   :: *knelt;     (pt + pp, 
+                                                    also regular, AmE)
+(2)   *spoil         + SFKirrptpp   :: *spoilt;    (pt + pp, 
+                                                    also regular, AmE)
+(1)   *fall          + SFKirrpt     :: *fell;      (pt)
+(1)   *fall          + SFKirrpp     :: *fallen;    (pp)
+(2)   *smell         + SFKirrptpp   :: *smelt;     (pt + pp, 
+                                                    also regular, AmE)
+(2)   *spell         + SFKirrptpp   :: *spellt;    (pt + pp, 
+                                                    also regular, AmE)
+(2)   *sell          + SFKirrptpp   :: *sold;      (pt + pp)
+(2)   *tell          + SFKirrptpp   :: *told;      (pt + pp)
+(2)   *dwell         + SFKirrptpp   :: *dwelt;     (pt + pp, 
+                                                    also regular, AmE)
+(6)   *swell         + SFKirrpp2    :: *swollen;   (pp, also regular)
+(2)   *spill         + SFKirrptpp   :: *spilt;     (pt + pp, 
+                                                    also regular, AmE)
+
+(2)   *dream         + SFKirrptpp   :: *dreamt;    (pt + pp, 
+                                                    also regular, AmE)
+(1)   *swim          + SFKirrpt     :: *swam;      (pt)
+(1)   *swim          + SFKirrpp     :: *swum;      (pp)
+
+(2)   *lean          + SFKirrptpp   :: *leant;     (pt + pp, 
+                                                    also regular, AmE)
+(2)   *mean          + SFKirrptpp   :: *meant;     (pt + pp)
+(1)   *begin         + SFKirrpt     :: *began;     (pt)
+(1)   *begin         + SFKirrpp     :: *begun;     (pp)
+(2)   *spin          + SFKirrptpp   :: *spun;      (pt + pp)
+(5)   *spin          + SFKirrpt2    :: *span;      (pt, archaic)
+(2)   *win           + SFKirrptpp   :: *won;       (pt + pp)
+(2)   *learn         + SFKirrptpp   :: *learnt;    (pt + pp, 
+                                                    also regular, AmE)
+(2)   *burn          + SFKirrptpp   :: *burnt;     (pt + pp, 
+                                                    also regular, AmE)
+(8)   *run           + SFKirrpt     :: *ran;       (pt)
+(8)   *run           + SFKirrnc     :: *run;       (pp)
+
+(1)   *do            + SFKirrpt     :: *did;       (pt)
+(1)   *do            + SFKirrpp     :: *done;      (pp)
+(1)   *go            + SFKirrpt     :: *went;      (pt)
+(1)   *go            + SFKirrpp     :: *gone;      (pp)
+
+(2)   *leap          + SFKirrptpp   :: *leapt;     (pt + pp, 
+                                                    also regular, AmE)
+(2)   *sleep         + SFKirrptpp   :: *slept;     (pt + pp)
+(2)   *keep          + SFKirrptpp   :: *kept;      (pt + pp)
+(2)   *creep         + SFKirrptpp   :: *crept;     (pt + pp)
+(2)   *weep          + SFKirrptpp   :: *wept;      (pt + pp)
+
+(1)   *bear          + SFKirrpt     :: *bore;      (pt)
+(1)   *bear          + SFKirrpp     :: *borne;     (pp)
+(2)   *hear          + SFKirrptpp   :: *heard;     (pt + pp)
+(6)   *shear         + SFKirrpp2    :: *shorn;     (pp, also regular)
+(1)   *tear          + SFKirrpt     :: *tore;      (pt)
+(1)   *tear          + SFKirrpp     :: *torn;      (pp)
+(1)   *wear          + SFKirrpt     :: *wore;      (pt)
+
+(2)   *bless         + SFKirrptpp   :: *blest;     (pt + pp)
+
+
+(1)   *eat           + SFKirrpt     :: *ate;       (pt)
+(1,9) *eat           + SFKirrpp     :: *eaten;     (pp)    
+(9)   *beat          + SFKirrnc     :: *beat;      (pt)
+(6)   *beat          + SFKirrpp2    :: *beat;      (pp)
+(3)   *sweat         + SFKirrnc     :: *sweat;     (pt + pp, also regular)
+(2)   *meet          + SFKirrptpp   :: *met;       (pt + pp)
+(3)   *bet           + SFKirrnc     :: *bet;       (pt + pp)
+(2)   *get           + SFKirrptpp   :: *got;       (pt + pp)
+(6)   *get           + SFKirrpp2    :: *gotten;    (pt + pp)
+(1)   *beget         + SFKirrpt     :: *begot;     (pt)
+(1)   *beget         + SFKirrpp     :: *begotten;  (pp)
+(1)   *forget        + SFKirrpt     :: *forgot;    (pt)
+(1)   *forget        + SFKirrpp     :: *forgotten; (pp)
+(3)   *let           + SFKirrnc     :: *let;       (pt + pp)
+(3)   *set           + SFKirrnc     :: *set;       (pt + pp)
+(3)   *wet           + SFKirrnc     :: *wet;       (pt + pp, also regular)
+(2)   *fight         + SFKirrptpp   :: *fought;    (pt + pp)
+(2)   *light         + SFKirrptpp   :: *lit;       (pt + pp, also regular)
+(3)   *hit           + SFKirrnc     :: *hit;       (pt + pp)
+(3)   *slit          + SFKirrnc     :: *slit;      (pt + pp)
+(3)   *split         + SFKirrnc     :: *split;     (pt + pp)
+(3)   *knit          + SFKirrnc     :: *knit;      (pt + pp, also regular) 
+(2)   *spit          + SFKirrptpp   :: *spat;      (pt + pp)
+(2)   *sit           + SFKirrptpp   :: *sat;       (pt + pp)
+(3)   *quit          + SFKirrnc     :: *quit;      (pt + pp, also regular)
+(2)   *shoot         + SFKirrptpp   :: *shot;      (pt + pp)
+(3)   *hurt          + SFKirrnc     :: *hurt;      (pt + pp)
+(3)   *cast          + SFKirrnc     :: *cast;      (pt + pp)
+(3)   *cost          + SFKirrnc     :: *cost;      (pt + pp)   
+(3)   *burst         + SFKirrnc     :: *burst;     (pt + pp)
+(3)   *thrust        + SFKirrnc     :: *thrust;    (pt + pp)
+(3)   *cut           + SFKirrnc     :: *cut;       (pt + pp)
+(3)   *shut          + SFKirrnc     :: *shut;      (pt + pp)
+(3)   *put           + SFKirrnc     :: *put;       (pt + pp)
+
+(1)   *draw          + SFKirrpt     :: *drew;      (pt)
+(1)   *draw          + SFKirrpp     :: *drawn;     (pp)   
+(6)   *saw           + SFKirrpp2    :: *sawn;      (pp, also regular)
+(6)   *hew           + SFKirrpp2    :: *hewn;      (pp, also regular)
+(6)   *strew         + SFKirrpp2    :: *strewn;    (pp, also regular)
+(6)   *sew           + SFKirrpp2    :: *sewn;      (pp, also regular)
+(6)   *show          + SFKirrpp2    :: *shown;     (pp, also regular)
+(1)   *blow          + SFKirrpt     :: *blew;      (pt)
+(1)   *blow          + SFKirrpp     :: *blown;     (pp)
+(6)   *mow           + SFKirrpp2    :: *mown;      (pp, also regular)
+(1)   *know          + SFKirrpt     :: *knew;      (pt)
+(1)   *know          + SFKirrpp     :: *known;     (pp)
+(5)   *crow          + SFKirrpt2    :: *crew;      (pt, archaic)
+(1)   *grow          + SFKirrpt     :: *grew;      (pt)
+(1)   *grow          + SFKirrpp     :: *grown;     (pp)
+(1)   *throw         + SFKirrpt     :: *threw;     (pt)
+(1)   *throw         + SFKirrpp     :: *thrown;    (pp)
+(6)   *sow           + SFKirrpp2    :: *sown;      (pp, also regular)
+
+(2)   *lay           + SFKirrptpp   :: *laid;      (pt + pp)
+(1)   *slay          + SFKirrpt     :: *slew;      (pt)
+(1)   *slay          + SFKirrpp     :: *slain;     (pp)
+(2)   *pay           + SFKirrptpp   :: *paid;      (pt + pp)
+(2)   *say           + SFKirrptpp   :: *said;      (pt + pp)
+(1)   *fly           + SFKirrpt     :: *flew;      (pt)
+(1)   *fly           + SFKirrpp     :: *flown;     (pp)   
+(2)   *buy           + SFKirrptpp   :: *bought;    (pt + pp)
+
+\end{verbatim}
+A few forms have been removed from the set, because they are not thought to be 
+likely or because they only apply to adjectives. Some other forms which also 
+occur mostly as adjectives have not been removed yet. Removed are: 
+\begin{verbatim}
+     *strike        + SFKirrpp2    :: *stricken; adj, but rare as verb
+     *bite          + SFKirrpp2    :: *bit; rare as verb
+     *shave         + SFKirrpp2    :: *shaven; only adjective
+     *sink          + SFKirrpp2    :: *sunken; only adjective
+     *melt          + SFKirrpp2    :: *molten; only adjective
+\end{verbatim}
+The conjugation classes for these verbs have been adapted accordingly, in as 
+far as they were in the test dictionary. The large dictionaries have NOT been 
+adapted yet, since they are not ordered alphabetically for English yet. Thus, 
+there may be mistakes there! Since a number of minor changes were made in the 
+rules, the list of doc.\ 115 specifying for irregular verbs in which 
+conjugation class(es) they fall is now out of date. This list should be adapted
+too.
+
+The verbs that are irregular in British English but regular in American English 
+are now filled with both conjugation classes. No restrictions have been laid 
+down yet on the working of these rules, so all forms that are possible will be 
+produced in generation.
+
+\subsubsection{Ing-form}
+This subsection describes the rules that make `-ing' forms of verbs, 
+for progressive and nominalizations.
+ Verbs have an attribute, {\em ingform\/}, to indicate how they form their -ing 
+form, if any. For more information, see doc.\ 115 or the relevant rules in 
+doc.\ 306 on English Lextree rules. The suffix keys that are used in the 
+segmentation rules reflect the attribute values:\\
+SFKreging = for regular ing-forms\\
+SFKcding  = for consonant doubling ing-forms\\
+SFKirring = for irregular ing-forms\\
+Several variables had to be defined to make the segmentation rules work:
+\begin{description}
+\item[NotE] The set of letters that allow `-ing' to be attached to them without 
+any change of form. Perhaps the set is too large.
+\item[A] the set of letters that make a following `e' drop before `-ing'.
+\item[CompA]  the complement of A, so the set of letters that do not make 
+a following `e' drop when `-ing' is added. Notice that CompA does 
+not include  `i' to prevent wrong rule-application (see rules). Perhaps the set 
+is too large.
+\item[D] the set of letters that can be doubled before `-ed'  and `-ing', so 
+this set was also used in the past tense rules.
+\end{description}
+
+\begin{verbatim}
+
+VAR
+
+NotE  = [a, b, c, d, f, g, h, i, j, k, l, m, n, o, p, 
+         q, r, s, t, u, v, w, x, y, z]; 
+A     = [e, y, o];  
+CompA = [a, b, c, d, f, g, h, j, k, l, m, n, p, q, r, s, t, 
+         u, v, w, x, z];
+D     = [b, d, f, g, k, l, m, n, p, r, s, t, z]; 
+        
+TABLE
+
+*(D)                 + SFKcding     :: *(D)(D)ing;
+*c                   + SFKcding     :: *cking;
+*ie                  + SFKreging    :: *ying;       (die)
+*(A)e                + SFKreging    :: *(A)eing;
+*(CompA)e            + SFKreging    :: *(CompA)ing;
+*(NotE)              + SFKreging    :: *(NotE)ing;
+*ge                  + SFKirring    :: *geing;      (age, singe)    
+\end{verbatim}
+
+\newpage
+\subsection{S-form}
+The rules described in the current section make an `s'-form of a word. 
+This can be either the third person
+ singular form of a verb, or the plural of a noun. 
+
+Verbs have an attribute  {\em sform\/}, to indicate what kind of s-form they 
+take, if any. For more information, see doc.\ 115 or the relevant rule in 
+doc.\ 306 on the lextree rules.
+
+ Nouns have an attribute {\em plurforms\/}, the value of which is a set; nouns
+ can have several plural forms. For the values of this attribute and their
+ meaning see again doc.\ 115 or the relevant rule in doc.\ 306 on the lextree 
+rules. 
+
+The suffix keys that are used in the rules are:\\
+SFKregS = the value corresponding to `regplur' (regular plural) of nouns and 
+`regS' of verbs\\
+SFKregEs = the value corresponding to `regEplur' (regular e-plural) of nouns 
+and `regEs' of verbs\\
+SFKvoicingS = the value corresponding to `voicingplur' of nouns (not 
+important for verbs)\\
+ SFKirrS = the value for nouns ending in (C)y that have `irrSplural'.\\
+Two variables had to be defined for the s-formation rules:
+\begin{description}
+\item[CompCy] This set defines the complement of strings ending in 
+C(onsonant)y and `quy'.  This set is necessary for the regular affixation 
+of `s': \\
+{\em buy - buys; try - tries\/}.
+\item[F]  This set allows the plural to be formed by both `s' and ` 's'. 
+This is     necessary for plurals of abbreviations and dates. See also the 
+remarks made under the glue rules for genitives. 
+\end{description}
+
+
+\begin{verbatim}
+
+VAR
+
+CompCy = [a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, 
+          q, r, s, t, u, v, w, x, z, 
+          ay, ey, oy, buy, guy, puy ];
+F      = [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, 
+          Q, R, S, T, U, V, W, X, Y, Z, 
+          ., 0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+TABLE
+
+   *(CompCy)           + SFKregS        :: *(CompCy)s;
+   *(C)y               + SFKregS        :: *(C)ies;
+   *(C)y               + SFKirrS        :: *(C)ys;    (Germanys; drys)
+   *(F)                + SFKregS        :: *(F)s;
+/A *(F)                + SFKregS        :: *(F)'s;
+   *quy                + SFKregS        :: *quies;
+   *                   + SFKregEs       :: *es;       (hero, peach)
+   *f                  + SFKvoicingS    :: *ves;
+   *ife                + SFKvoicingS    :: *ives;
+   *do                 + SFKirrS        :: *does;
+   *go                 + SFKirrS        :: *goes;
+
+\end{verbatim}
+The different attribute-values for regS and regEs are necessary, because it is
+ not possible to predict from the string whether the added affix must be `s' or
+ `es'. This is because it is really a phonological process, and the spelling
+ is not always the same as the pronunciation. This applies especially to words
+ ending in `ch'. Most of the times this is a sibilant, and the added affix is 
+ `es', but sometimes the pronunciation is /k/, e.g, in {\em monarch\/}, 
+{\em patriarch\/}
+ etc. The solution that has been chosen here is to mark every verb in the 
+ dictionary with an attribute-value that spells out this phonetic information.
+ Another possibility would be to use phonetic markers in these rules. The
+ rules would be a little more complicated. 
+
+\subsection{Rules for Nouns}
+\subsubsection{Regular Plural}
+The regular plural of nouns has been dealt with in the previous subsection, on 
+sForms.
+\subsubsection{Irregular Plural}
+This subsection contains the rules for irregular plurals,. There are two kinds 
+of irregular plurals:\\
+SFKirrplur = irregular plurals\\
+SFKlatplur = latinate (or other foreign) plurals\\
+First the plurals with mutation of the vowel are given, then -`en' plurals,
+then foreign plurals, and finally other irregular plurals. When the large 
+dictionaries were filled automatically with information from the Van Dale 
+N-E dictionary, several new irregular forms were discovered. They have mostly 
+been given the value {\em irrplur\/}, because that gave the least problems with 
+other words having a {\em latplur\/}.
+
+To speed up analysis, a variable {\em All\/} was defined that basically spells 
+out the non-empty set.
+     This set is used to exclude the empty string in rules that originally
+     ended in *{\em a\/}; now they end in *{\em (All)a\/}, so that the number 
+of wrong segmentations of the article `a' is greatly reduced.
+
+\begin{verbatim}
+
+VAR
+
+All = [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,ç,ñ];
+
+TABLE
+
+   *foot          + SFKirrplur      :: *feet;
+   *tooth         + SFKirrplur      :: *teeth;
+   *goose         + SFKirrplur      :: *geese;
+   *louse         + SFKirrplur      :: *lice;
+   *mouse         + SFKirrplur      :: *mice;
+   *man           + SFKirrplur      :: *men;
+
+   *brother       + SFKirrplur      :: *brethren;  (= `fellow 
+                                        members of a religious society')
+   *child         + SFKirrplur      :: *children;
+   *ox            + SFKirrplur      :: *oxen;
+
+   *us            + SFKlatplur      :: *i;
+   *a             + SFKlatplur      :: *ae;
+   *(All)um       + SFKlatplur      :: *(All)a;
+   *ex            + SFKlatplur      :: *ices;
+   *ix            + SFKlatplur      :: *ices;
+   *is            + SFKlatplur      :: *es;
+   *(All)on       + SFKlatplur      :: *(All)a;
+   *eau           + SFKlatplur      :: *eaux;
+   *ieu           + SFKlatplur      :: *ieux;
+   *o             + SFKlatplur      :: *i;
+
+   *iau           + SFKlatplur      :: *iaux;     
+   *ux            + SFKlatplur      :: *uces;      
+
+   *fez           + SFKirrplur      :: *fezzes;
+   *quiz          + SFKirrplur      :: *quizzes;
+   *bus           + SFKirrplur      :: *busses;   (AmE, BrE is regular)
+   *die           + SFKirrplur      :: *dice;
+   *penny         + SFKirrplur      :: *pence;
+
+   *corpus        + SFKirrplur      :: *corpora;    (also regular)
+   *genus         + SFKirrplur      :: *genera;
+   *ma            + SFKirrplur      :: *mata;   
+   *bandit        + SFKirrplur      :: *banditti;
+   *dilettante    + SFKirrplur      :: *dilettanti;
+
+   *cherub        + SFKirrplur      :: *cherubim;     (also regular)
+   *seraph        + SFKirrplur      :: *seraphim;     (also regular)
+   *kibbutz       + SFKirrplur      :: *kibbutzim;
+
+   *judoka        + SFKirrplur      :: *judokas;   (pluralform not found
+                                                    in dictinoaries...)
+   *sol           + SFKirrplur      :: *soles;
+   *jus           + SFKirrplur      :: *jura;       
+   *opus          + SFKirrplur      :: *opera;      
+   *lira          + SFKirrplur      :: *lire;    
+   *polis         + SFKirrplur      :: *poleis;  
+   *ancon         + SFKirrplur      :: *ancones; 
+   *bijou         + SFKirrplur      :: *bijoux;    
+   *markka        + SFKirrplur      :: *markkaa;    
+   *stotinka      + SFKirrplur      :: *stotinki;   
+   *walker-on     + SFKirrplur      :: *walkers-on;  
+   *looker-on     + SFKirrplur      :: *lookers-on; 
+\end{verbatim}
+Two words were removed from the list: *{\em by\/} (for {\em lay-by\/}) and 
+{\em dry\/} (meaning `prohibitionist'). These forms can be made by the 
+regular plural rules (see above under {\em S-form\/}), assuming that the 
+entries were specified as {\em irrS\/} in the lexicon. A compound form 
+like {\em passer-by\/}, which probably has a plural {\em passers-by\/}, is not 
+dealt with yet.
+
+
+\newpage
+\subsection{Rules for Adjectives and Adverbs}
+\subsubsection{Regular Comparative and Superlative}
+This section describes the rules that make comparative and superlative forms 
+of adjectives and adverbs.
+ Adjectives and adverbs have an inherent attribute `compformations', the value
+ of which is a set. Its values (see doc.\ 115 or the relevant rules in doc.\ 
+306 on lextree rules) are directly related to the suffix keys used in the 
+segmentation rules for the steps of comparison. The attribute has one value 
+for both comparative and superlative (they are both either regular or 
+irregular). In the suffix keys, a distinction must be made between comparatives 
+and superlatives. The values for the regular rules are:\\
+SFKregcomp : for regular comparative forms,\\
+SFKregsuper : for regular superlative forms,\\
+SFKcdcomp : for comparative forms that show consonant doubling,\\
+SFKcdsuper : for superlative forms that show consonant doubling
+\\[1 ex]
+Several variables have been defined:
+\begin{description}
+\item[C] the set of consonants. If these letters precede `y', `y' changes 
+into `i' 
+if `ed' , `s', `er' or `est' is added. For the current rules, the set is 
+needed because of its importance for {\em er/est\/} attachment: \\
+{\em dry - drier; coy - coyer(?)\/}.
+\item[V] the set of vowels, excluding `y'. If these letters precede `y', 
+`y' doesn't change into `i'.
+\item[Else]  the set of all letters except `e' and `y'. This set allows normal 
+addition of `er/est'; `e' and `y' are special if `ed', `er' or `est' is added.
+\item[E] is the same as D (used for consonant doubling of -ing and -ed forms), 
+except that it also contains `c'. These letters can be
+     doubled in comparative and superlative adjectives.
+\end{description}
+
+\begin{verbatim}
+
+VAR
+C    = [b, c, d, f, g, h, j, k, l, m, n, p, q, r, s, t, v, w, x, z] ;
+V    = [a, e, i, o, u];
+Else = [a, b, c, d, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, 
+        u, v, w, x, z];
+E    = [b, c, d, f, g, k, l, m, n, p, r, s, t, z];
+
+TABLE 
+
+*(E)                + SFKcdcomp           :: *(E)(E)er;
+*(E)                + SFKcdsuper          :: *(E)(E)est;
+*(C)y               + SFKregcomp          :: *(C)ier;
+*(V)y               + SFKregcomp          :: *(V)yer;
+*(C)y               + SFKregsuper         :: *(C)iest;
+*(V)y               + SFKregsuper         :: *(V)yest;
+*e                  + SFKregcomp          :: *er;
+*e                  + SFKregsuper         :: *est;
+*(Else)             + SFKregcomp          :: *(Else)er;
+*(Else)             + SFKregsuper         :: *(Else)est;
+
+\end{verbatim}
+Forms that end in {\em -(C)y\/} but do not change the `y' to an `i' are treated 
+in the next subsection.
+
+\subsubsection{Irregular Comparative and Superlative}
+This section describes the rules for irregular comparative and superlative 
+forms of adjectives
+ and adverbs. Some adjectives and adverbs have the same form; in that case
+ both can occur in comparative and superlative form. There are, however, some
+ adverbs not corresponding to adjectives, that undergo comparative formation.
+The suffix keys used in the rules are:\\
+SFKirrcomp = for irregular comparative forms\\
+SFKirrsuper = for irregular superlative forms\\
+SFKirrcomp2   = for a second irregular comparative form\\
+SFKirrsuper2  = for a second irregular comparative form
+\\[1 ex]
+\begin{verbatim}
+
+   *good         + SFKirrcomp       :: *better;
+   *good         + SFKirrsuper      :: *best;
+   *bad          + SFKirrcomp       :: *worse;
+   *bad          + SFKirrsuper      :: *worst;
+   *far          + SFKirrcomp       :: *farther;
+   *far          + SFKirrcomp2      :: *further;
+   *far          + SFKirrsuper      :: *farthest;
+   *far          + SFKirrsuper2     :: *furthest;
+   *old          + SFKirrcomp       :: *elder;     (also regular)
+   *old          + SFKirrsuper      :: *eldest;    (also regular)
+
+   *well         + SFKirrcomp       :: *better;
+   *well         + SFKirrsuper      :: *best;
+   *badly        + SFKirrcomp       :: *worse;
+   *badly        + SFKirrsuper      :: *worst;
+   *little       + SFKirrcomp       :: *less;
+   *little       + SFKirrsuper      :: *least;
+   *much         + SFKirrcomp       :: *more;
+   *much         + SFKirrsuper      :: *most;
+   *many         + SFKirrcomp       :: *more;     
+   *many         + SFKirrsuper      :: *most;    
+
+   *shy          + SFKirrcomp       :: *shyer;    
+   *shy          + SFKirrsuper      :: *shyest;   
+   *sly          + SFKirrcomp       :: *slyer;  
+   *sly          + SFKirrsuper      :: *slyest;
+
+/A *wry          + SFKirrcomp       :: *wryer;     
+/A *wry          + SFKirrsuper      :: *wryest;     
+/A *dry          + SFKirrcomp       :: *dryer;     
+/A *dry          + SFKirrsuper      :: *dryest;
+
+\end{verbatim}
+
+\newpage
+\subsection{Rules for Pronouns}
+There are rules for the accusative of personal pronouns (PERSPROs), for 
+adjectival possessive pronouns (POSSADJs) and predicative possessive pronouns 
+(POSSPROs), and for interrogative pronouns (WHPROs and WhPOSSADJs).
+
+\subsubsection{Perspro}
+This subsection gives the rules for PERSPROs. There is only one suffix key:\\
+SFKacc = for accusative form.
+\begin{verbatim}
+
+I          + SFKacc       :: me;
+you        + SFKacc       :: you;
+he         + SFKacc       :: him;
+she        + SFKacc       :: her;
+it         + SFKacc       :: it;
+we         + SFKacc       :: us;
+they       + SFKacc       :: them;
+
+\end{verbatim}
+
+\subsubsection{Possadj}
+This subsection gives the rules for POSSADJs. There is only one suffix key:\\
+SFKposs = for possessive form of the personal pronoun, used attributively.
+\begin{verbatim}
+
+I          + SFKposs      :: my;
+you        + SFKposs      :: your;
+he         + SFKposs      :: his;
+she        + SFKposs      :: her;
+it         + SFKposs      :: its;
+we         + SFKposs      :: our;
+they       + SFKposs      :: their;
+
+\end{verbatim}
+
+\subsubsection{Posspro}
+This subsection gives the rules for POSSPROs. There is only one suffix key:\\
+SFKpredposs = for possessive form of the personal pronoun, used predicatively.
+\begin{verbatim}
+
+I          + SFKpredposs  :: mine;
+you        + SFKpredposs  :: yours;
+he         + SFKpredposs  :: his;
+she        + SFKpredposs  :: hers;
+we         + SFKpredposs  :: ours;
+they       + SFKpredposs  :: theirs;
+
+\end{verbatim}
+
+\subsubsection{Whpro}
+This subsection gives the rules for WHPROs. There are two rules, one to make
+the accusative of an interrogative pronoun (WHPRO), one to make an adjectival 
+interrogative possessive pronoun (WhPOSSADJ). There are two suffix keys:\\
+SFKacc = for the accusative form of the interrogative pronoun\\
+SFKposs = for the possessive form of the interrogative pronoun
+\begin{verbatim}
+
+who        + SFKacc       :: whom;
+
+who        + SFKposs      :: whose;
+
+\end{verbatim}
+
+\newpage
+\subsection{Derivation Rules}
+As was mentioned in the introduction, Rosetta3 has not incorporated many rules 
+for derivation yet. There is one kind of derivation that is dealt with 
+extensively: adjective to adverb derivation. This is a fairly regular process, 
+and must be dealt with because many adverbs that are related to an adjective 
+are not in the dictionary. A first step to extending the set of derivation 
+rules was to include rules for affixation of {\em -able\/} to verbs. However, 
+the M-grammar has not incorporated these rules yet, so presently only 
+morphology can deal with these forms.
+
+\subsubsection{Adjective - Adverb}
+This subsection gives the rules for the derivation of Advs from Adjs by means 
+of the  derivational affix `-ly'.
+ It is assumed that the adjectives marked with an asterisk in the current 
+rules are given the value {\em irregAdv\/} in the 
+ dictionary for the attribute `advformationtype' (even though some of them take
+ a seemingly regular -ly suffix), and that the lextree-rules link this 
+ attribute-value with the SFKirregly. All other adjectives are regAdv or 
+ zeroAdv, which means that the form for adjective and adverb is the same. 
+ They may of course also be noAdv.
+ Note that, contrary to tradition, {\em true\/} and {\em due\/} are marked as 
+exceptions 
+ in advformation, assuming that words like {\em vague\/} and {\em unique\/}, 
+also ending  in -ue, are regular. The suffix keys that are used are:\\
+SFKregly = for regular ly-affixation\\
+SFKirregly = for irregular -ly affixation\\
+SFKnoly = for derivation without change of form\\
+Several variables were defined:  
+\begin{description}
+\item[ADJ] The letters in this set allow for a regular -ly affixation; 
+for `c', `e', `l' and `y' (not in the set) several options exist
+\item[notL] The set of letters that allow regular -ly affixation if they 
+precede `e'
+\item[notI] The set of letters that allow regular -ly affixation if they 
+precede `c'.
+\end{description}
+
+\begin{verbatim}
+
+VAR
+
+ADJ  = [a,b,d,f,g,h,i,j,k,m,n,o,p,q,r,s,t,u,v,w,x,z];
+notL = [a,b,c,d,e,f,g,h,i,j,k,m,n,o,p,q,r,s,t,u,v,w,x,y,z];
+notI = [a,b,c,d,e,f,g,h,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z];
+
+TABLE
+
+*(ADJ)    + SFKregly     :: *(ADJ)ly;       (regular adverb formation)
+
+*(notI)c  + SFKregly     :: *(notI)cly;     (regular adverb formation)
+*ic       + SFKregly     :: *ically;        (mechanic etc.)
+*ic       + SFKirregly   :: *icly;          (*public)
+
+*(notL)e  + SFKregly     :: *(notL)ely;     (regular adverb formation)
+*le       + SFKregly     :: *ly;            (double, idle etc.)
+*sole     + SFKirregly   :: *solely;        (*sole)
+*whole    + SFKirregly   :: *wholly;        (*whole)
+
+*true     + SFKirregly   :: *truly;         (*true)
+*due      + SFKirregly   :: *duly;          (*due)
+
+*(notL)l  + SFKregly     :: *(notL)lly;     (regular adverb formation)
+*ll       + SFKregly     :: *lly;           (full, shrill etc.)
+
+good      + SFKirregly   :: well;           
+
+*y        + SFKregly     :: *ily;           (gay, dry, weary etc.)
+*y        + SFKirregly   :: *yly;           (*shy, *sly, *spry, *wry)
+
+*         + SFKnoly      :: *;              (adj = adv)
+
+\end{verbatim}
+
+\subsubsection{-Able}
+This subsection gives the tentative rules for the derivation of verb to 
+adjective by means of the suffix {\em -able\/}. There 
+are no lextree rules for this derivation yet, because there is no attribute in 
+the dictionary yet that indicates in what way the suffix should be attached.
+When 
+the grammar can also deal with -able derivation, perhaps the rules will
+have to be modified. There are still only three suffix keys:\\
+SFKregable = for regular -able affixation\\
+SFKtruncable = for the cases where the stem ending {\em -ate\/} is truncated\\
+SFKcdable = for affixation of -able that occurs whith consonant doubling\\
+No irregular affixation has been discovered yet, but see the remarks below.
+The variables that are used for the present rules are:
+\begin{description}
+\item[C] The set of consonants; these allow regular affixation of `-able'
+\item[B] The set of letters that do not cause a following final `e' to drop 
+before `-able' 
+\item[CompB] Complement of B, so the set of letters that cause a following 
+final `e' to drop before `-able' 
+\item[D] the set of letters that can be doubled before `-ed'  and `-ing', so 
+this set was also used in the past tense and ing-form rules.
+\end{description}
+
+\begin{verbatim}
+
+VAR
+
+C     = [b, c, d, f, g, h, j, k, l, m, n, p, q, r, s, t, v, w, x, z] ;
+B     = [c, e, g, o, y];
+CompB = [a, b, d, f, h, i, j, k, l, m, n, p, q, r, s, t, u, v, w, x, z];
+D     = [b, d, f, g, k, l, m, n, p, r, s, t, z]; 
+
+TABLE
+
+   *(C)                + SFKregable          :: *(C)able;
+   *(B)e               + SFKregable          :: *(B)eable;
+   *(CompB)e           + SFKregable          :: *(CompB)able;
+/A *(CompB)e           + SFKregable          :: *(CompB)eable;
+   *(C)y               + SFKregable          :: *(C)iable;
+   *(D)                + SFKcdable           :: *(D)(D)able;
+   *ate                + SFKtruncable        :: *able;
+
+\end{verbatim}
+
+Note that only the final stem vowels `e' and `y' can be dealt with presently.
+A verb like {\em ski\/} cannot form {\em skiable\/} yet, but is unclear whether 
+it should. The third rule accepts forms in analysis where the `e' has not been 
+dropped although the rule expected it, to be able to deal with `extra' forms 
+like {\em sizeable\/} and {\em tameable\/}, that exist next to the regular 
+forms. If {\em inflame\/} is the verb that underlies {\em inflammable\/}, there 
+is an example of an irregular form.
+The last rule is for words that end in the string
+ `-ate'. Probably the rule should work only for those cases in which the string 
+does not bear the accent:
+ {\em demonstrate - demonstrable\/} vs.\ {\em state - *stable\/}. This can 
+easily be indicated in the dictionary by means of the attribute value for -able 
+affixation.
+
+\end{document}
+
+

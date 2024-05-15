@@ -1,0 +1,1039 @@
+R0441.tex
+\documentstyle[fleqn]{Rosetta}
+\begin{document}
+   \RosTopic{General}
+   \RosTitle{An efficiency study of M-parser}
+   \RosAuthor{Joep Rous}
+   \RosDocNr{441}
+   \RosDate{23-AUG-1990}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{}
+   \MakeRosTitle
+%
+%
+\section{Introduction}
+In this paper we report the result of a measurement that has been 
+performed with the
+current version of the M-parser algorithm. The reason for this measurement
+was the intention to improve inefficient behaviour of the current algorithm. 
+We are aware of the
+fact that finding a derivation by means of the M-parser algorithm is an NP-hard
+problem, which makes bad behaviour not a big surprise. Some  
+improvements of the algorithm, however, are suggested by the measurement 
+results very directly. Also other improvements, some of which are described in the
+literature on the optimization of NP-complete algorithms, are considered.
+\section{Measurement results}
+In order to get a global impression of the M-parser behaviour we 
+collected some statistics. For the sentences in the current test bench 
+the following frequencies have been collected:\\
+\begin{itemize}
+\item Number of {\em tried} rules (with rules we mean meaningful rules 
+      and transformations)
+\item Number of {\em successful} rules.
+\item Number of {\em tree} rules.
+\item CPU-time consumed.
+\end{itemize}
+The number of tried rules tells us how many rule applications
+have been tried by M-parser during the derivation of a sentence. 
+The number of successful rules is the fraction of the tried rules that
+yielded a non empty set of S-trees. The fraction of the tried rules which 
+eventually ends up in the derivation tree is counted by means of tree 
+rules. Having collected these figures for a sentence we can calculate 
+some quotients that give us a better insight:
+\begin{itemize}
+\item $Psucc =$ \#(successful rules)/\#(tried rules) \\
+$Psucc$ is the probability that has rule has a non-empty result if it is tried.
+\item $Ptree =$ \#(tree rules)/\#(successful rules) \\
+$Ptree$ is the probability that a rule is part of a successful derivation of the sentence
+if it has a non-empty result. 
+\end{itemize}
+We found that $Psucc$ is almost constant for the set of sentences we 
+tried. $Psucc$ is typically 0.085 with a variance less than 0.001. It is not completely 
+clear were this
+number comes from. Maybe it can be explained from the way our grammars
+are organized. Each subgrammar contains a number of rule classes. 
+Each rule in a rule class is applied to a specific S-tree, but in most
+cases only a fixed number of rules of a rule class is applicable.
+
+The value $Ptree$ is not constant, the mean value is 0.621 with a variance of
+0.098. It is obvious that $Ptree$ gives information about the
+number of wrong paths that are followed by M-parser.
+
+Finally, we found that the amount of CPU-time consumed is a linear 
+function of the number of tried rules and, because $Psucc$ is constant,
+of the number of successful rules.\\ 
+
+The first conclusion that we can draw is that
+if we want to improve the performance of the M-parser we have to
+increase  $Psucc\cdot Ptree$, that is, the fraction of all tried rules
+which ends up in a derivation tree. At the moment the mean value of this fraction
+is 0.05. The only way to accomplish this is not to
+try rules that will fail anyway. In the  ideal situation in which
+only the tree rules are applied,   the CPU time that is
+needed by M-parser decreases with a factor 20.
+
+Another way to improve the M-parser performance is to reduce the number
+of wrong paths. From the value of $Ptree$ we can learn that the gain of this
+measure will improve the CPU performance only with a factor 1.7.
+
+In the next section we will discuss some measures that can be taken
+in order to approach the ideal situtation sketched above.
+
+\section{Wrong path reduction}
+We can manually optimize the grammar by increasing the filtering power 
+of the grammar rules.
+With the filtering power of an M-rule $r$ I mean, the possibility that the 
+analysis of at least one of the results of the application of $r$ is 
+successful. More formally:\\
+FP$_{r} =$ \#(correct analyses of results of $r$)/\#(successful applications of $r$)\\
+The FP value can be calculated for all M-rules during the  statistical
+analysis mentioned above. The appendix gives the FP values of the rules
+for the test bench. If the FP value of a rule is low, the grammar writer can 
+consider to make his rule more selective or he may decide to add
+an efficiency filter to the control expression\footnote{ The FP value of the 
+rule will only increase if the filter is placed {\em before} the rule (from
+an analytical point of view)}. Increasing the FP value of our M-rules will
+result in less erroneous paths of M-parser.
+
+
+\section{Increasing the ratio (tree rules)/(tried rules)}
+\subsection{User-defined mutual exclusive rules}
+Our major concern is to decrease the number of tried rules. For that purpose
+we can add another level to the M-Grammar in which
+linguistic knowledge about the behaviour of the grammar rules can be
+made explicit. Rule writers know, for instance, that some M-rules in a
+rule class 
+are (or should we say `should be') mutually exclusive (cf. section 10 for a 
+more general approach to incorporate linguistic knowledge). This means that
+if of three mutually exclusive rules $A$, $B$ and $C$, one rule is 
+applied successfully to an S-tree,  application of the other two
+rules to the same S-tree will yield the empty set. The usage of this 
+idea (which was suggested
+independently  by L. Appelo and J. Odijk during CSO and before that by 
+R. Leermakers and J. Rous) could of course decrease the number of 
+tried rules. For this reason we will introduce a specification in which sets of
+mutual exclusive rules can be made explicit. The notation will be 
+very simple. Each set, containing a number of rule names, is enclosed 
+by a pair of brackets, e.g.: 
+\begin{verbatim}
+[ RSUBSTITUTION1 RSUBSTITUTION2 RSUBSTITUTION3 RSUBSTITUTION4 ]
+[ RMOOD2 RMOOD3 RMOOD4 ]
+[ RSTARTVPPROP000 RSTARTVPPROP100 RSTARTVPPROP010A ]
+\end{verbatim}
+Notice that the rules in a set may belong to different rule classes. 
+This can be explainded by the fact that M-parser will most certainly
+apply rules from different rule-classes to one and the same S-tree.
+
+The information in this file can easily be used by M-parser. Before it 
+applies a rule to an S-tree, it will look for rules that have 
+successfully been applied before to the same S-tree. If the current rule
+and at least one of these
+rules is in the same mutual exclusive set, it will skip the current 
+rule application.
+\subsection{Probability-based mutual exclusive rules}
+Instead of relying on the linguists insight in the grammar when 
+determining the mutual exclusiveness, we might
+rely completely on statistics. In that case we use a
+statistic analysis of the M-parser behaviour on a large set of
+sentences to determine the probability that application of  rule $p$ 
+to a certain S-tree $t$
+is successful on the condition that rule $r$ has already been
+successfully applied to $t$. The data gathered in this way can be
+stored in an $m \times m$ matrix, where m is the number of M-rules.
+The matrix will be very sparsely filled because most of the M-rules
+cannot be applied to the same S-tree because of restrictions put
+on the rule application order by the control expressions. Additionally,
+we can process the matrix and make it even more sparse by assigning 
+the zero value to all matrix elements which have a lower value than a 
+certain threshold. 
+
+M-parser algorithms which use the data gathered by statistical analysis
+will not always generate an output. There is always a probability that
+for a sentence which is not in the corpus two rules which are classified
+as mutual exclusive are both applicable!
+
+\subsection{Rule order}
+The measure sketched in the previous sections is not yet sufficient. If
+M-parser would always try all rules that fail first,  the measure would have 
+no effect at all (it
+would even consume more CPU time because of the extra administration
+that has to be done). To overcome this problem we have to order our
+rules in such a way that  rules with the highest probability for success will
+be tried first.
+Success in this case means: occurrence in the derivation tree. 
+Determination of a useful application order can be done by means of 
+a statistical analysis of the result of M-parser application to a corpus of 
+sentences. The data that are produced by the corpus analysis should contain
+for each rule the value of $Psucc\cdot Ptree$. On the basis of the
+statistical data a value is assigned to each M-rule. The value  expresses the
+probability that the rule will end up in the derivation tree if it is
+applied. The rule order of the rules that can be applied to a particular
+S-tree at a certain point in the M-parser analysis will be determined by
+the value. In the literature the class of algorithms which 
+choose the alternative with the biggest bonus is
+called the class of {\em greedy} algorithms.
+
+The appendix shows the value of $Psucc\cdot Ptree$ for each
+M-rule if the corpus is the Rosetta integration testbench.
+
+\section{A greedy M-parser algorithm}
+In this section an M-parser algorithm is described which exploits the
+information about mutual exclusiveness and rule ordering. 
+
+The usage of the mutual exclusiveness matrix by the parse algorithm
+is as follows. Let us start somewhere in the parse process, where we
+have an S-tree $t$ and a list of rules that can be applied
+to $t$. The rules in the list have a statistically determined 
+order. The ordering criterium is the probability that a rule
+occurs in a derivation tree. The parse algorithms starts with the rule 
+that will most likely occur in a derivation tree. The outcome of the
+rule application will have consequences for the probability values
+of the rules in the list that still have to be evaluated. If the rule
+application of the picked rule failes, the probability values of the
+remaining rules stay the same. If the rule application is 
+successful the probability of some rules to occur in a derivation
+tree becomes zero. This means that the remaining rules have to be 
+re-ordered. The re-ordering is very simple because rules with a zero
+value are transferred to the end of the list. 
+This process is repeated until the parse algorithm
+picks a rule from the list with a zero probability. In that case the
+algorthm skips the picked rule and all remaining rules in the list.
+
+\section{A branch and bound M-parser algorithm}
+Until now we have discussed methods that find all possible derivation
+trees for a given S-tree. In this section we will consider an algorithm
+that gives only one derivation tree. This derivation tree is the best one
+according to a certain measure. The method used by the algorithm is known
+in the literature as the {\em branch and bound technique}.
+
+We can look  upon the task of the M-parser as searching the space
+of possible derivation trees for the trees that correspond with an
+S-tree. At a certain point in the search process, the M-parser
+algorithm has available a number of rules that can be applied to
+an S-tree. The M-parser is already a branching algorithm in the
+sense that it makes a choice between the possible rules and,
+consequently, chooses a particular continuation. The bounding part can be
+incorporated
+if we associate a cost (score, weight) with a successful 
+derivation or a set of successful derivations of an S-tree. The cost values
+should be strictly positive or negative because the sum of the costs
+should increase or decrease monotonic. The problem can then be formulated
+as to find the minimal cost derivation tree that belongs to a given S-tree.
+By keeping track of the lower bound of the costs we are able to
+prune the search space. After all, there is no use in following
+a certain derivation if its cost is already higher than the
+lower bound. Let me explain the idea by means of a simplified 
+ M-parser algorithm in which rules have only one argument:
+\begin{tabbing}
+\=aaa\=aaa\=aaa\=aaa\=aaa\=aaa\=aaaaaaa\=\kill
+{\bf function} M-parser(t: S-tree; cost, globcost : integer;\\
+\>\>\>\>\>\>{\bf var} totcost: integer): D-tree;\\
+\>lowcost := globcost\\
+\>{\bf if} t is basic expression {\bf then}\\
+\>\> bestresult := t; totcost:=cost+C(t);\\
+\>{\bf else} \\
+\>\>{\bf for} each possible rule R {\bf do}\\
+\>\>\>{\bf for} each (s,c) in R(t) {\bf do}\\
+\>\>\>\>{\bf if} (cost+c) $<$ lowcost  {\bf then}\\
+\>\>\>\>\>result := M-parser(s,cost+c,\\
+\>\>\>\>\>\>\>\>lowcost,loccost)\\
+\>\>\>\>\>{\bf if} loccost $\leq$ lowcost {\bf then}\\
+\>\>\>\>\>\>lowcost := loccost;\\
+\>\>\>\>\>\>bestresult := (R.result)\\
+\>\>\>\>\>{\bf fi}\\
+\>\>\>\>{\bf fi}\\
+\>\>\>{\bf od}\\
+\>\>{\bf od}\\
+\>\>totcost := lowcost;\\
+\>{\bf fi}\\
+\>M-parser := bestresult\\
+\end{tabbing}
+The difficulty with applying the branch and bound technique to the M-parser
+algorithm will be the construction of a satisfactory cost function. The
+algorithm will only prune considerable parts of the search space if the
+cost values are very discriminating, that is, if the  cost of a `bad' derivation
+differs sufficiently from the cost of a `good' derivation.\\
+
+The algorithm can be further optimized by making it greedy. In the greedy 
+version of the algorithm the set of rules that has to be applied is ordered.
+Of two rules $a$ and $b$, $a$ is said to be better than $b$ if it is more
+probable that application of $a$ yields a lower cost value than application
+of $b$. Incorporating knowledge about the mutual exclusiveness of the rules
+and rule ordering will optimize the algorithm even further.
+
+\section{A depth-first M-parser algorithm}
+The M-parser algorithm that is used in Rosetta at this moment is a breadth-first
+algorithm, in the
+sense that it returns all possible derivation trees in one pass. The
+depth-first algorithm will return only one derivation tree at the time, not
+necessarily the best. In the next section we will show how the depth-first
+algorithm can be optimized such that it is more probable that it delivers
+the best derivation tree first.
+
+The basis of the algorithm is plain back-tracking. If the derivation goes
+wrong at a certain point, it will return to the last point where a choice
+has been made and it will choose the next alternative. If, however, the 
+derivation was successful at a certain point in  the control expression, the
+algorithm will not consider possible alternatives. Instead, it will store
+the current S-tree and a marker which identifies the current point in the
+control expression in the derivation tree. Next, it will return to the last
+applied rule of which still other sons have to be evaluated.
+
+If the algorithm, operating in this way, returns a derivation tree, then
+the derivation tree contains in each node all possible continuations. A
+continuation is a pair (S-tree,control expression marker). Consequently,
+in the next phase, the algorithm chooses a derivation tree node 
+ in the sons of which no continuation exists. If the alternative
+derivation of the subtree is successful, the original subtree is replaced
+by the alternative subtree. The resulting derivation tree is the next full
+derivation tree delivered by the M-parser. This process continues until
+there are no continuations left in the last produced derivation tree. 
+
+The depth-first algorithm can be modified to become a greedy algorithm
+if a rule ordering is used. As a result, the algorithm delivers better
+trees first. Again, addition of mutual exclusivenes increases the speed
+of the algorithm.
+
+\section {A greedy depth-first M-parser algorithm}
+The depth first algorithm in the previous section uses a back-tracking
+technique to walk through the search space. This technique is not
+necessarily the fastest way to produce the best derivation tree. An alternative 
+way to evaluate the search space is not to return to the last point where
+a choice has been made if something goes wrong, but to investigate all points 
+where choices have been
+made so far. By comparing all alternatives it is possible to select the
+alternative with the biggest bonus (or lowest cost, highest probability, etc.).
+If the  place in the control expression that corresponds with
+the best alternative is known together with the S-tree at that point, the
+M-parser is able to continue the derivation process exactly at that point.
+Two versions of the algorithm are conceivable. In the first one the algorithm
+forgets about the derivation belonging to the previous alternative. In this
+version the algorithm might never find a solution, because it skips
+a number of alternatives (of inferior quality at first sight) which might
+contain a good one. The probability that this happens will depend on the
+quality of the bonusses: how well can they predict a correct derivation ?
+The second version of the algorithm takes all alternatives that have been
+produced into consideration. This algorithm will always find a 
+solution, but the memory behaviour is bad. It stores all previously
+generated partial derivations, some of which will never yield results. The
+performance efficiency is questionable too, because at each step all previously
+calculated derivation have to be compared in order to find the best one. 
+
+\section{A trigram-based M-parser algorithm}
+We will now present an algorithm which again uses the statisical analysis of
+a large corpus of data. The corpus consists of derivation trees created by
+M-parser. Instead of looking at the probabilities of individual rules we are
+now interested in the probability of a certain rule $r_3$ given the fact that
+its father was $r_2$ and its grandfather was $r_1$ or, in the form of
+a formula, we are interested in 
+\[\begin{array}{l}P(r_{3}\mid r_{1}r_{2})\end{array}\]
+We know that
+\[\begin{array}{l}P(r_{3}\mid r_{1}r_{2})=\frac{\#(r_{1}r_{2}r_{3})}{\#(r_{1}r_{2})}\end{array}\]
+The predictive power and the accuracy of this probability given a corpus depends on 
+the number of possible trigrams. The predictive power and the accuracy is higher
+with a lower number of possible trigrams. The number of possible trigrams in our
+case is restricted by the fact that an M-grammar is subdivided into subgrammars. 
+The control expression of a subgrammar restricts the number of possible trigrams
+even further. Experiments with this approach are necessary before we can
+conclude that the trigram method is feasible.
+
+The actual algorithm works as follows. At a certain point in the derivation
+we have an S-tree $t$ and a list of rules $r_1,r_2...r_n$ that can be applied to
+$t$. Let $f$ be the previously applied rule and let $g$ be the father of $f$.
+We are now interested in the rule $r_i$ which maximizes
+\[\begin{array}{l}P(r_{i}\mid g f)\end{array}\]
+The best $r_i$ can easily be retrieved from our statistical database. Next, 
+that $r_i$ is applied to $t$ and the process is repeated again for the
+result of this application.
+
+A generalization of the trigram method is the N-gram method. The memory resources
+needed to store the statistical data increase dramatically if N grows. The demand
+for resources and the results in practice should be carefully considered when
+a value is being chosen for N. 
+
+The N-gram technique can be used to improve most of the algorithms 
+described in previous sections. In each case it will increase the 
+performance with a certain probability . In case of the depth-first 
+algorithm, for
+instance, the algorithm will present the first derivation tree faster 
+(with a certain probability).
+
+\section{A heuristic M-parser algorithm}
+A heuristic M-parser algorithm utilizes the knowledge of a linguist
+about the form of an S-tree and the consequences of that particular form
+for the M-parser analysis, to predict a part of a derivation path of
+M-parser for that S-tree. For that purpose this linguistic knowledge
+must be made explicit, by means of a database or by means of rules. The
+method described in this chapter will use a heuristic rule base. When it
+comes to heuristics all kinds of algorithmic variants can be considered,
+because heuristic rules can be used at different places for different
+purposes. The method of this section is merely one of the many possible
+ways to use heuristics in M-parser. 
+
+
+In the previous sections we saw that the performance can be increased if
+we choose the correct rule order of a set of rules that has to be applied
+to an S-tree. This rule order can, in principle, be guessed by a 
+heuristic rule. For that purpose we associate such a  rule with
+each rule/transformation class. Before M-parser tries the rules of the rule 
+class, the heuristic rule is applied to an S-tree yielding the rule names
+(ordered with respect to probability) that are relevant for this
+S-tree. The idea of the heuristic rule is not that all linguistic information
+which is available in the rules of the rule class is copied.  Only the most 
+salient information which distinguishes the rules in the class should be
+used. 
+
+We should look at the heuristics as an extra layer in our grammar. A layer
+which is only present for efficiency reasons \footnote{Lisette Appelo suggested
+that these rules could also be useful as a kind of documentation on the
+rule class}. It seems not a good idea to make the grammar dependent on
+the heuristic rules, in the sense that we relax the conditions inside the
+rules because they already have been checked in the heuristic rule.
+ 
+\section{Conclusion}
+The information on mutual exclusiveness of the rules (gathered manually or
+statistically) allows for a
+drastic performance improvement. Whether this increase in performance
+is actually achieved depends on the order in which the rules of a
+rule class are applied. If the rules that end up in the derivation tree
+are chosen first, then the maximal speed up of the algorithm is attained.
+Most of the algorithms presented in this paper describe different ways
+to choose the rule ordering. The rule ordering can be imposed by linguists,
+by statistics or heuristics. Of the probabilistic N-gram method, two instances
+have been discussed: the one-gram and the tri-gram method. In the one-gram
+method the probability that a rule ends up in a derivation tree is used, in
+the tri-gram method the probability that a rule is a tree rule given his
+father and its grand-father is utilized.
+
+An important alternative for the breadth-first M-parser algorithm is the
+depth-first algorithm. It will probably present all alternatives in the
+same amount of CPU-time as the breadth-first algorithm. If there is more
+than one derivation tree, however, the first derivation tree will be presented 
+(much) faster. The speed of this algorithm can also be increased by statistic
+and heuristic methods.
+
+Some of the techniques described here are general and can also be applied in 
+other Rosetta components.
+
+\appendix
+\section{Measurement results}
+
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1 (RWR-102-RO-90#1-RO)}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

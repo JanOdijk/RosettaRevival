@@ -1,0 +1,1066 @@
+R0304.tex
+\documentstyle{Rosetta}
+\begin{document}
+\newcommand{\com}[1]{"{\em #1 }"\\}
+\newcommand{\tcmone}[1]{\>"{\em #1 }"\\}
+\newcommand{\tcmtwo}[1]{\>\>"{\em #1 }"\\}
+\newcommand{\tcmthr}[1]{\>\>\>"{\em #1 }"\\}
+\newcommand{\tcmfou}[1]{\>\>\>\>"{\em #1 }"\\}
+\newcommand{\tcmfiv}[1]{\>\>\>\>\>"{\em #1 }"\\}
+\newcommand{\tcmsix}[1]{\>\>\>\>\>\>"{\em #1 }"\\}
+\newcommand{\stpw}[2]{"{\bf {(#1)} {\em #2 }}"\\}
+\newcommand{\expl}[2]{{\noindent
+\bf {(#1)} {\em #2 :}}\\}
+\newcommand{\tcdone}[1]{\> #1 \\}
+\newcommand{\tcdtwo}[1]{\>\> #1 \\}
+\newcommand{\tcdthr}[1]{\>\>\> #1 \\}
+\newcommand{\tcdfou}[1]{\>\>\>\> #1 \\}
+\newcommand{\tcdfiv}[1]{\>\>\>\>\> #1 \\}
+\newcommand{\tcdsix}[1]{\>\>\>\>\>\> #1 \\}
+\newcommand{\tcdsev}[1]{\>\>\>\>\>\>\> #1 \\}
+\newenvironment{code}{\begin{tabbing} 
+===\====\====\====\====\====\====\=\kill}{\end{tabbing}}
+\RosTopic{Rosetta3.doc.formalism}
+\RosTitle{Syntax and Semantics of the Rosetta3 Segmentation Rules}
+\RosAuthor{J. Rous}
+\RosDocNr{304}
+\RosDate{\today}
+\RosStatus{concept}
+\RosSupersedes{-}
+\RosDistribution{Project}
+\RosClearance{Project}
+\RosKeywords{Morphology, segmentation rules, syntax, semantics}
+\MakeRosTitle
+\section{Introduction}
+This document contains a definition of the syntax and semantics of the 
+segmentation rules. 
+It is strongly recommended to read document nr. 210
+before an attempt is made to read this document.
+
+On a global level the syntax of the segmentation rules is the same for all
+the different kind of rules. In section 2, 3 and 4 a description can be
+found of the global syntax definitions. Section 4.1 to 4.5 give a detailed
+specification of the syntax and semantics of each rule type.
+
+
+The definitions in this document contain quantifications over variables. In
+each of these definitions a specification of the domain of the quantified
+variable has been omitted. Instead the a naming convention has been used.
+Variables $\alpha_{1}$, $b$ are of type string. Variable $\kappa$
+is either a prefix key or a suffix key and variable $m$ is a natural number.
+
+\section{General}
+The formalism prescribes 5 different segmentation rule types, namely,
+left, right and middle glue rules and left (prefix) and right (suffix)
+segmentation rules. 
+
+A complete specification of all rules of one type consists of three parts,
+one part in which `variables' are declared, another part in which `alias' names
+can be defined for the variables and a third part in which 
+all rules are specified.
+
+\small
+\begin{code}
+{\bf rule specification} :: [ `VAR' {\bf variable definition part} ] \\
+\>\>\>\>[ `ALIAS' {\bf alias definition part } ] \\
+\>\>\>\>`TABLE' {\bf rule definition part } `END' \\
+\end{code}
+\normalsize
+
+\section{Variable and Alias definition part}
+
+The syntax of the variable definition part and the alias definition part is
+the same for all
+rule types. A variable definition introduces a variable name and the set of
+( string ) values that the variable can take ( the domain of the variable ). 
+
+\small
+\begin{code}
+{\bf variable definition part} :: \{ {\bf variable name} `=' `[' {\bf variable value } \\
+\>\>\>\>\{ `,' {\bf variable value} \} [ `,' ] `]' `;' \}\\
+{\bf variable value} :: {\bf single string} $|$ ( {\bf left string} $<>$ {\bf right string} )\\ 
+{\bf left string} :: {\bf string} \\
+{\bf right string} :: {\bf string} \\
+{\bf single string} :: {\bf string} \\
+\end{code}
+\normalsize
+
+\small
+\begin{code}
+Example: \\
+\>\>Vowels = [ a, o, u, e, i, a$<>$A, o$<>$O, u$<>$U, e$<>$E, i$<>$I ]; \\
+\end{code}
+\normalsize
+
+The meaning of left string, right string and single string will be explained in
+the next section. A single string is in fact an abbreviation for
+a left and right string with the same value. For example, `ee' is
+interpreted as `ee$<>$ee'. The empty string is also a possible variable value.
+In case the empty string is one of the possible variable values the closing 
+bracket `]' of the variable definition must be preceded by a comma `,'.
+
+An alias definition introduces a set of alternative
+names for a specified variable.
+These names can be used instead of the variable name. The alias definition
+part has been introduced in order to increase the readability of the 
+segmentation rules.
+
+\small
+\begin{code}
+{\bf alias definition part} :: \{ {\bf variable name} `=' {\bf string} `,' \{ {\bf string} \} `;' \}\\
+\end{code}
+\normalsize
+
+\small
+\begin{code}
+Example: \\
+\>\>Vowels = LeftVowel, RightVowel;
+\end{code}
+\normalsize
+
+
+\section{Rule definition part}
+
+On a global level all rules in the rule definition part of each type are of
+the same structure, that is:\\
+\small
+\begin{code}
+{\bf rule definition part } :: {\bf rule definition} \{ {\bf rule definition} \} \\
+{\bf rule definition } :: {\bf lefthand side} `::' {\bf righthand side} `;'\\ 
+\end{code}
+\normalsize
+
+The specification of the {\bf left hand side} ( to be called {\bf lhs} ) and 
+{\bf right hand side } ( to be called {\bf rhs} ) will be different for each rule 
+type. In the following sections a more detailed specification will be given of
+the {\bf rule definition } for each type of rule.
+
+All rule types have in 
+common that the {\bf lhs}-part contains {\em at least} one and the {\bf rhs}-part contains 
+{\em exactly } one so-called M-string ( the M- is an abbreviation for match- ). 
+An M-string is a (possibly empty) string consisting of non-blank characters and `variables'.
+A `variable' in an M-string is specified by the variable name enclosed by an
+open `(' and closing `)' bracket. The string {\em a(K1)bc } is an example of
+an M-string in which the variable {\em `K1'} is used.
+Each variable
+which appears in the {\bf lhs} of a rule must also appear in the {\bf rhs} of a rule
+and vice versa.
+
+During a rule application the input-string
+is matched with the M-strings of a rule. If the match is successful 
+for all M-strings in the rule the rule application will be successful. 
+During the process of matching, all variables in each M-string of the rule
+( both the {\bf lhs} and {\bf rhs} M-strings ) are instantiated with each value of 
+their domain. More formally, the semantics of a rule application can be defined 
+by means of the function $\Phi$:
+\small
+\begin{code}
+$\Phi(\alpha) =_{def} \{ r | \exists v_{1}, \ldots, v_{n}, d_{1}, \ldots, d_{n}:$\\
+\>\>\>$\forall i: 1 \leq i \leq n: v_{i} \in VARS(\Phi) \wedge d_{i}\in D^{v_{i}} \wedge r \in R(\alpha,d_{1}, \ldots ,d_{n}) \}$\\
+\end{code}
+\normalsize
+Here, parameter $\alpha$ contains the input string that has to be matched. The
+type of the result $r$ differs for the different
+type of rules. Also the analytical and generative interpretation of the rules
+will require a different type for $r$ as we will see in the next 
+sections. The values $d_{i}$ of domain $D^{v_{i}}$ of variable $v_{i}$ are in 
+fact left and right
+string pairs $<l_{i}, r_{i}>$. The actual rule is defined as the function $R$ 
+which substitutes value $r_{i}$ for 
+each occurence of the variable $v_{i}$ in the {\bf rhs} M-string and $l_{i}$ for 
+each occurence of the variable $v_{i}$ in the {\bf lhs} M-strings of the rule 
+before it starts the matching process. Each rule type has its own 
+definition of the function $R$. These definitions will be given 
+in the next sections.
+
+It is obvious from the preceding definition
+that a segmentation or glue rule in fact defines a set of rules. 
+The cardinality of this rule set depends on the size of the domains of the 
+variables, as follows:
+\small
+\begin{code}
+\>$\prod_{i=1}^{n} \#D^{v_{i}}$\\
+\end{code}
+\normalsize
+This formula expresses the threat of a combinatorial
+explosion, e.g. a rule with 3 different variables, each having a domain
+of 10 elements in fact defines 10$^{3}$ different rules.
+In the section on implementation of these rules I will describe how this danger
+is averted.
+\subsection{Left segmentation rules}
+A left segmentation rule has one of the next two forms:
+\small
+\begin{code}
+{\bf rule definition } :: {\bf perfect match} $|$ {\bf left match }\\
+{\bf perfect match } :: {\bf PF-K} `+' {\bf q}  `::' {\bf p} [`,' {\bf F}] `;'\\
+{\bf left match } :: {\bf PF-K} `+' {\bf q}`*'  `::' {\bf p}`*' [`,' {\bf F}] `;'
+\end{code}
+\normalsize
+Here, PF-K is a prefix key, $p$ and $q$ are M-strings and $F$ is the 
+identification of a phonetical rule.
+
+\small
+\begin{code}
+Example: \\
+\>VAR\\
+\>\>A = [a, b, c, d, f, g, h, j, k, l, m, n, o, p, q, r, s, t, v, w, x, y, z];\\
+\>TABLE\\
+\>\>PFKge + (A)* :: ge(A)*;\\
+\>\>PFKge + e* :: ge\"{e}*;\\
+\end{code}
+\normalsize
+
+The difference between the left match and the perfect match ruletype is that 
+the first ruletype requires
+an exact match between the M-string $p$ and the input string \footnote{in
+generation the match will be with $q$}, whereas the second type requires that
+$p$ matches with the left part of the input string. 
+
+In the previous section
+we have seen that the semantics of the rule can be defined by means of the 
+function $\Phi$. I will define now the function $R$ which was used for the 
+definition of $\Phi$ for each of the two forms of a left segmentation rule
+and also for the analytical and generative version of each form.
+The semantics associated with the analytical version of the
+{\bf left match} rule is:
+\small
+\begin{code}
+$R^{A}_{l}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r | \exists \alpha_{1}, b : \alpha = \alpha_{1}\bullet b \wedge \alpha_{1} \equiv p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\} \wedge$\
+\
+\>$\neg( b = \epsilon \wedge p = \epsilon ) \wedge r = <PFK, F, q\bullet b\{l{1}/v_{1},\ldots,l_{n}/v_{n}\}> \}$\\
+\end{code}
+\normalsize
+In this definition $p$, $q$, $PFK$ and $F$ are rule-defined
+constants. They correspond with $p$, $q$, $PFK$ and $F$ in the
+syntax definition.  
+The notation $p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\}$ means "the string $p$ 
+in which for each occurence of the variable $v_{i}$ the value $r_{i}$ has been 
+substituted. The `$\bullet$' symbol is used to express a concatenation operation between
+two strings.
+
+The semantics associated with the analytical version of the
+ perfect match rule ( indicated by subscript $p$ ) is:
+\small
+\begin{code}
+$R^{A}_{p}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r | \alpha \equiv p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\} \wedge$\\
+\>$r = <PFK, F, \{l_{1}/v_{1},\ldots,l_{n}/v_{n}\}> \}$\\
+\end{code}
+\normalsize
+In generation the semantics of the two rule forms is as follows:
+\small
+\begin{code}
+$R^{G}_{l}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r | \exists \alpha_{1}, b, \kappa : \alpha = <\kappa ,\alpha
+_{1}\bullet b> \wedge \alpha_{1} \equiv q\{l_{1}/v_{1},\ldots,l_{n}/v_{n}\} \wedge$\\
+\>$\neg( b = \epsilon \wedge q = \epsilon ) \wedge \kappa = PFK \wedge r = <F, p\bullet b\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\}> \}$\\
+\end{code}
+\normalsize
+\small
+\begin{code}
+$R^{G}_{p}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r | \exists \alpha_{1}, \kappa : \alpha = <\kappa ,\alpha_{1} \wedge \alpha_{1} \equiv q\{l_{1}/v_{1},\ldots,l_{n}/v_{n}\} \we
+dge$\\
+\>$\kappa = PFK \wedge r = <F, p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\}> \}$\\
+\end{code}
+\normalsize
+\subsection{Right segmentation rules}
+A right segmentation rule has one of the next two forms:
+\small
+\begin{code}
+{\bf rule definition } :: {\bf perfect match} $|$ {\bf right match} \\
+{\bf perfect match } :: {\bf q} `+' {\bf SF-K} `::' {\bf p} [`,' {\bf F}] [, {\bf CC}] `;'\\
+{\bf right match } :: `*'{\bf q} `+' {\bf SF-K} `::' `*'{\bf p} [`,' {\bf F}] [, {\bf CC}] `;' \\
+\end{code}
+\normalsize
+Here, SF-K is a suffix key, $p$ and $q$ are M-strings, F is the 
+identification of a phonetical rule and CC is the identification of a
+context condition.
+
+The difference between these two kind of rules is of the same type as the
+difference between the two kinds of left segmentation rules.
+
+\small
+\begin{code}
+Example: \\
+\>VAR\\
+\>\>C = [b, c, d, f, g, h, j, k, l, m, n, p, q, r, s, t, v, w, x, y, z];\\
+\>\>V = [a, e, i, o, u];\\
+\>TABLE\\
+\>\>*(C)(V)b + SFKje :: *(C)(V)bbetje, FONleegsjwa;\\
+\end{code}
+\normalsize
+
+The definition of the analytical right match and perfect match
+semantics are:
+\small
+\begin{code}
+$R^{A}_{r}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r | \exists \alpha_{1}, b : \alpha = b\bullet\alpha_{1} \wedge \alpha_{1} \equiv p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\} \wedge$\\
+\>$\neg( b = \epsilon \wedge p = \epsilon ) \wedge r = <SFK, F, CC, b\bullet q\{l_{1}/v_{1},\ldots,l_{n}/v_{n}\}> \}$\\
+\end{code}
+\normalsize
+\small
+\begin{code}
+$R^{A}_{p}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r | \alpha \equiv p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\} \wedge$\\
+\>$r = <SFK, F, CC, q\{l_{1}/v_{1},\ldots,l_{n}/v_{n}\}> \}$\\
+\end{code}
+\normalsize
+The definition of the generative right match and perfect match
+semantics are:
+\small
+\begin{code}
+$R^{G}_{r}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r | \exists \alpha_{1}, b, \kappa : \alpha = <\kappa , b\bullet\alpha_{1}> \wedge \alpha_{1} \equiv q\{l_{1}/v_{1},\ldots,l_{n
+}/v_{n}\} \wedge$\\
+\>$\neg( b = \epsilon \wedge p = \epsilon ) \wedge \kappa = SFK \wedge r = <F, CC, b\bullet p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\}> \}$
+\\
+\end{code}
+\normalsize
+\small
+\begin{code}
+$R^{G}_{p}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r |\exists \alpha_{1}, \kappa : \alpha = <\kappa , alpha_{1}> \wedge \alpha_{1} \equiv q\{l_{1}/v_{1},\ldots,l_{n}/v_{n}\} \we
+dge$\\
+\>$\kappa = SFK \wedge r = <F, CC, p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\}> \}$\\
+\end{code}
+\normalsize
+\subsection{Right glue rules }
+A right glue rule has the following form:
+\small
+\begin{code}
+{\bf rule definition } :: `*'{\bf q$_{1}$} \{ `+' {\bf q$_{i}$ \}$_{i=2}^{M}$} `::' `*'{\bf p} `;' \\
+\end{code}
+\normalsize
+Here, $p$ and $q_{1},\ldots,q_{M}$ are M-strings. Notice that one cannot
+express the requirement for a perfect match with right glue rules.
+
+\small
+\begin{code}
+Example: \\
+\>TABLE\\
+\>\>* + will  :: *'ll;\\
+\>\>* + had   :: *'d;\\
+\>\>* + would :: *'d;\\
+\end{code}
+\normalsize
+
+The semantics of
+the analytical and generative rule-application are:
+\small
+\begin{code}
+$R^{A}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r | \exists \alpha_{1}, b : \alpha = b\bullet\alpha_{1} \wedge \alpha_{1} \equiv p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\} \wedge$\\
+\>$r = <M, <b\bullet q_{1},\ldots,q_{M}>\{l_{1}/v_{1},\ldots,l_{n}/v_{n}\}> \}$\\
+\end{code}
+\normalsize
+\small
+\begin{code}
+$R^{G}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r | \exists \alpha_{1}, b, m : \alpha = <m, b\bullet\alpha_{1}> \wedge $\\
+\>$\alpha_{1} \equiv q_{1}\bullet"|"\bullet\ldots\bullet "|"\bullet q_{M}\{l_{1}/v_{1},\ldots,l_{n}/v_{n}\} \wedge$\\
+\>$m = M \wedge r = b\bullet p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\} \}$\\
+\end{code}
+\normalsize
+For implementation reasons the input parameter $\alpha$ of the generative version of
+the function $R$ is not a tuple of strings. Instead, the strings have
+been concatenated to one big string in which the individual strings are
+separated by the `$|$' character.  In order to perform the matching process 
+the M-strings in the lefthand side of the rule must be concatenated in the
+same way.
+
+\subsection{Left glue rules }
+A left glue rule has the following form:
+\small
+\begin{code}
+{\bf rule definition } :: \{ {\bf q$_{i}$} `+' \}$_{i=1}^{M-1}$ {\bf q$_{M}$}`*' `::' {\bf p}`*' `;' \\
+\end{code}
+\normalsize
+Here, $p$ and $q_{1},\ldots,q_{M}$ are M-strings. Notice that one cannot
+express the requirement for a perfect match with left glue rules.
+
+\small
+\begin{code}
+Example: \\
+\>TABLE\\
+\>\>tegen     + * :: tegen*;\\
+\>\>tegenover + * :: tegenover*;\\
+\>\>tekeer    + * :: tekeer*;\\
+\end{code}
+\normalsize
+
+The semantics of the analytical and generative rule-application are:
+\small
+\begin{code}
+$R^{A}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r | \exists \alpha_{1}, b : \alpha = \alpha_{1}\bullet b \wedge \alpha_{1} \equiv p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\} \wedge$\
+\
+\>$r = <M, <q_{1},\ldots,q_{M}\bullet b>\{l_{1}/v_{1},\ldots,l_{n}/v_{n}\}> \}$\\
+\end{code}
+\normalsize
+\small
+\begin{code}
+$R^{G}(\alpha,d_{1}, \ldots ,d_{n}) =_{def}$\\
+\>$\{ r | \exists \alpha_{1}, b, m : \alpha = <m, \alpha_{1}\bullet b> \wedge $\\
+\>$\alpha_{1} \equiv q_{1}\bullet"|"\bullet\ldots\bullet "|"\bullet q_{M}\{l_{1}/v_{1},\ldots,l_{n}/v_{n}\} \wedge$\\
+\>$m = M \wedge r = p\bullet b\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\} \}$\\
+\end{code}
+\normalsize
+\subsection{Middle glue rules }
+A middle glue rule has the following form:
+\small
+\begin{code}
+{\bf rule definition } :: \{ {\bf q$_{i}$} `+' \}$_{i=1}^{M-1}$ {\bf q$_{M}$} `::' {\bf p} `;' \\
+\end{code}
+\normalsize
+Here, $p$ and $q_{1},\ldots,q_{M}$ are M-strings. Notice that one can only 
+express the requirement for a perfect match with these rules.
+
+\small
+\begin{code}
+Example: \\
+\>VAR
+\>\>A = [se,te,me,le,lo,la,os,nos,les,los,las];\\
+\>\>B = [se,te,me,os,nos];\\
+\>\>C = [te,me,le,lo,la,os,nos,les,los,las];\\
+\>TABLE\\
+\>\>ten + (A) :: ten(A);\\
+\>\>se  + (B) + (C) :: se(B)(C);\\
+\end{code}
+\normalsize
+
+The semantics of the analytical and generative rule-application are:
+\small
+\begin{code}
+$R^{A}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r | \alpha \equiv p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\} \wedge$\\
+\>$r = <M, <q_{1},\ldots,q_{M}>\{l_{1}/v_{1},\ldots,l_{n}/v_{n}\}> \}$\\
+\end{code}
+\normalsize
+\small
+\begin{code}
+$R^{G}(\alpha,<l_{1},r_{1}>, \ldots ,<l_{n},r_{n}>) =_{def}$\\
+\>$\{ r | \exists m : \alpha = <m, \alpha_{1}> \wedge$\\
+\>$\alpha_{1} \equiv q_{1}\bullet"|"\bullet\ldots\bullet "|"\bullet q_{M}\{l_{1}/v_{1},\ldots,l_{n}/v_{n}\} \wedge$\\
+\>$m= M \wedge r = p\{r_{1}/v_{1},\ldots,r_{n}/v_{n}\} \}$\\
+\end{code}
+\normalsize
+
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

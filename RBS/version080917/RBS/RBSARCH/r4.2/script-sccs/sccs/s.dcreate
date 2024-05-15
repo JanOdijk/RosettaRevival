@@ -1,0 +1,59 @@
+h43312
+s 00038/00001/00000
+d D 1.2 95/10/17 11:07:22 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 95/10/17 08:59:27 rous 1 0
+c date and time created 95/10/17 08:59:27 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+#! /bin/sh -e
+#
+case $# in
+0) echo "Usage: dcreate filename"; exit 1;;
+1) ;;
+*) echo "Usage: dcreate filename"; exit 1;;
+esac
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+trap 'echo "DCREATE: Could not create file $1"; cd $savedir; exit 2' 0
+#
+if ( test -s doc/source/$1 )
+then echo "DCREATE: File already exists in your working directory"
+     exit
+elif ( test -s $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/s.$1.ascii )
+then echo "CREATE: File already exists in the archive"
+     exit  
+else cd doc/source 
+     trap 'echo "DCREATE: Could not create file $1"; rm -f $1; rm -f $1.ascii; cd $savedir; exit 2' 0
+     echo " " > $1
+     rm -f $1.ascii
+     uuencode $1 $1 > $1.ascii
+     chmod a=rwx $1.ascii   
+     sccs -d$RBS_ARCHIVE$RBS_RELEASE/doc -psccs enter $1.ascii
+     chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/s.$1.ascii
+     rm -f ,$1.ascii $1
+fi
+#
+echo "What is the title of the document (one line, no carriage-returns)?"
+read title
+d=`date`
+num=`wc -l $RBS_ARCHIVE$RBS_RELEASE/doc/doc_survey.rbs | awk '{printf "%s", $1}'`
+wc -l $RBS_ARCHIVE$RBS_RELEASE/doc/doc_survey.rbs | awk '{printf "Your document will have number %s !\n", $1}'
+echo "$num: $USER: $d: $1: $title" >> $RBS_ARCHIVE$RBS_RELEASE/doc/doc_survey.rbs
+#
+trap 0
+cd $savedir
+E 2
+E 1

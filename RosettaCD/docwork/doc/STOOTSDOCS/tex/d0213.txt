@@ -1,0 +1,1365 @@
+R0213.tex
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.formalism}
+   \RosTitle{The Transfer Modules of Rosetta3}
+   \RosAuthor{Jan Landsbergen, Joep Rous}
+   \RosDocNr{213}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{transfer, bonus, preference, typecheck, features}
+   \MakeRosTitle
+
+\newcommand{\supscr}[1]{^{#1}}
+\newcommand{\subscr}[1]{_{#1}}
+
+\section{Introduction}
+
+As far as the purely linguistic aspects are concerned,
+the task of the transfer modules for a particular language
+should follow from the
+definition of the semantic component of the M-grammar of that language. 
+In doc. R0011 the transfer in Rosetta2 was described in this way; 
+it was defined in a completely local way, in terms of rules that
+were applied to each node separately. 
+However, even in Rosetta2 the implemented transfer modules had other tasks too
+(cf. R0014), following from extra-linguistic considerations. The
+disambiguating interaction with the user and the preference tests
+(both very rudimentary) took 
+place in these modules. Preference tests are typically
+of a non-local nature, because they check whether various parts of
+an expression are compatible.
+
+So, in Rosetta2 we had a separation between purely local - 
+and therefore compositional - assignment of meanings according to
+the semantic component of the M-grammar and a possibly non-local
+processing of extra-linguistic information.
+  
+In Rosetta3 phenomena like semi-idioms appear to necessitate the introduction
+of non-locality in the linguistic semantic component as well. (Note:
+in these cases the transfer {\sl action}, i.e. the meaning assignment, is still local
+but the applicability of that action may depend on the context.)
+It has to be investigated if this is indeed the case and in what way it
+will influence our notion of compositionality. 
+
+What is presented here, is a technically rather powerful definition of
+the transfer modules, which can be implemented without too many complications.
+Where the exact line between linguistic and extra-linguistic knowledge
+should be drawn, must be decided later..
+
+Maybe some of the possibilities offered here will turn out to be
+unnecessary and undesirable
+from a theoretical point of view. In that case we may decide later on 
+not to make use of these possibilities.
+
+
+\section{Overview of the transfer modules}
+
+Transfer in Rosetta3, i.e. the transition from syntactic derivation trees
+of the source language to syntactic derivation trees of the target
+language, via semantic derivation trees, consists of three parts:
+
+\begin{enumerate}
+
+\item A-TRANSFER. 
+
+Input: a set of syntactic derivation trees,
+
+Output: a set of semantic derivation trees.
+
+The resulting semantic derivation trees need not be semantically correct,
+i.e. the trees may contain partial functions which are 
+applied to arguments outside their domain.
+
+\item IL-TEST. 
+
+Input: a set of semantic derivation trees.
+
+            Output: a set of correct semantic derivation trees, a subset of
+            the input set, ordered according to plausibility.
+
+Both A-TRANSFER and IL-TEST belong to the analysis module of Rosetta. 
+Obviously, IL-TEST can be seen as a part of A-TRANSFER, but it
+appears to be more elegant to make it a separate module.
+
+
+\item G-TRANSFER. 
+
+Input: a semantic derivation tree.
+
+Output: a set of - possibly incorrect - syntactic 
+derivation trees.
+
+\end{enumerate}
+
+\begin{enumerate}
+\item[Ad 1.] A-TRANSFER is performed on the basis of transfer rules for
+M-rules and for Skeys. In general these rules are local (i.e. their
+applicability does not depend on the context), 
+but there are exceptions, in particular for semi-idioms.
+The resulting set of semantic derivation trees  may contain
+incorrect trees, because in certain cases (again: semi-idioms)
+a test in terms of meaning keys has to be done yet.
+
+\item[Ad 2.] IL-TEST performs compatibility tests on the semantic derivation
+trees. The result is that some of them may be judged incorrect and that
+all correct ones will get 
+a strong and a weak preference bonus.
+The most plausible among the correct trees (plausible according to 
+the bonuses), is selected and passed to G-TRANSFER. If the user asks
+for another interpretation, the next best is passed on, etc.
+
+In the interactive mode the disambiguating dialogue with the
+user on polysemous words 
+takes place in this module, after the compatibility tests. 
+The result of the dialogue 
+is a subset of selected trees from
+the set of correct semantic derivation trees, from which the most plausible 
+is passed to G-TRANSFER.
+ 
+
+\item[Ad 3.] The selected semantic derivation tree is transduced into a set of
+syntactic derivation trees of the target language.
+
+G-TRANSFER performs the transfer on the basis of transfer rules for
+IL-rules and for Mkeys. In general these rules are local, 
+but there are exceptions, in particular for semi-idioms.
+There is a large degree of symmetry between G-TRANSFER and A-TRANSFER
+(for the same language),
+but we will not assume that in the implemented system 
+exactly the same transfer rules and dictionaries
+are used in both modules.
+
+\end{enumerate}
+
+In section 5 we will specify these modules in more detail.
+
+
+\section{Syntactic and semantic derivation trees}
+
+Before defining the transfer functions we have to define on what objects
+they operate.
+
+ \bigskip
+
+A semantic derivation tree is defined as follows:
+First we specify:
+\begin{enumerate}
+\item A set of basic IL expressions. These are in the first place
+meaning keys, mkeys. Other kinds of basic IL expressions are
+variables, numbers (in ciphers) and strings (for unknown words). 
+These are not identified by keys,
+but by  other attributes, which identify the index in case of variables,
+the  numerical value in case of numbers and the symbol string in case
+of strings. The details of this are left to the implementors.
+
+\item A set of meaning rules, i.e. their names. These names may consist of a 
+rulename alone or of a rulename plus parameter values. For each
+rule it has to be specified what parameters it has and what the types
+of these parameters are. 
+For each meaning rule the 
+number of arguments is fixed and equal to the number of arguments of
+the corresponding syntactic M-rules. (There is one exception: the 
+meaning rule corresponding to the robustness rule that 
+is used
+if M-PARSER fails, does not have a fixed number of arguments.)
+ 
+\end{enumerate}
+
+Definition of semantic derivation trees:
+
+1. Basic IL expressions are semantic derivation trees.
+
+2. If \(e_{1}, . . . , e_{n}\) are semantic derivation trees and 
+\(\underline{M}_{i}\)
+ is the name
+of a meaning rule with n arguments,
+then \(\underline{M}_{i}< e_{1}, . . . , e_{n} >\)
+ is a semantic derivation tree.
+
+A syntactic derivation tree is defined in a similar way, but with skeys
+instead of mkeys, and M-rules instead of meaning rules. Here too special
+attention has to be given to the representation of variables, numbers
+and strings.
+
+
+With each node of a derivation tree bonuses are associated in the way
+described in section 4.
+
+\section{Bonus system}
+
+We assume the following bonus system:
+there are two kinds of bonuses: (morpho-)syntactic 
+and semantic bonuses. Each of them consist of triples of integers
+
+(correctness bonus, strong preference bonus, weak preference bonus),
+
+to be abbreviated as
+
+\( (cb, spb, wpb) \),
+
+or 
+
+\( (syncb, synspb, synwpb) \)
+
+and
+
+\( (semcb, semspb, semwpb) \),
+
+for syntactic and semantic bonuses respectively.
+
+ \bigskip
+S-trees and syntactic derivation trees have only syntactic bonuses.
+Semantic derivation trees have syntactic and semantic bonuses.
+
+Each node of a tree has a bonus. The bonus of a tree is the sum
+of the bonuses
+of its nodes. The sum is computed for each kind of bonus separately.
+
+The way bonuses are transported from one level of the system to another
+level, has to be defined yet. The best way to do it seems to
+be to compute the bonus of the complete expression first and to transport
+this to its translation at the next level.
+But this approach appears to be in conflict
+with the use of compact representations of sets of trees (supertrees etc.).
+So presumably we have to define the transport of bonuses for each subtree
+separately, e.g. the way in which the bonuses in an S-tree are transported to
+the rulenode of the corresponding derivation tree, when an M-rule is applied.
+
+The ordering of triples of bonuses is defined as follows:
+
+     \( (cb1,spb1,wpb1) > (cb2,spb2,wpb2) =_{def}\)
+
+     \( cb1 > cb2   \) or
+
+     \(       cb1 = cb2 \) and \( spb1 > spb2   \) or
+
+     \( cb1 = cb2 \) and \( spb1 = spb2 \) and \( wpb1 > wpb2 \)
+
+
+The start value of the bonuses is 0.
+Changes in bonuses may be prescribed in rules, in dictionary entries, etc.
+This has to be decided in each module separately.
+
+ \bigskip
+{\bf Correctness bonus.} The correctness bonus indicates the correctness (syntactic or semantic) of the
+construction under consideration.
+
+So, cb := cb - 1 if incorrectness is noticed. 
+In general, robustness measures will
+lead to a negative correctness bonus. For a correct expression 
+the correctness
+bonus will be 0, for an incorrect expression it will be negative. 
+
+The
+reason that correctness is indicated by an integer and not by a boolean is that
+if in robustness mode a choice has to be made between several incorrect 
+expressions we may prefer expressions with the minimal number of incorrect
+elements.
+
+At certain points in the system, e.g. after each module, the
+set of results should be inspected and if there are both correct and
+incorrect results the incorrect ones are deleted. (this appears to be a
+reasonable strategy, taking into account that expressions that are judged
+incorrect will never become correct anymore.) 
+
+ \bigskip
+
+{\bf weak preference bonus.} The weak 
+preference bonus is intended to fulfil the same function
+as the bonus in Rosetta2. If there are several
+interpretations (S-trees or  derivation trees, etc.) of the same phrase,
+the weak preference bonus may be used to express that, 
+all other things being equal, one interpretation is more `plausible' or
+`probable' or `frequent' than the other. 
+
+ \bigskip
+
+{\bf Strong preference bonus} The 
+strong preference bonus spb has a strength somewhere between cb and wpb. 
+It has the power
+to overrule several weak preferences. An example of its use 
+might be the preference
+one would like to give to idioms over literal interpretations.
+Consider for example "kick the bucket". In the literal interpretation it
+might get a positive wpb, thanks to the compatibility of the kind
+of object expected by "kick" and the kind of object "bucket" is. 
+The idiomatic interpretation will not get this positive bonus, because
+"bucket" is no argument in that interpretation. This can be overruled
+by making for each idiom spb := spb + 1. This seems to be a more
+reliable strategy than having only a weak preference bonus and 
+adding a large number to it, e.g. wpb := wpb + 25, in order
+to overrule other preferences.
+
+ \bigskip
+
+At the IL level (at the end of the IL-TEST) a preference ordering has to be made
+on the basis of syntactic and semantic bonuses. For the time being we will assume
+that for each IL expression they are simply added 
+
+\( (syncb + semcb, synspb + semspb, synwpb + semwpb) \)
+
+and then compared to
+each other in the beforementioned way. But of course the distinction between
+the syntactic and the semantic bonuses is made with the expectation
+that a more subtle comparison will be made in the future.
+
+\section{Transfer rules and dictionaries}
+
+
+\subsection{A-TRANSFER}
+
+
+The analytical transfer function A-TRANSFER 
+from syntactic derivation trees to sets of 
+semantic derivation trees is defined by 
+specification of:
+\begin{enumerate}
+
+\item the dictionary A-ILDICT.
+\item a function A-RULETRANSFER from M-rules to sets of 
+meaning rules.
+\end{enumerate}
+
+\begin{enumerate}
+\item[ad 1 ] A-ILDICT is a set of quintuples
+ 
+\( (skey, mkey, preference, meaning description, contextconditions) \)
+
+The preference (an integer) and the meaning description are only relevant if
+there is more than one mkey for the same skey. The mkey with
+the highest preference value is the most plausible one. These
+preferences can be derived from the order in which the meanings are
+presented in a dictionary like Van Dale. They are added to the weak preference
+bonus of the node that is labelled by the mkey.
+
+The meaning description need not be a complete description of the
+meaning, but it should discriminate clearly one particular meaning
+of a word from other meanings of the same word. The information in Van Dale
+N-E should be sufficient. The meaning description may be the empty string,
+the only consequence is that in that case 
+no interactive disambiguation is possible.
+
+The context-conditions specify a set of skeys for each argument of
+the mkey (it is only relevant if mkey is a function). 
+This expresses that mkey is a meaning of skey only if skey is applied
+to an argument with an skey from this set as its head. (Cf. the  section
+on semi-idioms.) 
+
+It is also indicated whether the context-condition
+is a preference condition, which indicates that the mkey is always a possible
+interpretation of the skeys, but that it is more plausible if the condition
+holds,
+or a `strong' condition, which forbids this interpretation if it does not hold.
+\bigskip
+
+The context-conditions have roughly the following form:
+
+(the notation is a special case of the notation for the context-conditions
+in IL-TEST)
+
+1: KIND-OF-CONDITION, STRONGNESS, CONDITION-SET
+
+...
+
+...
+
+n: KIND-OF-CONDITION, STRONGNESS, CONDITION-SET
+
+(n is the number of arguments of the mkey)
+
+Here KIND-OF-CONDITION may be {\sl key-condition}  or {\sl no-condition}.
+
+STRONGNESS may be {\sl weak} or {\sl strong}.
+
+The CONDITION-SET is a set of skeys.
+
+In case of {\sl no-condition} both STRONGNESS and CONDITION-SET are irrelevant.
+
+
+\item[ad 2] A-RULETRANSFER is a function from M-rules to sets of 
+meaning rules, including parameters. In contrast with the Rosetta2 dogma,
+it is now allowed that a syntactic rule has more than one meaning.
+A-RULETRANSFER can in principle be specified by enumeration, in the
+form of a table, but for rules with parameters the notation must also
+provide the possibility to translate the parameters `locally'.
+
+Example: 
+
+assume that M-rule R1 has two parameters: parameter P1, with possible values
+a1, a2, a3, parameter P2 with possible values b1, b2.
+
+If the translation into IL depends in a complicated way from the parameters,
+we can enumerate all possibilities, as follows:
+
+R1 (a1, b1) \(\rightarrow\) M3 
+
+R1 (a1, b2) \(\rightarrow\) M4(c1)    
+
+R1 (a2, b1) \(\rightarrow\) M5(c2, d1)  
+
+etc.
+
+(assuming that M3 has no parameters, M4 has one parameter, M5 has two
+parameters)
+
+It may occur that several rules have the same parameter values and
+that they are mapped in a systematic way onto parameter values of IL rules.
+Then we may define a parameter transfer function,
+e.g.:
+
+PAR-TRANSFER(P1) \(=_{def}\) 
+
+ a1 \(\rightarrow\) c1
+
+ a2 \(\rightarrow\) c2
+
+ a3 \(\rightarrow\) c3
+
+The transfer of an M-rule can then be defined in a compact way:
+
+R3 (P1, P2) \(\rightarrow\) M6 (PAR-TRANSFER(P1), PAR-TRANSFER(P2)) 
+
+\end{enumerate}
+
+It may be useful to specify explicitly the transfer of subgrammars (from
+a theoretical point of view this is redundant, because each rule
+belongs to a unique subgrammar). The usefulness depends on the representation
+of derivation trees as supertrees or hypertrees and on the may M-GENERATOR
+is applied. Therefore we leave this decision to the implementor.
+
+
+The application of the context-conditions runs roughly as follows.
+A-TRANSFER is applied top-down to a syntactic derivation tree.
+When a variable-substitution rule is met, the set of head-skeys (usually one,
+but more than one in case of coordinate constructs and the empty set
+for expressions without a head) 
+of the substituent is associated with all occurrences of the variable.
+It is possible that the head of the substituent is itself a variable (e.g.
+in placeholder substitution rules). Then the set of head-skeys
+associated with the variable is considered as the set of head-skeys
+of the substituent. 
+
+If A-TRANSFER arrives at a function-application rule (in general one of the 
+startrules), it will check the compatibility between the sets of head-skeys
+associated with the argument-variables and the required skeys as indicated
+in the context-conditions of the function (compatibility means that the
+actual head-skeys are a subset of the required head-skeys).
+
+If a strong condition holds, then spb := spb + 1.
+
+If a strong condition does not hold, then cb := cb - 1.
+
+If a weak condition holds, then wpb := wpb + 1.
+
+If a strong condition holds, then wpb := wpb - 1.
+
+\bigskip
+The function definition is:
+\begin{tabbing}
+aaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaaa \= aaaaaaaaaa \= aaaaaaaaaa \= \kill
+\\
+A-TRANSFER\((d, V) =_{def} \) \\
+\\
+\( \{ <m, cb, spb, wpb> \mid \) \\
+\>\( <skey, mkey, pref, md, <>> \in\) A-ILDICT \(\wedge \) \\
+\>IS-BEXPR\((d) \wedge skey = \)KEY\((d) \; \wedge \) \\
+\>\( wpb = pref+\)WPB\((d) \wedge spb = \)SPB\((d) \wedge cb =\)CB\((d)\; \wedge \) \\
+\>\(m = mkey \} \) \\
+\>\(\cup\) \\
+\( \{ <m, cb, spb, wpb> \mid \) \\
+\>IS-VAR\((d) \wedge  i=\)INDEX\((d) \; \wedge \) \\
+\>\(cb = \)CB\((d) \wedge spb = \)SPB\((d) \wedge wpb = \)WPB\((d) \;\wedge \) \\ 
+\>\(m=\)VAR\(_{i} \} \) \\
+\>\(\cup\) \\ 
+\( \{ <m, cb, spb, wpb> \mid \) \\
+\>IS-VARSUBST\((R) \wedge d = R<d_{1}, d_{2}> \; \wedge \) \\
+\>\(i = \)VAR-INDEX\((R) \wedge <i,H> =\)HEADKEYS\((V, i, d_{2}) \; \wedge \) \\
+\>\(M \in \)A-RULE-TRANSFER\((R) \wedge m = M<m_{1}, \ldots ,m_{n}> \wedge \) \\
+\>\(wpb_{0} = \)WPB\((d) \wedge spb_{0} = \)SPB\((d) \wedge cb_{0} = \)CB\((d) \; \wedge \) \\
+\>\(wpb = \sum_{j=0}^{n} wpb_{j} \wedge spb = \sum_{j=0}^{n} spb_{j} \wedge cb = \sum_{j=0}^{n} cb_{j} \; \wedge \) \\
+\>\(\forall j: 1 \leq j \leq n: <m_{j},cb_{j},spb_{j},wpb_{j}> \in\) A-TRANSFER\((d_{j}, V\cup\{<i,H>\}) \} \)\\
+\>\(\cup\) \\ 
+\(\{ <m, cb, spb, wpb> \mid \) \\
+\>IS-F-APPL\((R) \wedge d = R<d_{1}, \ldots ,d_{n}> \; \wedge \) \\
+\>IS-BEXPR\((d_{1}) \wedge \forall j: 1 < j \leq n : \)IS-VAR\((d_{j}) \; \wedge \) \\
+\>\(M \in \)A-RULE-TRANSFER\((R) \wedge \) \\
+\>\(skey = \)KEY\((d_{1}) \wedge wbp_{1} = pref \; \wedge \) \\
+\>\(<skey, mkey, pref, md, <cc_{1},\ldots,cc_{n}>> \in\) A-ILDICT \(\wedge \) \\
+\>\(\forall j: 1<j\leq n: cc_{j} = <kind_{j}, strness_{j}, cset_{j}> \;\wedge\) \\
+\>\>\([ kind_{j} = \)key-condition\( \wedge <\)INDEX\((d_{j}),H_{j}>\in V \wedge\)\\
+\>\>\>\([(H_{j} \subseteq cset_{j}\wedge strness_{j}=\)weak\(\wedge \) \\
+\>\>\>\(wpb_{j} = 1\wedge spb_{j} = 0\wedge cb_{j} = 0) \) \\
+\>\>\>\(\vee\) \\
+\>\>\>\((H_{j} \not\subseteq cset_{j}\wedge strness_{j}=\)weak\(\wedge \) \\
+\>\>\>\(wpb_{j} = -1\wedge spb_{j} = 0\wedge cb_{j} = 0) \) \\
+\>\>\>\(\vee\) \\
+\>\>\>\((H_{j} \subseteq cset_{j}\wedge strness_{j}=\)strong\(\wedge \) \\
+\>\>\>\(wpb_{j} = 0\wedge spb_{j} = 1\wedge cb_{j} = 0) \) \\
+\>\>\>\(\vee\) \\
+\>\>\>\((H_{j} \not\subseteq cset_{j}\wedge strness_{j}=\)strong\(\wedge \) \\
+\>\>\>\(wpb_{j} = 0\wedge spb_{j} = 0\wedge cb_{j} = -1) \) \\
+\>\>\>\(]\) \\
+\>\>\(]\;\vee\) \\
+\>\>\([ kind_{j} = \)no-condition\( ]\;\;\wedge \)\\
+\>\(m = M<mkey, \)VAR\(_{index(d_{2})},\ldots ,\)VAR\(_{index(d_{n})}> \wedge \) \\
+\>\(wpb = \)WPB\((d) + \sum_{j=1}^{n} (wpb_{j}+\)WPB\((d_{j})) \; \wedge \) \\
+\>\(spb = \)SPB\((d) + \sum_{j=1}^{n} (spb_{j}+\)SPB\((d_{j})) \; \wedge \) \\
+\>\(cb  = \)CB\((d) + \sum_{j=1}^{n} (cb_{j}+\)CB\((d_{j})) \; \} \) \\
+\>\(\cup\) \\ 
+\( \{ <m, cb, spb, wpb> \mid \) \\
+\>\(\neg\)IS-VARSUBST\((R) \wedge \neg\)IS-F-APPL\((R) \wedge d = R<d_{1}, \ldots ,d_{n}> \; \wedge \) \\
+\>\(M \in \)A-RULE-TRANSFER\((R) \wedge m = M<m_{1}, \ldots ,m_{n}> \wedge \) \\
+\>\(wpb_{0} = \)WPB\((d) \wedge spb_{0} = \)SPB\((d) \wedge cb_{0} = \)CB\((d) \; \wedge \) \\
+\>\(wpb = \sum_{j=0}^{n} wpb_{j} \wedge spb = \sum_{j=0}^{n} spb_{j} \wedge cb = \sum_{j=0}^{n} cb_{j} \; \wedge \) \\
+\>\(\forall j: 1 \leq j \leq n: <m_{j},cb_{j},spb_{j},wpb_{j}> \in\) A-TRANSFER\((d_{j}, V) \} \)\\
+\\
+Here, \>  IS-BEXPR is the characteristic function of the set of basic expressions,\\
+\>IS-VAR is the characteristic function of the set of variables, \\
+\>IS-VARSUBST is the characteristic function of the set of variable substitution \\
+\>rules \\
+\>and IS-F-APPL is the characteristic function of the set of function application \\
+\>rules.\\
+\>The KEY function gives the key of a basic expression, \\
+\>the INDEX function gives the index of a variable, \\
+\>and the VAR-INDEX function gives the index of a variable associated with a \\
+\>variable substitution rule.\\
+\>The function HEADKEYS returns a two-tuple containing the variable index and \\
+\>the set of head keys ocurring in the argument derivation tree. \\
+\>Furthermore, we assume an existentional quantification of all variables that \\
+\>are not implicitly quantified.\\
+\\
+\end{tabbing}
+A-TRANSFER has two parameters, a syntactic derivation tree d and a set V 
+consisting of two-tuples $<i, H>$, where i is the index of a variable occurring
+in d and H is the set of head-skeys associated with this variable (we assume 
+that each variable has a unique index). At the first call of A-TRANSFER V is 
+empty. If A-TRANSFER arrives at a variable substitution rule a tuple consisting
+of the index of the corresponding variable and of the set of head skeys is
+added to V. In this way the head-skeys associated with the argument-variables 
+are known when A-TRANSFER meets a function-application rule.
+
+The parameters of the HEADKEYS function are the substituent derivation tree, 
+the index of the variable and the set V which contains all variable indices
+and associated head keys that have their defining occurrence at a higher level
+in the derivation tree. This is necessary because the substituent of the 
+variable substitution rule might be
+a variable itself ( e.g. place-holder substitution rules). In that case
+V contains the tuple containing the index of that variable plus the set of
+its head keys.
+
+A straightforward implementation of the A-TRANSFER function in which all
+semantic derivation trees are explicitly created will certainly
+cause a combinatorial explosion. This explosion can probably be avoided
+if we make use of a more efficient representation for the resulting a set of
+derivation trees: the so-called super-tree representation. This seems possible 
+because there are no context checks between the different 
+parts of the semantic derivation tree during A-TRANSFER. It is a prerequisite 
+for the super-tree
+approach, however, that it is not necessary to calculate at this point the 
+total bonus for each semantic derivation tree. Apart from that, the super-tree 
+trick only gives solace if the result of M-PARSER for one sentence is
+not highly ambiguous, otherwise we will still have severe efficiency problems.
+
+
+\subsection{IL-TEST}
+
+During IL-TEST the dictionary ILLEX is used.
+
+An entry of ILLEX has the form:
+
+\( (mkey, nrargs, features, context-conditions) \)
+
+ILLEX has an entry for each mkey. It specifies in the first place 
+the `logical type'. For the moment it appears to be sufficient
+to know whether the mkey denotes a function and if it is a function what the
+number of arguments is. This can be implemented by means of one integer, 
+{\sl nrargs}, which
+is 0 for a constant and which is 1, 2 or 3 for functions.
+
+In the second place semantic information about the kind of object or activity
+denoted by the mkey may be given, in the form of a sort or a set of
+semantic features. We will assume here that we choose for semantic features.
+ 
+In the third place - and only for functions - context-conditions 
+can be specified,
+concerning the arguments. They may be formulated in terms of features or
+features or in terms of mkeys. It is also indicated whether the condition
+is a preference condition, which merely orders interpretations,
+or a `strong' condition, which forbids certain interpretations.
+
+
+The conditions on arguments will have roughly the following form:
+
+1: KIND-OF-CONDITION, STRONGNESS, CONDITION-SET
+
+...
+
+...
+
+n: KIND-OF-CONDITION, STRONGNESS, CONDITION-SET
+
+(n is the number of arguments of the mkey)
+
+Here KIND-OF-CONDITION may be:
+
+{\sl feature-condition},
+
+{\sl key-condition},
+
+or {\sl no-condition}.
+
+STRONGNESS may be {\sl weak} or {\sl strong}.
+
+CONDITION-SET may be: 
+
+in case of {\sl feature-condition}: a set of features,
+
+in case of {\sl key-condition}: a set of mkeys.
+
+In case of {\sl no-condition} both STRONGNESS and CONDITION-SET are irrelevant.
+
+\bigskip
+
+The compatibility tests are done in a similar way as in A-TRANSFER.
+In the case of a feature-condition it is checked whether the features of the
+actual arguments are a subset of the expected feature-sets.
+
+For the moment we assume that the feature-sets are complete, but later
+redundancy rules (e.g. MAN \( \rightarrow \) 
+may be added in order to reduce the actual sets of features
+in the lexicons.
+
+The biggest problem that we will encounter during the implementation of
+the IL-TEST module is the combinatorial explosion problem. A small
+example shows that the problem will already occur in rather normal sentences.
+A sentence with 10 translation relevant words that all have 3 IL- translations
+will have $3^{10} = 59049$ corresponding IL-trees. A straightforward 
+implementation in which each of these trees is created and/or tested seems to be 
+doomed to failure. The solution to this problem is not obvious and will 
+certainly require intensive study. For similar problems in artificial
+intelligence and theorem proving in which there are many possible paths to a 
+solution {\em heuristic } techniques are used. Maybe, in this case too, 
+heuristic is the correct answer.
+
+\subsection{G-TRANSFER}
+
+The generative transfer function G-TRANSFER 
+from semantic derivation trees to sets of 
+ssyntactic derivation trees is defined by 
+specification of:
+
+\begin{enumerate}
+\item the dictionary G-ILDICT.
+A-ILDICT is a set of quadruples 
+(mkey, skey, preference, contextcondition).
+
+The preference is only relevant if
+there is more than one skey for the same mkey. The skey with
+the highest preference value indicates the `best word' corresponding
+to meaning mkey. The
+preferences can be derived from the order in which the translations 
+corresponding to the same meaning are
+presented in a dictionary like Van Dale N-E.
+
+The context-condition is similar to that in A-TRANSFER. It
+is only applicable to functions and it consists of a 
+set of skeys for each argument of
+the function denoted by mkey.
+It expresses that mkey is a meaning of skey only if skey is applied
+to an argument with an skey from this set as its head. 
+
+\item a function G-RULETRANSFER from meaning-rules to sets of 
+M-rules, including parameters. 
+Notational conventions can be the same as in A-TRANSFER.
+
+The definition is similar to that of A-TRANSFER.
+
+
+\end{enumerate}
+Because G-TRANSFER has compatibility checks on the resulting syntactic trees,
+we again have effiency problems in the implementation. The severeness of this 
+problem will 
+especially depend on the ambiguity of the translation of mkeys. If the
+translation of mkeys causes a combinatorial explosion we must consider
+a non-conventional (e.g. a heuristic) approach for this module too.
+
+
+
+\section{Semi-idioms}
+
+Semi-idioms are expressions like "een voordracht houden", "een opmerking
+maken". These expressions consist of a verb with a rather general meaning
+and a specific argument of the verb, more precisely: an argument with a specific
+head. This head, however, can be modified in many possible ways ("een
+goede voordracht houden") and relative constructions are allowed 
+("de opmerking die zij maakte"). 
+Therefore it is not possible to treat these expressions as
+ordinary flexible idioms. On the other hand this is not necessary either;
+semi-idioms have a more or less compositional semantics, the translation
+of the argument can be done locally, but the
+translation of the verb depends strongly on the head of the argument.
+(Cf. Andr\'{e} Schenk, forthcoming; the approach described here has been chosen
+in consultation with Andr\'{e}.)
+
+Semi-idioms are handled by making use of both the context-condition
+in IL-DICT and the context-condition on IL-LEX.
+E.g. "een voordracht houden":
+
+In A-ILDICT 
+SKhouden is related to the meaning key MKhouden2 with a strong 
+context-condition on the second argument:
+
+2: {\sl key-condition, strong,}, {SKvoordracht, SKlezing} 
+
+MKhouden2 has a strong context-condition on the meaning keys of the 
+second argument,
+in ILLEX. This condition prevents that MKhouden2 is applied to the wrong 
+meaning of `voordracht' (e.g. `nomination').
+
+If this is more convenient, the key-condition for MKhouden2 can be 
+replaced by a feature-condition. 
+
+
+\section{Overview of information needed for transfer}
+
+A-ILDICT (called \(A-TR_{B}\) in R0011)
+
+G-ILDICT (called \(G-TR_{B}\) in R0011)
+
+ILLEX
+
+A-RULETRANSFER (called \(A-TR_{R}\) in R0011)
+
+G-RULETRANSFER (called \(G-TR_{R}\) in R0011)
+
+Specification of the rules for function-application.
+
+Specification of the rules for variable-substitution.
+
+Specification of the head arguments of both syntactic and semantic
+rules (needed for semi-idioms and preference tests). 
+This is trivial in most cases: the head is always the first argument
+except for coordination rules.
+ 
+
+
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.3 - released  feb-1987}
+% feb-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1987 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

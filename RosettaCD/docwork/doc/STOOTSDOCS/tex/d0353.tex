@@ -1,0 +1,1555 @@
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{General}
+   \RosTitle{Types}
+   \RosAuthor{Jan Odijk}
+   \RosDocNr{0353}
+   \RosDate{September 18, 1989}
+   \RosStatus{informal}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Type system, sorts, semantic component}
+   \MakeRosTitle
+%
+%
+
+
+\def\m#1{$\|$#1$\|$}
+\def\to{$\rightarrow$}
+\def\toset#1{$\uparrow$#1}
+\def\td#1{$<$ #1 $>$}
+\def\examples#1 {\em #1}
+\section{Introduction}
+
+This document deals with types in Rosetta. A proposal is made for a
+type-system that is to be used in Rosetta. In section~\ref{typesec} some formal
+aspects of the type-system are discussed. Everything proposed there is
+fairly standard, I think, except for one part: the system proposed
+allows for a simple way to deal with cross-classifications.
+Section~\ref{subst}  deals with the substantive part of the types: Which types
+exist, and how do we determine types? A strategy to solve this problem is
+proposed, and some examples are given.
+Section~\ref{impl} discusses some aspects of robustness and implementation.
+
+The status of this paper is exploratory and the proposal tentative.
+The system as proposed here fits in nicely with (a restricted version of)
+the proposal by Joep Rous
+concerning the semantic component (doc. R0401).
+
+\section{Types}
+\label{typesec}
+
+A {\em type} is an object associated to set of meanings.
+The set of meanings associated to a type is called the {\em  domain} of
+the type.
+
+Both basic meanings (e.g. meanings of single words and idioms)
+and non basic meanings (e.g. the meaning of an NP or a sentence)
+are members of a {\em type domain }.
+
+I'll notate type domains as D$_{type}$. The meaning of some expression $\alpha$
+is represented as \m{$\alpha$}.
+
+\def\D#1{D$_{#1}$}
+
+\begin{description}
+  \item[Examples]\mbox{}\\
+\begin{description}
+  \item[] \D{human} = \{ \m{man}, \m{vrouw}, \m{minister}, ... \} 
+  \item[] \D{abstract} = \{ \m{kunst}, \m{tijd},.. \}
+  \item[] \D{mass} = \{ \m{vlees}, \m{goud}, ... \}
+  \item[] \D{question} = \{ \m{of hij ziek is}, \m{Is dat correct?},
+                       \m{wat heeft hij gedaan?},...\}
+  \item[] \D{plural} = \{ \m{de mannen}, \m{enkele vrouwen}, \m{sommige auto's}, 
+        ...\}
+\end{description}
+ 
+\end{description}
+
+The types from Montague grammar can be represented in this way as well.
+The type {\em t} has domain \D{t} = \{ 0,1 \}; the type {\em e}  
+equals the set of all entities.
+The type {\em c} suggested for the meaning of {\em  wheather-it} in doc. R0308
+would be a type consisting of exactly one member.
+
+Sometimes a distinction is made between {\em  types} and {\em  sorts}.
+Types are restricted to the types {\em  e}, {\em  t} and complex types
+built out of these elements, whereas {\em  sorts} further subdivide
+types (in particular the type {\em  e}). This distinction is not made here.
+Some of the types that will be proposed correspond clearly to {\em  sorts},
+e.g. {\em  human, animate} etc. Others, however, will probably correspond
+to complex types formulated in terms of {\em  e}'s and {\em  t}'s, e.g.
+{\em  question}. In the system proposed here both have the same status, though
+they probably will differ in their place on a hierarchy to be defined below.
+
+The domains of types of basic meanings are large, but finite sets. 
+The domains of types of nonbasic
+meanings are infinite sets.
+For these reasons sets of meanings cannot be used directly in a real system. 
+For basic 
+meanings it would be impractical because the sets are very large, for nonbasic
+meanings it is in principle impossible, since the sets are infinite.
+Instead {\em types} are used to achieve the desired effects.
+
+
+\subsection{Cross classification}
+Types are used in {\em (enclosed) type descriptions} to indicate  what
+type domains  a meaning is a member of. 
+Enclosed type descriptions are defined by
+means of the following syntax:
+
+\def\nt#1{$<$#1$>$}
+
+\begin{description}
+  \item[] \nt{enclosed type description} \to '$<$' \nt{type description} '$>$' 
+  \item[] \nt{type description} \to \nt{signed type} \{\nt{type description}\}
+  \item[] \nt{signed type} \to ['$\sim$'] \nt{type}
+\end{description}
+
+\begin{description}
+  \item[Examples] \mbox{}
+\begin{description}
+  \item[] \td{animate} 
+  \item[] \td{$\sim$animate}
+  \item[] \m{de mannen} : $<$ human plural masculine$>$ 
+  \item[] \m{handdoek}: $<$ concrete horizontal$>$
+  \item[] \m{zwemt de man} : $<$ question activity $>$
+\end{description}
+
+
+\end{description}
+
+
+\noindent
+where {\em  horizontal} represents the class of meanings that can function
+as the first argument of the meaning of the 
+verb {\em  liggen}, but not of {\em  zitten} or {\em  
+staan}, and where {\em  activity} is an {\em  aktionsart}. 
+
+
+\def\t#1{\mbox{$\tau_{#1}$}}
+
+
+Every meaning has an enclosed type description. If a certain meaning {\em M} has
+an enclosed type-description of the form $<$ \t1..\t{n} $>$ 
+(where \t{i} is a signed
+type), then this is interpreted
+in such a way that M is a member of \D{\t1} $\cap$ .. $\cap$ \D{\t{n}}.
+The interpretation of {\em  $\sim$\t{}} (\t{} a type) is: a certain meaning
+can have the specification  {\em  $\sim$\t{}} if it is a member 
+of the complement of \D{\t{}}.
+The set relative to which the complement is taken (the universe) 
+is here the set of all 
+meanings. It might perhaps be better to take some other set as the universe.
+For discussion, see below.
+
+In this way cross-classifications can be made in a systematic way.
+These cross-classifications are absolutely necessary to be able to make a
+realistic system. Once the system is fixed, it might be possible to do away
+with the cross classifications by partitioning the set of meanings in 
+sufficiently small subsets, though this probably will not serve any purpose.
+
+
+\subsection{Hierarchy}
+
+We define a relation $\leq$ on types (actually: signed types, see below), 
+as follows:
+\begin{description}
+  \item[]
+a $\leq$ b iff \D{a} $\subseteq$ \D{b}
+ 
+\end{description}
+
+
+Analogously, the relations $<$, $>$ and $\geq$ can be defined.
+
+Since the actual system cannot deal with real sets, a partial ordering
+of types w.r.t the operator $\leq$ must be specified in a real system.
+The $\leq$ relation must be computed on the basis of such a specification.
+
+\begin{description}
+  \item[Example] The following might be parts of such a partial ordering:
+\begin{description}
+  \item[] human $<$ animate $<$ concrete
+  \item[] drink $<$ fluid $<$ concrete 
+  \item[] concrete $<$ e
+  \item[] weapon $<$ instrument $<$   concrete
+\end{description}
+\end{description}
+
+
+\subsection{Type requirements}
+
+Every function specifies for each of its arguments to what type it must belong.
+This is specified by means of a {\em type requirement} for each argument.
+
+A type requirement  is defined by the following syntax:\footnote{The syntax
+given is arbitrary to a certain extent, and it can be extended where necessary,
+e.g. one might perhaps want to allow requirement descriptions of the form
+{\em  horizontal (weapon | cloths)}, etc.}
+
+\def\r#1{\mbox{$\rho_{#1}$}}
+  
+
+\begin{description} 
+  \item[] \nt{req-descr} \to \nt{req-descr} '$\mid$' \nt{req-descr}
+  \item[] \nt{req-descr} \to \nt{signed type} \{ \nt{signed type} \}
+  \item[] \nt{signed type} \to ['$\sim$'] \nt{type}
+\end{description}
+
+
+\begin{description} 
+  \item[Examples]\mbox{}\\
+\begin{description} 
+  \item[] animate
+  \item[] animate $\mid$ t
+  \item[] $\sim$animate $\mid$ t
+  \item[] human feminine $\mid$ weapon
+\end{description}
+
+\end{description}
+
+
+It is possible to make enclosed requirement descriptions from req-descr's
+in the following manner:
+
+\begin{description} 
+  \item[] \nt{enclosed req-descr} \to '$<$ [\nt{req-descr}['-' \nt{req-descr} ['-' \nt{req-descr}]]] '$>$'
+\end{description}
+
+These can be used to specify the type requirements for each argument (0,1,2,3)
+of an argument-taking meaning.
+
+Compatibility of a type description \t{} with a requirement description \r{} 
+is defined as follows:
+
+
+\begin{description} 
+\item[alternatives] if \r{}=\r1$\mid$\r2 (\r1 and \r2 requirement 
+descriptions), and \t1 is a type description, 
+then \t1 is
+compatible with \r{} iff \t1 is compatible with \r1 or with \r2
+  \item[concatenation] if \t{} =  \t1..\t{n}, \r{} =  \r1..\r{m} (\t{i} and 
+\r{i}
+signed types for all {\em i}), then \t{} is compatible with \r{} iff
+$\forall_{\r{i}} \exists_{\t{j}} \t{j} \leq \r{i}$ 
+\end{description}
+
+
+
+\begin{description}
+  \item[Example] Given the partial ordering sketched above, the following 
+holds:
+
+\begin{description}
+  \item[concatenation] \td{plural human masculine} is compatible with {\em animate},
+since {\em  animate} $\geq$ {\em  human} 
+  \item[alternation] \td{human} is compatible with {\em abstract $\mid$ concrete }, 
+since {\em  human} $\leq$ {\em  concrete}
+\end{description}
+
+ 
+\end{description}
+
+It appears to be more convenient to define '$\sim$' as creating a complement
+w.r.t. the {\em  root type} than w.r.t all types. The {\em  root type}
+for some type \t{} is defined as follows:
+
+\begin{description} 
+  \item[] Roottype(\t{}) = \t{1} iff \t{1} $\geq$ \t{} and there is no type
+           \t{2} such that \t{2} $>$ \t{1}
+\end{description}
+ 
+
+In words, the roottype of some type \t{} is the type occurring as the root of the 
+hierarchy tree that \t{} is a member of.
+This will give the result that e.g. the type description $\sim$animate is equivalent
+to nonanimate entities (\td{$\sim$animate entity}), so that e.g. 
+meanings of type
+{\em  t} are not included, which appears to be the intention in most cases..
+
+Other interpretations of '$\sim$' can be imagined as well. If no consistent,
+intuitively appealing definition can be found, then it might perhaps be better
+to do away with it, because it will then certainly create errors, or we might
+replace it by a difference operator.
+
+
+%In certain treatments maxtypes are called {\em  types}, our {\em  types} are
+%called {\em sorts}.
+
+It might perhaps be convenient to define a special type that is 
+compatible with any type and one (perhaps the same) that any type is 
+compatible with (e.g. {\em anytype}). 
+
+%This might perhaps be useful for an argument taking meanings that does not 
+%impose any requirement on one of its arguments, and it might perhaps 
+%be useful as a 
+%type for the meaning of e.g. {\em  het}, which can be of type {\em  entity}
+%(it can refer to {\em  het boek}, of type {\em  t} (it can refer to
+%finite declarative sentences), of type {\em  question} (it can refer to
+%questions, e.g. {\em  Jan vroeg het}), of type {\em  c} 
+%(as in {\em  het regent} ).
+  
+
+\subsection{How to use types in the semantics?}
+
+The idea is that any argument-taking meaning has  an enclosed type 
+requirement as part of its semantic specification and that any meaning
+has a type description. Combining a argument-taking meaning with its
+arguments entails:
+
+\begin{description} 
+  \item[1] checking whether the type description of each argument is 
+compatible with the relevant type requirement as specified in the
+argument taking meaning.
+ \item[2] (if the conditions under {\bf 1} are satisfied) 
+computing a new type for the result of the application of this rule.
+\end{description}
+
+Thus, the operation working on these types for an n-ary syntactic rule
+is an n-ary function from 
+an n-tuple of feature bundles to a set of  feature bundles.
+
+If there is a type mismatch, no new type will be computed for the result of
+the application  of the relevant rule. If no case passes the type compatibility
+test, no resulting type will occur, and the associated semantic derivation tree
+is (semantically) ill-formed.
+
+In certain cases certain information from arguments or argument taking
+meanings must be retained. A concrete example might be VP-modifying adverbs.
+For such adverbs it might be necessary that we compute a 
+type for the VP and store it in the 
+featurebundle associated to the rule forming a VPPROP (or CLAUSE) in order
+to be able to later compare the type requirement of the adverb with the type
+of  the VP.
+This would be artificial, but it would be 
+a direct consequence of the treatment of such
+adverbs of which we knew in advance that it was semantically probably not 
+fully correct. 
+
+A second case where this might be relevant concerns such words as 
+{\em  krijgen} 'gedaan krijgen', {\em  laten} with complements such as 
+{\em  hem in de kast},
+{\em  hem in de tuin} etc., where it is perhaps necessary to record the
+type of the PP (path, location, etc.) occurring in this complement. I am
+not sure about this yet, but it should be investigated. At the moment, 
+these verbs have been given (somewhat ad-hoc) type requirements 
+combining a truth value with the type of the PP ({\em tlocation}, 
+{\em tpath}, etc.).
+
+Also the treatment of certain kinds of adjuncts as proposed in doc. R0308
+might make it necessary to retain certain information of the head.
+
+We should also investigate whether there are other cases of this
+kind.
+ 
+
+\section{How to determine types?}
+\label{subst}
+
+A more difficult problem than the formal part of the type system is the 
+substantive part: How to determine which types should be assumed? This is
+a very difficult problem, because it is possible to take subsets from
+the sets of meanings in an infinite number of ways. The problem is:
+how do we select a choice of subsets that has  linguistic significance, and
+that is useful for disambiguation purposes?
+
+My suggestion would be to tackle this problem in the following manner:
+
+\begin{description}
+  \item[1]  First, tentatively make type-requirements for all arguments of
+meanings of many (ideally: all) argument-taking words. 
+Specify the hierarchy required for
+this system, and define the types postulated precisely (add tests etc.)
+  \item[2] Try to fill all meanings of nouns (more generally: potential 
+heads of argument phrases) etc. for their types, using the hierarchy of types
+postulated. The hierarchy of types will consist of a set of trees: Pick for
+each tree (and each subtree, etc.) the lowest leaf that is appropriate.
+Form a type description by putting all these types in a list.
+\end{description}
+
+
+As an experiment, I started to do  the first part of this strategy for
+some of the verbs in the current dictionaries that I met anyway doing other
+dictionary activities. This led to a first list of types and an 
+associated  hierarchy.
+This list is supplied in appendix~\ref{alltypes}. The actual list in the 
+dictionary has been extended slightly already.
+
+While filling these type requirements I found out that it was very important
+to have a clear idea of what types the rules of the current Rosetta3 system
+would yield. Since I did not have very clear ideas about this, this will 
+probably have yielded inconsistent fillings. To avoid this in the future,
+I made  a first proposal  as to what kind of 
+types are yielded by the final rules of subgrammars. They are listed
+in appendix~\ref{typesofrules}.
+
+
+\section{Implementation and Robustness}
+\label{impl}
+\subsection{Robustness and Metaphorical Uses}
+
+Of course, the Rosetta system must be robust enough to deal with cases
+that are not foreseen. Among these there might be simply semantically
+illformed sentences, but also all kinds of metaphorical uses.
+
+One way to guarantee this robustness, would be to give the type check the
+status of an ordering imposing mechanism: the type check never filters, but
+it orders trees according to plausibility. In this way the system 
+will always be able to cope with metaphorical uses, etc.
+
+It is my opinion that this should {\em  not} be done, and that the type check
+should be a real filter. When considering the cases in Van Dale, one finds
+that cases of metaphors etc. are limited to very special cases. If metaphors
+are to be dealt with in a principled way, then a theory of metaphors should
+be built in. Since there probably is no time (nor anyone who would like to do 
+it) to develop such a theory, I think that cases of metaphor should be treated 
+by general robustness measures. This is especially the case since Van Dale
+already distinguishes several `metaphorical' uses as separate meanings.
+
+Also such sentences as {\em  Dieren kunnen niet spreken} etc. should be dealt 
+with by means of robustness measures. 
+
+One way to implement robustness (suggested to me by Harm Smit), is to go up
+higher in the hierarchy step by step for each requirement description that is
+violated, if no semantic derivation tree would be well-formed otherwise, until
+a semantic derivation tree is well-formed. Another would be to specify
+such changes in a list explicitly (This could in fact be a first, 
+very primitive, theory of metaphors). 
+E.g. If {\em  human} is required and {\em  animate}
+is found, then {\em  animate} may be lowered to {\em  human} to achieve
+the effect of {\em  personalization}, one of a very limited number of
+possible metaphors or related devices. Of course, also both methods can be 
+used.
+
+\subsection{Implementation}
+
+The implementation of the system proposed can be done in many ways. 
+The $\leq$-relation might be computed on the basis of a hierarchy specification
+and represented in an incidence matrix, or in a tree.
+
+The actual rules doing the type-check can be formulated in the rules that
+will be used in the semantic component (see the document by Joep Rous).
+
+As far as efficiency is concerned, the following should be noted.
+Let us consider a typical case of a verb taking 3 
+arguments, which is m-fold ambiguous. Let us assume that  the
+arguments themselves are also ambigous, resp. {\em i,j,k}-fold ambigous.
+
+In this situation (if no other relevant properties hold)
+the current implementation of M-Generator 
+would require in the worst case  {\em  i.j.k.m}
+compatibility tests. If  $i=j=k=m=10$ this would imply $10^{4}$ comparisons.
+
+However, if the implementation is done differently, in the way sketched
+very informally below,
+the number of comparisons can be reduced to $(i+j+k).m$ comparisons
+(i.e. 300 if $i=j=k=m=10$).
+
+The implementation should proceed as follows. First all substituents 
+(arguments) are evaluated, for all their meanings. Next the pre-action
+associates corresponding variables with the relevant semantic features.
+Now
+a set of such semantic features for each variable exists.
+
+The derivation proceeds by evaluating each meaning of the verb separately.
+For each of these meanings  a type check is done for each argument with 
+all alternative semantic features. This will (in the worst case)
+require {\em k} comparisons for the third argument, {\em j} comparisons
+for the second and {\em  i} for the first argument. If some test yields
+incompatibility (in the worst case this is never so), the relevant
+variable and its associated substituent are thrown out. This yields in
+the worst case $(i+j+k)$ comparisons.
+
+This process is repeated for each meaning of the verb, i.e. {\em  m} times,
+so that in total $(i+j+k).m$ comparisons need be made.
+
+This implementation does presuppose  that there are no interdependencies
+between arguments w.r.t. their type restrictions. I think that that is
+indeed never the case, but if such cases are found, this should be reported,
+for it probably makes this implementation impossible.
+
+It should be investigated whether it is possible to make an implementation
+as sketched here and whether it can be incorporated into the rest of
+M-Generator, and also whether it is necessary.
+
+\appendix
+\newpage
+\section{Types as occurring in the dictionaries now}
+\label{alltypes}
+
+The types mentioned occur in type requirements listed in the 
+dutch dictionaries as comment in the notation proposed above.
+(search for the string \{$<$, or use  the edit command file
+[odijkje.mrules]typedt.edt to get them into a file).
+The first subsection contains a list of all types encountered, the second 
+subsection contains the hierarchy of types, the last subsection lists
+the meaning keys with meaning description and their postulated typing.
+
+
+\subsection{List of types}
+The following additional conventions have been adopted:
+
+\begin{description} 
+  \item[*] an asterisk indicates that the typing should be reconsidered
+  \item[''] Quotes are used to mention keys directly if no characterization
+of the relevant class could be found.
+  \item[non] the prefix $\sim$ has not been used yet. The prefix {\em non} or
+{\em in} has
+been used instead
+  \item[loc,t] stands for the type {\em tlocation}, see the discussion above
+w.r.t {\em  krijgen}.
+\end{description}
+
+The list contains type names, plus their number of occurrences (no number
+means that they occurred once).
+The list is up to date until July 14, 1989. 
+After this date new type requirements have
+been specified, which are not listed in this document.
+
+\newpage
+\begin{theindex}
+\item 'koers'
+\item  *abstract
+\item  *infocontainer
+\item  abstract 18
+\item  animate 10
+\item  bel,telefoon,zoemer
+\item  builtobject
+\item  c
+\item  celestialbody
+\item  cloths 2
+\item  concrete 12
+\item  deling
+\item  drink 2
+\item  entity 20
+\item  exam
+\item  feminine
+\item  fluid 2
+\item  food 3
+\item  fuel
+\item  game
+\item  geounit
+\item  human 88
+\item  inanimate 2
+\item  line 2
+\item  loc,t
+\item  location
+\item  masculine
+\item  medicine 2
+\item  music
+\item  musicalinstrument
+\item  nonanimate 3
+\item  nonfluid
+\item  nonhuman 4
+\item  path 3
+\item  plural 2
+\item  possessable
+\item  punishment
+\item  question
+\item  ship
+\item  sourcepath
+\item  spacemeasure
+\item  suitcase
+\item  t 8
+\item  taste
+\item  timeref
+\item  transportmeans
+\end{theindex}
+
+\subsection{Hierarchy of postulated types}
+
+
+\begin{tabular}
+{|p{.20\textwidth}|p{.20\textwidth}|p{.20\textwidth}|p{.20\textwidth}|p{.20\textwidth}|}
+\hline
+entity & concrete & animate  & human&\\
+       &          &          & feminine&\\
+       &          &          & masculine&\\
+&&                possessable&&\\
+&&&                 bel,telefoon,zoemer&\\
+&&&                builtobject&\\
+&&&                celestialbody&\\
+&&&                cloths&\\
+&&&                fluid  & drink\\
+&&&                food&\\
+&&&                fuel&\\
+&&&                geounit&\\
+&&&                medicine&\\
+&&&                musicalinstrument&\\
+&&&                ship&\\
+&&&                suitcase&\\
+&&&                transportmeans&\\
+      & abstract & 'koers'&&\\
+&&                infocontainer&&\\
+&&                'deling'&&\\
+&&                exam&&\\
+&&                game&&\\
+&&                line&&\\
+&&                music&&\\
+&&                punishment&&\\
+&&                taste&&\\
+c&&&&\\
+t &&&&\\
+loc,t &&&&\\
+question&&&\\
+location&&&\\
+path & sourcepath& & &\\
+plural &&&&\\
+spacemeasure &&&&\\
+timeref &&&&\\
+\hline
+\end{tabular}
+
+
+\newpage
+\subsection{Meaning keys and their type requirements}
+
+\begin{tabular}{|c|c|p{.3\textwidth}|p{.3\textwidth}|}
+\hline
+mkey                 &\# & meaning descr & typing \\
+m\_aV\_0002\_beveel\_aan & s1 & "aanraden" & {$<$human-entity-human$>$}\\
+m\_aV\_0001\_pers\_af    & s1 & "dwingen te geven" & {$<$human-human$>$}\\
+m\_aV\_0002\_pers\_af    & s2 & "geheel en al persen" & {$<$human-cloths$>$}\\
+m\_aV\_0001\_betref     & s1 & "aangaan" & {$<$entity-human$>$}\\
+m\_aV\_0002\_betref     & s2 & "handelen over" & {$<$entity-entity$>$}\\
+m\_aV\_0001\_ga         & s1 & "zich verplaatsen,begeven" & {$<$concrete-path$>$}\\
+m\_aV\_0002\_ga         & s1 & "vertrekken, weggaan" & {$<$concrete-timeref$>$}\\
+m\_aV\_0013\_ga         & s2 & "begrepen zijn in,passen" & {$<$concrete-location$>$}\\
+m\_aV\_0004\_ga         & s3 & "$<$+ onbep. wijs$>$beginnen te" & {$<$c$\mid$entity-t$>$}\\
+m\_aV\_0005\_ga         & s5 & "rinkelen" & {$<$?bel,telefoon,zoemer$>$}\\
+m\_aV\_0014\_ga         & s1 & "beheren" & {$<$human-entity$>$}\\
+m\_aV\_0015\_ga         & s2 & "tot onderwerp hebben" & {$<$*infocontainer-entity$>$}\\
+m\_aV\_0001\_hebben     & s1 & "bezitten" & {$<$human-possessable$>$}\\
+m\_aV\_0005\_hebben     & s5 & "in de genoemde toestand verkeren" & {$<$animate-t$\mid$loc,t$>$}\\
+m\_aV\_0014\_hebben     & s1 & "nut ondervinden van" & {$<$animate-entity$\mid$t$>$}\\
+m\_aV\_0001\_help       & s1 & "bijstaan" & {$<$animate-entity$\mid$t-animate$>$}\\
+m\_aV\_0002\_help       & s2 & "verzorgen" & {$<$human-human$>$}\\
+m\_aV\_0006\_help       & s6 & "baten" & {$<$nonanimate$\mid$t$>$}\\
+m\_aV\_0001\_neem\_in   &  s1&  "mbt. geneesmiddelen" & {$<$human-medicine$>$}\\
+m\_aV\_0002\_neem\_in   &  s2 & "mbt. een plaatsruimte" & {$<$entity-spacemeasure$>$}\\
+m\_aV\_0003\_neem\_in   &  s3 & "veroveren" & {$<$human-geounit$\mid$builtobject$>$}\\
+m\_aV\_0006\_neem\_in   &  s6 & "aan boord nemen" & {$<$ship$\mid$human-fuel$\mid$food$\mid$fluid$>$}\\
+m\_aV\_0007\_neem\_in   &  s7 & "inkorten" & {$<$human-cloths$>$}\\
+m\_aV\_0101\_stort\_in  &  s1 & "neerstorten" & {$<$nonanimate$>$}\\
+m\_aV\_0102\_stort\_in  &  s2 & "een inzinking krijgen" & {$<$human$>$}\\
+m\_aV\_0001\_isoleer    & s1 & "afzonderen" & {$<$human-human$>$}\\
+m\_aV\_0002\_isoleer    & s2 & "uit een geheel halen" & {$<$human-nonhuman$>$}\\
+m\_aV\_0001\_kleef      & s1 & "vast blijven zitten" & {$<$concrete-concrete$>$}\\
+m\_aV\_0002\_kleef      & s2 & "$<$fig.$>$ onverbrekelijk verbonden zijn met"                           & {$<$abstract-abstract$>$}\
+\
+m\_aV\_0002\_koester    & s2 & "vertroetelen" & {$<$human-animate$>$}\\
+m\_aV\_0003\_koester    & s3 & "uit waardering beschermen" & {$<$human-entity$>$}\\
+m\_aV\_0013\_laat       & s13 & "bij zijn dood nalaten" & {$<$human-concrete-human$>$}\\
+m\_aV\_0014\_laat       & s14 & "afstaan" & {$<$human-entity-human$>$}\\
+\hline
+\end{tabular}
+\newpage
+\begin{tabular}{|c|c|p{.3\textwidth}|p{.3\textwidth}|}
+\hline
+mkey                 &\# & meaning descr & typing \\
+\hline
+m\_aV\_0001\_luister    & s1 & "horen om iets te vernemen" & {$<$human-entity$\mid$question$>$}\\
+m\_aV\_0003\_luister    & s3 & "aandacht schenken aan" & {$<$human-human$>$}\\
+m\_aV\_0004\_luister    & s4 & "gehoorzamen aan" & {$<$human-human$>$}\\
+m\_aV\_2101\_moet       & s1 & "mogen, believen" & {$<$human-human$>$}\\
+m\_aV\_0101\_naai       & s1 & "vasthechten (van boeken)" & {$<$human-inanimate$>$}\\
+m\_aV\_0103\_naai       & s3 & "benadelen" & {$<$human-human$>$}\\
+m\_aV\_0001\_noteer     & s1 & "aantekenen" & {$<$human-t$>$}\\
+m\_aV\_0002\_noteer     & s2 & "bepalen, opgeven (van koersen)" & {$<$human-'koers'$>$}\\
+m\_aV\_0001\_omhels     & s1 & "omarmen" & {$<$human-human$>$}\\
+m\_aV\_0002\_omhels     & s2 & "$<$fig.$>$aannemen" & {$<$human-abstract$>$}\\
+m\_aV\_0003\_omhels     & s3 & "omvatten" & {$<$nonanimate-entity$>$}\\
+m\_aV\_0003\_onthaal    & s3 & "$<$fig.$>$vergasten op" & {$<$human-human-abstract$>$}\\
+m\_aV\_0001\_ontmoet    & s1 & "onvoorzien tegenkomen" & {$<$human-human$>$}\\
+m\_aV\_0002\_ontmoet    & s2 & "volgens afspraak treffen" & {$<$human-human$>$}\\
+m\_aV\_0003\_ontmoet    & s3 & "ondervinden" & {$<$human-abstract$>$}\\
+m\_aV\_0004\_ontmoet    & s4 & "$<$wisk.$>$ (van lijnen)" & {$<$line-line$>$}\\
+m\_aV\_0101\_open       & s1 & "openmaken" & {$<$animate-concrete$>$}\\
+m\_aV\_0103\_open       & s3 & "openstellen" & {$<$animate-abstract$>$}\\
+m\_aV\_0002\_ga\_op     &  s2 & "mbt. de zon" & {$<$celestialbody$>$}\\
+m\_aV\_0004\_ga\_op     &  s4 & "examen afleggen" & {$<$human-exam$>$}\\
+m\_aV\_0005\_ga\_op     &  s5 & "opgegeten/opgedronken worden" & {$<$food$\mid$drink$>$}\\
+m\_aV\_0006\_ga\_op     &  s6 & "juist zijn" & {$<$abstract$>$}\\
+m\_aV\_0007\_ga\_op     &  s7 & "in beslag genomen worden" & {$<$human-abstract$>$}\\
+m\_aV\_0008\_ga\_op     &  s8 & "mbt. delingen" & {$<$deling$>$}\\
+m\_aV\_0009\_ga\_op     &  s9 & "in elkaar overgaan" & {$<$entity-entity$>$}\\
+m\_aV\_0101\_hang\_op   &  s1 & "in de hoogte hangen" & {$<$human-inanimate$>$}\\
+m\_aV\_0102\_hang\_op   &  s2 & "ter dood brengen" & {$<$human-human$>$}\\
+m\_aV\_0101\_houd\_op   &  s1 & "omhooghouden" & {$<$human-concrete$>$}\\
+m\_aV\_0102\_houd\_op   &  s2 & "verdedigen" & {$<$human-abstract$>$}\\
+\hline
+\end{tabular}
+\newpage
+\begin{tabular}{|c|c|p{.3\textwidth}|p{.3\textwidth}|}
+\hline
+mkey                 &\# & meaning descr & typing \\
+\hline
+m\_aV\_0001\_pak        & s1 & " tevoorschijn halen" & {$<$animate-concrete-sourcepath$>$}\\
+m\_aV\_0002\_pak        & s2 & " vastnemen" & {$<$animate-entity}\\
+m\_aV\_0003\_pak        & s3 & " betrappen" & {$<$human-human$>$}\\
+m\_aV\_0004\_pak        & s4 & "inpakken" & {$<$human-suitcase$>$}\\
+m\_aV\_0005\_pak        & s5 & "gebruik maken van" & {$<$human-transportmeans$>$}\\
+m\_aV\_0006\_pak        & s6 & "mbt. drank" & {$<$human-drink$>$}\\
+m\_aV\_0008\_pak        & s8 & "benadelen" & {$<$human-human-entity$>$}\\
+m\_aV\_0010\_pak        & s10 & "seksueel gebruiken" & {$<$human-human$>$ ?$<$masculine-feminine$>$}\\
+m\_aV\_0013\_pak        & s13 & "$<$sport, voetbal$>$ mishandelen" & {$<$human-human$>$}\\
+m\_aV\_0101\_proef      & s1 & "een smaak gewaarworden" & {$<$human-food$\mid$taste$>$}\\
+m\_aV\_0102\_proef      & s2 & "bemerken, bespeuren" & {$<$human-abstract$>$}\\
+m\_aV\_0002\_redeneer   & s2 & "gevolgtrekkingen afleiden" & {$<$human$>$}\\
+m\_aV\_0003\_redeneer   & s3 & "argumenteren, redetwisten" & {$<$human plural$>$}\\
+m\_aV\_0001\_reinig     & s1 & "ontdoen van vuil" & {$<$human-nonhuman$>$}\\
+m\_aV\_0002\_reinig     & s2 & "$<$relig.$>$" & {$<$human-human$>$}\\
+m\_aV\_0102\_rem        & s2 & "$<$fig.$>$, vertragen, stoppen" & {$<$t-abstract$>$}\\
+m\_aV\_0001\_roof       & s1 & "met geweld wegnemen" & {$<$human-nonhuman$>$}\\
+m\_aV\_0003\_roof       & s3 & "gewelddadig wegvoeren" & {$<$human-human$>$}\\
+m\_aV\_0001\_slik       & s1 & "innemen" & {$<$human-medicine$>$}\\
+m\_aV\_0002\_slik       & s2 & "accepteren" & {$<$human-abstract$\mid$t$>$}\\
+m\_aV\_0001\_speel      & s1 & "zich (met een spel) vermaken" & {$<$animate-game$>$}\\
+m\_aV\_0003\_speel      & s3 & "bespelen" & {$<$human-musicalinstrument$>$}\\
+m\_aV\_0004\_speel      & s4 & "uitvoeren" & {$<$human-music$>$}\\
+m\_aV\_0006\_speel      & s6 & "van invloed, belang zijn"  & {$<$abstract$>$}\\
+m\_aV\_0001\_spot       & s1 & "zich met scherts uiten" & {$<$human$>$}\\
+m\_aV\_0003\_spot       & s3 & "zich niet storen aan" & {$<$human-abstract$>$}\\
+m\_aV\_0009\_sta        & s9 & "geëist worden" & {$<$punishment-*abstract$>$}\\
+\hline
+\end{tabular}
+\newpage
+\begin{tabular}{|c|c|p{.3\textwidth}|p{.3\textwidth}|}
+\hline
+mkey                 &\# & meaning descr & typing \\
+\hline
+m\_aV\_0001\_stroom     & s1 & "met kracht vloeien" & {$<$fluid-path$>$}\\
+m\_aV\_0002\_stroom     & s2 & "$<$fig.$>$in groten getale komen/gaan" & {$<$nonhuman nonfluid entity-path$>$}\\
+m\_aV\_0003\_stroom     & s3 & "zich in groten getale voortbewegen" & {$<$human-path$>$}\\
+m\_aV\_0001\_struikelen & s1 & "het evenwicht verliezen en evt. vallen" & {$<$human-concrete$>$}\\
+m\_aV\_0003\_struikelen & s3 & "$<$fig.$>$ten val komen" & {$<$human-abstract$>$}\\
+m\_aV\_0005\_struikelen & s5 & "$<$fig.$>$ (in grote hoeveelheden) aantreffen" & {$<$human-plural entity$>$}\\
+m\_aV\_0003\_stuit      & s3 & "aantreffen" & {$<$human-concrete$>$}\\
+m\_aV\_0004\_stuit      & s4 & "$<$fig.$>$geconfronteerd worden" & {$<$human$\mid$abstract-abstract$>$}\\
+m\_aV\_0101\_stuit      & s1 & "tegenhouden" & {$<$human-concrete$>$}\\
+m\_aV\_0102\_stuit      & s2 & "$<$fig.$>$ tegenhouden" & {$<$human-abstract$>$}\\
+\hline
+\end{tabular}
+
+\newpage
+\section{Types yielded by certain semantic rules}
+\label{typesofrules}
+
+The following list is a first, tentative (and incomplete) proposal
+for a specification of the types that should be yielded by functions
+associated to IL-rules. 
+
+\begin{theindex}
+\item     LAccIng t? 
+\item     Ladhort adhortative
+\item     Lclosedinf t
+\item     Lclosednpp t
+\item     Lclosedvpprop t
+\item     Lclosedxpp t $\mid$ tpath $\mid$ tlocation $\mid$ ...
+\item     LCNformation1 entity?
+\item     LCNformation2 entity?
+\item     LCNformation3 entity?
+\item     LCNformation4 entity?
+\item     Lconjsent adverbial?
+\item     Ldeclmain  t
+\item     Ldeclsub t
+\item     Ldetpformation ?
+\item     Lfinrel relative
+\item     Lfinwhmod whmod?
+\item     LFortoinf t?
+\item     LFortoinfRel relative
+\item     LFortoinfWhMod whmod?
+\item     Limp            imperative
+\item     Linjunsub omte
+\item     LNPformation1 entity $\mid$ actionnoun?
+\item     LNPformation2 entity $\mid$ actionnoun?
+\item     LNPformation3 entity $\mid$ actionnoun?
+\item     LNPformation4a entity $\mid$ actionnoun?
+\item     LNPformationdef entity $\mid$ actionnoun?
+\item     LNPformation6 entity $\mid$ actionnoun?
+\item     LNPformation7 entity $\mid$ actionnoun?
+\item     LNPformation8  entity $\mid$ actionnoun?
+\item     LNPformation9 entity $\mid$ actionnoun?
+\item     LNPformation10 entity $\mid$ actionnoun?
+\item     LNPformation11 entity $\mid$ actionnoun?
+\item     LNPformation12 entity $\mid$ actionnoun?
+\item     LNPformation13 entity $\mid$ actionnoun?
+\item     LNPformation14 entity $\mid$ actionnoun?
+\item     LNPformation17 entity $\mid$ actionnoun?
+\item     LNPOpenIng t?
+\item     LNPpartitiveformation entity $\mid$ actionnoun?
+\item     Lopendeclinf t
+\item     LOpenIng t?
+\item     Lopennpp pred
+\item     Lopenxpp pred $\mid$ path $\mid$ location $\mid$ ...
+\item     Lpartdetpform ?
+\item     LPossIng t?
+\item     Lprespart relative
+\item     Lqtoqp ?
+\item     LToinfRel relative
+\item     LToinfWhMod whmod
+\item     Lwhmain whquestion
+\item     Lwhsub whquestion
+\item     LwhToinf whquestion
+\item     Lynmain yesnoquestion
+\item     Lynsub yesnoquestion
+\end{theindex}
+
+
+%\section{Example Treatment of certain words}
+%\subsection{{\em lopen}}
+%
+%I intr
+%\begin{enumerate}
+%  \item (zich te voet voortbewegen) walk          vp100 / vp012
+%  \item (rennen) run                              vp100
+%  \item (zich verplaatsen) go                     ??
+%  \item (<mbt. zaken> voortbewogen worden) run    ??
+%  \item (stromen) run                             vp100
+%  \item (in werking zijn) run                     vp100
+%  \item (voortduren) run                          vp100
+%  \item (zich uitstrekken) run                    vp100
+%  \item (zich ontwikkelen) run                    vp100
+%  \item (blootgesteld worden aan) run             ?? gevaar lopen
+%  \item (geschikt zijn om op/in  te lopen)        middle vp120
+%  \item (+inf) bezig zijn met                     zij lopen te treuzelen vp120
+%\end{enumerate}
+%
+%
+%II trans
+%\begin{enumerate}
+%  \item (deelnemen aan) go to (attend) 
+%\end{enumerate}
+%
+%III onp. werkw.
+%\begin{enumerate}
+%  \item (naderen) 
+%\end{enumerate}
+%
+%
+%Proposed treatment:
+%
+%lopen vp012 (syndonp\_diropenpreppprop perfauxs=[zijn])\\
+%(zich te voet voortbewegen) walk\\
+%  arg1 = $<$ animate$>$\\
+%  arg2 = $<$ path $>$\\
+%\examples{hij is naar huis gelopen.}\\
+%(stromen) run                    \\
+%  arg1 = $<$ fluid $>$\\
+%  arg2 = $<$ path $>$\\
+%\examples{Het water is uit het vat gelopen}\\
+%
+%
+%lopen vp100 (synnovpargs) perfauxs=[hebben])\\
+%(zich te voet voortbewegen) walk \\
+%  arg1 = $<$ animate $>$\\
+%topic= sport \\
+%(rennen) run   \\                  
+%  arg1 = $<$ animate$>$\\
+%\examples{De atleten hebben (zich warm) gelopen}\\
+%(in werking zijn) run            \\
+%  arg1 = $<$ machine $>$\\
+%\examples{de machine loopt, de motor loopt, de klok loopt, ?de kraan loopt}\\
+%(voortduren) run                 \\
+%? arg1 = $<$ abstract $>$\\
+%\examples{de onderhandelingen lopen; ?de contracten lopen}\\
+%(zich uitstrekken) run           \\
+%  arg1 = $<$ geo-unit $\mid$ building $>$\\
+%\examples{De weg loopt van A naar B; de rivier loopt naar de Noordzee;
+%Het huis loopt van hier tot aan de volgende zijstraat}\\
+%
+%
+%
+%
+%
+%lopen vp120 synopenteinfsent perfauxs=[hebben]\\
+%(bezig zijn met) be\\
+%  arg1 = $<$ animate $>$\\
+%  arg2 = $<$ activity $>$\\
+%\examples{Hij loopt te treuzelen}\\
+%lopen vp120 synnp\\
+%?? semi-idiom(deelnemen aan) go to (attend) \\
+%  arg1 = $<$ human $>$\\
+%  arg2 = $<$ lesson $>$\\
+%\examples{Hij liep een cursus/}\\
+%lopen vp010 synprepnp prepkey=tegen perfauxs=[hebben]\\
+%(naderen)\\
+%  arg1 = $<$ temporal-reference $>$\\
+%\examples{Het loopt tegen zevenen, tegen middernacht, tegen de middag}\\
+%
+%lopen vp100 synnovpargs adverb present!\\
+%(geschikt zijn om op/in  te lopen)       \\ 
+%  arg1 = $<$ cloths $\mid$ geo-unit $\mid$ distance$>$\\
+%\examples{deze schoenen lopen lekker, de eerste kilometer liep het 
+%gemakkelijkst, deze broek loopt niet zo fijn; deze berg loopt heerlijk}\\
+%(zich ontwikkelen) run           \\
+%? arg1 = $<$ abstract $>$\\
+%\examples{De zaken lopen niet goed; de cursus loopt niet goed}\\
+%
+%
+%
+%NOt accounted for yet:\\
+%
+%(zich verplaatsen) go                     ??\\
+%<mbt. zaken> voortbewogen worden) run    ??\\
+%
+%(blootgesteld worden aan) run             ?? gevaar lopen\\
+%
+%semi-idiom: zijn neus loopt\\
+%
+%\newpage
+%\subsection{innemen}
+%
+%\begin{enumerate}
+%  \item 1(mbt geneesmiddelen) take
+%  \item 2(mbt. plaatsruimte) take up
+%  \item 3(veroveren) take, capture, seize
+%  \item 4(vertrouwen, genegenheid winnen) captivate
+%??\item 5(binnenhalen) bring/take/fetch in
+%  \item 6(aan boord nemen) take on
+%  \item 7(inkorten (nauwer) take in
+%  \item 7(inkorten (korter) take up
+%??\item 8(verzamelen) collect
+%\end{enumerate}
+%
+%
+%innemen vp120 synnp perfauxs=[hebben]\\
+%1(mbt geneesmiddelen) take\\
+%  arg1 = $<$ human $>$\\
+%  arg2 = $<$ medicine $>$\\
+%2(mbt. plaatsruimte) take up\\
+%  arg1 = $<$ concrete $>$\\
+%  arg2 = $<$ ??$>$ plaats ruimte\\
+%3(veroveren) take, capture, seize\\
+%  arg1 = $<$ human $>$\\
+%  arg2 = $<$ city $\mid$ county $\mid$ building $>$\\
+%6(aan boord nemen) take on\\
+%  arg1 = $<$ human $\mid$ ship $>$\\
+%  arg2 = $<$ fuel $\mid$ fluid $\mid$ food $>$\\
+%7(inkorten (nauwer) take in\\
+%  arg1 = $<$ human $>$\\
+%  arg2 = $<$ cloths $>$\\
+%7(inkorten (korter) take up\\
+%  arg1 = $<$ human $>$\\
+%  arg2 = $<$ cloths $>$\\
+%
+%
+%
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1 (RWR-102-RO-90#1-RO)}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

@@ -1,0 +1,354 @@
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.Software}
+   \RosTitle{System to Create Retrograde Vocabularies}
+   \RosAuthor{Jeroen Medema}
+   \RosDocNr{190}
+   \RosDate{\today}
+   \RosStatus{Informal}
+   \RosSupersedes{-}
+   \RosDistribution{Software, Harm Smit}
+   \RosClearance{Project}
+   \RosKeywords{Retrograde vocabulary, System}
+   \MakeRosTitle
+%
+%
+\setlength{\parskip}{2mm}
+\setlength{\parindent}{0mm}
+
+\section{Target}
+\subsection{Definition}
+The target of the system is the creation of the retrograde vocabularies for
+the Van Dale dictionaries N~--~N \cite{st:groot}, N~--~E \cite{ma:groot1}, 
+and E~--~N \cite{ma:groot2}. That is, somewhat more formal, given the 26 files 
+(one per letter) of one of these dictionaries, make one file (in which the 
+words are retrograde ordered) that, without any conversion, is printable in 
+a special form as defined in subsection 1.3.
+\subsection{Input Description}
+A description of the N~--~N dictionary is \cite{sm:descr} while the 
+other two dictionaries aren't described up to now. What is to be known here, is,
+however, only a small part of an entire description of these dictionaries. 
+First, the 
+entryword -that's what we're looking for- is always on the same place in the 
+entry. Also, there are, in the entryword, some special codes which need to be 
+converted to other characters in the printed version. These conversion codes 
+are listed in table~1. 
+\begin{center}
+\begin{tabular}{|l|l|l|}\hline
+ Code             
+  & $\alpha \in$       
+    & Conversion\\ \hline
+ {\tt `}$\alpha$
+  & \{a, e, i, o, u, A, E, I, O, U\}  
+    & \`{a}, \`{e}, \`{\i}, \`{o}, \`{u}, \`{A}, \`{E}, \`{I}, \`{O}, \`{U}\\
+ \~{}$\alpha$
+  & \{a, e, i, o, u, A, E, I, O, U\}  
+    & \'{a}, \'{e}, \'{\i}, \'{o}, \'{u}, \'{A}, \'{E}, \'{I}, \'{O}, \'{U}\\
+ \^{}$\alpha$     
+  & \{a, e, i, o, u, A, E, I, O, U\}  
+    & \^{a}, \^{e}, \^{\i}, \^{o}, \^{u}, \^{A}, \^{E}, \^{I}, \^{O}, \^{U}\\
+ {\tt "}$\alpha$  
+  & \{a, e, i, o, u, A, E, I, O, U\}  
+    & \"{a}, \"{e}, \"{\i}, \"{o}, \"{u}, \"{A}, \"{E}, \"{I}, \"{O}, \"{U}\\
+ {[ps]o[pr]}&          & $^{\rm o}$ \\
+ /[h9]      &          & -\\
+ //         &          & /\\
+ /9         &          & $|$\\
+ +$\alpha$1 & \{n, N\} & \~{n}, \~{N}\\
+ +$\alpha$4 & \{a, A\} & \aa, \AA \\
+ +$\alpha$8 & \{c, C\} & \c{c}, \c{C}\\
+ +\%        &          & $^{\rm o}$ \\
+ +{\tt '}   &          & {\tt `}\\
+ +;         &          & \\ \hline
+\end{tabular}\vspace{1mm}
+
+Table 1.
+\end{center}
+\subsection{Output Description}
+\subsubsection{Sorting Order}
+ The sorting order of the words is retrograde (which 
+ means that they are not ordered with respect to the first characters of a 
+ word -as in normal dictionaries- but with respect to the last ones). 
+ The ordering is done by smallest first; that is: first ``~'', then 
+  ``-'', next ``.'', followed by the letters.
+ The following constraints apply to the equivalence of words:
+ \begin{enumerate}
+  \item characters with an accent (as e.g. \^{e}, \~{n}, \aa, \"{o}) are 
+  considered to be equal to the same character without the accent.
+  \item words containing the string ``(-)'' are considered to be equal to the 
+  same word without that string.
+  \item words containing {\em other} characters than letters, ``-'', ``~'', and 
+  ``.'' are considered to be equal to the same word without those characters.
+  \item the upper and lower case form of a letter are considered to be equal.
+ \end {enumerate}
+\subsubsection{Printing Format}
+ The words are split up in twenty-eight parts: for every letter one part and 
+ two additional for the ``-'' and ``.'' (no word ends with a space). Each part 
+ starts at a new page. The output more or less looks like the retrograde 
+ dictionary of the `Grote Van Dale' \cite{ni:retro}. It is defined follows:
+  \begin{itemize}
+   \item every page consist of sixty rows, of which the last one is empty, and
+         four columns.
+   \item in a column, every word is right justified.
+   \item if a word has a length greater than 19 (which is the pagewidth -80-
+         divided by the number of columns minus 1 for the separation of the 
+         columns) it has to be split into two or more consecutive (that is, in 
+         one column) printed strings.
+   \item if a word (because of its length) does not fit anymore in the column
+         a new column is to be used (the same applies for pages).
+   \item the order of reading is column first, row second, page last.
+   \item the headwords (as stored in the file) are converted from a coded form 
+         (see table 1) to printable strings more or less as in \cite{st:groot}.
+  \end{itemize}
+Appendix A contains an example of two output pages as generated making the 
+retrograde wordlist of the E~--~N dictionary.
+\section{System Description}
+The target of the system was reached by writing several programs, each partly 
+doing the job.
+First is told which programs are needed and what they do, and after that the 
+coupling of them into the system is described.
+\subsection{Programs}
+For this system three programs were made: SkipXtra (sx), AddReverse (ar), and 
+PrintRetro (pr). Two system programs were used to append and sort files: append 
+and sort. A description of each of these programs is listed below.
+\begin{description}
+  \item [SkipXtra] This program will produce one outputfile which is the 
+        stripped version of a Van Dale dictionary inputfile. It will only 
+        contain the entryword of the entire entry. In the outputfile one word 
+        is placed per line. The skipping of the ``+;''-string, which markes the 
+        stress in the entryword, is done with this program too.
+  \item [AddReverse] This program will with the given input (which is described 
+        below) generate output (also described below) which also contains the 
+        reversed words (at the beginning of each line). The input consists of 
+        26 files which each contain the entrywords as in the Van Dale 
+        dictionary on disk but without the string ``+;''. The output will 
+        consist of 26 files which contain lines of the following form: first 
+        the reversed entryword, then four spaces followed by the normal entry. 
+        The reversed entryword is, however, totaly stripped of special 
+        characters (e.g. {\tt`},{\tt"},\~{},\^{},+,\%,(-), etcetera). 
+  \item [Append] This system command is used to append 26 files onto one, 
+        initially empty, file.
+  \item [Sort] This system program is used to take as input one file and make a 
+        new version of it by sorting it on the first characters of a line.
+  \item [PrintRetro]
+        This program will make a printfile of the given input. The input 
+        consist of one file which contains the (retrograde) sorted list of 
+        entries preceeded by the reversed entry and four spaces. The output is 
+        one file in which the words are ordered as described in 1.3.2. Every 
+        word is made printable (in normal text) by converting the special codes 
+        (as defined in table~1).
+\end{description}
+\subsection{Coupling}
+With the previous defined programs the creation of a retrograde wordlist is 
+very simple: one runs the program SkipXtra 26 times to get the stripped files. 
+From these 26 new files the program AddReverse will generate files with the 
+reversed word at front. With Append one file is made by appending all 26 
+AddReverse-files which gives one large file. This large file is sorted using the
+system program Sort (which is really quick: 3 minutes CPU time for a file with 
+90.000 entries). The newly created file is treated by PrintRetro which makes 
+the printable file.
+
+The scheme in figure~1 represents the total structure of the system. Double 
+arrows represent programs which were especially made for this system, while 
+single arrows depict programs which were already available in the operating 
+system.
+\begin{figure}
+ \[ \left.
+     \begin{array}{ccc} 
+        A_{text} & \stackrel{sx}{\Longrightarrow} & SXA_{word}\\ 
+        B_{text} & \stackrel{sx}{\Longrightarrow} & SXB_{word}\\ 
+        C_{text} & \stackrel{sx}{\Longrightarrow} & SXC_{word}\\ 
+        \vdots   & \stackrel{sx}{\Longrightarrow} & \vdots  \\ 
+        Z_{text} & \stackrel{sx}{\Longrightarrow} & SXZ_{word}
+     \end{array}
+    \right\}
+     \stackrel{ar}{\Longrightarrow}
+    \left\{
+     \begin{array}{cc} 
+        ARA_{retro} &             \\
+        ARB_{retro} & \searrow    \\
+        ARC_{retro} & \rightarrow \\
+        \vdots    & \nearrow    \\
+        ARZ_{retro}
+    \end{array}
+   \right.
+   Abc_{app} \rightarrow Abc_{sort} \stackrel{pr}{\Longrightarrow} Abc_{prt}
+ \]
+ \caption{Outline Retrograde Wordlist System}
+\end{figure}
+\section{Program Implementation}
+ Two of the three programs were very simple to write, viz.\ SkipXtra and 
+ AddReverse. The straightforward mechanisms for these programs are described 
+ below. The third, PrintRetro, was more difficult but gave no real problems.
+ \subsection{SkipXtra}
+  This program was written more general and determines its input with the aid 
+  of another file named INP.SX\@. In this file, which can be filled manually, 
+  the name of the dictionary file which is to be treated is given. The output 
+  of the program will be in a file named SX.OUT\@. The algorithm used is very 
+  simple: per entry in the inputfile one has to: read it, extract the entryword,
+  delete occurences of ``+;'', write this entryword in the outputfile.
+ \subsection{AddReverse}
+  This program is, if possible, even more simple to write (because of the 
+  existing modules). It works on 26 inputfiles named SXA.OUT to SXZ.OUT\@. 
+  It generates 26 files named LETTERA.OUT to LETTERZ.OUT\@. The algorithm used 
+  is very simple: inputfile SX$\alpha$.OUT is used to make outputfile 
+  LETTER$\alpha$.OUT; per line of the inputfile, the line generated for the 
+  outputfile is made by reversing the inputline, write this reversed string 
+  followed by four spaces and the original inputline.
+ \subsection{PrintRetro}
+  This program works on an input-file named RETRO.TXT and generates an 
+  output-file named RETRO.PRT\@. The output is generated (added to the 
+  output-file) per page. A page is internally represented by an array of sixty
+  lines (which each are: a string of eighty characters and the current length 
+  of that string). A page is made by appending the first column to the 
+  initially empty lines. A column is made up out of a sequence of words, each 
+  right justified and converted. The mechanism of adding columns is repeated 
+  four times (four columns), or until a new ending-letter is found, or until 
+  there are no entrywords left. Then, the page is written to the output-file 
+  and the lengthes of the page-lines are set to zero.
+  
+\section{Motivation}
+\begin{itemize}
+  \item {\bf Why?}\\
+        The retrograde dictionaries were made to be used by linguists and 
+        dictionary programmers at times a set of words with a special kind of 
+        ending is to be known. This especially accounts for the morphological 
+        parts of the system.
+  \item {\bf Why this way?}\\
+        It was, of course, possible to make one program that performs the task
+        as described. However, this program would be quite more complex than 
+        the total of its parts. It also would require a lot of internal memory
+        to store the entrywords of the dictionary and its printed form. Further,
+        some intermediate results can be useful for other programs (this 
+        especially accounts for the files generated by SkipXtra).
+\end{itemize}
+
+\begin{thebibliography}{MMM99m}
+ \bibitem[MAR84]{ma:groot2} W. Martin, ed. {\em Groot woordenboek 
+  Engels -- Nederlands}, Van Dale Lexicografie, 1984
+ \bibitem[MAR86]{ma:groot1} W. Martin, ed. {\em Groot woordenboek 
+  Nederlands -- Engels}, Van Dale Lexicografie, 1986
+ \bibitem[NIE69]{ni:retro} E.R. Nieuwborg, {\em Retrograde woordenboek van de 
+  Nederlandse taal}, Universit\'{e} Catholique de Louvain, 1969
+ \bibitem[SME87]{sm:descr} Harm Smit \& Jeroen Medema, {\em Description Van 
+  Dale dictionary N~--~N}, {\bf Rosetta report 174}, Philips Research 
+  Laboratories, 1987
+ \bibitem[STE84]{st:groot} P.G.J. van Sterkenburg, ed. {\em Groot woordenboek 
+  hedendaags Nederlands}, Van Dale Lexicografie, 1984
+\end{thebibliography}
+\newpage
+\appendix
+\section{Output Examples}
+\footnotesize
+\begin{verbatim}
+              Vedic ai                           mystagogic             graphic 
+          Samoyedic r-passenger traffic               logic            -graphic 
+          Samoyedic         air traffic              -logic         sciagraphic 
+             acidic     tourist traffic            dialogic         paragraphic 
+           nuclidic            morbific            analogic         telegraphic 
+            juridic             Pacific             illogic        calligraphic 
+         glucosidic             pacific       pharmacologic          epigraphic 
+            Druidic        transpacific        archaeologic     pseudepigraphic 
+            Davidic            specific            geologic       stratigraphic 
+            scaldic            specific          teleologic       lexicographic 
+           heraldic         subspecific         morphologic       palaeographic 
+          Icelandic         conspecific      geomorphologic         ideographic 
+          Icelandic       interspecific         glaciologic          geographic 
+               .                   .                   .                   .
+               .                   .                   .                   .
+               .                   .                   .                   .
+            melodic           honorific           topologic     historiographic 
+          psalmodic           honorific           serologic       physiographic 
+          spasmodic           saporific           horologic    encephalographic 
+      antispasmodic           vaporific          petrologic    crystallographic 
+      antispasmodic           soporific          astrologic         holographic 
+             anodic           soporific        climatologic        stylographic 
+            parodic          torporific        dermatologic         xylographic 
+           episodic            terrific          tautologic         demographic 
+           prosodic            horrific           sexologic        anemographic 
+          rhapsodic             ossific        ichthyologic        cosmographic 
+             bardic            beatific         embryologic        planographic 
+          Lombardic          scientific           lethargic        stenographic 
+          Sephardic        unscientific            allergic        ethnographic 
+             Nordic               Cufic            lysergic        iconographic 
+             Nordic               Cufic             georgic        phonographic 
+              asdic               Kufic             georgic         monographic 
+              ludic               sufic            theurgic       chronographic 
+           Talmudic             pelagic           demiurgic        pornographic 
+              pudic               magic         dramaturgic         typographic 
+          aldehydic               magic        thaumaturgic       polarographic 
+            nucleic               magic                chic        micrographic 
+        ribonucleic              tragic                chic        hydrographic 
+   deoxyribonucleic              tragic           stomachic          orographic 
+              oleic          paraplegic           stomachic        chorographic 
+          dyspnoeic          paraplegic        amphibrachic        reprographic 
+         mythopoeic           strategic             bacchic      spectrographic 
+       onomatopoeic              -algic          oligarchic        petrographic 
+               -fic           neuralgic            diarchic     cinematographic 
+            malefic           nostalgic            anarchic        pictographic 
+            benefic              Belgic          hierarchic        photographic 
+            traffic           pedagogic           autarchic    telephotographic 
+            traffic           demagogic             psychic   astrophotographic 
+white-slave traffic            anagogic             psychic       cryptographic 
+   carrying traffic          hypnagogic             edaphic        cartographic 
+  passenger traffic           paragogic            seraphic        dittographic 
+                               isagogic             graphic         autographic 
+\end{verbatim}
+\newpage
+\begin{verbatim}
+       tachygraphic               ethic            bicyclic             bucolic 
+        polygraphic               ethic           alicyclic             bucolic 
+         euthrophic              lithic           epicyclic               Eolic 
+            trophic          megalithic        heterocyclic              Aeolic 
+      gonadotrophic            Eolithic              Gaelic              Aeolic 
+      heterotrophic            eolithic              Gaelic          hypergolic 
+        autotrophic        palaeolithic         psychedelic              -holic 
+       hypertrophic           neolithic         psychedelic          workaholic 
+           strophic         heliolithic            Goidelic           potaholic 
+       catastrophic         granolithic            Goidelic              cholic 
+        geostrophic          monolithic             angelic         melancholic 
+        apostrophic          Mesolithic         archangelic         melancholic 
+         dystrophic          mesolithic            Gadhelic             -oholic 
+            Sapphic            ornithic            Gadhelic           alcoholic 
+               .                   .                   .                   .
+               .                   .                   .                   .
+               .                   .                   .                   .
+        theomorphic              Sothic        bibliophilic           fumarolic 
+        idiomorphic            autarkic         hydrophilic              frolic 
+      theriomorphic              Turkic       psychrophilic              frolic 
+     enantiomorphic              Turkic           lyophilic              frolic 
+        homomorphic             vocalic             basilic            petrolic 
+      actinomorphic         postvocalic              exilic           diastolic 
+        monomorphic            vandalic          pre-exilic           apostolic 
+         zoomorphic            cephalic              gallic        subapostolic 
+    anthropomorphic           -cephalic          pyrogallic              garlic 
+      heteromorphic        megacephalic             phallic          peelgarlic 
+        mesomorphic          encephalic         ithyphallic           pilgarlic 
+         isomorphic       mesencephalic         ithyphallic               aulic 
+      robotomorphic     dolichocephalic             thallic           hydraulic 
+       protomorphic       orthocephalic            metallic    electrohydraulic 
+        polymorphic      megalocephalic          bimetallic           salicylic 
+            glyphic       macrocephalic         nonmetallic              beylic 
+         anaglyphic       microcephalic      organometallic               hylic 
+         triglyphic       microcephalic         intervallic             acrylic 
+       hieroglyphic       hydrocephalic            Cyrillic            dactylic 
+            myrrhic        mesocephalic            Cyrillic            dactylic 
+            pyrrhic       leptocephalic         glycol(l)ic          carboxylic 
+            pyrrhic         oxycephalic             idyllic             pyeamic 
+            gnathic            pashalic            diabolic               gamic 
+             pathic            phthalic            anabolic              agamic 
+         telepathic               malic           parabolic        phanerogamic 
+           empathic               Salic           catabolic         cryptogamic 
+       homoeopathic              italic           metabolic        cleistogamic 
+         idiopathic              italic           shambolic           polygamic 
+         allopathic            tantalic             embolic           sulphamic 
+     anthropopathic              oxalic            symbolic         epithalamic 
+        hydropathic         philobiblic            symbolic             Islamic 
+       heteropathic              public            carbolic             dynamic 
+        neuropathic              public          hyperbolic             dynamic 
+       naturopathic            republic               colic            adynamic 
+            spathic     banana republic          lead colic m                   
+        feldspathic   people's republic          wind colic agnetoplasmadynamic 
+         felspathic              cyclic     painter's colic       thermodynamic 
+\end{verbatim}
+\end{document}

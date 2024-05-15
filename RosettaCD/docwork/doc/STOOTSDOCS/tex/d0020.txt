@@ -1,0 +1,1545 @@
+R0020.tex
+\documentstyle{Rosetta}
+
+\setlength{\parindent}{0in}
+
+\begin{document}
+   \RosTopic{General.Rosetta2.Software}
+   \RosTitle{On Dictionaries in Rosetta2}
+   \RosAuthor{Carel Fellinger}
+   \RosDocNr{20}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{}
+   \MakeRosTitle
+
+\section{Introduction}
+This document gives a short description of some implementation aspects of the
+dictionaries that are used in Rosetta2. A more theoretical description of the
+dictionaries is to be found in "Dictionaries in Rosetta2" (R15).
+
+
+\subsection{What is a dictionary}
+In the definition of Rosetta2 some sets and functions are specified that are
+implemented by means of extensive enumeration. Some of these enumerations are
+not part of the source of the Rosetta2 program, but are kept in seperate files.
+These files we will call dictionaries.
+
+
+\subsection{Which dictionaries exist}
+In accordance with R15 the following dictionaries exist :
+\begin{description}
+\item[B-LEX]
+Because every language has its own B-LEX, it is quite likely that in the
+Rosetta2 program two different B-LEX's are used, so to resolve name conflicts
+we use {\bf ABLEX} to refer to the B-LEX of the source language, and 
+{\bf GBLEX} to refer
+to the target language's B-LEX. In case the source and target language are the
+same both names refer to the same dictionary.
+
+\item[A-TR$_{\rm B}$]
+This dictionary is called {/bf ATDICT}. As said in R15 a meaning key may have a
+description coupled to it so that in case of an ambiguous translation of a
+basic-expression the different meanings of this basic-expression can be made
+clear to the user. This is done in the interaction mode, so that the user can
+desambiguate. Only for some meaning keys this facility is used (for
+instance 'wife'-meaning-key, 'queen'-meaning-key and 'woman'-meaning-key, these
+are the different meanings of the Dutch 'vrouw', all have a description linked
+to it), so at least we could test the desambiguing process.
+For historical reasons this file still contains for each IL-key the number
+of its arguments, as wel as their expexted types.
+
+\item[G-TR$_{\rm B}$]
+This dictionary is called {\bf GTDICT}.
+
+For historical reasons this file too contains for each IL-key the number
+of its arguments, as wel as their expexted types.
+
+\item[TypeList]
+We have used three files to implement this one. For every basic meaning key
+its corresponding type is given in the file with the logical name {\bf EigenType}
+(Dutch for 'OwnType'), and the types of its arguments (only in case of a
+function) is listed in the file with the logical name {\bf VerwachteType} (Dutch
+for 'ExpectedType'). Both these files have also a short description of the
+meaning of each basic meaning key (helas these discriptions are not such that
+they can be used to fill ATDICT, besides they are all in Dutch), and also for
+each key the number of arguments is defined here.
+
+For historical reasons the dictionary EigenType is included in the source
+(it there for is not a real dictionary, allthough it should). In order to not let
+explode the size of the program we made a smaller version of it. This third
+file is referred to with the logical name {\bf TypeDef}.
+
+The content of VerwachteType should correspond with the content of ATDICT
+and GTDICT. The update utilities take care of this.
+
+\item[A-MDICT]
+This one is called {\bf AMDICT}.
+
+\item[G-MDICT]
+This one is called {\bf GMDICT}.
+
+\item[A-IRR-LEX]
+This one is unfortunately called {\bf AIRBLEX}, reflecting the fact that it is
+implemented in the same way as the B-LEX dictionary.
+
+\item[G-IRR-LEX]
+For the same reason as above-mentioned this one is called {\bf GIRBLEX}.
+
+\item[A-ID-LEX]
+This dictionary is called {\bf AIDIOM}.
+
+\item[G-ID-LEX]
+This dictionary is called {\bf GIDIOM}.
+\end{description}
+
+
+A seperate dictionary for the basic meanings of IL is not maintained,
+because the information that should be in it is already contained in TypeList.
+
+In order to be able to adjust the language used in the interaction mode, all
+the sentences used there are put in a file. This file too we call a dictionary,
+it has got the logical file name {\bf Comment}.
+
+
+\section{Several views on the dictionaries}
+\subsection{The use within Rosetta2}
+\subsubsection{The representation}
+Mathematical spoken a dictionary is a set of tuples. This can easily be
+represented by a sequence of tuples, and a simple implementation of a sequence
+is a file. A tuple can be thought of as a record structure, so a simple and
+straight forward implementation of a dictionary would be a record structured
+file. This has however a disadvantage, namely that Pascal provides no means at
+all to access a file as a random access file nor as an indexed sequential file,
+restricting the possible search algoritmes in an untolerable way.
+By fixing the number of tuples in a dictionary it becomes possible to use an
+array to implement it. All kinds of access are easily simulated on an array.
+That is why within the Rosetta2 program all the dictionaries are implemented
+as arrays.
+
+\subsubsection{The initialisation fase}
+Because the program uses arrays to represent the dictionaries, the use of
+dictionaries in the program must be preceeded by the initialisation of
+these arrays.
+
+This initialisation process takes quite some time, and there for it is
+preferable to do it only once. That is why the initialisation of the
+dictionaries is not part of the procedures ANALYSIS and GENERATION, but is put
+in the global procedures InitAnLexica and InitGenLexica.
+The corresponding dictionaries for different languages resemble each other so
+much that it is quite a burden to look after it that no name conflicts arise
+when the an- and genlexica are defined whithin the same scope. There for the
+structural
+definition of an/gen-lexica and the actions upon those structures
+had to be put in seperate modules.
+
+\subsection{A deficiency in the implementation}
+The fact that the search actions in some dictionaries (like AMDICT) are
+heavily interwoven with the parse algoritme makes it cumbersome to change the
+choosen implementation of the dictionaries. It would have been better if we had
+used the principle of abstract data types more thorougly troughout the
+program.
+
+\subsection{The long term storage}
+All dictionaries are stored on disk as files.
+
+For all the dictionaries but AIRBLEX, GIRBLEX and BLEX the only way to update
+the dictionary is to use the VAX/VMS editor. This makes it necessary that the
+dictionaries are in the form of normal text files. The use of these files to
+fill the dictionary-arrays would slow down the initialisation process to much,
+there for most of these text files are translated into Pascal record structured
+files, and these latter files are the files used by the program.
+For AIRBLEX, GIRBLEX and BLEX only a Pascal record structured file is
+maintained, and through the use of a special update facility it is possible to
+inspect and alter these dictionary files. As there is no corresponding text
+file for these dictionaries it is necessary that the update program and these
+dictionaries 'fit' together, see also the section on external consistency.
+In appendix A the names of all the dictionary files are given and in appendix
+B the structure of the directory in which the dictionary files are kept is
+explained.
+
+\subsection{The updating}
+For B-LEX, A-IRR-LEX and G-IRR-LEX a special update utility is develloped,
+this utility makes it easy to change attributes, add new entries or remove old
+ones.  As long as the definitions of the Pascal record structures remain the
+same this is a very simple process, but when they too change it becomes a
+little more complex. See appendix E for an elaborated example.
+
+All the other dictionaries have to be changed by editing the text version of
+the dictionary in question with a normal text editor. After changes have been
+made in A-MDICT, G-MDICT, A-TR$_{\rm B}$ or G-TR$_{\rm B}$
+they should be made available to
+the Rosetta2 program by means of some special utilities (TextToAMDict,
+TextToGMDict, TextToATDict and TextToGTDict). This is necessary as the Rosetta2
+program uses Pascal record structured versions of these dictionary files.
+
+In appendix C a short discription of the implementation of the utility
+programs is given and appendix D may serve as a short user manual for these
+utilities, in appendix E some examples are given.
+
+
+\subsection{The creation}
+Not much is to be said about the creation of the dictionaries. We used some
+algoritmes to gues the attribute values of the entries in BLEX, but a lot of
+guesses were wrong and I think it is difficult to improve the guessing much.
+So when ever a new dictionary must be created, a lot of time will be involved
+in filling the attributes.
+
+
+\subsection{The consistency problem}
+The consistency of the dictionaries is quite a complex problem. I will
+introduce some terms here and describe the consistency problem using these
+new terms believing that this might be helpfull to tackle the
+problem in the future.
+
+To start with we can distinguish the so called {\bf internal} from the
+{\bf external} consistency. The internal consistency itself can be seen as 
+{\bf intra}-
+and {\bf inter}- dictionary consistency.
+
+\subsubsection{Internal consistency}
+We can look upon the dictionaries as constituting a database. A database is
+just a collection of files, dependencies between these files and restrictions
+upon the content of these files (see de Brock : Database models and retrieval
+languages).
+When all the dependencies between the database files are obeyed we call the
+database {\bf inter dictionary consistent}. We will call a database file {\bf
+intra
+dictionary consistent} when it obeys the restrictions put on the file in
+isolation.
+
+\subsubsection{Intra dictionary consistency}
+The database files that we use are sorted sets of attribute tuples. As is
+usual in a database the range of values for every attribute is restricted, and
+also the possible combinations of attribute values within one tuple are
+restricted. Besides for every database file a non empty set of keys must be
+defined; any set of attributes, that uniquely defines every entry of the
+database file and contains no proper subset that does the same, may serve as a
+key.
+A dictionary is normaly an ordered set of tuples; one can argue whether this
+ordening attributes to the external consistency or to the intra dictonary
+consistency, I have a slide preference for the latter.
+There for the intra dictionary consistency is expressed 1) by a constraint
+concerning the sorting of the file, 2) by constraints concerning the possible
+values of an attribute (attribute constraints), and 3) by constraints concerning
+the possible combinations of attribute values within one tuple (tuple
+constraints).
+It is often possible to express the attribute constraints by using the Pascal
+subrange mechanisme, but this fails in case the attribute constraint is such
+that the attribute value may be any value that lies within a series of non
+consecutive subranges.
+
+Nothing is done yet to test any but the most simple attribute constraints.
+
+
+\subsubsection{Inter dictionary consistency}
+A database constrain is a global constrain on the possible values of the files 
+of the database.
+In order to relate the database files a special kind of database constraint, namely
+a set of so called attribute transformations, has to be formulated.
+An attribute transformation defines a mapping between sets of attributes of
+different database files; entries from the different database files are related
+if and only if they have the same values for the attributes thus mapped. In 
+this way so called 'keys' can be defined.
+
+None of the datebase constrains are checked in the current
+implementation.
+
+\smallskip
+The nice form of the Rosetta dictionary structure is displayed in the
+following picture. In this picture "LEX$_{\rm 1}$-(n-m)$->$ LEX$_{\rm 2}$"
+means that such an attribute transformation is defined that
+n entries in LEX$_{\rm 1}$ corresponds with m entries in LEX$_{\rm 2}$.
+
+\begin{verbatim}
+AM-DICT    (n-1)    A-ID-LEX
+
+ (n-1)     (n-1)         (n-1)
+
+A-IRR-LEX                                A-TR
+
+
+              (n-1)                 (n-m)     (n-1)
+
+                               B-LEX               TypeList
+
+              (1-n)                 (m-n)     (1-n)
+
+G-IRR-LEX                                G-TR
+
+
+ (1-n)     (1-n)         (1-n)
+
+GM-DICT    (1-n)    G-ID-LEX
+\end{verbatim}
+
+To every language the same picture applies. In all these pictures only
+TypeList refers to the same physical dictionary file.
+
+\subsubsection{External consistency}
+This is a very trivial kind of consistency. It pinnpoints the problem of
+having a program that manipulates the dictionaries, but lacking the garantee
+that the dictionary really is structured like the program thinks it is.
+
+The dictionaries are Pascal files of a certain record type. This record type
+is also used in the program for the dictionary access. It is obvious that any
+change in this record type will have the effect that dictionaries and program
+won't fit together any more. Also a change in the ordering of a dictionary will
+most likely account for a mismatch between the dictionary file and the
+program.
+By splitting off the so called lexical source we isolated the software that
+is responsible for the dictionary access and definition. Any change in this
+source may have the effect that the dictionaries and the program don't fit
+together, which means that dictionaries become unreadable, so care has to
+be taken in doing so.
+
+
+\appendix
+\section{The dictionaries}
+Here the dictionary names are listed.
+
+{\bf NAME} gives the logical file name.
+
+{\bf FILE} gives the translation of the logical file name.
+
+{\bf INTRA} is meant to give the intra dictionary consistensy constraints that
+should be obeyed, but only the ordening constraint is given.
+
+{\bf USED IN} lists the parts of Rosetta2 that use this dictionary.
+
+{\bf EXAMPLE} gives a few entries as they are to be found in the text version of
+this dictionary.
+
+
+\subsection{A-IRR-LEX}
+\begin{description}
+\item[NAME]
+{\em cat}
+
+\item[FILE]
+AIRBLEX:{\em cat}.NAM
+
+AIRBLEX:{\em cat}.WB
+
+\item[INTRA]
+Ordered according to cat and irregkey.
+
+\item[USED IN]
+A-MORPH.
+
+\item[EXAMPLE]
+\end{description}
+
+\subsection{A-MDICT}
+\begin{description}
+\item[NAME]
+AMDICT
+
+\item[FILE]
+ANWBDIR:AMDICT.TXT
+
+ANWBDIR:AMDICT.WB
+
+\item[INTRA]
+Lexicagrafical ordered on the StamString.
+
+KeyKind=basickeys, Key=bkey $->$ StamString is regular.
+
+KeyKind=irregkeys, Key=irregkey $->$ StamString is irregular.
+
+KeyKind=idpartkeys, Key=idpartkey $->$ StamString is part of an idiom.
+
+\item[USED IN]
+A-MORPH.
+
+\item[EXAMPLE]
+ StamString     Key    KeyKind   Bonus
+\end{description}
+
+\subsection{A-ID-LEX}
+\begin{description}
+\item[NAME]
+ANIDIOM
+
+\item[FILE]
+ANWBDIR:ANIDIOM.TXT
+
+ANWBDIR:ANIDIOM.WB
+
+\item[INTRA]
+Sorted on the first IdPartKey.
+
+'\#' means that the previous idpart may have an postfix, default is that last
+may have a postfix. Unfortunately the implementation is such that '\#' at the
+end is not allowed.
+
+\item[USED IN]
+A-MORPH.
+
+\item[EXAMPLE]
+\end{description}
+
+\subsection{A-TR$_{\rm B}$}
+\begin{description}
+\item[NAME]
+ATDICT  
+
+\item[FILE]
+ANWBDIR:ATDICT.TXT
+
+ANWBDIR:ATDICT.WB
+
+\item[INTRA]
+Sorted on basickey.
+
+\item[USED IN]
+A-TRANSFER.
+
+\item[EXAMPLE]
+ BasicKey  TransferKey    bonus  NrOfArgs  VerwachteTypeLijst   SelectString
+\end{description}
+
+\subsection{B-LEX}
+\begin{description}
+\item[NAME]
+{\em cat}
+
+\item[FILE]
+BLEX:{\em cat}.TXT
+
+BLEX:{\em cat}.WB
+
+\item[INTRA]
+Ordered according to cat and basickey.
+
+\item[USED IN]
+A-MORPH, M-PARSER, M-GENERATOR and G-MORPH.
+
+\item[EXAMPLE]
+\end{description}
+
+\subsection{interaction sentence list}
+\begin{description}
+\item[NAME]
+COMMENTFILE  
+
+\item[FILE]
+COMMENTWBDIR:COMMENT.WB
+
+\item[INTRA]
+\item[USED IN]
+all components.
+
+\item[EXAMPLE]
+\end{description}
+
+\subsection{Interlingua and type list}
+\begin{description}
+\item[NAME]
+EIGENTYPE
+
+VERWACHTETYPE
+
+\item[FILE]
+ILWBDIR:EIGENTYPE.WB
+
+ILWBDIR:VERWACHTETYPE.WB
+
+\item[INTRA]
+Line number corresponds to TransferKey!
+
+\item[USED IN]
+A-TRANSFER and G-TRANSFER.
+
+\item[EXAMPLE]
+VerWachteType :
+{TransferKey cat NrOfArgs Meaning}  VT=... \verb*/ /
+
+EigenType :
+{TransferKey cat NrOfArgs Meaning}  ET=... \verb*/ /
+
+The space at the end of every line is essential; the utility expects it.
+\end{description}
+
+\subsection{G-ID-LEX}
+\begin{description}
+\item[NAME]
+GENIDIOM  
+
+\item[FILE]
+GENWBDIR:GENIDIOM.TXT
+
+GENWBDIR:GENIDIOM.WB
+
+\item[INTRA]
+Sorted on BasicKey.
+
+'\#' means that the previous idpart may have an postfix, default is that last
+may have a postfix. Unfortunately the implementation is such that '\#' at the
+end is not allowed.
+
+G-MORPH.
+
+\item[EXAMPLE]
+\end{description}
+
+\subsection{G-IRR-LEX}
+\begin{description}
+\item[NAME]
+{\em cat}
+
+\item[FILE]
+GIRBLEX:{\em cat}.NAM
+
+GIRBLEX:{\em cat}.WB
+
+\item[INTRA]
+Ordered according to cat and irregkey.
+
+\item[USED IN]
+G-MORPH.
+
+\item[EXAMPLE]
+\end{description}
+
+\subsection{G-MDICT}
+\begin{description}
+\item[NAME]
+GMDICT  
+
+\item[FILE]
+GENWBDIR:GMDICT.TXT
+
+GENWBDIR:GMDICT.WB
+
+\item[INTRA]
+Sorted on KeyKind (basickeys, irregkeys, idpartkeys), and within that on Key.
+
+KeyKind=basickeys, Key=bkey $->$ StamString is regular.
+
+KeyKind=irregkeys, Key=irregkey $->$ StamString is irregular.
+
+KeyKind=idpartkeys, Key=idpartkey $->$ StamString is part of an idiom.
+
+\item[USED IN]
+G-MORPH.
+
+\item[EXAMPLE]
+ StamString     Key    KeyKind   Bonus
+\end{description}
+
+\subsection{G-TR$_{\rm B}$}
+\begin{description}
+\item[NAME]
+GTDICT  
+
+\item[FILE]
+GENWBDIR:GTDICT.TXT
+
+GENWBDIR:GTDICT.WB
+
+\item[INTRA]
+Sorted on TransferKey.
+
+\item[USED IN]
+G-TRANSFER.
+
+\item[EXAMPLE]
+ BasicKey  TransferKey    bonus  NrOfArgs  VerwachteTypeLijst
+\end{description}
+
+\section{THE DIRECTORIES}
+\subsection{THE LOGICAL DIRECTORY NAMES}
+Here all the logical names for directories are listed in alphabetic order.
+The following information is given for each logical directory name :
+
+{\bf DIRECTORY} gives the translation of the logical directory name. First the
+names used for the demonstration version are given, then the names used in the
+work version. The utilities used in developing Rosetta2 take care off
+assigning the correct translation to the logical directory name. For
+information concerning these utilities see "Utilities for Rosetta2"
+(R19).
+
+{\bf USE} gives a short discription of the files contained in the directory.
+
+
+\subsubsection{ABLEX                   analytic basic lexicon directory}
+\begin{description}
+\item[DIRECTORY  ] WBDisk:[Rosetta.WB2.Dutch.BLEX]
+             WBDisk:[Rosetta.WB2.English.BLEX]
+             WBDisk:[Rosetta.WB2.WorkDutch.BLEX]
+             WBDisk:[Rosetta.WB2.WorkEngli.BLEX]
+\item[USE        ] 
+\end{description}
+
+\subsubsection{anWBdir                 analytic dictionary directory directory}
+\begin{description}
+\item[DIRECTORY   ] WBDisk:[Rosetta.WB2.Dutch]\\
+              WBDisk:[Rosetta.WB2.EngliSH]\\
+              WBDisk:[Dutch.WB2.Dutch]\\
+              WBDisk:[EngliSH.WB2.EngliSH]
+\item[USE         ] Contains the language specific wordlists of the source-language.
+\end{description}
+
+\subsubsection{AIRBLEX                 analytic irregular dictionary directory}
+\begin{description}
+\item[DIRECTORY  ] WBDisk:[Rosetta.WB2.Dutch.AIRBLEX]\\
+             WBDisk:[Rosetta.WB2.EngliSH.AIRBLEX]\\
+             WBDisk:[Rosetta.WB2.WorkDutch.AIRBLEX]\\
+             WBDisk:[Rosetta.WB2.WorkEngli.AIRBLEX]
+\item[USE        ] 
+\end{description}
+
+\subsubsection{ANWBDIR                 analytic dictionary directory}
+\begin{description}
+\item[DIRECTORY  ] WBDisk:[Rosetta.WB2.Dutch]\\
+             WBDisk:[Rosetta.WB2.EngliSH]\\
+             WBDisk:[Rosetta.WB2.WorkDutch]\\
+             WBDisk:[Rosetta.WB2.WorkEngli]
+\item[USE        ] 
+\end{description}
+
+\subsubsection{commentdir              interaction directory directory}
+\begin{description}
+\item[DIRECTORY   ] ROSDisk:[Rosetta.Rosetta2.COMMON.LI]\\
+              ROSDisk:[COMMON.Rosetta2.COMMON.LI]
+\item[USE         ] Contains the definition of the interaction sentence-list.
+\end{description}
+
+\subsubsection{GBLEX                   Generative basic dictionary directory}
+\begin{description}
+\item[DIRECTORY  ] WBDisk:[Rosetta.WB2.Dutch.BLEX]\\
+             WBDisk:[Rosetta.WB2.English.BLEX]\\
+             WBDisk:[Rosetta.WB2.WorkDutch.BLEX]\\
+             WBDisk:[Rosetta.WB2.WorkEngli.BLEX]
+\item[USE        ] 
+\end{description}
+
+\subsubsection{GENWBdir                Genarative dictionary directory}
+\begin{description}
+\item[DIRECTORY  ] WBDisk:[Rosetta.WB2.Dutch]\\
+             WBDisk:[Rosetta.WB2.EngliSH]\\
+             WBDisk:[Rosetta.WB2.WorkDutch]\\
+             WBDisk:[Rosetta.WB2.WorkEngli]
+\item[USE        ] 
+\end{description}
+
+\subsubsection{GIRBLEX                 Generative irregular dictionary directory}
+\begin{description}
+\item[DIRECTORY  ] WBDisk:[Rosetta.WB2.Dutch.GIRBLEX]\\
+             WBDisk:[Rosetta.WB2.English.GIRBLEX]\\
+             WBDisk:[Rosetta.WB2.WorkDutch.GIRBLEX]\\
+             WBDisk:[Rosetta.WB2.WorkEngli.GIRBLEX]
+\item[USE        ] 
+\end{description}
+
+\subsubsection{ILWBDIR                 InterLingua dictionary directory}
+\begin{description}
+\item[DIRECTORY  ] WBDisk:[Rosetta.WB2.IL]
+\item[USE        ] 
+\end{description}
+
+\subsubsection{LDUPDATEDIR             Language dependent update directory}
+\begin{description}
+\item[DIRECTORY  ] LEXDisk:[Rosetta.LEXICON2.COMMON.UPDATE.LD]
+\item[USE        ] 
+\end{description}
+
+\subsubsection{LIUPDATEDIR             Language independent update directory}
+\begin{description}
+\item[DIRECTORY  ] LEXDisk:[Rosetta.LEXICON2.COMMON.UPDATE.LI]
+\item[USE        ] 
+\end{description}
+
+\subsubsection{LIUPDATEEXEDIR          Language independent update exe directory}
+\begin{description}
+\item[DIRECTORY  ] LEXDisk:[Rosetta.LEXICON2.COMMON.UPDATE.LI.EXE]
+\item[USE        ] 
+\end{description}
+
+\subsubsection{UPDATEEXEDIR            Update exe directory}
+\begin{description}
+\item[DIRECTORY  ] LEXDisk:[Rosetta.LEXICON2.Dutch.EXE]\\
+             LEXDisk:[Rosetta.LEXICON2.English.EXE]\\
+             LEXDisk:[Rosetta.LEXICON2.WorkDutch.EXE]\\
+             LEXDisk:[Rosetta.LEXICON2.WorkEngli.EXE]
+\item[USE        ] 
+\end{description}
+
+\subsection{THE DIRECTORY TREE}
+The directory structure for the dictionary directories is in picture form
+like this:
+
+
+{\bf demo version}
+\begin{verbatim}
+                            [Rosetta]
+                                |
+                             [.WB2]
+                               / \
+                          [.IL]   [.taal]
+                                   /  |         \
+                            [.BLEX]  [.AIRBLEX]  [.GIRBLEX]
+
+\end{verbatim}
+{\bf work version}
+\begin{verbatim}
+                            [taal]
+                                |
+                             [.WB2]
+                               / \
+                          [.IL]   [.taal]
+                                   /  |         \
+                            [.BLEX]  [.AIRBLEX]  [.GIRBLEX]
+\end{verbatim}
+In this picture {\em taal} stands for one of the following strings "Dutch", 
+"WorkDutch", "English" and "WorkEngli".
+
+\section{The Disk}
+In this implementation of Rosetta2 three logical Disks are used, but only one
+physical Disk. It is possible however to use a special Disk on which all the
+dictionary files are put without having to redesign all of Rosetta2. A simple
+redefinition of the logical WBDisk will suffice.
+
+
+Below the logical WBDisk is defined.
+
+{\bf DISK} gives the translation of the logical disk name. This logicals is
+created in the group logical name table at VAX/VMS system startup, for then
+the command file "ROSDisk:[Rosetta]initroset.com" is automatically executed.
+
+{\bf USE} gives a short
+discribtion of the kind of things to be found on the disk.
+
+
+\subsection{WBDisk                  dictionary Disk}
+\begin{description}
+\item[DISK] \_\_DRB0:
+\item[USE] On this Disk all the dictionary files are kept, the Pascal
+              readable file as well as the corresponding text files.
+              So all the things kept in the subdirectory called "[.WB2]"
+              belong on this disk.
+\end{description}
+
+\section{The implementation of the update utilities}
+The update program includes updateprocs, deleteswitch, insertswitch,
+editswitch, listswitch, irblexupdateprocs, leestype, schrijftype, minmaxtype
+and vrijeplaatsenswitch. All these included files are kept in LS directories.
+
+
+\section{The use of the update facilities}
+All the update utilities are such that it is necessary to be logged in as
+the user that 'owns' the dictionaries you want to update. If you only want to
+inspect BLEX,AIRBLEX and GIRBLEX then you can use the update-program anywhere.
+
+
+\subsection{What to do. (a dicision tree)}
+{\em void}
+
+\subsection{update}
+The update program is activated by typing the command "update {\em taal}", in
+which {\em taal} stands for one of the following strings "Dutch", "WorkDutch",
+"English" and "WorkEnglish".
+
+
+
+{\bf syntax of an update-command :}
+\begin{verbatim}
+ opdracht  :: range command {qualifier}.
+ range     :: [bkey | bkey "," bkey | categorie | "*"] [":" wbsoort].
+ bkey      :: natuurlijk-getal.
+ categorie :: categorie-naam.
+ wbsoort   :: "AIRBLEXwb" | "BLEXwb" | "GIRBLEXwb".
+ command   :: list | edit | delete | insert | vrij |
+              stringtokey | show   | nop    |
+              exit | stop | abort.
+ qualifier :: "-" qualstring | veld-naam.
+ qualstring:: infile | outfile | veld.
+ infile    :: "i" file-naam}.
+ outfile   :: "o" file-naam}.
+ veld      :: "v" veld-naam}.
+\end{verbatim}
+
+{\bf semantics of an update-command :}
+The default command is "nop", the qualifiers receive their default
+values again at the start of each command, range however remains its value.
+Every command may be abbreviated as long as the abbreviation is unambigues.
+
+\begin{description}
+\item[range ]
+The value of range determines wich entries of the dictionaries are to be
+treated by the command. The lowerbound of the specified reange should exist,
+for the upperbound the minimum of the specified upperbound and the upperbound
+corresponding to the category in which the specified lowerbound lies is used.
+
+A "*" means that the command is meant to work on the whole dictionary.
+
+
+\item[command ]
+With 'command' you specify the kind of command you want. No command
+is the same as the "nop" command, a "?" is the same as the "help" command.
+
+
+\item[qualifier ]
+With the aid of qualifiers you can adjust the working of a command. If you
+specify the same qualifier more than once in the same command, then the latest
+specified value is used.
+
+
+\item[bkey ]
+This is the basickey.
+
+
+\item[categorie ]
+This is the syntactic categery.
+
+
+\item[list ]
+The  "list" command gives a listing of all the entries that lie within the
+specified range.
+
+
+\item[edit ]
+The "edit" command let you change all the entries that lie within th]
+specified range. During the editing of the different fields of an entry
+gives "?" a list of all the values that are possible for that field, a
+simple "{\em cr}" lets the value of the field unchanged.
+
+
+\item[delete ]
+The "delete" command removes all the entries that lie within the
+specified range from the dictionaries.
+
+
+\item[insert ]
+The "insert" command fills the specified range with new entries, old entries
+are not removed. A new entry gets a default value for all its fields, and then
+the possibility to change these fields is offered. Again a "?" gives a  list of
+all the values that are possible for the field, a simple "{\em cr}" lets the value
+of the field unchanged.
+
+\item[vrij ]
+The "vrij" command shows what keys in the specified range are unused.
+
+
+\item[stringtokey ]
+The "StringToKey" let you find the key(s) associated with a certain string.
+If you didn't use the veldnaam qualifier, then you are asked for the string.
+
+
+\item[save ]
+The "save" command makes all the changes that you have made uptil now
+permanent. It is advisable to use this command now and again to protect
+one self for loosing all the changes in case the program aborts due to
+incorrect command input.
+
+
+\item[help ]
+The "help" command gives on line information about the update program,
+this information is not always up to date, so it is better to stick to
+the information given here.
+
+
+\item[stop ]
+The "stop" command makes all the changes permanent and stops the program. It
+is equivalent with the "exit" command.
+
+
+\item[abort ]
+The "abort" command simply stops the program and the changes that you made
+since the start of the progam or the latest "save" command are lost.
+
+
+\item[exit ]
+The "exit" command makes all the changes permanent and stops the program. It
+is equivalent with the "stop" command.
+
+
+\item[nop ]
+The "nop" command has no action associated with it. The empty command has
+the same effect.
+
+
+\item[infile ]
+If infile is specified, then during command processing the input is read from
+the specified file. The terminal is the default.
+
+
+\item[outfile ]
+If outfile is specified, then during command processing the output is written
+to the specified file. The terminal is the default.
+
+
+\item[veld ]
+This qualifier restricts the working of the command to the specified field
+of the entries. An empty string means all the fields, this is the default
+value.
+
+
+\item[show ]
+The "show" command shows the value of range for the current dictionary kind,
+when the veldnaam qualifier equals "*", then the full value of range is
+listed.
+
+\end{description}
+
+\subsection{TextTo?MDict and ?MDictToText}
+Here the TextToAMdict, AMdictToText, TextToGMdict and GMdictToText utilities
+are described.
+
+To make a Pascal record structured file of AMDICT one should give the command
+"TextToAMDict {\em taal}", in which {\em taal} stands for one of the following strings
+"Dutch",  "WorkDutch",  "English"  and "WorkEnglish". For efficienty reasons
+the utility AMDictToText is created, this utility makes a text file out of the
+Pascal  record  structured  file.  This makes it possible to throw away the
+text version as soon as changes are saved in the Pascal record structured file
+and  thus  save  on  disk  space.  One is advised to use this facility with
+utmost  care  as it is possible to 'forget' changes to AMDICT when they are
+not yet saved.
+
+For GMDict one should just substitute "GMDict" in stead of "AMDict" in this
+section.
+
+
+\subsection{TextTo?TDict and ?TDictToText}
+Here the TextToATDict, ATDictToText, TextToGTDict and GTDictToText utilities
+are described.
+
+To make a Pascal record structured file of ATDICT one should give the command
+"TextToATDict {\em taal}", in which {\em taal} stands for one of the following strings
+"Dutch",  "WorkDutch",  "English"  and "WorkEnglish". For efficienty reasons
+the utility ATDictToText is created, this utility makes a text file out of the
+Pascal  record  structured  file.  This makes it possible to throw away the
+text version as soon as changes are saved in the Pascal record structured file
+and  thus  save  on  disk  space.  One is advised to use this facility with
+utmost  care  as it is possible to 'forget' changes to ATDICT when they are
+not yet saved.
+
+For GTDict one should just substitute "GTDict" in stead of "ATDict" in this
+section.
+
+
+\subsection{CommentMaker}
+ This  program  makes  it  possible  to  change  the current value of the
+interaction dictionary. In order to run it one should type "CommentMaker
+{\em taal}".
+
+
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.2 - released  SEP-1986}
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1986 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

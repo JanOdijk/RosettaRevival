@@ -1,0 +1,789 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta2
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  A concise global design of Rosetta2
+
+         Author       :  J. Rous
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  36
+
+         Date         :  30/08/85
+
+         Status       :  concept
+
+         Supersedes   :  
+
+         Distribution :  Software Group, Jan Landsbergen
+
+
+         Clearance    :  Philips
+
+         Keywords     :  software, interfaces, global structure
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 36                      date:30/08/85
+$Np 1
+$C1 Introduction
+$QM
+This document is meant as a concise global design description of Rosetta2. The
+reader must realize that the content of this document is influenced by the fact
+that it has been written after the implementation phase of the system, 
+in stead of before.
+$NL
+The reader of this document is assumed to be familiar with document R0011, in
+which the functional definition can be found  of the eight major 
+components of Rosetta2. These components can also be distinguished 
+in the implemented system.
+$NL 1
+In chapter 2 and 3 some important datastructures are described.
+With the description of these datastructures also PASCAL type definitions 
+are used. Although this document is a global design and therefore
+such detailed descriptions are out of place, I feel that I should give them
+for reasons of completeness.
+$NL
+Chapters 4,5 and 6 have been devoted to the description of the datastructures
+which make up the interfaces between the eight components. In which way
+these components cooperate is dealt with in chapter 7.
+$NL 1
+In case names have been used which refer to datastructures or procedures
+of the Rosetta2 system, they have been placed between brackets < >. Chapter
+8 contains a list of these names and gives also the module in which they
+are defined. Document R0018 can be used to look up the filename of the
+module.
+$NP
+$C1 S-tree definition.
+$NL 2
+In the Rosetta2 system an S-tree is implemented by means of the record
+types <snode> and <rsnode> (cf. R0011, 2.2):
+$UM
+
+type psnode     = ^snode;
+     prsnode    = ^rsnode;
+     snode      = record ..
+                         sonlist : prsnode;
+                         ..
+                  end;
+     rsnode     = record node    : psnode;
+                         brother : prsnode;
+                         synrel  : reltype
+                  end;
+
+$QM
+The attribute <snode.sonlist> points to a list of son S-trees. This list
+is implemented with a linked list of type <rsnode>. The attribute 
+<rsnode.synrel> specifies the syntactic relation, <rsnode.node> the son 
+S-tree and 
+<rsnode.brother> the right neighbour S-tree. If an S-tree has no sons
+the attribute <snode.sonlist> is a "nil" pointer.
+$NL
+An S-tree node also contains language dependent syntactic information. This
+can be seen in a more detailed description of <snode>:
+$UM
+
+     snode      = record ..
+                         sonlist : prsnode;
+                         case cat: syntcat of
+                         C1 : ( C1field : pC1record);
+                                   ...
+                         Ci : ( Cifield : pCirecord);
+                                   ...
+                         Cn : ( Cnfield : pCnrecord)
+                  end;
+
+$QM
+The definition of <pCirecord> is :
+$UM
+
+     pCirecord  = ^Cirecord;
+     Cirecord   = record a1 : VALUESa1;
+                           ...
+                         an : VALUESan
+                  end;
+
+$QM
+Here <snode.cat> is a syntactic categorie with value C1,...,or Cn.
+The attributes corresponding to C1 are <pCirecord.a1>,...,<pCnrecord.an>.
+So an S-tree can be depicted as follows:
+$NP
+$UC (
+$UM
+
+                                 snode         Cirecord  
+                                  ____         ______
+                                  |  |-------->|____|
+                                  |__|         |____|
+                                 /
+               _________________/
+              /
+             V                             
+           ______                  ______
+   rsnode  |____|----------------->|____|----------------->
+             |                       |
+             |                       |
+             V                       V
+            ____         ______     ____         ______
+            |  |-------->|____|     |  |-------->|____|
+            |__|         |____|     |__|         |____|
+           /                       /
+ _________/                _______/
+
+
+
+                          Fig 1.
+
+$QM
+$UC _
+$NP
+$C1 D-tree definition
+$NL 2
+$C2 Syntactic D-trees
+The formal definition of a D-tree can be found in R0011, chapter 2.3.
+In the implementation the components of a D-tree are records of type
+<dnode>. The definition of this type is:
+$UM
+
+type pdnode     = ^dnode;
+     dnsonstype = array[1..maxdnsons] of pdnode;
+     dnode      = record
+                          ...
+                        case leave : boolean of
+                        true  : (bexpr : psnode);
+                        false : (ruleindex : mruletype;
+                                 nrsons    : 1..maxdnsons;
+                                 sons      : dnsonstype)
+                  end;
+
+$QM
+In case of a basic expression <dnode.leave> is true and the contents of
+the field is a pointer to an S-tree, which is the actual basic expression.
+$NL
+From the theoretical background (cf. R0011) appears that sets of D-trees
+play an important role in Rosetta. These sets can be implemented in
+an efficient way. This implementation is also promoted by the way the
+algorithms M-PARSER and M-GENERATOR operate. The easiest way to
+describe the efficient implementation of a set of D-trees ( called
+Super-D-tree ) is by means of a small example:
+$UM
+
+Consider the following four D-trees:
+
+   1       1       6      6
+   |       |      / \    / \
+   2       3     7   8  7   9
+          / \
+         4   5
+
+These D-trees can also be represented as follows:
+
+  {      1       ,       6      }
+         |              / \
+       { 2 , 3 }      {7} { 8 , 9 } 
+            / \               
+          {4} {5}
+
+$QM
+This is a so called Super-D-tree. Two extra attributes in the definition
+of <dnode> are neccessary to implement a Super-D-tree. One attribute for
+accessing the horizontal ambiguities ( in the example above 1 and 6
+are horizontal ambiguities ), and another attribute which can be used for
+generating all D-trees contained in one Super-D-tree by means of an algorithm.
+$NL
+A full definition of <dnode> is:
+$UM
+
+     dnode      = record
+                          ...
+                        ambig  : pdnode;
+                        mark   : boolean;
+                        case leave : boolean of
+                        true  : (bexpr : psnode);
+                        false : (ruleindex : mruletype;
+                                 nrsons    : 1..maxdnsons;
+                                 sons      : dnsonstype)
+                  end;
+
+$QM
+$NL 4
+$C2 Logical D-trees
+$NL 2
+Just as for syntactic D-trees, Super-D-trees are being used for the
+implementation of logical D-trees. The recordtype used for the composition of 
+logical Super-D-trees is <ldnode>. It is defined as follows:
+$UM
+
+type pldnode    = ^ldnode;
+     ldnode     = record
+                         ...
+                         ambig  : pldnode;
+                         mark   : boolean;
+                         case node: ldnodetype of
+                         variable : (index     : integer);
+                         rulenode : (ruleindex : Lruletype;
+                                     nrsons    : 0..maxldnsons;
+                                     sons      : ldnsonstype);
+                         constant : (key       : integer)
+                  end;
+
+$QM
+$NP
+$C1 The morphological components
+$NL 2
+The analytical morphological component is defined by the function
+A-MORPH, the generative component by G-MORPH (cf. R0011, 4.) The
+functional definition is a function from sequences of words to sets
+of sequences of lexical S-trees. The PASCAL function which implements
+AMORPH is called <amorph>. Function <amorph> works on the standard
+input file and produces a datastructure of type <pconnectionnode>. 
+$NL
+The input file is scanned for the sequence of words which make up the
+sentence. The set of sequences of lexical S-trees is implemented by
+means of a complicated datastructure which is composed of records of type
+<connectionnode> and <singlesegmentlist>. Because the sequences of
+S-trees have many parts in common it is decided to include these parts
+just once in the datastructure, both for storage efficiency and time efficiency
+reasons. The datastructure which is created in this way can best be
+looked upon as a graph. A valid sequence of S-trees can be generated by
+walking through the graph from the beginning to the end and adding each
+S-tree which is encountered to a sequence of S-trees, which is initially
+empty.
+$NL
+The definition of the record types <connectionnode> and
+<singlesegmentlist> is :
+$UM
+
+type pldnode    = ^ldnode;
+type pconnectionnode    = ^connectionnode;
+     psinglesegmentlist = ^singlesegmentlist;
+     connectionnode     = record ...
+                                 list   : psinglesegmentlist;
+                                 prev,
+                                 next   : pconnectionnode
+                          end;
+     singlesegmentlist  = record ...
+                                 next   : psinglesegmentlist;
+                                 rn     : pconnectionnode;
+                                 stree  : psnode
+                          end;
+
+$QM
+Records of type <connectionnode> are connected by means of a circular
+double linked list. The attributes <.prev> and <.next>
+are used for this purpose . To each <connectionnode> a list of nodes of type
+<singlesegmentlist> is connected, by means of attribute <.list>. Each
+<singlesegmentlist> record corresponds with a (lexical) S-tree. The
+attribute <.stree> points to this S-tree. Furthermore there is a
+attribute <.rn> which points to the <connectionnode> containing a list
+of possible right neighbour S-trees. An algorithm to generate all possible
+sequences of S-trees contained in such a datastructure is given in the
+appendix.
+$UC (
+$RL 22
+$UM
+
+            connectionnode
+            _______                _______                _______
+         -->|     |--------------->|     |--------------->|     |----
+         ---|_____|<---------------|_____|<---------------|_____|<---
+           s   |                   ^  |                   ^  |
+           i   V                   |  V                  /|  V
+           n  ___                 /  ___                / | ___
+           g  | |----------------/   | |---------------/  | | |--------
+           l  |_|--->/\              |_|--->/\           /  |_|--->/\
+           e   |    /__\                   /__\         /    |    /__\
+           s   V                                       /     V
+           e  ___                                     /     ___
+           g  | |------------------------------------/      | |--------
+           m  |_|--->/\                                     |_|--->/\
+           e        /__\                                          /__\
+           n          S-tree
+           tlist
+
+
+                           Fig 2.
+
+$QM
+$UC _
+The generative procedure <gmorph> is applied to one single sequence of S-trees.
+This sequence of S-trees is also implemented with a datastructure
+of type <pconnectionnode>. It may seem strange to implement a
+sequence of S-trees by means of such a complicated datastructure, but there
+are several reasons for doing it that way. The most important one is the
+fact that it must be possible to apply <gmorph> to the output of <amorph>
+( this can only be done, of course, if the analytical and generative language
+are identical ).
+$NL
+The sequences of words delivered by <gmorph> are placed on the standard
+output file, each sequence starting on a new line.
+$NP
+$C1 The syntactic components
+$NL 2
+$C2 Surface parser and Linearizer
+In the functional definition S-PARSER is being applied to a sequence of S-trees
+and gives as a result a set of S-trees. Here the implementation differs
+from the functional specification. The procedure <surfparser>, which is the
+implementation of S-PARSER, has as input a set of sequences of S-trees, the
+same set which is the result of application of <amorph>, i.e. a datastructure
+of type <pconnectionnode>. This approach follows from the fact that in the
+analytical part of ROSETTA2 a breadth-first strategy is being applied.
+$NL
+The output of <surfparser> is, just as the result of S-PARSER, a set of
+S-trees. A linked list of which each member ( a record of type <lostree>) points
+to an S-tree, serves as the implementation:
+$NL
+$UM
+
+type plostree  = ^lostree;
+     lostree   = record next : plostree;
+                        arg  : psnode
+                 end;
+
+$QM
+It can be proved that if application of S-PARSER delivers a set consisting of
+more than one S-tree, parts of these S-trees will be identical. The leaves
+of the S-trees, for instance, are identical in any case. 
+The fact that parts of the 
+S-trees are identical is used in the implementation. Sub-S-trees which
+occur in more than one S-tree are stored in memory just once. This implies
+that the S-trees which are delivered by <surfparser> will have parts in
+common. This phenomenon is called c@co@on@nv@ve@er@rg@ge@en@nc@ce@e, see
+the example below:
+$UC (
+$RL 17
+$UM
+
+            t%1%        t%2%
+            | \      / |
+            |  \    /  |
+            |   \  /   |
+            |    \/    |
+            |    /\    |
+            |   /  \   |
+            |  /    \  |
+            | /      \ |
+            s%1%        s%2%
+            /\        /\
+           /__\      /__\
+
+
+                 Fig 3.
+
+$QM      
+$UC _
+The procedure <linearizer> corresponds with the function LEAVES as defined
+in R0011, chapter 2.2. 
+The function <linearizer> operates on one S-tree ( of type <psnode> ), and
+generates by way of a non-recursive tree-walk algorithm a datastructure of
+type <pconnectionnode> containing the leaves of the S-tree.
+The output of <linearizer> serves as input
+for <gmorph>, which has been described in the previous chapter.
+$NL 2
+$C2 Mparser and Mgenerator
+Because of the breadth-first strategy applied in the analysis part of Rosetta,
+the input for the procedure <mparser> is the complete set of S-trees
+generated by the procedure <surfparser>. Processing of these S-trees by
+<mparser> results in one single Super-D-tree, implemented by way of the
+datastructure of type <pdnode> (cf chapter 3.). The relation between the
+input and the output of <mparser> is as follows. Each node of the horizontal
+ambiguities of the first level of the Super-D-tree corresponds with
+one S-tree of the input set. Furthermore each S-tree of the input set
+may correspond with more than one top node of the resulting Super-D-tree.
+$NL
+Each node of the Super-D-tree corresponds with an M-rule which has been 
+successfully applied by <mparser>. The result of this application is a
+set of S-trees (of type <plostree>). So each list of horizontal ambiguity nodes
+corresponds with the union of the sets generated for each of the nodes of that
+list. This relation has been implemented by way of an extra attribute in
+the definition of <dnode>, namely <dnode.stree> of type <plostree> (cf. 4.1). 
+But only the attribute 
+<dnode.stree> of the first node of each list of horizontal ambiguities points
+to a set of S-trees, the attribute <.stree> of every other node has
+value "nil". Moreover, the first S-tree of the set of S-trees contains a 
+pointer to the corresponding horizontal ambiguity list.
+$NL
+Furthermore holds that because there is convergence
+between the S-trees of the input set, there is also convergence inside
+the final Super-D-tree. For example, if application of an M-rule R%i% on
+S-tree t%1% of fig 3. results in the S-trees s%1% and s%2%', and application
+of an M-rule R%j% on t%2% results in the S-trees s%1% and s%2%'', and suppose
+the Super-D-tree generated for s%1% is D%1%, for s%2%' is D%2% and suppose that
+s%2%'' corresponds with D%3%, then the resulting Super-D-tree looks
+as follows:
+$RL 11
+$UC (
+$UM
+
+                     R%i%___R%j%
+                     |\  / \
+                     | \/   \
+                     | /\    \
+                     |/  \    \
+                     D%1%  D%2%   D%3%
+
+
+                        Fig 4.
+
+$QM
+$UC _
+The input of procedure <mgenerator> is a special kind (at least as for its
+shape ) of Super-D-tree without convergence.
+In the Rosetta2 documentation this kind of Super-D-tree is sometimes referred
+to as a Hyper-D-tree. The Hyper-D-tree will be described in detail 
+in the following chapter. Its implementation, however, is also done by way 
+of records of type <dnode>.
+$NL
+Procedure <mgenerator> generates a set of S-trees, implemented with a list
+of S-trees of type <plostree>. There may be convergence between the S-trees 
+in this list.
+$NL
+The fact that <mgenerator> operates on a Hyper-D-tree is contrary to
+the assertion that in the generative part of Rosetta a depth-first strategy
+is being applied. The choice for this local breadth-first strategy
+can be explained as follows. A Hyper-D-tree
+defines a set of D-trees. The D-trees of this set contain many identical 
+sub-D-trees.
+However only very few of the D-trees are successful, in
+the sense that they correspond with a non-empty set of S-trees. It would
+be extremely inefficient to process these D-trees one after the other,
+because all the identical sub-D-trees which are not successful,
+would be processed again and again. 
+$NP
+$C1 The semantic components
+The semantic component consists of the functions A-TRANSFER and G-TRANSFER. The
+corresponding functions in the implementation are <antransfer> and 
+<gentransfer>. Because of the breadth-first strategy, <antransfer> operates
+on the Super-D-tree generated by <mparser>. It generates a datastructure 
+which can be divided into two parts. The first part is a logical 
+Super-D-tree (of type <pldnode>), the translation of the syntactical 
+Super-D-tree. These trees are very much alike, with respect to convergence
+and shape, because only local translations are performed. The second part
+is a result of the bonus system as described in R0014. In <antransfer> every
+logical D-tree, enclosed in the Super-D-tree, gets a bonus. In chapter 3.1 I
+mentioned that these logical D-trees can be generated by means of an
+algorithm. In this way an order between the D-trees can be defined: 
+a logical D-tree D corresponds
+with the natural number j, if it is the j-th D-tree generated out of
+logical Super-D-tree S by means of the algorithm. In this way a logical
+D-tree can be uniquely identified by a natural number. So the second part
+is a list of records containing an order number and a bonus value of
+the corresponding logical D-tree:
+$RL 7
+$UM
+
+type pbonuslist = ^bonuslist;
+     bonuslist  = record bonus : integer;
+                         nr    : integer;
+                         next  : pbonuslist
+                  end;   
+
+$QM
+The final result of <antransfer> is a record containing a pointer to
+a logical Super-D-tree and a pointer to a bonuslist. The elements of
+this final bonuslist have been ordered on bonus-value, highest values
+first:
+$RL 5
+$UM
+
+type if4type    = record supertree : pldnode;
+                         bonuslist : pbonuslist
+                  end;
+
+$QM
+The input parameter of <gentransfer> is also of type <if4type>. The procedure
+<gentransfer> processes the logical D-trees contained in the Super-D-tree
+one by one, in the order given by the bonuslist, which means D-trees with
+highest bonus are processed first. A logical D-tree is translated into a 
+syntactical Super-D-tree by 
+way of local translations. These local translations cause a very special
+kind of Super-D-tree, which is called a Hyper-D-tree. In a Hyper-D-tree
+all horizontal ambiguities have the same sons:
+$RL 14
+$UM
+
+          D-tree                          Hyper-D-tree
+
+             O                            { O-----O }
+            / \                               / \
+           /   \                             /   \
+          /     \     ===========>          /     \
+         /       \                         /       \
+        /         \                       /         \
+       O           O                { O-----O }  { O-----O-----O }    
+
+
+                         Fig 5.
+
+$QM
+A Hyper-D-tree is also implemented by way of records of type <dnode>.
+$NP
+$C1 Analysis and Generation
+At the most global level the Rosetta2 system can be divided into two parts: the
+analysis and the generation part. These parts have been implemented through
+the procedures <analysis> and <generation> which have the following
+interface descriptions:
+$RL 10
+$UM
+
+procedure analysis (var if4: if4type; (* datastructure containing
+                                      (* logical super-D-tree and
+                                      (* bonuslist.               *)
+                    var stop: boolean)(* determines whether gene-
+                                      (* ration should be executed*)
+
+procedure generation (if4: if4type)   (* datastructure containing
+                                      (* the result of analysis   *)
+
+$QM
+The execution of these procedures is controlled by the main program,
+called <rosetta2>. The body of <rosetta2> looks as follows:
+$RL 21
+$UM
+
+
+program rosetta2;
+
+var stop: boolean;
+    if4 : if4type;
+
+begin
+
+    "initialisation phase"; stop := false;
+
+    repeat
+        analysis(if4,stop);
+        if not stop then
+            if if4.supertree <> nil then
+                generation(if4)
+            else
+                writeln("er is niets om te vertalen")
+    until "no more translations necessary"
+
+end.
+
+
+                       Algorithm 1.
+
+$QM
+The interface datastructures which have been described in the previous chapters
+are stored in a number of global variables, viz. <if1>, <if2>, <if3>, <if4>,
+<if5>, <if6> and <if7>, as follows:
+$RL 10
+$UM
+
+
+         if1               if2            if3              
+ amorph -----> surfparser -----> mparser --------> antransfer ----+
+                                                                  | if4
+ gmorph <----- linearizer <----- mgenerator <----  gentransfer <--+     
+         if7               if6               if5
+
+
+                       Fig 6.
+
+$QM
+The body of procedure <analysis> is more or less a straightforward 
+implementation of the functional definition. It contains a control structure
+in which successively each analytical component is invoked. However the
+flow is also influenced by the global variable <info>. For the purpose of
+testing it is necessary to have the possibility to stop at a certain
+level in the analysis. This is controlled by the atrribute <info.stoplev>.
+The analysis stops before level <info.stoplev>, where <amorph> is level 1,
+<surfparser> level 2, etc.
+$NL
+Furthermore it must be possible to offer the output of an analytical component
+as input for the corresponding generative component. For instance, the output
+of <amorph> may serve as input for <gmorph>. The attribute <info.testcomp>
+determines at which level this "short-circuit" must take place. The actual
+call to the corresponding generative procedure is done through a
+call to procedure <shortcircuit>. 
+The level of the generative component which has to be called must be passed
+as a parameter to <shortcircuit>. This leads to the following body
+of procedure <analysis>:
+$UM
+
+
+procedure analysis(var if4: if4type; var stop: boolean);
+ 
+var comp  : 1..8;
+ 
+begin
+   comp:=1;
+   stop:=false;
+ 
+   repeat
+      case comp of
+         1: begin
+               amorph(if1);
+               "print this interface (if necessary)"
+               if info.testcomp = 1
+               then begin
+                  shortcircuit(8);
+                  stop:=true
+               end
+               else comp:=comp+1
+            end;
+         2: begin
+               surfparser(if1,if2);
+               "print this interface (if necessary)"
+               if info.testcomp = 2
+               then begin
+                  shortcircuit(7);
+                  stop:=true
+               end
+               else comp:=comp+1
+            end;
+         3: begin
+               mparser(if2,if3);;
+               "print this interface (if necessary)"
+               if info.testcomp = 3
+               then begin
+                  shortcircuit(6);
+                  stop:=true
+               end
+               else comp:=comp+1
+            end;
+         4: begin
+               antransfer(if3,if4);
+               "print this interface (if necessary)"
+               comp:=comp+1
+            end
+      end
+   until (comp=info.stoplev) or (comp=5) or stop;
+
+   if (comp=info.stoplev) and not (comp=5)
+   then stop:=true
+
+end;{analysis}
+
+
+                       Algorithm 2.
+
+$QM
+After a successful analysis the procedure <generation> is called
+as appears from Algorithm 1. Because it must also be possible to start at a
+certain level in the generation process, the process has been
+implemented in two steps. First
+the procedure <generation> is called, which in its turn calls the procedure
+<generationcontroller> :
+$UM
+
+ 
+procedure generation(if4 : if4type);
+ 
+begin
+      generationcontroller(5);
+end;
+
+
+
+procedure generationcontroller(comp: integer);
+begin
+
+     "print interface (if necessary) "
+
+     if comp < info.stoplev
+     then begin
+        case comp of
+           8: gmorph;
+ 
+           7: linearizer;
+ 
+           6: mgenerator;
+ 
+           5: gentransfer
+        end
+     end
+end;
+
+
+                          Algorithm 3.
+
+$QM
+Procedure <generationcontroller> starts at a certain level in the generation
+process, depending on the value of the input parameter, by calling the
+corresponding module. At the end of the
+body of each generative module there is a call to 
+generationcontroller(N+1) which causes the activation of the next generative
+module.
+The procedure <generationcontroller> is also used by <shortcircuit> to start
+at an arbitrary level in the generation. 
+$NL
+The interface variables if5, if6 and if7 get
+a value inside the body of the generative modules, in contrast with 
+<analysis>
+$NP
+$C1 Indexlist
+$nl 2
+$UM
+<amorph>                         amorph
+<analysis>                       analysis
+<antransfer>                     antransfer
+<bonuslist>                      il
+<connectionnode>                 globtreedecl
+<dnode>                          globtreedecl
+<generation>                     generation
+<generationcontroller>           genctrl
+<gentransfer>                    gentransfer
+<gmorph>                         gmorph
+<if1>                            anifdecl
+<if2>                            anifdecl
+<if3>                            anifdecl
+<if4>                            ilifdecl
+<if4type>                        ilifdecl
+<if5>                            genifdecl
+<if6>                            genifdecl
+<if7>                            genifdecl
+<info>                           infohandler
+<ldnode>                         il
+<linearizer>                     linearizer
+<lostree>                        globtreedecl
+<mgenerator>                     mgenerator
+<mparser>                        mparser
+<pCirecord>                      globdecl
+<pbonuslist>                     il
+<pconnectionnode>                globtreedecl
+<pdnode>                         globtreedecl
+<pldnode>                        il
+<prsnode>                        globtreedecl
+<psnode>                         globtreedecl
+<rsnode>                         globtreedecl
+<shortcircuit>                   shortcircuit
+<singlesegmentlist>              globtreedecl
+<snode>                          globdecl
+<surfparser>                     surfparser
+$QM

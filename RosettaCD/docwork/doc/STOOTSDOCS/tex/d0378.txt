@@ -1,0 +1,1008 @@
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.formalism}
+   \RosTitle{Formal specification of M-Parser and M-Generator}
+   \RosAuthor{Joep Rous}
+   \RosDocNr{378}
+   \RosDate{July 26, 1989}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{}
+   \MakeRosTitle
+%
+%
+\section{Introduction}
+In this document a formal specification is given of the components M-Parser
+and M-Generator. This specification is very close to the actual implementation
+of both components.  
+ In document R0101 ( Control Expressions by J. Landsbergen ) another
+specification of M-Parser and M-Generator is given. The difference between
+these two approaches is the way in which the control expression is
+evaluated. In R0101 the control expression is interpreted during application
+of M-Parser and M-Generator, whereas the specifications in this
+document are based on a transformation of the expression into successor
+and predecessor relations between the atoms of the expression. The 
+resulting M-Parser definition can be implemented very efficiently. Furthermore,
+there is no need for the {\em open derivation trees } of document R0101. 
+As far as the M-Generator definition is concerned the R0101 definition
+suggests a strategy which is ``control expression driven''. Such a strategy,
+however, results in numerous wrong paths during the evaluation of
+one syntactic derivation tree. The strategy proposed in this document is
+``derivation tree driven'', that is, the derivation tree is used as a guide
+to apply M-Generator and the control expression is just used to check
+whether the tree is correct.
+
+I also added a section on the specification of the preaction technique
+in M-Generator. Introduction of the preaction results in a considerable
+increase in the complexity of the definition. The actual implementation
+is even more complex  because of the hypertree representation
+of syntactic derivation trees.  
+
+After both components had been implemented, we had some new ideas for
+the implementation of M-Generator.  Very much simplified, these ideas
+boil down to the following. In principle it is possible
+to generate for each control expression a regular grammar which
+defines the same language. Why not use this grammar together with
+a general purpose parse algorithm to parse the head paths of a 
+syntactic derivation tree. The M-rules can then be looked at as 
+attribute evaluating rules and the resulting S-trees are passed
+by means of attributes. I am sure that this would yield an
+efficient and very elegant implementation of M-Generator.
+\section{Control expressions}
+The control expression which is used in the definition of a Rosetta
+subgrammar specifies a regular language {\cal L} over the alphabet of rule 
+names $\Sigma$.
+
+This language can also be defined by means of two functions:
+\begin{itemize}
+   \item The function {\sl First} which gives the set of all rule names with which
+         language elements can begin. 
+   \item The function {\sl Succ} which gives for an arbitrary rule name $x$ the
+         set of rule names which can precede  $x$ in any language element.
+\end{itemize}
+
+These functions together with the functions {\sl Last} and {\sl Pred} can be 
+derived rather straightforwardly from the control expression. First, we
+define the function $f$, as follows: 
+\begin{tabbing}
+aaaaaaa\=aaaaaaaaaaaaaaaaaaaaaaaa\=aaaaa\kill
+$f(ce) =_{def} $ \\
+\>$ce = ce_{1}\cdot ce_{2} \wedge \varepsilon\not\in f(ce_{1}) $\>$: f(ce_{1})$ \\
+\>$ce = ce_{1}\cdot ce_{2} \wedge \varepsilon\in f(ce_{1}) $\>$: f(ce_{1})-\{\varepsilon\}\cup f(ce_{2})$ \\
+\>$ce = ce_{1}\mid ce_{2} $\>$: f(ce_{1})\cup f(ce_{2})$ \\
+\>$ce = [ce_{1}] $\>$: f(ce_{1})\cup \{\varepsilon\}$ \\
+\>$ce = \{ce_{1}\} $\>$: f(ce_{1})\cup \{\varepsilon\}$ \\
+\>$ce = {\sl r} $\>$: \{{\sl r}\}$ \\
+\end{tabbing}
+As we see from this definition, $f$ returns the set of atoms that can
+appear as first symbol in a string defined by a control expression $ce$.
+If $ce$ contains vacuous paths $f(ce)$ will contain the value $\varepsilon$.
+Next, we can define a function $F$, which has as a side effect that it assigns
+to each atom of the alphabet its successorset.
+\begin{tabbing}
+aaaaaaa\=aaaaaaaaaaaaaaaaa\=aaaaa\kill
+$F(ce, R) =_{def} $ \\
+\>$ce = ce_{1}\cdot ce_{2} $\>$: F(ce_{1}, F(ce_{2}, R))$ \\
+\>$ce = ce_{1}\mid ce_{2} $\>$: F(ce_{1}, R)\cup F(ce_{2}, R)$ \\
+\>$ce = [ce_{1}] $\>$: F(ce_{1})\cup R$ \\
+\>$ce = \{ce_{1}\} $\>$: F(ce_{1}, f(ce_{1}) - \{\varepsilon\} \cup R) \cup R$ \\
+\>$ce = {\sl r} $\>$: \{{\sl r}\} \wedge$ {\em assign(succ}$[r], R)$ \\
+\end{tabbing}
+Function $F$ returns, similar to $f$, the set of rule names that can
+appear as first symbol in a string defined by a control expression $ce$.
+The second parameter $R$ is the set of rule names which are successors of $ce$.
+The difference between the two functions is that if $ce$ defines the empty
+string, the set $f(ce)$ will contain the symbol $\varepsilon$, whereas in that
+case $R$ will be a subset of $F(ce,R)$.
+
+Now, we can calculate the "first" set for each subgrammar control expression: \\
+{\em assign(first}$[sg], F(ce_{sg}, \{\rhd\})$ \\
+(Here, $\rhd$ is a special closure symbol added to the alphabet)
+
+The functions M-Parser and M-Generator don't use the subgrammar control 
+expressions directly. Instead, they make use of the functions 
+{\em First}, {\em Last}, {\em Succ} and {\em Pred} which are defined as 
+follows:
+\begin{tabbing}
+{\em First}$(sg) = first[sg]$ \\
+{\em Last}$(sg) = last[sg]$ \\
+{\em Succ}$(r) = succ[r]$ \\
+{\em Pred}$(r) = pred[r]$ \\
+\end{tabbing}
+\begin{tabbing}
+{\em Example}\\
+\\
+$[ R6 ] \cdot ( T3 \mid ( T5 \cdot T4 ) ) \cdot ( R1 \mid R2)$ \\
+\\
+{\em First} $= \{ R6, T3, T5 \}$ \\
+{\em Last}  $= \{ R1, R2 \}$ \\
+{\em Succ}$(R6) = \{ T3, T5 \} $ \\
+{\em Succ}$(T3) = \{ R1, R2 \} $ \\
+{\em Succ}$(T5) = \{ T4 \} $ \\
+{\em Succ}$(T4) = \{ R1, R2 \} $ \\
+{\em Succ}$(R1) = \{ \rhd \} $ \\
+{\em Succ}$(R2) = \{ \rhd \} $ \\
+\end{tabbing}
+\section{M-Parser}
+The definition of the function M-Parser using control expressions and
+transformations is in the style of the Rosetta2 definition:
+\begin{tabbing}
+aaaaaaaaa\=aaaaa\=aaaaaaa\kill
+M-Parser$(t) =_{def}$ \\
+\>$\{ d \mid \exists sg \in $Subgrammars$, d_{1}:$ \\
+\>\>$ cat(t) \in $Exportcats$(sg)\: \wedge $\\
+\>\>$d_{1} \in $M-Parser-SG$(t, ${\em Last}$(sg), sg)\:\wedge\: $ \\
+\>\>$d = d_{1}[$SgBorder$=true] \}$ \\
+\\
+\>$\cup\: \{ d \mid \exists d_{1}: \:$BlexCat$(t)\: \wedge d_{1} = t \:\wedge\:d = d_{1}[$SgBorder$=true]  \}$ \\
+\\
+\>$\cup \:\{ d \mid \exists d_{1}:\: $VarCat$(t) \wedge d_{1}= t \:\wedge\:d = d_{1}[$SgBorder$=true] \}$
+\end{tabbing}
+This definition says that a complete subgrammar can be applied to stree $t$
+if its category is in the set Exportedcats. Furthermore, if $t$ is a basic
+expression or a variable, a leave of the syntactic derivation tree is created
+containing the basic expression or variable information. The information that
+at this point on the head path of the syntactic derivation tree there is a 
+transition between two subgrammars is also recorded in the S-tree. This
+information will be "transported" via A-Transfer and G-Transfer to
+M-Generator. 
+The function
+M-Parser-SG which applies a complete subgrammar to an S-tree has been
+defined as follows:
+\begin{tabbing}
+aaaaaaaaa\=aaaaa\=aaaaaaa\kill
+M-Parser-SG$(t, p, sg) =_{def}$ \\
+\>$\{ d \mid \lhd\in p \:\wedge\: d\in $M-Parser$(t) \} $\\
+\\
+\>$\cup \:\{ d \mid \exists R, t_{1}\ldots t_{n}, d_{1}:$ \\
+\>\>$R\in p \:\wedge \:t_{1}\ldots t_{n}\in F^{-1}_{R}(t) \:\wedge$\\
+\>\>$d_{1} \in $M-Parser-SG$(t_{1}, ${\em Pred}$(R), sg))\: \wedge $ \\
+\>\>$\forall i: 2 \leq i\leq n: d_{i} \in $M-Parser$(t_{i}) \:\wedge$ \\
+\>\>$d=(R,sg)<d_{1}\ldots d_{n}> \} $ \\
+\\
+\>$\cup \:\{ d \mid \exists T, t_{1}: $ \\
+\>\>$T\in p \wedge\: t\in F^{-1}_{T}(t) \:\wedge $ \\
+\>\>$d\in $M-Parser-SG$(t_{1}, ${\em Pred}$(T), sg)) \}$ \\
+\end{tabbing}
+The parameters for M-Parser-SG are:
+\begin{itemize}
+\item an S-tree $t$ for which a set of syntactic derivation trees must be
+      constructed.
+\item a set $p$ of rulenames and/or transformationnames which may be applied to $t$ 
+\item the current subgrammar.
+\end{itemize}
+If the closure symbol is in the application set
+$p$, then M-Parser-SG explores the possibility that the current subgrammar ends
+at this point and it tries to apply M-Parser to $t$. \\ \\
+If a rulename is in the application set, the actual M-rule is being applied.
+Next, the predecessor set of the actual rule is calculated and M-Parser-SG
+is called for the first S-tree of each tuple of the resulting set of
+M-rule application. To all other S-trees in the tuple the complete M-Parser
+is applied. If all applications are successful a new node is added to
+the syntactic derivation tree. \\ \\
+If a transformationname is in the application set, the corresponding
+transformation is being applied. Next, M-Parser-SG is applied to the
+resulting S-trees. Because only meaningful rules are recorded in a 
+syntactic derivation tree, no new node is added to the derivation tree(s). 
+
+\section{M-Generator}
+The M-Generator function should be the reverse of M-Parser and can  therefore
+be obtained  by inverting each subfunction of M-Parser.
+ Straigthforward
+inverting  M-Parser, however, would yield a non terminating
+ M-Generator function. In order to avoid this
+non-termination 
+special measures have to be taken. This is the main reason that
+the M-Generator definition is more complicated than the M-Parser definition.
+Another reason for an increased complexity is the {\em preaction 
+technique} which has to be applied in generation. First, however, I will
+sketch the definion without the preaction technique.
+\begin{tabbing}
+aaaaaaaaa\=aaaaa\=aaaaaaa\kill
+M-Generator$(d) =_{def} $ \\
+\>$\{ t \mid \exists R, sg, d_{0}\ldots d_{n},t_{1}:$ \\
+\>\>$ d = (R,sg)<d_{1}\ldots d_{n}>\:\wedge$ \\
+\>\>$d.$SgBorder$=$true$\:\wedge\:d_{0}=d[$SgBorder=false$]\:\wedge$ \\
+\>\>$t_{1}\in $M-Generator-SG$(d_{0})\:\wedge$\\
+\>\>$\:t\in $M-Transforms$(t_{1},R,\lhd) \} $ \\
+\\
+\>$\cup\: \{ t \mid $BlexCat$(t)\: \wedge d = t \}$ \\
+\\
+\>$\cup\: \{ d \mid $VarCat$(t) \:\wedge d = t \}$
+\end{tabbing}
+We can see from this definition that M-Generator is applicable to a 
+syntactic derivation tree in 3 cases:
+\begin{itemize}
+\item The topnode of the syntactic derivation tree $d$ is a normal rulenode.
+      If the rulenode is the beginning of a new subgrammar (indicated
+      by the value of the attribute SgBorder) a new derivation
+      tree is created which is the same as $d$ except for the value of
+      SgBorder. Next, 
+      M-Generator-SG is applied to the new derivation tree. It is necessary
+      to alter the value of SgBorder because, as we will see below,
+      M-Generator-SG applies M-Generator to derivation trees with
+      SgBorder=true,  which would cause an infinite loop.
+      The last rule that the function M-Generator-SG will
+       apply is $R$. 
+      So we still have to apply all possible
+      transformations which occur in the control expression at the end of
+      the current subgrammar after rule $R$. This is achieved by application
+      of the function M-Transforms.
+\item If the derivation tree is a basic expression the recursion ends here
+      and the value of the expression is returned.
+\item Variables are treated in the same way as basic expressions.
+\end{itemize}
+
+The function M-Generator-SG tries to apply, recursively, a complete subgrammar
+ to the first (= head) S-trees which are the result of successful 
+rule applications. To all other S-trees M-Generator is applied. If 
+M-Generator-SG encounters the border of a subgrammar, which is indicated by
+the value of the attribute SgBorder, it  applies M-Generator to the rest
+of the derivation tree. As mentioned above, for a given syntactic derivation
+tree $(R,sg)<d_{1},\ldots,d_{n}>$  the rule $R$ will be the last rule that 
+M-Generator-SG will apply.
+In order to apply the transformations which can occur between two
+meaningful rules in a derivation tree the function M-Transforms is called.
+The definition of M-Generator-SG is as follows:
+\begin{tabbing}
+aaaaaaaaa\=aaaaa\=aaaaaaa\kill
+M-Generator-SG$(d) =_{def} $ \\
+\>$\{ t \mid d.$SgBorder$=$true$\:\wedge\:t\in$M-Generator$(d) \} $ \\
+\\
+\>$\cup\:\{ t \mid \exists R, sg, t_{0}\ldots t_{n}, d_{1}\ldots d_{n} : $ \\
+\>\>$d=(R,sg)<d_{1}\ldots d_{n}>\:\wedge $ \\
+\>\>$\forall i :2\leq i\leq n: t_{i}\in$M-Generator$(d_{i})\:\wedge $ \\
+\>\>$t_{0}\in$M-Generator-SG$(d_{1})\:\wedge $ \\
+\>\>$t_{1}\in$M-Transforms$(t_{0}, $RuleInfo$(d_{1}), R) \:\wedge $ \\
+\>\>$t\in F_{R}(t_{1}\ldots t_{n})\} $ \\
+\\
+The function RuleInfo returns $\rhd$ if it is applied to a basic
+expression \\
+or a variable, otherwise it returns the rule of the top-node.
+\end{tabbing}
+\section{M-Generator with the preaction technique}
+The preaction technique in M-Generator is applied when the topnode of
+a syntactic derivation tree is a substitution rule node. A substitution rule node  has two sons, the {\em substituent} and the {\em 
+substituee}. The preaction
+technique globally comes  to first evaluating the substituent and 
+subsequently substituting the
+result of this evaluation for the variables in the substituee which are bound
+ by the substitution rule.
+In Rosetta3 the substituent is not always the second son of the substitution
+rule node as it was in Rosetta2.  In the current M-rule specifications
+it is marked
+which of the arguments is the substituent argument.   
+In the definitions below this information becomes available through the 
+functions {\em Substituent} and {\em Substituee }.
+The incorporation of the preaction technique has only consequences for the 
+M-Generator-SG function. In this function we now have to consider
+four cases:
+\begin{enumerate}
+\item The top node contains a subgrammar boundary in which case M-Generator
+      must be applied.
+\item The top node is a normal rule node. In this case the same definition holds
+      as in the previous version of M-Generator-SG. 
+\item The topnode is a substitution rule node and the first son is the
+      substituent. 
+\item The topnode is a substitution rule node and the second son is the
+      substituent.
+\end{enumerate}
+
+\begin{tabbing}
+aaaaaaaaa\=aaaaa\=aaaaaaa\kill
+M-Generator-SG$(d) =_{def} $ \\
+\>$\{ t \mid d.$SgBorder$=$true$\:\wedge\:t\in$M-Generator$(d) \} $ \\
+\\
+\>$\cup\:\{ t \mid \exists R, sg, t_{0}\ldots t_{n}, d_{1}\ldots d_{n} : $ \\
+\>\>$\neg $SubstRule$(d)\:\wedge d.$SgBorder$=$false$\:\wedge$\\
+\>\>$d=(R,sg)<d_{1}\ldots d_{n}>\:\wedge\: $ \\
+\>\>$\forall i :2\leq i\leq n: t_{i}\in$M-Generator$(d_{i})\:\wedge $ \\
+\>\>$t_{0}\in$M-Generator-SG$(d_{1})\:\wedge\:$ \\
+\>\>$t_{1}\in$M-Transforms$(t_{0}, $RuleInfo$(d_{1}), R)\: \wedge $ \\
+\>\>$t\in F_{R}(t_{1}\ldots t_{n})\} $ \\
+\\
+\>$\cup\:\{ t \mid \exists R, sg, t_{0},t_{1},t_{2},d_{1},d_{2},\delta: $ \\
+\>\>SubstRule$(d)\:\wedge\:$Substituent$(d) = $head$\:\wedge\: d.$SgBorder$=$false$\:\wedge$\\
+\>\>$ d=(R,i,sg)<d_{1}, d_{2}>\:\wedge $ \\
+\>\>$t_{0}\in $M-Generator-SG$(d_{1})\:\wedge $ \\
+\>\>$t_{1}\in $M-Transforms$(t_{0},  $RuleInfo$(d_{1}), R) \:\wedge $\\
+\>\>$\delta = d_{2}[$SubstToVar$(t_{1})/var_{i}]\:\wedge $\\
+\>\>$t_{2}\in $M-Generator$(\delta) \:\wedge$ \\
+\>\>$t\in F_{R}(t_{1},t_{2})\} $ \\
+\\
+\>$\cup\:\{ t \mid \exists R, sg, t_{0},t_{1},t_{2},d_{1},d_{2},\delta : $ \\
+\>\>SubstRule$(d)\:\wedge\:$Substituee$(d) = $head$\:\wedge d.$SgBorder$=$false$\:\wedge$\\
+\>\>$ d=(R,i,sg)<d_{1}, d_{2}>\:\wedge $ \\
+\>\>$t_{2} \in $M-Generator$(d_{2}) \:\wedge$ \\
+\>\>$\delta = d_{1}[$SubstToVar$(t_{2})/var_{i}]\:\wedge $\\
+\>\>$t_{0}\in $M-Generator-SG$(\delta)\:\wedge $ \\
+\>\>$t_{1}\in $M-Transforms$(t_{0},  $RuleInfo$(\delta), R) \:\wedge $\\
+\>\>$t\in F_{R}(t_{1},t_{2})\} $ \\
+\\
+$\bullet$ The function RuleInfo returns  $\rhd$ if it is applied to a basic
+expression\\
+ or a variable, otherwise it returns the rule of the top-node. \\
+$\bullet$ The expression $d_{1}[$SubstToVar$(t_{2})/var_{i}]$ means : " the
+tree $d_{1}$ in which the \\
+value SubstToVar$(t_{2})$ is substituted for each
+occurrence of $var_{i}$ ".
+\end{tabbing}
+\section{M-Transforms}
+The function M-Transforms performs all allowed  transformations that occur
+in a control expression between two given meaningful rules $R_{1}$ and
+$R_{2}$. If the transformations occur at the beginning of a control expression
+$R_{1}$ must have the value $\rhd$, if they occur at the end of a control
+expression $R_{2}$ must have the value $\lhd$. The function M-Transforms
+is defined as follows:
+\begin{tabbing}
+aaaaaaaaa\=aaaaa\=aaaaaaa\kill
+M-Transforms$(t, R_{1}, R_{2}) =_{def} $ \\
+\>$\{ t_{1} \mid \exists r, t_{0} : $ \\
+\>\>$R_{1} = \rhd \:\wedge\:R_{2}\neq\lhd\:\wedge\: r\in First(sg(R_{2}))\:\wedge $ \\
+\>\>IsTransformation$(r)\:\wedge\:$Isderivable$(r, R_{2})\:\wedge $ \\
+\>\>$t_{0}\in F_{r}(t)\:\wedge\:t_{1}\in $M-Transforms$(t_{0}, r, R_{2}) \} $ \\
+\\
+\>$\cup\:\{ t_{1} \mid \exists r, t_{0} : $ \\
+\>\>$R_{1} = \rhd \:\wedge\:R_{2}\neq\lhd\:\wedge\: r\in First(sg(R_{2}))\:\wedge $ \\
+\>\>IsRule$(r)\:\wedge\: r=R_{2}\:\wedge\:t_{1} = t \} $ \\
+\\
+\>$\cup\:\{ t_{1} \mid \exists r, t_{0} : $ \\
+\>\>$R_{1} \neq\rhd \:\wedge\: r\in Succ(R_{1})\:\wedge $ \\
+\>\>IsTransformation$(r)\:\wedge\:$Isderivable$(r, R_{2})\:\wedge $ \\
+\>\>$t_{0}\in F_{r}(t)\:\wedge\:t_{1}\in $M-Transforms$(t_{0}, r, R_{2} ) \} $ \\
+\\
+\>$\cup\:\{ t_{1} \mid \exists r, t_{0} : $ \\
+\>\>$R_{1}\neq\rhd\:\wedge\: r\in Succ(R_{1})\:\wedge $ \\
+\>\>$($IsRule$(r)\:\vee\:r =\lhd)\:\wedge\: r=R_{2})\:\wedge\:t_{1} = t \} $\\
+\\
+$\bullet$ The predicate Isderivable$(r, R)$ is true if there is at least \\
+one string defined by the control expression of the form 
+$\alpha_{1}\cdot r\cdot\alpha_{2}\cdot R\cdot\alpha_{3}$ \\
+$\bullet$ The predicate IsRule$(r)$ is true if $r$ is a meaningful rule \\
+$\bullet$ The predicate IsTransformation$(r)$ is true if $r$ \\
+is a transformation.
+\end{tabbing}
+M-Transforms distinguishes four cases:
+\begin{itemize}
+\item $R_{1}$ indicates the beginning of a subgrammar. This means that
+       a transformation of the first set of the subgrammar can be applied.
+       The result is passed to M-Transforms for subsequent transformation
+       rule applications. For efficiency reasons it is checked whether
+       rule $R_{2}$ can be reached from $r$ by means of
+       the predicate IsDerivable.
+\item $R_{1}$ indicates the beginning of a subgrammar. If a rule is in the
+        first set of the subgrammar and if this rule is equal to $R_{2}$
+        then no transformations have to be applied.
+\item $R_{1}$ is a normal meaningful rule.  Therefore, 
+       a transformation of the successor set of $R_{1}$  can be applied.
+       The result is passed to M-Transforms for subsequent transformation
+       rule applications. For efficiency reasons it is checked whether
+       rule $R_{2}$ can be reached from $r$ by means of
+       the predicate IsDerivable.
+\item $R_{1}$ is a normal meaningful rule. If a meaningful rule is in the
+        successor set of $R_{1}$  and if this rule is equal to $R_{2}$
+        then no transformations have to be applied. Another possibility
+        is that $R_{2}$ indicates the end of a subgrammar. In that case
+        the value $\lhd$ should be in the successor set of $R_{1}$.
+
+\end{itemize}
+
+\end{document}
+
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1 (RWR-102-RO-90#1-RO)}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

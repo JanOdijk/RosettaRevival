@@ -1,0 +1,201 @@
+h64352
+s 00011/00010/00033
+d D 1.4 95/10/18 16:03:30 rous 4 3
+c 
+e
+s 00014/00044/00029
+d D 1.3 95/10/18 14:06:36 rous 3 2
+c 
+e
+s 00073/00001/00000
+d D 1.2 95/10/17 11:08:13 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 95/10/17 09:01:16 rous 1 0
+c date and time created 95/10/17 09:01:16 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+case $# in
+D 3
+0) echo "Usage: makeactions componentname filename forcemake"; exit ;;
+1) echo "Usage: makeactions componentname filename forcemake"; exit ;;
+2) ;;
+E 3
+I 3
+D 4
+0) echo "Usage: makeactions componentname filename forcemake [platform]"; exit ;;
+1) echo "Usage: makeactions componentname filename forcemake [platform]"; exit ;;
+2) echo "Usage: makeactions componentname filename forcemake [platform]"; exit ;;
+E 4
+I 4
+0) echo "Usage: makeactions componentname filename forcemake debug [platform]"; exit ;;
+1) echo "Usage: makeactions componentname filename forcemake debug [platform]"; exit ;;
+2) echo "Usage: makeactions componentname filename forcemake debug [platform]"; exit ;;
+E 4
+E 3
+3) ;;
+D 3
+*) echo "Usage: makeactions componentname filename forcemake"; exit ;;
+E 3
+I 3
+4) ;;
+D 4
+*) echo "Usage: makeactions componentname filename forcemake [platform]"; exit ;;
+E 4
+I 4
+5) ;;
+*) echo "Usage: makeactions componentname filename forcemake debug [platform]"; exit ;;
+E 4
+E 3
+esac
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+rm -f actions_.rbs
+echo "#! /bin/sh -e" > actions_.rbs
+#
+D 3
+echo "#build: $1:$2" >> actions_.rbs
+E 3
+I 3
+D 4
+echo "#build: $1$4:$2" >> actions_.rbs
+E 4
+I 4
+echo "#build: $1$5:$2" >> actions_.rbs
+E 4
+E 3
+#
+D 3
+buildtarget=`$RBS_DIR/get_fname RBS_logicals $1 $2`
+E 3
+I 3
+D 4
+buildtarget=`$RBS_DIR/get_fname RBS_logicals $1$4 $2`
+E 4
+I 4
+buildtarget=`$RBS_DIR/get_fname RBS_logicals $1$5 $2`
+E 4
+E 3
+if test -z "$buildtarget"
+D 3
+then buildtarget=$1/target/$2
+E 3
+I 3
+D 4
+then buildtarget=$1$4/target/$2
+E 4
+I 4
+then buildtarget=$1$5/target/$2
+E 4
+E 3
+fi
+#
+D 3
+found="false"
+flang=""
+for lang in `cat $RBS_ARCHIVE$RBS_RELEASE/RBS_domains`
+do if ( test "$flang" = "" )
+   then flang="$lang"
+   fi
+   if ( test "$lang" = "$1" ) 
+   then found="true"
+E 3
+#
+D 3
+#       create makefile if there isn't any. If there is one but
+#       focemake = -, then don't create one.
+E 3
+#
+D 3
+        makefile=`$RBS_DIR/get_fname RBS_logicals $1 $RBS_MAKEFILE.rbs`
+        if ( test "$makefile" = "" )
+        then echo "MAKE: Generating new makefiles......"
+             $RBS_DIR/expandmake $1
+             makefile=`$RBS_DIR/get_fname RBS_logicals $1 $RBS_MAKEFILE.rbs`
+        elif ( test "$3" = "+" )
+        then echo "MAKE: Generating new makefiles......"
+             $RBS_DIR/expandmake $1
+             makefile=`$RBS_DIR/get_fname RBS_logicals $1 $RBS_MAKEFILE.rbs`
+        fi
+        echo "BUILD: inspecting make file....."
+        set -e
+        trap "cd $savedir; exit 1" 0
+        make -n -f $makefile $buildtarget language=$1 domain=$1 >> actions_.rbs
+   fi
+done
+#
+if ( test "$found" = "false" )
+then 
+#
+E 3
+#    create makefile if there isn't any. If there is one but
+#    focemake = -, then don't create one.
+#
+D 3
+     makefile=`$RBS_DIR/get_fname RBS_logicals $flang $RBS_MAKEFILE.rbs`
+E 3
+I 3
+     makefile=`$RBS_DIR/get_fname RBS_logicals $RBS_MAKECOMP $RBS_MAKEFILE.rbs`
+E 3
+     if ( test "$makefile" = "" )
+     then echo "MAKE: Generating new makefiles......" 
+D 3
+          $RBS_DIR/expandmake $flang
+          makefile=`$RBS_DIR/get_fname RBS_logicals $flang $RBS_MAKEFILE.rbs`
+E 3
+I 3
+D 4
+          $RBS_DIR/expandmake $4
+E 4
+I 4
+          $RBS_DIR/expandmake $5
+E 4
+          makefile=`$RBS_DIR/get_fname RBS_logicals $RBS_MAKECOMP $RBS_MAKEFILE.rbs`
+E 3
+     elif ( test "$3" = "+" )
+     then echo "MAKE: Generating new makefiles......"
+D 3
+          $RBS_DIR/expandmake $flang
+          makefile=`$RBS_DIR/get_fname RBS_logicals $flang $RBS_MAKEFILE.rbs`
+E 3
+I 3
+D 4
+          $RBS_DIR/expandmake $4
+E 4
+I 4
+          $RBS_DIR/expandmake $5
+E 4
+          makefile=`$RBS_DIR/get_fname RBS_logicals $RBS_MAKECOMP $RBS_MAKEFILE.rbs`
+E 3
+     fi
+     echo "BUILD: inspecting make file....."
+     set -e
+     trap "cd $savedir; exit 1" 0
+D 3
+     make -n -f $makefile $buildtarget language=$flang domain=$flang >> actions_.rbs
+fi
+E 3
+I 3
+D 4
+     make -n -f $makefile $buildtarget pf=$4 >> actions_.rbs
+E 4
+I 4
+     make -n -f $makefile $buildtarget debug=$4 pf=$5 >> actions_.rbs
+E 4
+E 3
+#
+cd $savedir
+trap 0
+E 2
+E 1

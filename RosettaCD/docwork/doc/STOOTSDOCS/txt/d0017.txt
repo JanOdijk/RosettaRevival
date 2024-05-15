@@ -1,0 +1,1577 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta2
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  M-SYNTAX FOR DUTCH IN ROSETTA2. M-RULES.
+                         PART II. OTHER RULES.
+
+         Author       :  Jan Landsbergen
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  0017
+
+         Date         :  85/06/12
+
+         Status       :  concept
+
+         Supersedes   :  
+
+         Distribution :  project
+
+         Clearance    :  Philips
+
+         Keywords     :  M-rules, Dutch
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta   Doc.nr: 0017         date:85/06/12
+$LD 4
+$NP 1
+
+_Preface_
+
+$ In PART I the clause rules have been specified, in this part the other
+M-rules are given. They are grouped in the following sections:$
+
+2. Utterance rules
+3. PP rules
+4. ADJP rules
+5. ADVP rules
+6. NP rules
+7. NUMP rules
+8. Local rules
+9. BUG rules
+$NP
+
+_2. Utterance rules_
+
+$ There are two UTTerance rules, RUTT2 for a single SENT, NP or EXCLAM,
+RUTT1 for an utterance with more than one constituent. The rules do not
+do very interesting things: the analytical rules simply analyze an 
+utterance into its constituents, including the punctuation marks. The
+generative rules simply put the parts together. The only complications are the
+following. In the analytical rule RUTT1
+the combination of an imperative and a question mark is forbidden (otherwise
+"Geeft Marie een boek ?" would be interpreted as an imperative as well).
+In both (generative) 
+rules the NP is assigned the nominative case, because otherwise 
+a personal pronoun would remain "caseless" (remember that an NP has no case
+until it is substituted).$
+$NP
+
+RUTT1
+
+m1:  T1
+m2:  UTT{ }[ mu1 ]
+
+m: UTT{ }[ rel1/ T1, mu1 ]
+
+GEN COND    true
+
+    ACTION  if T1.cat in [ SENT, EXCLAM, NP ]
+            then rel1 := argrel
+            else rel1 := puncrel  fi;
+            if T1.cat = NP
+            then assigncase(T1, nominative) fi
+
+ AN COND    mu1 <> eps  and
+            not( mu1 = PUNC{ key: vraagtekenkey }  and
+                 T1.cat = SENT  and
+                 T1.rec.mood in [ impenk, impmv ] )
+ 
+    ACTION  if T1 .cat = NP
+            then undocase(T1)  fi
+
+(* assigncase and undocase are defined in section 2.5 *)
+$NP
+
+RUTT2
+
+m1:  T1
+
+m: UTT{ }[ rel1/ T1 ]
+
+GEN COND    true
+
+    ACTION  if T1.cat in [ SENT, EXCLAM, NP ]
+            then rel1 := argrel
+            else rel1 := puncrel  fi;
+            if T1.cat = NP
+            then assigncase(T1, nominative)  fi
+
+ AN COND    true
+ 
+    ACTION  if T1 .cat = NP
+            then undocase(T1)  fi
+$NP
+
+_3. PP rules_
+
+
+$ PP rules have the task to define preposition phrases.$
+$ There are 4 rules for PPs: RPP1 - RPP4.$
+$ RPP1 creates an OPENPPVAR consisting of a PREP, a "subject" variable and an
+"object" variable, and possibly a particle ("toe" in "naar ... toe").$
+$ RPP2 makes an OPENPPVAR with the PREP behind the object variable.$
+$ RPP3 substitutes an NP for the object variable in an OPENPPVAR. The result
+is an OPENPP.$
+$ So a PP is made in 4 steps: (i) we start with an OPENPPVAR, consisting of
+a basic PREP and 2 variables, (ii) the object (i.e. the second argument) 
+is substituted, the result is an OPENPP, with a subject variable, (iii) 
+the subject
+variable of the OPENPP is eliminated when the OPENPP is substituted into a
+clause or NP.$
+$ RPP4 enables us to translate PPs locally. Isolated PPs are never substituted
+into a clause or NP, 
+therefore RPP4 substitutes
+the EMPTY for the subject variable and deletes this EMPTY at the same time.$
+$NP
+
+RPP1.                            (* in + x%1% + x%2% --> x%1% in x%2% *)
+
+m1:  PREP{ PREPrec1 }
+m2:  VAR{ VARrec1 }
+m3:  VAR{ VARrec2 }
+
+m:   OPENPPVAR{ PPrec1 } [ subj/ VAR{ VARrec1 },
+                           head/ PREP{ PREPrec1 },
+                           obj/ VAR{ VARrec2 },
+                           sig1 ]
+
+External parameter:
+    supertensepar: [ presenttense, pasttense, omegatense ]
+
+GEN COND    PREPrec1.soort <> postprep
+
+    ACTION  if PREPrec1.soort = splitprep
+            then sig1 := postpreprel/ PART{ key: PREPrec1.postpkey }
+            else sig1 := eps fi;
+            PPrec1 := { mood: declarative, soort: andereadv,
+                        prepkey: PREPrec1.key, supertense: supertensepar }
+              
+ AN COND    (sig1 = eps   or  sig1 = postpreprel/ ...)  and
+            PPrec1.supertense = supertensepar
+ 
+    ACTION  -
+$NP
+
+RPP2.                                   (* in + x%1% + x%2% --> x%1% x%2% in *)
+
+m1:  PREP{ PREPrec1 }
+m2:  VAR{ VARrec1 }
+m3:  VAR{ VARrec2 }
+
+m:   OPENPPVAR{ PPrec1 } [ subj/ VAR{ VARrec1 },
+                           obj/ VAR{ VARrec2 },
+                           head/ PREP{ PREPrec1 }]
+                           
+External parameter:
+    supertensepar: [ presenttense, pasttense, omegatense ]
+
+GEN COND    PREPrec1.soort = postprep
+
+    ACTION  PPrec1 := { mood: declarative, soort: andereadv,
+                        prepkey: PREPrec1.key, supertense: supertensepar }
+              
+ AN COND    PPrec1.supertense = supertensepar
+ 
+    ACTION  -
+
+$ (* This rule 
+has been assigned a negative bonus in analysis, in order to prevent
+that in a sentence
+like "hij at de appel in de tuin" is at the moment ambiguous. The negative
+bonus prevents that "hij at (de appel in) (de tuin)" is preferred. *)$
+$NP
+
+RPP3.                          (* Spanje + x%1% in x%2% --> x%1% in Spanje *)
+
+m1:  NP{ NOMrec1 } [ mu3 ]
+m2:  OPENPPVAR{ PPrec1 } [ mu1, obj/ VAR{ VARrec1 }, mu2 ]
+
+m:   OPENPP{ PPrec1 } [ mu1, obj/ NP{ NOMrec1 } [ mu3 ], mu2 ]
+                        
+Pre-action: VARrec1 := { soort: npvar, persoon: NOMrec1.persoon,
+                         getal: NOMrec1.getal, index: LEVEL }
+
+
+GEN COND    VARrec1.index = LEVEL and
+            VARrec1.soort = npvar  and
+            VARrec1.getal = NOMrec1.getal  and
+            VARrec1.persoon = NOMrec1.persoon  
+       
+    ACTION  assigncase( NP{ NOMrec1 } [ mu3 ], accusative );
+            NOMrec1.supertense := omegatense;
+            PPrec1.mood := NOMrec1.mood
+              
+ AN COND    true
+ 
+    ACTION  VARrec1 := { soort: npvar, persoon: NOMrec1.persoon,
+                         getal: NOMrec1.getal, index: LEVEL };
+            undocase( NP{ NOMrec1 }[ mu3 ];
+            NOMrec1.supertense := PPrec1.supertense;
+            PPrec1.mood := omegamood
+$NP
+
+RPP4.                                (* empty + x%1% in Spanje --> in Spanje *)
+
+m1:  EMPTY{ KEYrec1 }
+m2:  OPENPP{ PPrec1 } [ subj/ VAR{ VARrec1 }, mu1 ]
+
+m:   PP{ PPrec1 } [ mu1 ]
+                        
+Pre-action: VARrec1 := { index: LEVEL, soort: othervar, 
+                         persoon: 3, getal: enkelvoud  }
+            (* if soort = othervar, persoon and getal are irrelevant *)
+
+GEN COND    VARrec1.index = LEVEL and
+            VARrec1.soort = othervar  
+       
+    ACTION  -
+              
+ AN COND    true
+ 
+    ACTION  VARrec1 := { soort: othervar, persoon: 3,
+                         getal: enkelvoud, index: LEVEL }
+$NP
+                            
+_4. ADJP rules_
+
+
+$ ADJP rules have the task to define adjective phrases.$
+$ There are six ADJP rules: RADJP1 - RADJP6.$
+$ RADJP1 constructs an ADJP from a BADJ (basic adjective) and a variable,
+representing the argument to which the adjective is applied. RADJP1 has a
+parameter comppar, which specifies the kind of comparison (e.g. comparative
+or superlative). There is also a parameter negpar for negation inside
+ the adjective, e.g. "ontevreden".$
+$ RADJP2 modifies the adjective in an ADJP with an adverb, e.g. "zeer groot".
+ $
+$ RADJP3 is for negation, e.g. "niet groot".$
+$ RADJP4 adds a THANP to comparative adjectives, e.g. "groter" + "dan Marie"
+--> "groter dan Marie.$
+$ RADJP5 adds a PP to adjectives that expect a prepositional object, e.g.
+"tevreden met ...".$
+$ RADJP6 enables to translate isolated ADJPs locally, analogous to RPP4 for
+PPs. It deletes the argument variable by substitution of EMPTY.$
+$NP
+
+
+RADJP1                               (* groot + x%1% --> x%1% groot 
+                                        groot + x%1% --> x%1% minder groot *)
+
+m1:  BADJ{ ADJrec1 }
+m2:  VAR{ VARrec1 }
+
+m:   OPENADJP{ ADJPrec1 } [ subj/ VAR{ VARrec1 }, sig1,
+                           head/ ADJ{ ADJrec1 }]
+                           
+External parameters:
+    comppar: [stellendpar, evenpar, vergrpar, overtrpar, verklpar, ondertrpar]
+    negpar: [true, false]
+
+$ (* Originally this rule was not for negated adjectives, but later on
+the parameter 
+negpar has been added, primarily to analyze adjectives with "on-". 
+There is no transfer relation with rule RADJP3 which
+handles negation with "niet". In analysis negpar becomes true if the adjective
+is negated with "on-" and otherwise false. In generation the matter is more
+complicated, because we cannot be sure that the translated adjective can be 
+negated morphologically with "on-". In that case the NEG "niet" is created,
+but in case of comparatives and superlatives with explicit adverbs (ASCOMPs)
+"meer", "meest", "minder", "minst", this is not sufficient. Note that
+"ontevredener" is not equivalent to "niet meer tevreden", but to "minder
+tevreden".$ 
+$ The parameter comppar indicates the kind of comparison:$
+stellendpar  for "groot",
+evenpar      for "even groot als",
+vergrpar     for "groter dan",
+overtrpar    for "grootst",
+verklpar     for "minder groot",
+ondertrpar   for "minst groot"   *)
+
+GEN COND    true
+
+    ACTION  ADJPrec1 := { mood: declarative, evorm: false,
+                          gebruik: ADJrec1.gebruik };
+            if comppar = stellendpar then sig1 := eps
+            else if comppar = evenpar then sig1 := EVEN  (* abbreviation, to be
+                                                            defined below *)
+            else if comppar = vergrpar then
+                                       if ADJrec1.compvorming = GeenComp
+                                       (* GeenComp means: no internal, morpho-
+                                          logical comparison (-er, -est)
+                                          allowed *)
+                                       then sig1 := MEER
+                                       else sig1 := eps;
+                                            ADJPrec1.trap := vergrotend
+                                       fi  
+            else if comppar = verklpar then sig1 := MINDER
+            else if comppar = ondertrpar then sig1 := MINST
+            else (* overtrpar *)
+                 if ADJrec1.compvorming = GeenComp
+                 then sig1 := MEEST
+                 else sig1 := eps; ADJrec1.trap := overtreffend
+                 fi
+            fi;
+            if negpar
+            (* if negpar is true we may have to change the sig1,
+               e.g. "meer" --> "minder" *)
+            then if ADJrec1.negvorming = GeenNeg  (* "on-" not allowed *)
+                 then if sig1 = eps then sig1 := neg/ NOT
+                      else if sig1 = MEER then sig1 := MINDER
+                      else if sig1 = MINDER then sig1 := MEER
+                      else if sig1 = MEEST then sig1 := MINST
+                      else if sig1 = MINST then sig1 := MEEST
+                      fi
+                 
+                 else ADJrec1.negvorm := true
+                 fi
+            fi
+
+where EVEN =%def% ascomprel/ ASCOMP{ key: evenascompkey, trap: stellend }
+      MEER =%def% ascomprel/ ASCOMP{ key: meerascompkey, trap: vergrotend }
+    MINDER =%def% ascomprel/ ASCOMP{ key: minderascompkey, trap: vergrotend }
+     MINST =%def% ascomprel/ ASCOMP{ key: minstascompkey, trap: overtreffend }
+     MEEST =%def% ascomprel/ ASCOMP{ key: meestascompkey, trap: overtreffend }
+
+ AN COND    sig1 = eps or sig1.cat = ASCOMP
+ 
+    ACTION  (* In contrast with the usual notation we have here explicit
+               assignment to the parameters, which is more in accordance
+               with the actual implementation *)
+
+            if sig1 = eps then if ADJrec1.trap = stellend
+                               then comppar := stellendpar
+                               else if ADJrec1.trap = vergrotend
+                               then comppar := vergrpar
+                               else (* ADJrec1.trap = overtreffend *)
+                                    comppar := overtrpar
+                               fi
+            else (* sig1 <> eps *)
+                 if sig1 = EVEN then comppar := evenpar
+            else if sig1 = MEER then comppar := vergrpar
+            else if sig1 = MINDER then comppar := verklpar
+            else if sig1 = MINST then comppar := ondertrpar
+            else if sig1 = MEEST then comppar := overtrpar
+            fi;
+            if ADJrec1.negvorm then negpar := true else negpar := false fi;
+            ADJPrec1.trap := stellend;   
+            ADJrec1.negvorm := false
+$NP
+
+RADJP2.                      (* x%1% groot + x%2% zeer --> x%1% zeer groot *)
+
+m1:  OPENADJP{ ADJPrec1 }[ subj/ T1, head/ T2, mu1 ]
+m2:  OPENADVP{ ADVPrec1 } [ subj/ VAR{ VARrec1 }, mu2 ]
+
+m:   OPENADJP{ ADJPrec1 }[ subj/ T1, mod/ ADVP{ ADVPrec1 }[ mu2 ],
+                           head/ T2, mu1 ]
+                        
+Pre-action: VARrec1 := { index: LEVEL, soort: othervar, 
+                         persoon: 3, getal: enkelvoud }
+
+
+GEN COND    VARrec1.index = LEVEL and
+            VARrec1.soort = othervar and
+            ADVPrec1.soort = adjadv  
+       
+    ACTION  ADJPrec1.mood := ADVPrec1.mood
+            (* for "hoe groot *)
+              
+ AN COND    true
+ 
+    ACTION  VARrec1 := { index: LEVEL, soort: othervar, 
+                         persoon: 3, getal: enkelvoud }
+$NP
+
+RADJP3.                      (* niet + x%1% groot --> x%1% niet groot *)
+
+m1:  NEG{ KEYrec1 }
+m2:  OPENADJP{ ADJPrec1 } [ subj/ T1, mu1 ]
+
+m:   OPENADJP{ ADJPrec1 }[ subj/ T1, mod/ NEG{ KEYrec1 }, mu1 ]
+                        
+
+GEN COND    true
+       
+    ACTION  -
+              
+ AN COND    true
+ 
+    ACTION  -
+$NP
+
+RADJP4.                      (* x%1% groter + Piet --> x%1% groter dan Piet *)
+
+m1:  OPENADJP{ ADJPrec1 }[ subj/ T%3%, sig1, head/ ADJ{ ADJrec1 }, mu1 ]
+m2:  T2
+
+m:   OPENADJP{ ADJPrec1 }[ subj/ T%3%, sig1, head/ ADJ{ ADJrec1 }, mu1,
+                           mod/ THANP{ }[ head/ THANAS{ KEYrec1 },
+                                          arg/ T2 ] ] 
+                        
+
+GEN COND    T2.cat in [ ADVP, NP, PP ] and
+            (sig1 = ascomp/ ...  or (sig1 = eps and ADJrec1.trap = vergrotend))
+       
+    ACTION  if T2.cat = NP then assigncase(T2, nominative) fi;
+            if sig1 = ascomp/ ASCOMP{ ASCOMPrec1 }
+               with ASCOMPrec1.trap = stellend
+            then KEYrec1.key := alsthanaskey
+            else KEYrec1.key := danthanaskey fi
+
+              
+ AN COND    (sig1 = eps or sig1 = ascomp/ ...)
+ 
+    ACTION  if T2.cat = NP then undocase(T2) fi
+
+            (* assigncase and undocase defined in section 2.5 *)
+ 
+(* the analytical rule is more tolerant than the generative rule as for
+the choice between "dan" and "als" *)
+$NP
+
+RADJP5.                      (* x%1% blij --> x%1% blij met bier *)
+
+m1:  OPENADJP{ ADJPrec1 }[ mu1, head/ ADJ{ ADJrec1 } ]
+m2:  NP{ NOMrec1 }[ mu2 ]
+
+m:   OPENADJP{ ADJPrec1 }[ mu1, head/ ADJ{ ADJrec1 }, 
+                           prepobj/ PP{ PPrec1 }[ head/ PREP{ PREPrec1 },
+                                                  obj/ NP{ NOMrec1 }[ mu2 ] ] ]
+                        
+
+GEN COND    ADJrec1.prep <> 0
+       
+    ACTION  PREPrec1 := makeprep(ADJrec1.prep);
+            assigncase(NP{NOMrec1}[mu2], accusative);
+            ADJPrec1.gebruik := predic;
+            PPrec1 := { mood: NOMrec1.mood, soort: andereadv,
+                        prepkey: PREPrec1.key, supertense: NOMrec1.supertense }
+              
+ AN COND    ADJrec1.prep = PREPrec1.key;
+            accusative in NOMrec1.cases
+ 
+    ACTION  undocase( NP{NOMrec1}[mu2] )
+
+            (* assigncase and undocase defined in section 2.5 *)
+
+$ (* Note that the prepobj of an adjective is not treated as an argument of the
+adjective. Semantically that would be nicer, but it would oblige us to apply
+an EMPTY substitution rule in the case that there is no PP. The main advantage
+of this rule and of the prepobj is that the preposition will be translated more
+correctly. *)$
+$NP
+
+RADJP6.                      (* EMPTY + x%1% groot --> groot *)
+
+m1:  EMPTY
+m2:  OPENADJP{ ADJPrec1 } [ subj/ VAR{ VARrec1 }, mu1 ]
+
+m:   ADJP{ ADJPrec1 }[ mu1 ]
+                        
+Pre-action: VARrec1 := { index: LEVEL, soort: othervar, 
+                         persoon: 3, getal: enkelvoud }
+
+
+GEN COND    VARrec1.index = LEVEL and
+            VARrec1.soort = othervar
+       
+    ACTION  -
+              
+ AN COND    true
+ 
+    ACTION  VARrec1 := { index: LEVEL, soort: othervar, 
+                         persoon: 3, getal: enkelvoud }
+
+(* Compare rules RPP4 and RADVP4 *)
+$NP
+
+                            
+_4. ADVP rules_
+
+
+$ ADVP rules have the task to define adverbial phrases, i.e. phrases 
+consisting of an adverb and possibly modifiers (PPs are not called
+adverbial phrases here).$
+$ There are four ADVP rules: RADVP1 - RADVP4.$
+$ RADVP1 constructs an ADVP from an ADV (a basic expression; for ADVs no
+distinction is made between the category of the basic expression and the 
+category of the word, because there are no morphological rules for ADVs)
+and a variable,
+representing the argument to which the adverb is applied. Comparatives
+or superlatives are not handled.$
+$ RADVP2 modifies the adverb in an ADVP by another adverbial phrase, 
+e.g. "zeer vaak". $
+$ RADVP3 is for negation, e.g. "niet vaak".$
+$ RADVP4 enables to translate isolated ADVPs locally, analogous to RPP4 for
+PPs and RADJP6 for adjective phrases. 
+It deletes the argument variable by substitution of EMPTY.$
+$NP
+
+
+RADVP1                                   (* x%1% vaak *)
+
+m1:  BADV{ ADVrec1 }
+m2:  VAR{ VARrec1 }
+
+m:   OPENADVP{ ADVPrec1 } [ subj/ VAR{ VARrec1 },
+                            head/ ADV{ ADVrec1 } ]
+
+GEN COND    true
+       
+    ACTION  ADVPrec1 := { mood: ADVrec1.mood, soort: ADVrec1.soort }
+              
+ AN COND    true
+ 
+    ACTION  -
+$NP                           
+
+RADVP2.                      (* x%1% vaak + x%2% zeer --> x%1% zeer vaak *)
+
+m1:  OPENADVP{ ADVPrec1 }[ subj/ T1, mu1 ]
+m2:  OPENADVP{ ADVPrec2 }[ subj/ VAR{ VARrec1 }, mu2 ]
+
+m:   OPENADVP{ ADVPrec1 }[ subj/ T1, mod/ ADVP{ ADVPrec2 }[ mu2 ], mu1 ]
+                        
+Pre-action: VARrec1 := { index: LEVEL, soort: othervar, 
+                         persoon: 3, getal: enkelvoud }
+
+
+GEN COND    VARrec1.index = LEVEL and
+            VARrec1.soort = othervar and
+            ADVPrec2.soort = adjadv  
+       
+    ACTION  ADVPrec1.mood := ADVPrec2.mood
+            (* for "hoe vaak" *)
+              
+ AN COND    true
+ 
+    ACTION  VARrec1 := { index: LEVEL, soort: othervar, 
+                         persoon: 3, getal: enkelvoud }
+$NP
+
+RADVP3.                      (* niet + x%1% vaak --> x%1% niet vaak *)
+
+m1:  NEG{ KEYrec1 }
+m2:  OPENADVP{ ADVPrec1 } [ subj/ T1, mu2 ]
+
+m:   OPENADVP{ ADVPrec1 }[ subj/ T1, mod/ NEG{ KEYrec1 }, mu2 ]
+                        
+
+GEN COND    true
+       
+    ACTION  -
+              
+ AN COND    true
+ 
+    ACTION  -
+$NP
+
+RADVP4.                      (* x%1% vaak + EMPTY --> vaak *)
+
+m1:  EMPTY
+m2:  OPENADVP{ ADVPrec1 } [ subj/ VAR{ VARrec1 }, mu1 ]
+
+m:   ADVP{ ADVPrec1 }[ mu1 ]
+                        
+Pre-action: VARrec1 := { index: LEVEL, soort: othervar, 
+                         persoon: 3, getal: enkelvoud }
+
+
+GEN COND    VARrec1.index = LEVEL and
+            VARrec1.soort = othervar
+       
+    ACTION  -
+              
+ AN COND    true
+ 
+    ACTION  VARrec1 := { index: LEVEL, soort: othervar, 
+                         persoon: 3, getal: enkelvoud }
+
+(* Compare rules RPP4 and RADJP6 *)
+$NP
+
+
+_6. NP rules_
+
+$ The NP rules (RNP1 - RNP17) have the task to construct an NP from a
+BNOUN or some other kernel (a PROPERNOUN or a pronoun).$
+$ In contrast with the CL rules, the NP rules are not intrinsically
+ordered by means of categories. There is no special reason for this,
+we could have introduced intermediate categories NOM1, NOM2 etc. The
+result would have been: a few extra rules (trivial rules which change
+only the category, like RPOS for the clause rules) and
+a more efficient analysis.$
+$ RNP1 makes an NP from a BNOUN , decides about the (in)definiteness
+and makes the article, if necessary. RNP1 also decides if the NOUN is
+in diminutive form. Note that the NP "het grote huis" is made in the
+following order: huis --> het huis --> het grote huis.$
+$ RNP2, RNP3, RNP4 operate on the result of RNP1 and add a DEMADJ (e.g.
+het huis --> dit huis), a WHADJ (een huis --> welk huis) or a QADJ
+respectively (huizen --> sommige huizen). Here the article made in RNP1
+disappears. This only served in this case as an indication of the kind
+of quantification.$
+$ RNP5 - RNP9 make an NP from a BPERSPRO, a WHPRO, an INDEFPRO, a DEMPRO
+and a PROPERNOUN resp.$
+$ RNP10 adds a possessive pronoun, this is derived from a personal pronoun
+(ik + het huis --> mijn huis). $
+$ RNP11 - RNP16 add various kinds of modifiers: RNP11 the ANTERELSENT,
+RNP12 the RELSENT, RNP13 the ADJP, RNP14 the predicative ADJP, RNP15
+the PP, RNP16 the NUMP.$
+$ RNP17 is for the coordination of NPs (without ellipsis).$
+$NP   
+
+Auxiliary functions for NP rules.
+
+makeindefnomrec =%def%        (* creates a NOMrecord and assigns default
+                                 values to the attributes *)
+                 { getal: enkelvoud,
+                   soort: omeganomsoort,
+                   persoon: 3,
+                   natgeslacht: omegageslacht,
+                   supertense: omegatense,
+                   mood: declarative,
+                   cases: [nominative, accusative, dative],
+                   quant: indefquant }
+
+ONZIJDIG ( NOUNrec ) =%def%     (* decides whether the definite article
+                                should be "het" or "de". Unfortunately
+                                this cannot be decided from the genders
+                                alone, but depends on the attribute
+                                verklwoord as well. *)
+                      ((onzgender in NOUNrec.genders)  or
+                       NOUNrec.verklwoord                )  and
+                      (NOUNrec.getal = enkelvoud)
+                         
+$NP
+
+RNP1.                      (* Makes an NP consisting of a noun (diminutive or 
+                              not, singular or plural) and possibly an article.
+                            *)
+
+m1:  BNOUN{ NOUNrec1 }
+
+m:   NP{ NOMrec1 }[ sig1, head/ NOUN{ NOUNrec1 } ]
+
+External parameters:
+    P:  [defall, defone, indefone, indefsome, countsing]
+    VERKL: [true, false]
+    ST: [presenttense, pasttense, omegatense]
+
+(* P is the parameter that contains the information about the kind of
+quantification. What we have here is no ideal solution, but a first try.
+In the analytical rule we derive the value of P from the number and the 
+article in a straightforward way. The generative rule is more complicated,
+because there we have to take into account the problems that arise if
+a singular mass noun must be translated into a plural count noun or if
+we have translations like "bril" --> "glasses", etc. The rule would be
+nicer and more symmetric if we would have a separate rule for cases like this
+and an ambiguous rule transfer.$ 
+VERKL indicates if the noun has the diminutive form.
+ST indicates the supertense, which may be of importance for relative sentences
+inside the NP. *)    
+ 
+GEN COND    true
+       
+    ACTION  if (VERKL = true) and not(geenverkl in NOUNrec1.vormen)
+            then NOUNrec1.verklwoord := true;
+            if P = indefone
+            then (* the typical case here is the article "een", but we must
+                    also take into account the cases that this article is
+                    not allowed *)
+                 if not(AlleenMv in NOUNrec1.mvvormen)  and
+                    (NOUNrec1.subc = count)
+                 then K := eenartkey; G := enkelvoud
+                 else K := 0; 
+                      if AlleenEnk in NOUNrec1.mvvormen
+                      then G := enkelvoud
+                      else G := meervoud
+                      fi  (* we use K and G as auxiliary variables inside the
+                             rule: K is the key of the article; G is the number
+                             of the noun *) 
+                 fi
+            else if P = indefsome
+            then if (NOUNrec1.subc = count) and
+                    not(AlleenEnk in NOUNrec1.mvvorming)
+                 then K := 0; G := meervoud
+                 else K := 0; G := enkelvoud
+                 fi
+            else if P = defall
+            then if (NOUNrec1.subc = mass) or
+                    (AlleenEnk in NOUNrec1.mvvorming)
+                 then G := enkelvoud;
+                      if (onzgender in NOUNrec1.genders) or
+                         NOUNrec1.verklwoord
+                      then K := hetartkey
+                      else K := deartkey
+                      fi
+                 else G := meervoud; K := deartkey
+                 fi
+            else if P = defone                                       
+            then if AlleenMv in NOUNrec1.mvvorming
+                 then K := deartkey; G := meervoud
+                 else G := enkelvoud;
+                      if (onzgender in MOUNrec1.genders) or
+                         NOUNrec1.verklwoord
+                      then K := hetartkey
+                      else K := deartkey
+                      fi
+                 fi
+            else if P = countsing 
+                    (* singular count nouns without article are accepted in
+                       analysis, but with a negative bonus. In that case the
+                       parameter P gets the value countsing, in analysis. *)
+            then K := 0;
+                 if AlleenMv in NOUNrec1.mvvormen
+                 then G := meervoud
+                 else G := enkelvoud
+                 fi
+            fi;
+            NOMrec1 := makeindefnomrec;
+            NOMrec1.getal := G; NOUNrec1.getal := G;
+            NOMrec1.supertense := ST;
+            if K = deartkey  or  K = hetartkey
+            then NOMrec1.quant := defquant
+            fi;
+            if K = 0
+            then sig1 := eps
+            else sig1 := det/ ART{ key: K }
+            fi
+  
+ AN COND    (sig1 = eps or sig1 = det/ ART)  and
+            not( sig1 = det/ ART{ key: hetartkey } and
+                 not ONZIJDIG(NOUNrec1)               )  and
+            not( sig1 = det/ ART{ key: deartkey } and
+                 ONZIJDIG(NOUNrec1)                   )  and
+            not( sig1 = det/ ART{ key: eenartkey } and
+                 NOUNrec1.getal = meervoud            )
+            (* too many not's *)
+
+    ACTION  ST := NOMrec1.supertense;
+            if NOUNrec1.verklwoord = true
+            then VERKL := true; NOUNrec1.verklwoord := false
+            else VERKL := false
+            fi;
+            if sig1 = eps
+            then if NOUNrec1.subc = count  and  
+                    NOUNrec1.getal = enkelvoud
+                 then P := countsing
+                 else P := indefsome
+                 fi
+            else if sig1 = det/ ART{ key : K }
+            then if K = eenartkey
+                 then P := indefone
+                 else if (K = deartkey or K = hetartkey) and
+                         NOUNrec1.getal = enkelvoud  and
+                         NOUNrec1.subc = count
+                 then P := defone
+                 else P := defall
+                 fi;
+            fi;
+            NOUNrec1.getal := omegagetal
+$NP
+
+RNP2.                               (* het huis --> dit huis *)
+
+m1:  NP{ NOMrec1 }[ det/ ART{ KEYrec1 }, head/ NOUN{ NOUNrec1 } ]
+
+m:   NP{ NOMrec1 }[ det/ DEMADJ{ KEYrec2 }, head/ NOUN{ NOUNrec1 } ]
+                        
+External parameter:
+    DEM: [far, near]
+
+GEN COND    NOMrec1.quant = defquant
+
+    ACTION  K1 := KEYrec1.key;
+            if DEM = near
+            then if K1 = hetartkey
+                 then K2 := ditdemadjkey
+                 else K2 := dezedemadjkey
+                 fi
+            else if K1 = hetartkey
+                 then K2 := datdemadjkey
+                 else K2 := diedemadjkey
+                 fi
+            fi;
+            KEYrec2 := { key: K2 }
+       
+ AN COND    true
+ 
+    ACTION  if KEYrec2.key = ditdemadjkey or KEYrec2.key = datdemadjkey
+            then KEYrec1 := { key: hetartkey }
+            else KEYrec1 := { key: deartkey }
+            fi;
+            if KEYrec2.key = ditdemadjkey or KEYrec2.key = dezedemadjkey
+            then DEM := near
+            else DEM := far
+            fi
+$NP
+
+RNP3.                               (* een huis --> welk huis *)
+
+m1:  NP{ NOMrec1 }[ sig1, head/ NOUN{ NOUNrec1 } ]
+
+m:   NP{ NOMrec1 }[ det/ WHADJ{ KEYrec1 }, head/ NOUN{ NOUNrec1 } ]
+                        
+External parameter:
+    WHA: [watvoorpar, welkpar, hoeveelpar]
+
+GEN COND    sig1 = eps  or  sig1 = det/ ART{ key: eenartkey }
+
+    ACTION  if WHA = watvoorpar
+            then KEYrec1.key := watvoorkey
+            else if WHA = welkpar
+            then if ONZIJDIG(NOUNrec1)
+                 then KEYrec1.key := welkkey
+                 else KEYrec1.key := welkekey
+                 fi
+            else KEYrec1.key := hoeveelkey;
+                 NOMrec1.mood := whinterr
+            fi
+
+ AN COND    true
+ 
+    ACTION  if NOUNrec1.getal = enkelvoud  and
+               NOUNrec1.soort <> eenheidnoun  and
+               NOUNrec1.subc = count
+            then sig1 := det/ ART{ key: eenartkey }
+            else sig1 := eps
+            fi;
+            if KEYrec1.key = hoeveelkey
+            then WHA := hoeveelpar
+            else if KEYrec1.key = welkkey  or  KEYrec1.key = welkekey
+            then WHA := welkpar
+            else WHA := watvoorpar
+            fi
+$NP
+
+RNP4.                               (* huizen --> sommige huizen *)
+
+m1:  NP{ NOMrec1 }[ sig1, head/ NOUN{ NOUNrec1 } ]
+m2:  BQADJ{ QADJrec1 }
+
+m:   NP{ NOMrec1 }[ det/ QADJ{ QADJrec1 }, head/ NOUN{ NOUNrec1 } ]
+                        
+
+GEN COND    (sig1 = eps  or  sig1 = det/ ART{ key: eenartkey })  and
+            ( (NOUNrec1.getal = meervoud  and  
+               plurcount in QADJrec1.posscomanmrs)  or
+              (NOUNrec1.getal = enkelvoud  and  
+               QADJrec1.posscomanmrs * [singmass, singcount] <> []) ) 
+
+    ACTION  if NOUNrec1.getal = meervoud
+            then QADJrec1.comanmrs := [plurcount]
+            else (* NOUNrec1.getal = enkelvoud *)
+             if singmass in posscomanmrs  and
+                NOUNrec1.subc = mass
+             then QADJrec1.comanmrs := [singmass]
+             else if singcount in QADJrec1.comanmrs
+             then QADJrec1.comanmrs := [singcount]
+             else QADJrec1.comanmrs := [singmass]
+             fi;
+             QADJrec1.genders := NOUNrec1.genders
+       
+ AN COND    ((plurcount in QADJrec1.comanmrs and NOUNrec1.getal = meervoud) or
+             ([singmass, singcount] * QADJrec1.posscomanmrs <> [] and
+              NOUNrec1.getal = enkelvoud) )
+ 
+    ACTION  if NOUNrec1.getal = enkelvoud and NOUNrec1.subc = count
+            then sig1 := det/ ART{ key: eenartkey }
+            else sig1 := eps
+            fi;
+            QADJrec1.genders := [];
+            QADJrec1.comanmrs := []
+$NP
+
+RNP5.                                             (* hij *)           
+
+m1:  BPERSPRO{ PERSPROrec1 }
+
+m:   NP{ NOMrec1 }[ head/ PERSPRO{ PERSPROrec1 } ]
+                        
+
+GEN COND    true
+
+    ACTION  NOMrec1 := { getal: PERSPROrec1.getal,
+                         soort: if PERSPROrec1.key = hetpersprokey
+                                then hetpro else persproniethet,
+                         persoon: PERSPROrec1.persoon,
+                         natgeslacht: if PERSPROrec1.gender = mnlgender
+                                      then mannelijk
+                                      else if PERSPROrec1.gender = vrgender
+                                      then vrouwelijk else omegageslacht,
+                         supertense: omegatense,
+                         mood: declarative,
+                         cases: [],
+                         quant: defquant }
+      
+ AN COND    true
+ 
+    ACTION  -
+$NP
+     
+RNP6.                                          (* wie *)
+
+m1:  WHPRO{ WHPROrec1 }
+
+m:   NP{ NOMrec1 }[ head/ WHPRO{ WHPROrec1 } ]
+                        
+
+GEN COND    true
+
+    ACTION  NOMrec1 := makeindefnomrec;
+            NOMrec1.getal := WHPROrec1.getal;
+            NOMrec1.soort := wiewatsoort;
+            NOMrec1.mood := whinterr;
+            NOMrec1.quant := whquant
+      
+ AN COND    true
+ 
+    ACTION  -
+            (* if WHPROrec1.getal = meervoud then bonus := -1, i.e. the
+               singular versions of "wie" and "wat" are preferred *)
+$NP
+
+RNP7.                                   (* iets *)
+
+m1:  INDEFPRO{ INDEFPROrec1 }
+
+m:   NP{ NOMrec1 }[ head/ INDEFPRO{ INDEFPROrec1 } ]
+                        
+
+GEN COND    true
+
+    ACTION  NOMrec1 := makeindefnomrec;
+            NOMrec1.getal := INDEFPROrec1.getal;
+      
+ AN COND    true
+ 
+    ACTION  -
+$NP
+
+RNP8a.                                    (* dit *)
+
+      (* RNP8 was originally made for DEMPROs only, but has been extended later
+         such that it is for POSSPROs too. It would have been better to have
+         two separate rules, therefore I present them here as RNP8a and RNP8b 
+       *)
+
+m1:  DEMPRO{ DEMPROrec1 }
+
+m:   NP{ NOMrec1 }[ head/ DEMPRO{ DEMPROrec1 } ]
+                        
+
+GEN COND    true
+
+    ACTION  NOMrec1 := makeindefnomrec;
+            NOMrec1.getal := DEMPROrec1.getal;
+            NOMrec1.quant := defquant
+      
+ AN COND    true
+ 
+    ACTION  -
+            (* if DEMPROrec1.getal = meervoud then bonus := -1, i.e. the
+               singular versions of "dit" and "dat" are preferred *)
+$NP
+
+RNP8b.                                           (* de zijne *)
+
+m1:  POSSPRO{ POSSPROrec1 }
+
+m:   NP{ NOMrec1 }[ head/ POSSPRO{ POSSPROrec1 } ]
+                        
+
+GEN COND    true
+
+    ACTION  NOMrec1 := makeindefnomrec;
+            NOMrec1.getal := enkelvoud;
+            NOMrec1.quant := defquant
+      
+ AN COND    true
+ 
+    ACTION  -
+$NP
+
+RNP9.                               (* Marie *)
+
+m1:  PROPERNOUN{ PROPERNOUNrec1 }
+
+m:   NP{ NOMrec1 }[ head/ PROPERNOUN{ PROPERNOUNrec1 } ]
+                        
+External parameter:
+    stpar: [presenttense, pasttense, omegatense]
+
+GEN COND    true
+
+    ACTION  NOMrec1 := makeindefnomrec;
+            NOMrec1.quant := defquant;
+            NOMrec1.supertense := stpar
+      
+ AN COND    true
+ 
+    ACTION  stpar := NOMrec1.supertense
+
+(* The parameter stpar for the supertense has no use here. It would have
+been useful if there had been NPs with a proper noun modified by a
+relative sentence *)
+$NP
+
+RNP10.                                   (* ik + boek --> mijn boek *)
+
+m1:  BPERSPRO{ PERSPROrec1 }
+m2:  NP{ NOMrec1 }[ det/ ART{ KEYrec1 }, head/ NOUN{ NOUNrec1 } ]
+
+m:   NP{ NOMrec1 }[ det/ POSSADJ{ POSSADJrec1 }, head/ NOUN{ NOUNrec1 } ]
+                        
+
+GEN COND    KEYrec1.key = deartkey or KEYrec1.key = hetartkey
+
+    ACTION  if PERSPROrec1.getal = meervoud  and
+               PERSPROrec1.persoon = 1
+            then if ONZIJDIG(NOUNrec1)
+                 then B := false
+                 else B := true
+                 fi
+            else B :=  false
+            fi;
+            K := PERSPRO-to-POSSADJ( PERSPROrec1.key );
+            if ONZIJDIG(NOUNrec1) and K = onspersprokey
+            then K:= onzepersprokey fi;
+            POSSADJrec1 := F-BLEX( K )
+                  
+ AN COND    true
+ 
+    ACTION  if ONZIJDIG(NOUNrec1)
+            then KEYrec1.key := hetartkey
+            else KEYrec1.key := deartkey  
+            fi;
+            PERSPROrec1 := F-BLEX( POSSADJ-to-PERSPRO( POSSADJrec1.key ))
+
+The two auxiliary functions are defined as follows:
+ PERSPRO-to-POSSADJ:
+   ikpersprokey    --> mijnpossadjkey
+   je / jij        --> je
+   hij / het       --> zijn
+   zij / ze        --> haar
+   u               --> uw
+   wij / we        --> ons
+   jullie          --> jullie
+   zij / ze (mv.)  --> hun
+   
+ POSSADJ-to-PERSPRO:
+   mijnpossadjkey  --> ikpersprokey
+   jouw / je        --> je
+   zijn            --> hij
+   haar            --> zij
+   uw              --> u
+   ons / onze      --> wij
+   jullie          --> jullie
+   hun             --> zij
+$NP
+
+
+RNP11.                         (* de ster + x1 vallend --> de vallende ster *)
+
+m1:  NP{ NOMrec1 }[ mu2, head/ NOUN{ NOUNrec1 } ]
+m2:  ANTERELCL{ CLrec1 }[ subj/ VAR{ VARrec1 }, mu1,
+                          head/ VERB{ VERBrec1 } ]
+
+m:   NP{ NOMrec1 }[ mu2, 
+                    mod/ ANTERELSENT{ CLrec1 }[mu1, head/ VERB{ VERBrec1 }],
+                    head/ NOUN{ NOUNrec1 } ]
+                    
+pre-action: VARrec1 := {index: LEVEL, soort: npvar,
+                        persoon: NOMrec1.persoon, getal: NOMrec1.getal }    
+
+GEN COND    VARrec1.index = LEVEL  and
+            VARrec1.soort = npvar  and
+            VARrec1.getal = NOMrec1.getal  and
+            VARrec1.persoon = NOMrec1.persoon  and
+            CLrec1.supertense = NOMrec1.supertense
+ 
+    ACTION  if not( ONZIJDIG(NOUNrec1)  and
+                    (mu2 begins with det/ WHADJ or
+                     mu2 begins with det/ ART{ key: eenartkey }) )
+            then if VERBrec1.tijd = TegDw
+                 then VERBrec1.tijd := TegDwE
+                 else if VERBrec1.tijd = VoltDw  and
+                         VERBrec1.vervoegkl in [1..8, 47..50, 53..58,
+                                             65..68, 91..96, 109,110, 113..118]
+                                        (* verbs of which the past participle
+                                           used as an adjective may have an -e,
+                                           e.g. "het gedoopte kind", but not 
+                                           "het geborene kind"*)
+                 then VERBrec1.tijd := VoltDwE 
+                 fi
+            fi;
+                  
+ AN COND    true
+ 
+    ACTION  VARrec1 := {index: LEVEL, soort: npvar,
+                        persoon: 3, getal: NOMrec1.getal };
+            if VERBrec1.tijd = TegDwE
+            then VERBrec1.tijd := TegDw
+            else if VERBrec1.tijd = VoltDwE
+            then VERBrec1.tijd := VoltDw
+            fi;
+            CLrec1.supertense := NOMrec1.supertense
+$NP
+
+RNP12.                         (* de ster + x1 valt --> de ster die valt *)
+
+m1:  NP{ NOMrec1 }[ mu2, head/ NOUN{ NOUNrec1 }, mu3 ]
+m2:  RELCL{ CLrec1 }[ rel1/ VAR{ VARrec1 }, mu1 ]
+
+m:   NP{ NOMrec1 }[ mu2, head/ NOUN{ NOUNrec1 }, mu3, sig1,
+                    mod/ RELSENT{ CLrec1 }[rel1/ RELPRO{ KEYrec1 }, mu1 ],
+                    sig2 ]
+                    
+pre-action: VARrec1 := {index: LEVEL, soort: npvar,
+                        persoon: NOMrec1.persoon, getal: NOMrec1.getal }    
+
+GEN COND    VARrec1.index = LEVEL and
+            VARrec1.soort = npvar  and
+            VARrec1.getal = NOMrec1.getal  and
+            VARrec1.persoon = NOMrec1.persoon 
+        
+    ACTION  if ONZIJDIG(NOUNrec1) 
+            then KEYrec1.key := datrelprokey
+            else KEYrec1.key := dierelprokey
+            fi;
+            sig1 := eps;
+            sig2 := eps
+                  
+ AN COND    ( (KEYrec1.key = datrelprokey and ONZIJDIG(NOUNrec1)  or
+              (KEYrec1.key = dierelprokey and not ONZIJDIG(NOUNrec1)) )  and
+            ( sig1 = eps or sig1 = punc/ PUNC{ key: kommakey })  and
+            ( sig2 = eps or sig2 = punc/ PUNC{ key: kommakey })
+ 
+    ACTION  VARrec1 := {index: LEVEL, soort: npvar,
+                        persoon: 3, getal: NOMrec1.getal };
+
+$NP
+
+RNP13.                         (* de zak + x1 zwaarder dan 3 kilo --> 
+                                  de zak zwaarder dan 3 kilo *)
+                               (* This rule is only used in generation, 
+                                  it can be considered a robustness rule
+                                  in case that RNP14 is not applicable *)
+
+m1:  NP{ NOMrec1 }[ mu1 ]
+m2:  OPENADJP{ ADJPrec1 }[ subj/ VAR{ VARrec1 }, mu2 ]
+
+m:   NP{ NOMrec1 }[ mu1, mod/ ADJP{ ADJPrec1 }[ mu2 ] ]
+                    
+pre-action: VARrec1 := {index: LEVEL, soort: npvar,
+                        persoon: NOMrec1.persoon, getal: NOMrec1.getal }    
+
+GEN COND    VARrec1.index = LEVEL  and
+            VARrec1.soort = npvar  and
+            VARrec1.getal = NOMrec1.getal  and
+            VARrec1.persoon = NOMrec1.persoon  and
+            ADJPrec1.gebruik = predic
+ 
+    ACTION  -
+$NP
+
+RNP14.                         (* de man + x1 oud --> de oude man *)
+
+m1:  NP{ NOMrec1 }[ mu1, head/ NOUN{ NOUNrec1 } ]
+m2:  OPENADJP{ ADJPrec1 }[ subj/ VAR{ VARrec1 }, mu2,
+                           head/ ADJ{ ADJrec1 } ]
+
+m:   NP{ NOMrec1 }[ mu1, 
+                    mod/ ADJP{ ADJPrec1 }[ mu2, head/ ADJ{ ADJrec1 } ],
+                    head/ NOUN{ NOUNrec1 } ]
+                    
+pre-action: VARrec1 := {index: LEVEL, soort: npvar,
+                        persoon: NOMrec1.persoon, getal: NOMrec1.getal }    
+
+GEN COND    VARrec1.index = LEVEL  and
+            VARrec1.soort = npvar  and
+            VARrec1.getal = NOMrec1.getal  and
+            VARrec1.persoon = NOMrec1.persoon  and
+            ADJPrec1.gebruik <> predic
+ 
+    ACTION  if not ( ONZIJDIG(NOUNrec1)  and
+                     (mu1 begins with det/ WHADJ 
+                              or with det/ ART{ key: eenartkey } or
+                      mu1 does not begin with a det/..           or
+                      ADJrec1.evorming = GeenEAdj                  ))
+            then ADJrec1.evorm := true
+            fi
+
+ AN COND    true
+
+    ACTION  ADJrec1.evorm := false;
+            VARrec1 := { index: LEVEL, soort: npvar,
+                         persoon: NOMrec1.persoon, getal: NOMrec1.getal }
+$NP
+
+RNP15.                     (* de man + x1 met de stok --> de man met de stok *)
+
+m1:  NP{ NOMrec1 }[ mu1, head/ NOUN{ NOUNrec1 } ]
+m2:  OPENPP{ PPrec1 }[ subj/ VAR{ VARrec1 }, mu2 ]
+
+m:   NP{ NOMrec1 }[ mu1, 
+                    head/ NOUN{ NOUNrec1 },
+                    mod/ PP{ PPrec1 }[ mu2 ] ]
+                    
+pre-action: VARrec1 := {index: LEVEL, soort: npvar,
+                        persoon: NOMrec1.persoon, getal: NOMrec1.getal }    
+
+external parameter: 
+         prepobjpar: [truepar, falsepar]
+
+GEN COND    VARrec1.index = LEVEL  and
+            VARrec1.soort = npvar  and
+            VARrec1.getal = NOMrec1.getal  and
+            VARrec1.persoon = NOMrec1.persoon  and
+            (( prepobjpar = truepar and NOUNrec1.prep = PPrec1.prepkey) or
+             ( prepobjpar = falsepar and NOUNrec1.prep <> PPrec1.prepkey )) 
+ 
+    ACTION  -
+
+ AN COND    true
+
+    ACTION  if NOUNrec1.prep = PPrec1.prepkey
+            then prepobjpar := truepar
+            else prepobjpar := falsepar fi;
+            VARrec1 := { index: LEVEL, soort: npvar,
+                         persoon: NOMrec1.persoon, getal: NOMrec1.getal }
+$NP
+
+RNP16.                         (* de mannen + drie --> de drie mannen *)
+                               
+m1:  NUMP{ }[ mu1 ]
+m2:  NP{ NOMrec1 }[ mu2, head/ T1 ]
+
+m:   NP{ NOMrec1 }[ mu2, 
+                    mod/ NUMP{ }[ mu1 ],
+                    head/ T1 ]
+                    
+GEN COND    true
+ 
+    ACTION  -
+
+ AN COND    true
+
+    ACTION  -
+
+(* this rule is not very subtle. Because of this (and because of a similar
+lack of subtleness in the English grammar) "2 brillen" is translated into
+"2 glasses" and "1 bril" into "1 glasses". On the other hand "een bril" is
+translated correctly into "glasses", thanks to RNP1 *)
+$NP
+
+RNP17.                         (* de kip + of + het ei --> de kip of het ei *)
+
+m1:  NP{ NOMrec1 }[ mu1 ]
+m2:  COORD{ KEYrec1 }
+m3:  NP{ NOMrec1 }[ mu2 ]
+
+m:   NP{ NOMrec3 }[ arg/ NP{ NOMrec1 }[ mu1 ],
+                    head/ COORD{ KEYrec1 },
+                    arg/ NP{ NOMrec2 }[ mu2 ] ]
+
+GEN COND    true
+ 
+    ACTION  NOMrec3 := { getal: if NOMrec1.getal = meervoud or
+                                   NOMrec2.getal = meervoud or
+                                   KEYrec1.key = encoordkey
+                                then meervoud
+                                else enkelvoud fi,
+                         soort: conjsoort,
+                         persoon: 3,
+                         natgeslacht: omegageslacht,
+                         supertense: omegatense,
+                         mood: NOMrec1.mood,
+                         cases: NOMrec1.cases * NOMrec2.cases,
+                         quant: NOMrec1.quant  }
+
+ AN COND    true
+
+    ACTION  -
+$NP     
+_7. NUMP rules_
+
+$ The NUMP rules construct a few numerical and measure expressions. There
+are three rules, RNUMP1-3.$
+$ RNUMP1 makes a NUMP (numeral phrase) consisting of a NUMERAL (e.g. "drie"
+or "3"). $
+$ RNUMP2 makes a NUMP for measure phrases, consisting of a numeral and a
+unit noun ("drie meter").$
+$ RNUMP3 makes a simple 
+comparative expression of the form "meer dan 3" or "minder dan drie meter".$
+$NP
+
+RNUMP1                                         (* "drie", 3 *)
+
+m1:  NUMERAL{ KEYrec1 }
+
+m:   NUMP{ }[ head/ NUMERAL{ KEYrec1 } ]
+
+GEN COND    true
+ 
+    ACTION  -
+
+ AN COND    true
+
+    ACTION  -
+$NP     
+
+RNUMP2                                         (* "drie meter" *)
+
+m1:  NUMERAL{ KEYrec1 }
+m2:  BNOUN{ NOUNrec1 }
+
+m:   NUMP{ }[ mod/ NUMERAL{ KEYrec1 }, head/ NOUN{ NOUNrec1 } ]
+
+GEN COND    NOUNrec1.soort = eenheidnoun
+ 
+    ACTION  NOUNrec1.getal := enkelvoud
+
+ AN COND    NOUNrec1.soort = eenheidnoun
+
+    ACTION  NOUNrec1.getal := omegagetal
+
+(* in generation the number of the unit noun is always singular, in analysis
+the plural number is allowed too (even if the numeral is "1") *)
+$NP     
+
+RNUMP3                                         (* "meer dan drie" *)
+
+m1:  BQADJ{ QADJrec1 }[ mu1 ]
+m2:  NUMP{ }[ mu2 ]
+
+m:   NUMP{ }[ mod/ QADJ{ QADJrec1 }[ mu1 ],
+              mod/ THANAS{ KEYrec1 },
+              mu2 ]
+
+GEN COND    (QADJrec1.key = meerqadjkey)  or
+            (QADJrec1.key = minderqadjkey)
+ 
+    ACTION  KEYrec1 := {key: danthanaskey };
+            QADJrec1.comanmrs := [plurcount];
+            QADJrec1.genders := [mnlgender]
+            (* these attributes must get a value, otherwise we make incorrect 
+               QADJs, but in this case the value is rather irrelevant *)
+
+ AN COND    true
+            (* we rely on the surface rules *)
+ 
+    ACTION  -
+$NP     
+
+_8. Local rules_
+
+$ The local rules have been added to make the system more robust and also
+to create the possibility to use the system as a dictionary. In those cases
+where there is a distinction between lexical category and basic category
+(NOUN, VERB, ADJ, PERSPRO, QADJ) we need a rule to do the transition
+from one to the other. $
+$ The rules are called: RLOCALVERB, RLOCALNOUN, RLOCALADJ, RLOCALQADJ,
+RLOCALPERSPRO).$
+$ External parameters are used to convey the 
+relevant information 
+contained in the attributes, e.g. about the form of the verb.
+This is not done as precisely as it could (and should) be done. E.g., the
+local rules for ADJ does not consider the attribute for the negation.
+Therefore local translation of "onwaarschijnlijk" into Dutch gives
+"waarschijnlijk". ( This does not imply that an isolated adjective will
+be translated incorrectly, because an isolated adjective will become
+an ADJP! The error mentioned here occurs only in the context of certain
+syntactically incorrect sentences containing the adjective. )$
+$NP
+
+RLOCALADJ                                 (* local rule for adjectives *)
+
+m1:  BADJ{ ADJrec1 }
+
+m:   ADJ{ ADJrec1 }
+
+GEN COND    true
+ 
+    ACTION  -
+
+ AN COND    true
+ 
+    ACTION  -
+$NP     
+
+RLOCALADJ                                (* local rule for personal pronouns *)
+
+m1:  BPERSPRO{ PERSPROrec1 }
+
+m:   PERSPRO{ PERSPROrec1 }
+
+GEN COND    true
+ 
+    ACTION  PERSPROrec1.cases := [nominative]
+
+ AN COND    true
+ 
+    ACTION  -
+$NP     
+
+RLOCALQADJ                                 (* local rule for qadjs *)
+
+m1:  BQADJ{ QADJrec1 }
+
+m:   QADJ{ QADJrec1 }
+
+GEN COND    true
+ 
+    ACTION  QADJrec1.comanmrs := QADJrec1.posscomanmrs;
+            QADJrec1.genders := [mnlgender]
+            (* rather arbitrary; the attributes must get a value *)
+
+ AN COND    true
+ 
+    ACTION  -
+$NP     
+
+RLOCALVERB                                 (* local rule for verbs *)
+
+m1:  BVERB{ VERBrec1 }
+
+m:   VERB{ VERBrec1 }
+
+external parameter: 
+         verbformpar: [VoltDwpar, TegDwpar, VerlTijdpar, 
+                       TegenwTijdpar, Infinitiefpar] 
+
+GEN COND    true
+ 
+    ACTION  if verbformpar = VoltDwpar
+            then VERBrec1.tijd := VoltDw
+            else if verbformpar = TegDwpar
+            then VERBrec1.tijd := TegDw
+            else if verbformpar = VerlTijdpar
+            then VERBrec1.tijd := VerlTijd
+            else if verbformpar = TegenwTijdpar
+            then VERBrec1.tijd := TegenwTijd
+            else VERBrec1.tijd := Infinitief  fi;
+            VERBrec1.getal := enkelvoud;
+            VERBrec1.persoon := [1]
+
+(* The information about the "person" of the verb is not used, we would need 
+another parameter for that. Now "is" and "bent" are translated into "ben". *)  
+
+ AN COND    true
+ 
+    ACTION  if VERBrec1.tijd in [VoltDw, VoltDwE] then verbformpar := VoltDwpar
+       else if VERBrec1.tijd in [TegDw, TegDwE] then verbformpar := TegDwpar
+       else if VERBrec1.tijd = VerlTijd then verbformpar := VerlTijdpar
+       else if VERBrec1.tijd = Infinitief then verbformpar := Infinitiefpar
+       else if VERBrec1.tijd = TegenwTijd and VERBrec1.getal = meervoud
+            then verbformpar := Infinitiefpar
+       else verbformpar := TegenwTijdpar  fi
+$NP     
+
+RLOCALNOUN                                     (* local rule for nouns *)
+
+m1:  BNOUN{ NOUNrec1 }
+
+m:   NOUN{ NOUNrec1 }
+
+external parameters: verkl: [truepar, falsepar]
+                     getalpar: [meervoudpar, enkelvoudpar]      
+
+GEN COND    true
+ 
+    ACTION  if verkl = truepar and
+            not( geenverkl in NOUNrec1.verklvormen )
+            then NOUNrec1.verklwoord := true fi;
+            if (getalpar = meervoudpar and not AlleenEnk in NOUNrec1.mvvormen)
+               or (AlleenMv in NOUNrec1.mvvormen)
+            then NOUNrec1.getal := meervoud
+            else NOUNrec1.getal := enkelvoud  fi
+
+ AN COND    true
+ 
+    ACTION  if NOUNrec1.verklwoord
+            then VERKL := truepar
+            else VERKL := falsepar fi;
+            if NOUNrec1.getal = meervoud
+            then getalpar := meervoudpar
+            else getalpar := enkelvoudpar fi
+$NP     
+
+_9. BUG rules_
+
+$ For robustness reasons there are two rules which enable to treat an S-tree
+of the category BUG (an unknown word) as a proper noun.$
+$ RBUG1 is for a single BUG, RBUG2 combines a BUG and a PROPERNOUN (possibly
+another BUG) to a new proper noun.$
+
+$NP
+
+RBUG1                                          (* "Marie" *)
+
+m1:  BUG{ BUGrec1 }
+
+m:   PROPERNOUN{ PROPERNOUNrec1 }[ arg/ BUG{ BUGrec1 } ]
+
+
+GEN COND    true
+ 
+    ACTION  PROPERNOUNrec1 := { getal: enkelvoud,
+                                natgeslacht: mannelijk,
+                                key: 0 }
+
+ AN COND    true
+ 
+    ACTION  -
+$NP     
+
+RBUG2                                     (* "Marie Jansen" *)
+
+m1:  BUG{ BUGrec1 }
+m2:  PROPERNOUN{ PROPERNOUNrec1 }[ mu1 ]
+
+m:   PROPERNOUN{ PROPERNOUNrec1 }[ arg/ BUG{ BUGrec1 }, mu1 ]
+
+
+GEN COND    true
+ 
+    ACTION  mu1 non empty
+
+ AN COND    mu1 non empty
+ 
+    ACTION  -
+

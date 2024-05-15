@@ -1,0 +1,2446 @@
+h57611
+s 02425/00001/00000
+d D 1.2 92/02/21 15:47:00 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 92/02/11 11:49:08 rous 1 0
+c date and time created 92/02/11 11:49:08 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+DUTCH 99
+
+&
+The following rules are planned (* means: still tobe written):
+\begin{description}
+\item[TVPhettoer1] turns naast het into er naast
+\item[TVPhettoer2] turns met het into er mee
+\item[FVPhettoer12] postfilter  for TVPhettoer1 and TVPhettoer2 
+\item[TShettoer1] 
+\item[TShettoer2]
+\item[FShettoer12] postfilter   for TShettoer1 and TShettoer2
+\item[Fprehettoer]   prefilter                           *
+\item[TAdjhettoer1] naast het -> er naast in ADJP if synzijn
+\item[TAdjhettoer2] met het -> er mee in ADJP if synzijn
+\item[FAdjhettoer12] postfilter
+\item[Tertoerpos1] to move R into erposrel (normal)
+\item[Tertoerpos2] ro move R into erposrel (+PP-movement)
+\item[Fertoerpos12] postfilter for Tertoerpos1 and Tertoerpos2
+\item[PFpreertoerpos]  prefilter   
+\item[Tadjertoerpos1] to move R from ADJP in VP into erposrel
+\item[Fadjertoerpos12] postfilter for Tadjertoerposrel1
+\item[TPPtoerpos] moves PP to erposrel if it contains R-pronoun or CNVAR
+\end{description}
+
+
+Control Expressions:
+
+(*. (Fprehettoer) *)
+{ TVphettoer1 | TVPhettoer2 }
+.(FVPhettoer12)
+.{TShettoer1 | TShettoer2}
+.(FShettoer12)
+
+and:
+
+(PFpreertoerpos)
+.{Tertoerpos1 | Tertoerpos2}
+.(Fertoerpos12)
+
+\newpage
+\begin{verbatim}
+%
+% TRANSFORMATION TVPhettoer1
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu5, 
+                      I1:rel1/T1,
+                      mu4
+                    ],
+              mu6
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu5, 
+                      I2:rel1/T2,
+                      mu4
+                    ],
+              mu6
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: rel1 IN [locargrel, prepobjrel, dirargrel, predrel, aanobjrel,
+                    voorobjrel, byobjrel, vpadvrel, postVporel, postVerbrel,
+                    instradvrel]
+           AND QUOTE_hetetcinpp(T1)  
+       I2: rel1 IN [locargrel, prepobjrel, dirargrel, predrel, aanobjrel,
+                    voorobjrel, byobjrel, vpadvrel, postVporel, postVerbrel,
+                    instradvrel]
+           AND QUOTE_errelinpp(T2)  
+      >
+
+<
+   SUBRULE
+      <T1: VARPREPP{VARPREPPrec1}
+                             [ mu2,
+                               head/PREP{PREPrec1},
+                               objrel/NPVAR{NPVARrec1},
+                               mu3 
+                              ]
+      >
+      <T2: VARPREPP{VARPREPPrec2}
+                             [ mu2,
+                               errel/RADVP{RADVPrec1}[ head/NPVAR{NPVARrec2}],
+                               head/PREP{PREPrec1},
+                               mu3 
+                              ]
+      >
+
+      COMP
+         <
+          C1: PREPrec1.postform = both AND
+              NPVARrec1.possRform = true AND
+              NPVARrec1.cases = [Accusative] 
+          A1: RADVPrec1.mood := NPVARrec1.mood;
+              RADVPrec1.req := NPVARrec1.req;
+              RADVPrec1.env := NPVARrec1.env;
+              RADVPrec1.kindefs := [Pk];
+              NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := [Rcase];
+              VARPREPPrec2 := VARPREPPrec1;
+         >
+      DECOMP
+         <
+          C1: PREPrec1.postform = both AND
+              NPVARrec2.possRform = true AND
+              Rcase IN NPVARrec2.cases AND
+              RADVPrec1.mood = NPVARrec2.mood AND
+              RADVPrec1.req = NPVARrec2.req AND
+              RADVPrec1.env = NPVARrec2.env AND
+              Pk IN RADVPrec1.kindefs 
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.cases := [Accusative];
+              VARPREPPrec1 := VARPREPPrec2;
+         >
+
+   SUBRULE
+         <T1: VARPREPP{VARPREPPrec1}
+                             [ mu2,
+                               head/PREP{PREPrec1},
+                               objrel/CNVAR{CNVARrec1},
+                               mu3 
+                              ]
+      >
+      <T2: VARPREPP{VARPREPPrec2}
+                             [ mu2,
+                               errel/RADVP{RADVPrec1}[ head/CNVAR{CNVARrec2}],
+                               head/PREP{PREPrec1},
+                               mu3 
+                             ]
+      >
+
+
+      COMP
+         <
+          C1: PREPrec1.postform = both AND
+              CNVARrec1.cases = [Accusative] AND
+              CNVARrec1.human = nohuman
+          A1: RADVPrec1.mood := declxpmood;
+              RADVPrec1.req := [pospol, negpol, omegapol];
+              RADVPrec1.env := [pospol, negpol, omegapol];
+              RADVPrec1.kindefs := [Pk];
+              RADVPrec1.radvkey := 0;
+              CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := [Rcase];
+              VARPREPPrec2 := VARPREPPrec1;
+         >
+      DECOMP
+         <
+          C1: PREPrec1.postform = both AND
+              Rcase IN CNVARrec2.cases AND
+(* intentionally no check on humanness of CNVAR in analysis *) 
+              RADVPrec1 =
+               {
+                 mood       : declxpmood
+                 req        : [pospol, negpol, omegapol]
+                 env        : [pospol, negpol, omegapol]
+                 kindefs    NI Pk
+                 radvkey    : 0
+               }
+          A1: CNVARrec1 := CNVARrec2;
+              CNVARrec1.cases := [Accusative];
+              VARPREPPrec1 := VARPREPPrec2;
+
+         >
+
+   SUBRULE (* NP *)
+      <T1: PREPP{PREPPrec1}
+                             [ mu2,
+                               head/PREP{PREPrec1},
+                               objrel/NP{NPrec1}[mu8],
+                               mu3 
+                              ]
+      >
+      <T2: PREPP{PREPPrec2}
+                             [ mu2,
+                               errel/RADVP{RADVPrec1}[ head/NP{NPrec2}[mu10]],
+                               head/PREP{PREPrec1},
+                               mu3 
+                              ]
+      >
+
+      COMP
+         <
+          C1: PREPrec1.postform = both AND
+              NPrec1.cases  = [Accusative] AND
+              NPrec1.possRform = true 
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : NPrec1.mood
+		  kindefs : [Pk]
+		  radvkey : 0
+		  };
+              QUOTE_Assigncase(NPrec1, mu8, NPrec2, mu10, [Rcase]);
+              PREPPrec2 := PREPPrec1;
+
+         >
+      DECOMP
+         <
+          C1: PREPrec1.postform = both AND
+              Rcase IN NPrec2.cases AND
+              NPrec2.possRform =true AND
+              RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : NPrec2.mood
+		  kindefs NI Pk
+		  radvkey : 0
+		  } 
+          A1: 
+              QUOTE_Assigncase(NPrec2, mu10, NPrec1, mu8, [accusative]);
+              PREPPrec1 := PREPPrec2;
+         >
+
+>
+
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TVPhettoer1
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] Clausetosentence
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 25-MAY-1988 09:26:13  
+\item[* author:] Jan Odijk
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% FILTER FVPhettoer12
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu5, 
+                      I1:rel1/N1
+                             [ mu2,
+                               head/PREP{PREPrec1},
+                               I2:objrel/T1,
+                               mu3 
+                              ],
+                      mu4
+                    ],
+              mu6
+           ]
+>
+
+
+   MATCHCONDITIONS
+      <
+       I1: rel1 IN [locargrel, prepobjrel, dirargrel, predrel, aanobjrel,
+                    voorobjrel, byobjrel, vpadvrel, postVporel, postVerbrel,
+                    instradvrel] AND N1.CAT IN [VARPREPP, PREPP]
+       I2: (T1.CAT IN [NP, NPVAR] WITH T1.REC.possRform = true) OR
+           (T1.CAT IN [CNVAR] WITH T1.REC.human = nohuman)
+      >
+
+         <
+          C1: true
+          A1: @
+         >
+
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] FVPhettoer1
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 7-JUL-1988 09:53:28  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TVPhettoer2
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu5, 
+                      I1:rel1/T1,
+                      mu4
+                    ],
+              mu6
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu5, 
+                      I2:rel1/T2,
+                      mu4
+                    ],
+              mu6
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: rel1 IN [locargrel, prepobjrel, dirargrel, predrel, aanobjrel,
+                    voorobjrel, byobjrel, vpadvrel, postVporel, postVerbrel,
+                    instradvrel]
+           AND QUOTE_hetetcinpp(T1)  
+       I2: rel1 IN [locargrel, prepobjrel, dirargrel, predrel, aanobjrel,
+                    voorobjrel, byobjrel, vpadvrel, postVporel, postVerbrel,
+                    instradvrel]
+           AND QUOTE_errelinpp(T2)  
+      >
+
+
+<
+   SUBRULE
+      <T1: VARPREPP{VARPREPPrec1}
+                             [ mu2,
+                               head/PREP(KEY1){PREPrec1},
+                               objrel/NPVAR{NPVARrec1},
+                               mu3 
+                              ]
+      >
+      <T2: VARPREPP{VARPREPPrec2}
+                             [ mu2,
+                               errel/RADVP{RADVPrec1}[ head/NPVAR{NPVARrec2}],
+                               head/PREP(KEY2){PREPrec2},
+                               mu3 
+                              ]
+     >
+
+      COMP
+         <
+          C1: NPVARrec1.possRform = true AND
+              NPVARrec1.cases = [Accusative] 
+              C11: KEY1 = KEY_metPREPkey AND
+                   VARPREPPrec1.headkey = KEY_metPREPkey
+              A11: KEY2 := KEY_meePREPkey;
+                   VARPREPPrec2 := VARPREPPrec1;
+                   VARPREPPrec2.headkey := KEY_meePREPkey;
+              C12: KEY1 = KEY_totPREPkey  AND
+                   VARPREPPrec1.headkey = KEY_totPREPkey
+              A12: KEY2 := KEY_toePREPkey;
+                   VARPREPPrec2 := VARPREPPrec1;
+                   VARPREPPrec2.headkey := KEY_toePREPkey;
+          A1: RADVPrec1.mood := NPVARrec1.mood;
+              RADVPrec1.req := NPVARrec1.req;
+              RADVPrec1.env := NPVARrec1.env;
+              RADVPrec1.kindefs := [Pk];
+              NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := [Rcase];
+
+         >
+      DECOMP
+         <
+          C1: NPVARrec2.possRform = true AND
+              Rcase IN NPVARrec2.cases AND
+              RADVPrec1.mood = NPVARrec2.mood AND
+              RADVPrec1.req = NPVARrec2.req AND
+              RADVPrec1.env = NPVARrec2.env AND
+              Pk IN RADVPrec1.kindefs 
+              C11: KEY2 = KEY_meePREPkey AND
+                   VARPREPPrec2.headkey = KEY_meePREPkey
+              A11: KEY1 := KEY_metPREPkey;
+                   VARPREPPrec1 := VARPREPPrec2;
+                   VARPREPPrec1.headkey := KEY_metPREPkey;
+              C12: KEY2 = KEY_toePREPkey  AND
+                   VARPREPPrec2.headkey = KEY_toePREPkey
+              A12: KEY1 := KEY_totPREPkey;
+                   VARPREPPrec1 := VARPREPPrec2;
+                   VARPREPPrec1.headkey := KEY_totPREPkey;
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.cases := [Accusative];
+         >
+
+   SUBRULE
+         <T1: VARPREPP{VARPREPPrec1}
+                             [ mu2,
+                               head/PREP(KEY1){PREPrec1},
+                               objrel/CNVAR{CNVARrec1},
+                               mu3 
+                              ]
+      >
+      <T2: VARPREPP{VARPREPPrec2}
+                             [ mu2,
+                               errel/RADVP{RADVPrec1}[ head/CNVAR{CNVARrec2}],
+                               head/PREP(KEY2){PREPrec2},
+                               mu3 
+                              ]
+     >
+
+
+      COMP
+         <
+          C1: CNVARrec1.cases = [Accusative] AND
+              CNVARrec1.human = nohuman
+              C11: KEY1 = KEY_metPREPkey AND
+                   VARPREPPrec1.headkey = KEY_metPREPkey
+              A11: KEY2 := KEY_meePREPkey;
+                   VARPREPPrec2 := VARPREPPrec1;
+                   VARPREPPrec2.headkey := KEY_meePREPkey;
+              C12: KEY1 = KEY_totPREPkey  AND
+                   VARPREPPrec1.headkey = KEY_totPREPkey
+              A12: KEY2 := KEY_toePREPkey;
+                   VARPREPPrec2 := VARPREPPrec1;
+                   VARPREPPrec2.headkey := KEY_toePREPkey;
+          A1: RADVPrec1.mood := declxpmood;
+              RADVPrec1.req := [pospol, negpol, omegapol];
+              RADVPrec1.env := [pospol, negpol, omegapol];
+              RADVPrec1.kindefs := [Pk];
+              RADVPrec1.radvkey := 0;
+              CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := [Rcase];
+         >
+      DECOMP
+         <
+          C1: Rcase IN CNVARrec2.cases AND
+(* intentionally no check on human in analysis *)
+              RADVPrec1 =
+               {
+                 mood       : declxpmood
+                 req        : [pospol, negpol, omegapol]
+                 env        : [pospol, negpol, omegapol]
+                 kindefs    NI Pk
+                 radvkey    : 0
+               } 
+              C11: KEY2 = KEY_meePREPkey AND
+                   VARPREPPrec2.headkey = KEY_meePREPkey
+              A11: KEY1 := KEY_metPREPkey;
+                   VARPREPPrec1 := VARPREPPrec2;
+                   VARPREPPrec1.headkey := KEY_metPREPkey;
+              C12: KEY2 = KEY_toePREPkey  AND
+                   VARPREPPrec2.headkey = KEY_toePREPkey
+              A12: KEY1 := KEY_totPREPkey;
+                   VARPREPPrec1 := VARPREPPrec2;
+                   VARPREPPrec1.headkey := KEY_totPREPkey;
+          A1: CNVARrec1 := CNVARrec2;
+              CNVARrec1.cases := [Accusative];
+         >
+
+   SUBRULE (* NP *)
+      <T1: PREPP{PREPPrec1}
+                             [ mu2,
+                               head/PREP(KEY1){PREPrec1},
+                               objrel/NP{NPrec1}[mu8],
+                               mu3 
+                              ]
+      >
+      <T2: PREPP{PREPPrec2}
+                             [ mu2,
+                               errel/RADVP{RADVPrec1}[ head/NP{NPrec2}[mu10]],
+                               head/PREP(KEY2){PREPrec2},
+                               mu3 
+                              ]
+     >
+
+      COMP
+         <
+          C1: NPrec1.cases  = [Accusative] AND
+              NPrec1.possRform = true
+              C11: KEY1 = KEY_metPREPkey AND
+                   PREPPrec1.headkey = KEY_metPREPkey
+              A11: KEY2 := KEY_meePREPkey;
+                   PREPPrec2 := PREPPrec1;
+                   PREPPrec2.headkey := KEY_meePREPkey;
+              C12: KEY1 = KEY_totPREPkey  AND
+                   PREPPrec1.headkey = KEY_totPREPkey
+              A12: KEY2 := KEY_toePREPkey;
+                   PREPPrec2 := PREPPrec1;
+                   PREPPrec2.headkey := KEY_toePREPkey;
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : NPrec1.mood
+		  kindefs : [Pk]
+		  radvkey : 0
+		  };
+              QUOTE_Assigncase(NPrec1, mu8, NPrec2, mu10, [Rcase]);
+         >
+      DECOMP
+         <
+          C1: Rcase IN NPrec2.cases AND
+              NPrec2.possRform =true AND
+              RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : NPrec2.mood
+		  kindefs NI Pk
+		  radvkey : 0
+		  } 
+              C11: KEY2 = KEY_meePREPkey AND
+                   PREPPrec2.headkey = KEY_meePREPkey
+              A11: KEY1 := KEY_metPREPkey;
+                   PREPPrec1 := PREPPrec2;
+                   PREPPrec1.headkey := KEY_metPREPkey;
+              C12: KEY2 = KEY_toePREPkey  AND
+                   PREPPrec2.headkey = KEY_toePREPkey
+              A12: KEY1 := KEY_totPREPkey;
+                   PREPPrec1 := PREPPrec2;
+                   PREPPrec1.headkey := KEY_totPREPkey;
+          A1: 
+              QUOTE_Assigncase(NPrec2, mu10, NPrec1, mu8, [accusative]);
+         >
+
+>
+
+
+
+&
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TVPhettoer2
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 25-MAY-1988 11:28:14  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] hij rust hem met het uit \to hij rust hem er mee uit
+hij dwingt hem tot het \to hij dwingt hem ertoe
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TShettoer1
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             I1:rel1/N1
+                    [ mu2,
+                      head/PREP{PREPrec1},
+                      objrel/T1,
+                      mu3 
+                    ],
+             mu4
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             I1:rel1/N1
+                    [ mu2,
+                      errel/T2,
+                      head/PREP{PREPrec1},
+                      mu3 
+                    ],
+              mu4
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: rel1 IN [causadvrel, sentadvrel] AND
+           N1.CAT IN [PREPP, VARPREPP]
+      >
+
+<
+   SUBRULE
+      <T1: NPVAR{NPVARrec1} >
+      <T2: RADVP{RADVPrec1}[ head/NPVAR{NPVARrec2}] >
+
+      COMP
+         <
+          C1: PREPrec1.postform = both AND
+              NPVARrec1.possRform = true AND
+              NPVARrec1.cases = [Accusative]
+              C11: NPVARrec1.NPhead = hetNP
+              A11: RADVPrec1.radvkey := KEY_erRADVkey;
+              C12: NPVARrec1.NPhead = ditNP
+              A12: RADVPrec1.radvkey := KEY_hierRADVkey;
+              C13: NPVARrec1.NPhead = datNP
+              A13: RADVPrec1.radvkey := KEY_daarRADVkey;
+              C14: NPVARrec1.NPhead = watwhproNP
+              A14: RADVPrec1.radvkey := KEY_waarRADVkey;
+              C15: NPVARrec1.NPhead = ietsNP
+              A15: RADVPrec1.radvkey := KEY_ergensRADVkey;
+              C16: NPVARrec1.NPhead = allesNP
+              A16: RADVPrec1.radvkey := KEY_overalRADVkey;
+          A1: RADVPrec1.mood := NPVARrec1.mood;
+              RADVPrec1.req := NPVARrec1.req;
+              RADVPrec1.env := NPVARrec1.env;
+              RADVPrec1.kindefs := [Pk];
+              NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := [Rcase]
+         >
+      DECOMP
+         <
+          C1: PREPrec1.postform = both AND
+              NPVARrec1.possRform = true AND
+              Rcase IN NPVARrec2.cases AND
+              RADVPrec1.mood = NPVARrec2.mood AND
+              RADVPrec1.req = NPVARrec2.req AND
+              RADVPrec1.env = NPVARrec2.env AND
+              Pk IN RADVPrec1.kindefs 
+              C11: NPVARrec2.NPhead = hetNP AND
+                   RADVPrec1.radvkey = KEY_erRADVkey
+              A11: @
+              C12: NPVARrec2.NPhead = ditNP AND
+                   RADVPrec1.radvkey = KEY_hierRADVkey
+              A12: @
+              C13: NPVARrec2.NPhead = datNP AND
+                   RADVPrec1.radvkey = KEY_daarRADVkey
+              A13: @
+              C14: NPVARrec2.NPhead = watwhproNP AND
+                   RADVPrec1.radvkey = KEY_waarRADVkey
+              A14: @
+              C15: NPVARrec2.NPhead = ietsNP AND
+                   RADVPrec1.radvkey = KEY_ergensRADVkey
+              A15: @
+              C16: NPVARrec2.NPhead = allesNP AND
+                   RADVPrec1.radvkey = KEY_overalRADVkey
+              A16: @
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.cases := [Accusative];
+         >
+
+   SUBRULE
+      <T1: CNVAR{CNVARrec1} >
+      <T2: RADVP{RADVPrec1}[head/CNVAR{CNVARrec2} ] >
+
+
+      COMP
+         <
+          C1: PREPrec1.postform = both AND
+              CNVARrec1.cases = [Accusative]
+          A1: RADVPrec1.mood := wh;
+              RADVPrec1.req := [pospol, negpol, omegapol];
+              RADVPrec1.env := [pospol, negpol, omegapol];
+              RADVPrec1.kindefs := [Pk];
+              RADVPrec1.radvkey := KEY_waarRADVkey;
+              CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := [Rcase]
+         >
+      DECOMP
+         <
+          C1: PREPrec1.postform = both AND
+              Rcase IN CNVARrec2.cases AND
+              RADVPrec1 =
+               {
+                 mood       : wh
+                 req        : [pospol, negpol, omegapol]
+                 env        : [pospol, negpol, omegapol]
+                 kindefs    NI Pk
+                 radvkey    : KEY_waarRADVkey
+               }
+          A1: CNVARrec1 := CNVARrec2;
+              CNVARrec1.cases := [Accusative];
+         >
+
+   SUBRULE (* in het --> er in *)
+      <T1: NP{NPrec1}[head/PERSPRO{PERSPROrec1}
+                        [head/BPERSPRO(KEY_hetBPERSPROkey){BPERSPROrec1}] ] >
+      <T2: RADVP{RADVPrec1}[head/RADV(KEY_erRADVkey){RADVrec1} ]>
+
+      COMP
+         <
+          C1: PREPrec1.postform = both AND
+              NPrec1 = AUX_NPonhetBPRSPR EXCEPT FOR [Cases] AND
+              PERSPROrec1 = AUX_PERSPROrecONhet AND
+              NPrec1.cases  = [Accusative] 
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_erRADVkey
+		  }
+
+         >
+      DECOMP
+         <
+          C1:PREPrec1.postform = both AND
+              RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_erRADVkey
+		  }
+          A1: NPrec1 := AUX_NPonhetBPRSPR;
+              PERSPROrec1 := AUX_PERSPROrecONhet;
+              NPrec1.cases  := [Accusative];
+         >
+
+   SUBRULE (* in dit  --> hier in *)
+      <T1: NP{NPrec1}[head/DEMPRO(KEY_ditDEMPROkey){DEMPROrec1}]>
+      <T2: RADVP{RADVPrec1}[head/RADV(KEY_hierRADVkey){RADVrec1} ]>
+
+      COMP
+         <
+          C1: PREPrec1.postform = both AND
+              NPrec1 = AUX_NPonditDMPR EXCEPT FOR [Cases] AND
+              NPrec1.cases  = [Accusative] 
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_hierRADVkey
+		  }
+
+         >
+      DECOMP
+         <
+          C1:PREPrec1.postform = both AND
+              RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_hierRADVkey
+		  }
+          A1: NPrec1 := AUX_NPonditDMPR;
+              NPrec1.cases  := [Accusative];
+         >
+
+   SUBRULE (* in dat  --> daar in *)
+      <T1: NP{NPrec1}[head/DEMPRO(KEY_datDEMPROkey){DEMPROrec1}]>
+      <T2: RADVP{RADVPrec1}[head/RADV(KEY_daarRADVkey){RADVrec1} ]>
+
+      COMP
+         <
+          C1: PREPrec1.postform = both AND
+              NPrec1 = AUX_NPondatDMPR EXCEPT FOR [Cases] AND
+              NPrec1.cases  = [Accusative] 
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_daarRADVkey
+		  }
+
+         >
+      DECOMP
+         <
+          C1:PREPrec1.postform = both AND
+              RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_daarRADVkey
+		  }
+          A1: NPrec1 := AUX_NPondatDMPR;
+              NPrec1.cases  := [Accusative];
+         >
+
+   SUBRULE (* in iets --> ergens in *)
+      <T1: NP{NPrec1}[head/INDEFPRO{INDEFPROrec1}
+                        [head/BINDEFPRO(KEY_ietsBINDEFPROkey){BINDEFPROrec1}] ] >
+      <T2: RADVP{RADVPrec1}[head/RADV(KEY_ergensRADVkey){RADVrec1} ]>
+
+      COMP
+         <
+          C1: PREPrec1.postform = both AND
+              NPrec1 = AUX_NPonietsBNDFPR EXCEPT FOR [Cases] AND
+              INDEFPROrec1 = AUX_INDEFPROrecONiets AND
+              NPrec1.cases  = [Accusative] 
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_ergensRADVkey
+		  }
+
+         >
+      DECOMP
+         <
+          C1:PREPrec1.postform = both AND
+              RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_ergensRADVkey
+		  }
+          A1: NPrec1 := AUX_NPonietsBNDFPR;
+              INDEFPROrec1 := AUX_INDEFPROrecONiets;
+              NPrec1.cases  := [Accusative];
+         >
+
+   SUBRULE (* in alles --> overal in *)
+      <T1: NP{NPrec1}[head/INDEFPRO{INDEFPROrec1}
+                        [head/BINDEFPRO(KEY_ietsBINDEFPROkey){BINDEFPROrec1}] ] >
+      <T2: RADVP{RADVPrec1}[head/RADV(KEY_overalRADVkey){RADVrec1} ]>
+
+      COMP
+         <
+          C1: PREPrec1.postform = both AND
+              NPrec1 = AUX_NPonallesBNDFPR EXCEPT FOR [Cases] AND
+              INDEFPROrec1 = AUX_INDEFPROrecONalles AND
+              NPrec1.cases  = [Accusative] 
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_overalRADVkey
+		  }
+
+         >
+      DECOMP
+         <
+          C1:PREPrec1.postform = both AND
+              RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_overalRADVkey
+		  }
+          A1: NPrec1 := AUX_NPonallesBNDFPR;
+              INDEFPROrec1 := AUX_INDEFPROrecONalles;
+              NPrec1.cases  := [Accusative];
+         >
+
+
+>
+
+
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TShettoer1
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 7-JUL-1988 10:15:20  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER FShettoer12
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             I1:rel1/N1
+                    [ mu2,
+                      head/PREP{PREPrec1},
+                      I2:objrel/T1,
+                      mu3 
+                    ],
+             mu4
+           ]
+>
+
+
+   MATCHCONDITIONS
+      <
+       I1: rel1 IN [causadvrel, sentadvrel] AND
+           N1.CAT IN [PREPP, VARPREPP]
+       I2: (T1.CAT IN [NP, NPVAR] WITH T1.REC.possRform = true) OR
+           (T1.CAT IN [CNVAR])
+      >
+
+         <
+          C1: true
+          A1: @
+         >
+  
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] FShettoer12
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 7-JUL-1988 10:26:20  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TShettoer2
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             I1:rel1/N1
+                    [ mu2,
+                      head/PREP(KEY1){PREPrec1},
+                      objrel/T1,
+                      mu3 
+                    ],
+              mu4
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             I1:rel1/N1
+                    [ mu2,
+                      errel/T2,
+                      head/PREP(KEY2){PREPrec2},
+                      mu3 
+                    ],
+             mu4
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: rel1 IN [causadvrel, sentadvrel] AND
+           N1.CAT IN [PREPP, VARPREPP]
+      >
+
+<
+   SUBRULE
+      <T1: NPVAR{NPVARrec1} >
+      <T2: RADVP{RADVPrec1}[ head/NPVAR{NPVARrec2}] >
+
+      COMP
+         <
+          C1: KEY1 = KEY_metPREPkey AND
+              NPVARrec1.possRform = true AND
+              NPVARrec1.cases = [Accusative]
+              C11: NPVARrec1.NPhead = hetNP
+              A11: RADVPrec1.radvkey := KEY_erRADVkey;
+              C12: NPVARrec1.NPhead = ditNP
+              A12: RADVPrec1.radvkey := KEY_hierRADVkey;
+              C13: NPVARrec1.NPhead = datNP
+              A13: RADVPrec1.radvkey := KEY_daarRADVkey;
+              C14: NPVARrec1.NPhead = watwhproNP
+              A14: RADVPrec1.radvkey := KEY_waarRADVkey;
+              C15: NPVARrec1.NPhead = ietsNP
+              A15: RADVPrec1.radvkey := KEY_ergensRADVkey;
+              C16: NPVARrec1.NPhead = allesNP
+              A16: RADVPrec1.radvkey := KEY_overalRADVkey;
+          A1: RADVPrec1.mood := NPVARrec1.mood;
+              RADVPrec1.req := NPVARrec1.req;
+              RADVPrec1.env := NPVARrec1.env;
+              RADVPrec1.kindefs := [Pk];
+              NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := [Rcase];
+              KEY2 := KEY_meePREPkey;
+
+          C2: KEY1 = KEY_totPREPkey AND
+              NPVARrec1.possRform = true AND
+              NPVARrec1.cases = [Accusative]
+              C21: NPVARrec1.NPhead = hetNP
+              A21: RADVPrec1.radvkey := KEY_erRADVkey;
+              C22: NPVARrec1.NPhead = ditNP
+              A22: RADVPrec1.radvkey := KEY_hierRADVkey;
+              C23: NPVARrec1.NPhead = datNP
+              A23: RADVPrec1.radvkey := KEY_daarRADVkey;
+              C24: NPVARrec1.NPhead = watwhproNP
+              A24: RADVPrec1.radvkey := KEY_waarRADVkey;
+              C25: NPVARrec1.NPhead = ietsNP
+              A25: RADVPrec1.radvkey := KEY_ergensRADVkey;
+              C26: NPVARrec1.NPhead = allesNP
+              A16: RADVPrec1.radvkey := KEY_overalRADVkey;
+          A2: RADVPrec1.mood := NPVARrec1.mood;
+              RADVPrec1.req := NPVARrec1.req;
+              RADVPrec1.env := NPVARrec1.env;
+              RADVPrec1.kindefs := [Pk];
+              NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := [Rcase];
+              KEY2 := KEY_toePREPkey;
+
+         >
+      DECOMP
+         <
+          C1: KEY2 = KEY_meePREPkey AND
+              NPVARrec1.possRform = true AND
+              Rcase IN NPVARrec2.cases AND
+              RADVPrec1.mood = NPVARrec2.mood AND
+              RADVPrec1.req = NPVARrec2.req AND
+              RADVPrec1.env = NPVARrec2.env AND
+              Pk IN RADVPrec1.kindefs 
+              C11: NPVARrec2.NPhead = hetNP AND
+                   RADVPrec1.radvkey = KEY_erRADVkey
+              A11: @
+              C12: NPVARrec2.NPhead = ditNP AND
+                   RADVPrec1.radvkey = KEY_hierRADVkey
+              A12: @
+              C13: NPVARrec2.NPhead = datNP AND
+                   RADVPrec1.radvkey = KEY_daarRADVkey
+              A13: @
+              C14: NPVARrec2.NPhead = watwhproNP AND
+                   RADVPrec1.radvkey = KEY_waarRADVkey
+              A14: @
+              C15: NPVARrec2.NPhead = ietsNP AND
+                   RADVPrec1.radvkey = KEY_ergensRADVkey
+              A15: @
+              C16: NPVARrec2.NPhead = allesNP AND
+                   RADVPrec1.radvkey = KEY_overalRADVkey
+              A16: @
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.cases := [Accusative];
+              KEY1:= KEY_metPREPkey
+
+          C2: KEY2 = KEY_toePREPkey AND
+              NPVARrec1.possRform = true AND
+              Rcase IN NPVARrec2.cases AND
+              RADVPrec1.mood = NPVARrec2.mood AND
+              RADVPrec1.req = NPVARrec2.req AND
+              RADVPrec1.env = NPVARrec2.env AND
+              Pk IN RADVPrec1.kindefs 
+              C21: NPVARrec2.NPhead = hetNP AND
+                   RADVPrec1.radvkey = KEY_erRADVkey
+              A21: @
+              C22: NPVARrec2.NPhead = ditNP AND
+                   RADVPrec1.radvkey = KEY_hierRADVkey
+              A22: @
+              C23: NPVARrec2.NPhead = datNP AND
+                   RADVPrec1.radvkey = KEY_daarRADVkey
+              A23: @
+              C24: NPVARrec2.NPhead = watwhproNP AND
+                   RADVPrec1.radvkey = KEY_waarRADVkey
+              A24: @
+              C25: NPVARrec2.NPhead = ietsNP AND
+                   RADVPrec1.radvkey = KEY_ergensRADVkey
+              A25: @
+              C26: NPVARrec2.NPhead = allesNP AND
+                   RADVPrec1.radvkey = KEY_overalRADVkey
+              A26: @
+          A2: NPVARrec1 := NPVARrec2;
+              NPVARrec1.cases := [Accusative];
+              KEY1:= KEY_totPREPkey
+         >
+
+   SUBRULE
+      <T1: CNVAR{CNVARrec1} >
+      <T2: RADVP{RADVPrec1}[head/CNVAR{CNVARrec2} ] >
+
+
+      COMP
+         <
+          C1: KEY1 = KEY_metPREPkey AND
+              CNVARrec1.cases = [Accusative]
+          A1: RADVPrec1.mood := wh;
+              RADVPrec1.req := [pospol, negpol, omegapol];
+              RADVPrec1.env := [pospol, negpol, omegapol];
+              RADVPrec1.kindefs := [Pk];
+              RADVPrec1.radvkey := KEY_waarRADVkey;
+              CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := [Rcase];
+              KEY2 := KEY_meePREPkey
+
+          C2: KEY1 = KEY_totPREPkey AND
+              CNVARrec1.cases = [Accusative]
+          A2: RADVPrec1.mood := wh;
+              RADVPrec1.req := [pospol, negpol, omegapol];
+              RADVPrec1.env := [pospol, negpol, omegapol];
+              RADVPrec1.kindefs := [Pk];
+              RADVPrec1.radvkey := KEY_waarRADVkey;
+              CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := [Rcase];
+              KEY2 := KEY_toePREPkey
+         >
+      DECOMP
+         <
+          C1: KEY2 = KEY_meePREPkey AND
+              Rcase IN CNVARrec2.cases AND
+              RADVPrec1 =
+               {
+                 mood       : wh
+                 req        : [pospol, negpol, omegapol]
+                 env        : [pospol, negpol, omegapol]
+                 kindefs    NI Pk
+                 radvkey    : KEY_waarRADVkey
+               }
+          A1: CNVARrec1 := CNVARrec2;
+              CNVARrec1.cases := [Accusative];
+              KEY1 :=KEY_metPREPkey;
+
+          C2: KEY2 = KEY_toePREPkey AND
+              Rcase IN CNVARrec2.cases AND
+              RADVPrec1 =
+               {
+                 mood       : wh
+                 req        : [pospol, negpol, omegapol]
+                 env        : [pospol, negpol, omegapol]
+                 kindefs    NI Pk
+                 radvkey    : KEY_waarRADVkey
+               }
+          A2: CNVARrec1 := CNVARrec2;
+              CNVARrec1.cases := [Accusative];
+              KEY1 :=KEY_totPREPkey;
+         >
+
+   SUBRULE (* in het --> er in *)
+      <T1: NP{NPrec1}[head/PERSPRO{PERSPROrec1}
+                        [head/BPERSPRO(KEY_hetBPERSPROkey){BPERSPROrec1}] ] >
+      <T2: RADVP{RADVPrec1}[head/RADV(KEY_erRADVkey){RADVrec1} ]>
+
+      COMP
+         <
+          C1: KEY1 = KEY_metPREPkey AND
+              NPrec1 = AUX_NPonhetBPRSPR EXCEPT FOR [Cases] AND
+              PERSPROrec1 = AUX_PERSPROrecONhet AND
+              NPrec1.cases  = [Accusative] 
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_erRADVkey
+		  };
+              KEY2 := KEY_meePREPkey;
+
+          C2: KEY1 = KEY_totPREPkey AND
+              NPrec1 = AUX_NPonhetBPRSPR EXCEPT FOR [Cases] AND
+              PERSPROrec1 = AUX_PERSPROrecONhet AND
+              NPrec1.cases  = [Accusative] 
+          A2: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_erRADVkey
+		  };
+              KEY2 := KEY_toePREPkey;
+
+         >
+      DECOMP
+         <
+          C1: KEY2 = KEY_meePREPkey AND
+             RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_erRADVkey
+		  }
+          A1: NPrec1 := AUX_NPonhetBPRSPR;
+              PERSPROrec1 := AUX_PERSPROrecONhet;
+              NPrec1.cases  := [Accusative];
+              KEY1 := KEY_metPREPkey
+
+          C2: KEY2 = KEY_toePREPkey AND
+             RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_erRADVkey
+		  }
+          A2: NPrec1 := AUX_NPonhetBPRSPR;
+              PERSPROrec1 := AUX_PERSPROrecONhet;
+              NPrec1.cases  := [Accusative];
+              KEY1 := KEY_totPREPkey
+         >
+
+   SUBRULE (* in dit  --> hier in *)
+      <T1: NP{NPrec1}[head/DEMPRO(KEY_ditDEMPROkey){DEMPROrec1}]>
+      <T2: RADVP{RADVPrec1}[head/RADV(KEY_hierRADVkey){RADVrec1} ]>
+
+      COMP
+         <
+          C1: KEY1 = KEY_metPREPkey AND
+              NPrec1 = AUX_NPonditDMPR EXCEPT FOR [Cases] AND
+              NPrec1.cases  = [Accusative] 
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_hierRADVkey
+		  };
+               KEY2 := KEY_meePREPkey;
+
+          C2: KEY1 = KEY_totPREPkey AND
+              NPrec1 = AUX_NPonditDMPR EXCEPT FOR [Cases] AND
+              NPrec1.cases  = [Accusative] 
+          A2: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_hierRADVkey
+		  };
+               KEY2 := KEY_toePREPkey;
+
+         >
+      DECOMP
+         <
+          C1: KEY2 = KEY_meePREPkey AND
+             RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_hierRADVkey
+		  }
+          A1: NPrec1 := AUX_NPonditDMPR;
+              NPrec1.cases  := [Accusative];
+              KEY1 := KEY_metPREPkey
+
+          C2: KEY2 = KEY_toePREPkey AND
+             RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_hierRADVkey
+		  }
+          A2: NPrec1 := AUX_NPonditDMPR;
+              NPrec1.cases  := [Accusative];
+              KEY1 := KEY_totPREPkey
+         >
+
+   SUBRULE (* in dat  --> daar in *)
+      <T1: NP{NPrec1}[head/DEMPRO(KEY_datDEMPROkey){DEMPROrec1}]>
+      <T2: RADVP{RADVPrec1}[head/RADV(KEY_daarRADVkey){RADVrec1} ]>
+
+      COMP
+         <
+          C1: KEY1 = KEY_metPREPkey AND
+              NPrec1 = AUX_NPondatDMPR EXCEPT FOR [Cases] AND
+              NPrec1.cases  = [Accusative] 
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_daarRADVkey
+		  };
+              KEY2 := KEY_meePREPkey;
+
+          C2: KEY1 = KEY_totPREPkey AND
+              NPrec1 = AUX_NPondatDMPR EXCEPT FOR [Cases] AND
+              NPrec1.cases  = [Accusative] 
+          A2: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_daarRADVkey
+		  };
+              KEY2 := KEY_toePREPkey;
+
+         >
+      DECOMP
+         <
+          C1: KEY2 = KEY_meePREPkey AND
+             RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_daarRADVkey
+		  }
+          A1: NPrec1 := AUX_NPondatDMPR;
+              NPrec1.cases  := [Accusative];
+              KEY1 := KEY_metPREPkey
+
+          C2: KEY2 = KEY_toePREPkey AND
+             RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_daarRADVkey
+		  }
+          A2: NPrec1 := AUX_NPondatDMPR;
+              NPrec1.cases  := [Accusative];
+              KEY1 := KEY_totPREPkey
+         >
+
+   SUBRULE (* in iets --> ergens in *)
+      <T1: NP{NPrec1}[head/INDEFPRO{INDEFPROrec1}
+                        [head/BINDEFPRO(KEY_ietsBINDEFPROkey){BINDEFPROrec1}] ] >
+      <T2: RADVP{RADVPrec1}[head/RADV(KEY_ergensRADVkey){RADVrec1} ]>
+
+      COMP
+         <
+          C1: KEY1 = KEY_metPREPkey AND
+              NPrec1 = AUX_NPonietsBNDFPR EXCEPT FOR [Cases] AND
+              INDEFPROrec1 = AUX_INDEFPROrecONiets AND
+              NPrec1.cases  = [Accusative] 
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_ergensRADVkey
+		  };
+               KEY2 := KEY_meePREPkey;
+
+          C2: KEY1 = KEY_totPREPkey AND
+              NPrec1 = AUX_NPonietsBNDFPR EXCEPT FOR [Cases] AND
+              INDEFPROrec1 = AUX_INDEFPROrecONiets AND
+              NPrec1.cases  = [Accusative] 
+          A2: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_ergensRADVkey
+		  };
+               KEY2 := KEY_toePREPkey;
+
+         >
+      DECOMP
+         <
+          C1:KEY2 = KEY_meePREPkey AND
+              RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_ergensRADVkey
+		  }
+          A1: NPrec1 := AUX_NPonietsBNDFPR;
+              INDEFPROrec1 := AUX_INDEFPROrecONiets;
+              NPrec1.cases  := [Accusative];
+              KEY1 := KEY_metPREPkey
+
+
+          C2:KEY2 = KEY_toePREPkey AND
+              RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_ergensRADVkey
+		  }
+          A2: NPrec1 := AUX_NPonietsBNDFPR;
+              INDEFPROrec1 := AUX_INDEFPROrecONiets;
+              NPrec1.cases  := [Accusative];
+              KEY1 := KEY_totPREPkey
+
+         >
+
+   SUBRULE (* in alles --> overal in *)
+      <T1: NP{NPrec1}[head/INDEFPRO{INDEFPROrec1}
+                        [head/BINDEFPRO(KEY_ietsBINDEFPROkey){BINDEFPROrec1}] ] >
+      <T2: RADVP{RADVPrec1}[head/RADV(KEY_overalRADVkey){RADVrec1} ]>
+
+      COMP
+         <
+          C1: KEY1 = KEY_metPREPkey AND
+              NPrec1 = AUX_NPonallesBNDFPR EXCEPT FOR [Cases] AND
+              INDEFPROrec1 = AUX_INDEFPROrecONalles AND
+              NPrec1.cases  = [Accusative] 
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_overalRADVkey
+		  };
+              KEY2 := KEY_meePREPkey;
+
+          C2: KEY1 = KEY_totPREPkey AND
+              NPrec1 = AUX_NPonallesBNDFPR EXCEPT FOR [Cases] AND
+              INDEFPROrec1 = AUX_INDEFPROrecONalles AND
+              NPrec1.cases  = [Accusative] 
+          A2: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Pk]
+		  radvkey : KEY_overalRADVkey
+		  };
+              KEY2 := KEY_toePREPkey;
+
+
+         >
+      DECOMP
+         <
+          C1: KEY2 = KEY_meePREPkey AND
+             RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_overalRADVkey
+		  }
+          A1: NPrec1 := AUX_NPonallesBNDFPR;
+              INDEFPROrec1 := AUX_INDEFPROrecONalles;
+              NPrec1.cases  := [Accusative];
+              KEY1 := KEY_metPREPkey
+
+          C2: KEY2 = KEY_toePREPkey AND
+             RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Pk
+		  radvkey : KEY_overalRADVkey
+		  }
+          A2: NPrec1 := AUX_NPonallesBNDFPR;
+              INDEFPROrec1 := AUX_INDEFPROrecONalles;
+              NPrec1.cases  := [Accusative];
+              KEY1 := KEY_totPREPkey
+         >
+
+
+>
+
+
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TShettoer2
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 7-JUL-1988 10:18:53  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER Fprehettoer
+< m :CLAUSE{CLAUSErec1}[mu1, predrel/VERBP{VERBPrec1}[mu2 ],mu3 ]
+>
+  
+   MATCHCONDITIONS
+      <
+       m: EXIST(mu2, [I11:rel1/T1]) AND
+          CLAUSERec1.synvpefs * AUX_VRvps = []
+       I11: rel1 IN [locargrel, prepobjrel, dirargrel, predrel, aanobjrel,
+                    voorobjrel, byobjrel, vpadvrel, postVporel, postVerbrel,
+                    instradvrel] AND T1.CAT IN [VARPREPP, PREPP] AND
+                    QUOTE_errelinpp(T1)
+      >
+
+         <
+          C1: true
+          A1: @
+         >
+
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] Fprehettoer
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 13-OCT-1988 12:53:55  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+
+\newpage
+\begin{verbatim}
+
+% TRANSFORMATION Terq1      (* objrel, argrel *)
+< m1:CLAUSE{CLAUSErec1}
+           [ I6:mu1,
+             I1:sig1,
+             I2:sig2,
+             I7:mu2,
+             predrel/VERBP{VERBPrec1}
+                   [ mu4,
+                     I3:rel1/I4::NPVAR{NPVARrec1}, 
+                     mu5
+                   ],
+             mu3
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ I6:mu1,
+             erqrel/RADVP{RADVPrec1}[head/RADV(KEY_erRADVkey){RADVrec1}],
+             I2:sig2,
+             I7:mu2,
+             predrel/VERBP{VERBPrec1}
+                   [ mu4,  
+                     I3:rel1/I5::NPVAR{NPVARrec2}, 
+                     mu5
+                   ],
+             mu3
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: ALL(sig1, erqrel/..)
+       I2: ALL(sig2, erposrel/..)
+       I3: rel1 IN [objrel, argrel]
+       I4: NPVARrec1.NPhead = enNP AND count IN NPVARrec1.actcomas
+       I5: NPVARrec2.NPhead = enokNP AND count IN NPVARrec2.actcomas
+       I6: ALL(mu1, I61:rel3/..)
+           I61: rel3 IN AUX_preerposrels AND rel3 <> erqrel
+       I7: ALL(mu2, I71:rel2/..)
+           I71: QUOTE_Srelprec(erposrel, rel2) AND 
+                [rel2] * [erqrel, erposrel] = []
+       m1: NOT EXIST(mu5,[../I11::NPVAR{NPVARrec3}])
+       m : NOT EXIST(mu5,[../I11::NPVAR{NPVARrec3}])
+           I11: NPVARrec3.NPhead = enNP AND count IN NPVARrec3.actcomas
+      >
+
+
+<
+   SUBRULE
+      < sig1:[]>
+      < >
+
+
+      COMP
+         <
+          C1: true
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Qk]
+		  radvkey : KEY_erRADVkey
+		  };
+              NPVARrec2 := NPVARrec1;
+              NPVARrec2.NPhead := enokNP;
+         >
+      DECOMP
+         <
+          C1: RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Qk
+		  radvkey : KEY_erRADVkey
+		  }
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.NPhead := enNP;
+         >
+
+
+   SUBRULE
+      < sig1:[ erqrel/RADVP{RADVPrec2}[head/RADV(KEY_erRADVkey){RADVrec1} ]]>
+      < >
+
+
+      COMP
+         <
+          C1: RADVPrec2 =
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Qk]
+		  radvkey : KEY_erRADVkey
+		  }
+          A1: RADVPrec1 := RADVPrec2;
+              NPVARrec2 := NPVARrec1;
+              NPVARrec2.NPhead := enokNP;
+         >
+      DECOMP
+         <
+          C1: RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Qk
+		  radvkey : KEY_erRADVkey
+		  }
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.NPhead := enNP;
+              RADVPrec2 := RADVPrec1;
+              RADVPrec2.kindefs := [Qk];
+         >
+
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Terq1
+\item[* relevant examples:]
+hij ziet er twee\\
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 26-SEP-1988 16:29:55  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Terq2     (* postsubjrel, preadvrel *)
+< m1:CLAUSE{CLAUSErec1}
+           [ I6:mu1,
+             I1:sig1,
+             I2:sig2,
+             I7:mu2,
+             I3:rel1/I4::NPVAR{NPVARrec1}, 
+             mu3
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ I6:mu1,
+             erqrel/RADVP{RADVPrec1}[head/RADV(KEY_erRADVkey){RADVrec1}],
+             I2:sig2,
+             I7:mu2,
+             I3:rel1/I5::NPVAR{NPVARrec2}, 
+             mu3
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: ALL(sig1, erqrel/..)
+       I2: ALL(sig2, erposrel/..)
+       I3: rel1 IN [postsubjrel, preadvrel]
+       I4: NPVARrec1.NPhead = enNP AND count IN NPVARrec1.actcomas
+       I5: NPVARrec2.NPhead = enokNP AND count IN NPVARrec2.actcomas
+       I6: ALL(mu1, I61:rel3/..)
+           I61: rel3 IN AUX_preerposrels AND rel3 <> erqrel
+       I7: ALL(mu2, I71:rel2/..)
+           I71: QUOTE_Srelprec(erposrel, rel2)  AND 
+                [rel2] * [erqrel, erposrel] = []
+       m1: NOT EXIST(mu3,[../I11::NPVAR{NPVARrec3}]) AND
+           NOT EXIST(mu3,[predrel/VERBP{}[I12:mu5]])
+       m : NOT EXIST(mu3,[../I11::NPVAR{NPVARrec3}]) AND
+           NOT EXIST(mu3,[predrel/VERBP{}[I12:mu5]])
+           I12: EXIST(mu5,[../I11::NPVAR{NPVARrec3}])
+           I11: NPVARrec3.NPhead = enNP AND count IN NPVARrec3.actcomas
+      >
+
+
+<
+   SUBRULE
+      < sig1:[]>
+      < >
+
+
+      COMP
+         <
+          C1: true
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Qk]
+		  radvkey : KEY_erRADVkey
+		  };
+              NPVARrec2 := NPVARrec1;
+              NPVARrec2.NPhead := enokNP;
+         >
+      DECOMP
+         <
+          C1: RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Qk
+		  radvkey : KEY_erRADVkey
+		  }
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.NPhead := enNP;
+         >
+
+
+   SUBRULE
+      < sig1:[ erqrel/RADVP{RADVPrec2}[head/RADV(KEY_erRADVkey){RADVrec1} ]]>
+      < >
+
+
+      COMP
+         <
+          C1: RADVPrec2 =
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Qk]
+		  radvkey : KEY_erRADVkey
+		  }
+          A1: RADVPrec1 := RADVPrec2;
+              NPVARrec2 := NPVARrec1;
+              NPVARrec2.NPhead := enokNP;
+         >
+      DECOMP
+         <
+          C1: RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Qk
+		  radvkey : KEY_erRADVkey
+		  }
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.NPhead := enNP;
+              RADVPrec2 := RADVPrec1;
+              RADVPrec2.kindefs := [Qk];
+         >
+
+>
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Terq2
+\item[* relevant examples:]
+er lopen er twee\\ 
+hij ziet er twee niet
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 18-OCT-1988 13:26:00  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Terq3
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             subjrel/I4::NPVAR{NPVARrec1}, 
+             I3:mu4,
+             I1:sig1,
+             I2:sig2,
+             I7:mu2,
+             predrel/VERBP{VERBPrec1}[mu5],
+             mu3
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             subjrel/I5::NPVAR{NPVARrec2},
+             I3:mu4,
+             erqrel/RADVP{RADVPrec1}[head/RADV(KEY_erRADVkey){RADVrec1}],
+             I2:sig2,
+             I7:mu2,
+             predrel/VERBP{VERBPrec1}[mu5],
+             mu3
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: ALL(sig1, erqrel/..)
+       I2: ALL(sig2, erposrel/..)
+       I3: ALL(mu4,I31:rel1/..)
+           I31: rel1 IN AUX_preerposrels AND QUOTE_Srelprec(subjrel, rel1)
+                  AND rel1 <> erqrel
+       I4: NPVARrec1.NPhead = enNP AND count IN NPVARrec1.actcomas
+       I5: NPVARrec2.NPhead = enokNP AND count IN NPVARrec2.actcomas
+       I7: ALL(mu2, I71:rel2/..)
+           I71: QUOTE_Srelprec(erposrel, rel2)  AND 
+                [rel2] * [erqrel, erposrel] = []
+       m1: NOT EXIST(mu2,[../I11::NPVAR{NPVARrec3}]) AND
+           NOT EXIST(mu5,[../I11::NPVAR{NPVARrec3}]) AND
+           NOT EXIST(mu3,[../I11::NPVAR{NPVARrec3}]) 
+       m : NOT EXIST(mu2,[../I11::NPVAR{NPVARrec3}]) AND
+           NOT EXIST(mu5,[../I11::NPVAR{NPVARrec3}]) AND
+           NOT EXIST(mu3,[../I11::NPVAR{NPVARrec3}]) 
+           I11: NPVARrec3.NPhead = enNP AND count IN NPVARrec3.actcomas
+       >
+
+
+<
+   SUBRULE
+      < sig1:[]>
+      < >
+
+
+      COMP
+         <
+          C1: true
+          A1: RADVPrec1 := 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Qk]
+		  radvkey : KEY_erRADVkey
+		  };
+              NPVARrec2 := NPVARrec1;
+              NPVARrec2.NPhead := enokNP;
+         >
+      DECOMP
+         <
+          C1: RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Qk
+		  radvkey : KEY_erRADVkey
+		  }
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.NPhead := enNP;
+         >
+
+
+   SUBRULE
+      < sig1:[ erqrel/RADVP{RADVPrec2}[head/RADV(KEY_erRADVkey){RADVrec1} ]]>
+      < >
+
+
+      COMP
+         <
+          C1: RADVPrec2 =
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs : [Qk]
+		  radvkey : KEY_erRADVkey
+		  }
+          A1: RADVPrec1 := RADVPrec2;
+              NPVARrec2 := NPVARrec1;
+              NPVARrec2.NPhead := enokNP;
+         >
+      DECOMP
+         <
+          C1: RADVPrec1 = 
+		  {
+		  req     : [pospol,negpol,omegapol]
+		  env     : [pospol,negpol,omegapol]
+		  mood    : declxpmood
+		  kindefs NI Qk
+		  radvkey : KEY_erRADVkey
+		  }
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.NPhead := enNP;
+              RADVPrec2 := RADVPrec1;
+              RADVPrec2.kindefs := [Qk];
+         >
+
+>
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Terq3
+\item[* relevant examples:]
+Twee hebben er een boek gekocht
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 18-OCT-1988 13:29:39  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER Ferq
+< m :CLAUSE{CLAUSErec1}[mu1, predrel/VERBP{VERBPrec1}[mu2], mu3 ]
+>
+  
+   MATCHCONDITIONS
+      <
+       m: EXIST(mu1, [../I11::NPVAR{NPVARrec1}]) OR
+          EXIST(mu2, [../I11::NPVAR{NPVARrec1}]) 
+          I11: NPVARrec1.NPhead = enNP AND count IN  NPVARrec1.actcomas
+      >
+
+         <
+          C1: true
+          A1: @
+         >
+
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] Ferq
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 18-OCT-1988 13:35:21  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER Fpreerq
+< m :CLAUSE{CLAUSErec1}[mu1, predrel/VERBP{VERBPrec1}[mu2], mu3 ]
+>
+  
+   MATCHCONDITIONS
+      <
+       m: EXIST(mu1, [../I11::NPVAR{NPVARrec1}]) OR
+          EXIST(mu2, [../I11::NPVAR{NPVARrec1}]) 
+          I11: NPVARrec1.NPhead = enokNP AND count IN  NPVARrec1.actcomas
+      >
+
+         <
+          C1: true
+          A1: @
+         >
+
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] Fpreerq
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 18-OCT-1988 13:37:35  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+
+%%
+
+E 2
+E 1

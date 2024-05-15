@@ -1,0 +1,44 @@
+#! /bin/sh
+#set -x
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+rm -f contents.rbs
+#
+#if ( test -s $RBS_USER_ROOT$RBS_RELEASE/lock.rbs ) 
+#then echo "DCLEAR: No clearing allowed during integrate"
+#     exit
+#fi
+#
+wrongo=""
+             echo "DCLEAR: clearing directory doc/source"
+             rm -f doc/source/*% doc/source/*~ doc/source/.[BC]* doc/source/.emacs_* doc/source/warnings
+             if (test -d doc/source/sccs )
+             then 
+                rmdir doc/source/sccs
+             fi
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/doc/source
+             for j in `ls` ; do
+                k=`basename $j`
+                { test -s $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/s.$k.ascii ; } || \
+                { echo "DCLEAR: Strange file $k in directory doc/source"; wrongo="$k"; }
+                { test -s $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/p.$k.ascii ; } || \
+                { echo "DCLEAR: File $k in directory doc/source not grabbed!"; wrongo="$k"; }
+                touch $k
+             done
+#             sccs -d$RBS_ARCHIVE$RBS_RELEASE/doc -psccs clean > /dev/null
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/doc/target
+             echo "DCLEAR: clearing directory doc/target"
+             for targetf in `ls`; do
+                echo "DCLEAR: removing file $targetf"
+                rm -f $targetf
+             done
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+cd $savedir
+#
+if ( test -z "$wrongo" )
+then echo "DCLEAR: Cleaning up finished"
+else echo "DCLEAR: Found at least one illegal file"
+     exit 1
+fi

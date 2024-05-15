@@ -1,0 +1,149 @@
+h62827
+s 00003/00002/00111
+d D 1.3 95/11/06 11:22:12 rous 3 2
+c 
+e
+s 00113/00001/00000
+d D 1.2 95/10/17 11:08:26 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 95/10/17 09:02:06 rous 1 0
+c date and time created 95/10/17 09:02:06 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+#!/bin/sh
+#
+# (C) Philips Electronics N.V. 1994
+# All rights are reserved. Reproduction in whole or in part is prohibited
+# without the written consent of the copyright owner.
+#
+# File         : actions.sh
+#
+# Description  : This example shell script is started by DocBrowser if the user
+#                activates an action (e.g. View, Print) on selected documents.
+#
+#                The first parameter of this script is the name of the action
+#                (e.g. View, Print) and the next arguments are the document
+#                locations of the selected documents in DocBrowser.
+#                This example shell script offers support for the actions
+#                "View" and Print" for the document types "txt" (ASCII),
+#                "wp" (WordPerfect), "fm" (FrameMaker), and "ps" (PostScript).
+#                
+#
+#
+# Determine platform
+PLATFORM=`uname -s`
+if [ "$PLATFORM" = "SunOS" ]
+then
+  ARCH=sun4
+fi
+if [ "$PLATFORM" = "HP-UX" ]
+then
+  ARCH=hp700
+fi
+
+
+#action="$1"
+#shift 1
+#
+#while [ "$#" != "0" ]
+#do
+	location="$1"
+	shift 1
+#	if [ "$action" = "View" ]
+#	then
+  		case "$location" in
+			*.ps|*.eps|*.epsi)
+				ghostview "$location"				
+				;;
+			*.wp|*.fwp|*.wp51)
+				if [ "$ARCH" = "sun4" ]
+				then
+				  xwp "$location"
+				else
+				  wp "$location"
+				fi
+				;;
+			*.doc|*.book|*.fm)
+				LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/cadappl/X11R4/usr/lib
+				export LD_LIBRARY_PATH
+				FM_PROGNAME=$HOME/cadbin/imaker
+				export FM_PROGNAME
+#				copy_file=`basename "${location}`
+D 3
+#				cp ${location} "/tmp/${copy_file}"
+E 3
+I 3
+#				cp -p ${location} "/tmp/${copy_file}"
+E 3
+#				chmod 777 "/tmp/${copy_file}"
+				if [ "$ARCH" = "sun4" ]
+				then
+D 3
+				  clclient -f "${location}"
+E 3
+I 3
+#				  clclient -f "${location}"
+				  fmclient -f "${location}"
+E 3
+				else
+				  /usr/cst/sb_1.1/bin/clclient -f "$location"
+				fi
+				;;
+			*.dvi)
+				xpreview "$location"
+				;;
+			*)
+				PAGER=${PAGER:-more}
+				xterm -e sh -c "$PAGER \"$location\"; echo; echo \"Please return to exit\"; read garbage"				
+				;;
+		esac
+#	fi
+
+#	if [ "$action" = "Print" ]
+#	then
+#  		case "$location" in
+#			*.ps|*.eps|*.epsi)
+#				if [ "$ARCH" = "sun4" ]
+#				then
+#				  lpr "$location"
+#				else
+#				  lp "$location"
+#				fi
+#				;;
+#			*.wp|*.fwp|*.wp51)
+#				if [ "$ARCH" = "sun4" ]
+#				then
+#				  xwp "$location"
+#				else
+#				  wp "$location"
+#				fi							#
+#				;;
+#			*.doc|*.book|*.fm)
+#				fmprint -i "$location"				
+#				;;
+#			*)
+#				if [ "$ARCH" = "sun4" ]
+#				then
+#				  lpr "$location"
+#				else
+#				  lp "$location"
+#				fi							#
+#				;;
+# 		esac
+#	fi
+#done
+
+exit 0
+E 2
+E 1

@@ -1,0 +1,1402 @@
+R0367.tex
+
+
+
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.Doc.General}
+   \RosTitle{General Remarks on writing M-rules}
+   \RosAuthor{Jan Odijk}
+   \RosDocNr{R0367}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{}
+   \MakeRosTitle
+%
+%
+
+
+
+\section{Introduction}
+
+In this document general remarks w.r.t writing M-rules are made. We will 
+mention several problems, special cases, typical errors made and their
+diagnostics, and suggestions to prevent them in the future. Also certain
+cases where the M-rule notation yields unnatural or  complex rules will be
+mentioned, and suggestions for amelioration will be made.
+A first version of this document has been discussed with Lisette Appelo, 
+Margreet Sanders and Elly van Munster and most of their comments have
+been incorporated into the current version.
+
+The topics dealt with here form a rather miscellaneous set of cases. I have
+tried to put topics that have some connection next to one another in sections,
+but I have not really tried to give a motivated classification of the topics,
+which seems to me to be hardly possible.
+
+\section{Infinite loops and  default values}
+% e-form
+% nominative Case
+
+Measure problems were almost never encountered. There are two cases where
+a measure problem occurred. One involves case-assignment transformations
+(in the CLAUSEtoSENTENCE subgrammar) in Dutch,
+the other involves transformations assigning the ending  {\em  e} to adjectives
+(in the NP subgrammar), in Dutch.
+The case assignment problem has been solved, but it was necessary to allow
+for an asymmetry between generation and analysis. The other problem has not
+been solved yet. The relevant transformation has been made optional instead
+of iterative. As  a consequence, at the moment no NP containing two or more
+adjectives ending in the suffix {\em  -e} can be analyzed or generated.
+
+It is important to note here that the cause of
+these measure problems was the same  in both cases: 
+the default value of an attribute was a real value 
+(i.e.  a value that occurs in S-trees in S-parser). A general way to 
+avoid such problems (and to solve the problem w.r.t. the rules 
+assigning the ending {\em  -e}) is to avoid taking real values as default 
+values. Always take some abstract value (e.g. an omegavalue) as a default value
+for attributes of categories that are not in the dictionary.
+For a description of the precise nature of the problems mentioned
+see the documentation
+on the specific rules.
+
+\section{Rule classes and  Filter Classes}
+
+Originally the idea was to have rule and transformation classes of rules
+that naturally belong together and deal with the same phenomenon. 
+The members of rule and transformation classes would be in a `OR' relationship
+(`$\mid$' in the control expression).
+This
+is possible in a natural way for  rule classes 
+that are not accompanied by a filter. If rule or transformation 
+classes have associated filters, this cannot be done in so natural a way.
+
+\def\R#1{{\em R$_{#1}$}}
+\def\F#1{{\em F$_{#1}$}}
+\def\of{$\mid$}
+
+Consider the following (abstract) example. Suppose that there are rules
+\R1, \R2, \R3 dealing with some phenomenon, and suppose that these
+rules must be applied  whenever they can. In such a case one would formulate
+filters  \F1, \F2 and \F3 associated to these rules to guarantee application
+of these rules. Ideally (i.e. following the concept of rule classes) 
+one would now like to write the following control 
+expression:
+
+\begin{trivlist}
+\item[] \{ \R1\ \of \R2\ \of\ \R3 \}
+\item[] .( \F1\ \of \F2\ \of \F3) 
+\end{trivlist}
+
+This control expression, however, does {\em not} yield the intended effect.
+Suppose we have some structure that \R1\  must apply to. The idea is that
+application of \R1\  is optional, but that (incorrect) structures yielded
+by
+nonapplication of \R1\  will be 
+ruled out by filter \F1. With the control expression given, however, it is 
+possible to skip the rule class, and apply \F2\  or \F3, so that there is
+no guarantee that rule \R1 will apply. 
+
+To achieve the intended effect, the control expression must be changed in such 
+a way that always all filters are applied. i.e. as: 
+
+
+\begin{trivlist}
+\item[] \{ \R1\ \of \R2\ \of\ \R3 \}
+\item[] .( \F1)
+\item[] .(\F2)
+\item[] .(\F3) 
+\end{trivlist}
+
+\noindent
+Since in most cases separate rules of a rule class deal with nonoverlapping
+subcases, the control expression given  has also often been changed into
+a control expression of the form:
+
+\begin{trivlist}
+\item[] \{ \R1\}
+\item[] .( \F1)
+\item[] .\{\R2\}
+\item[] .(\F2)
+\item[] .\{\R3\}
+\item[] .(\F3) 
+\end{trivlist}
+
+\noindent
+which gives a more local grouping of rules and associated filters.
+
+This situation occurs rather often. The caseassignment
+transformations in the Dutch CLAUSEtoSENTENCE subgrammar constitute 
+a typical example.
+In certain cases two filters have been collapsed to cover both cases to avoid
+the problem, e.g.
+for the transformations {\em  tertoerpos1} and {\em  tertoerpos2} there is
+one filter {\em  fertoerpos12} covering both nonapplication of {\em  
+tertoerpos1} and {\em  tertoerpos2}.
+
+As a consequence of this, it is not so clear anymore what should be called
+a rule or transformation class, since there is often not a simple and
+direct relation between {\em  rules that deal with the same phenomenon}
+and a specific relation in the control expression.
+
+
+A related problem arose for the interpretation of SUBRULES in filters. Though
+SUBRULES in rules and transformations indicate alternative ways of applying 
+rules and transformations (`OR'-relation), but
+in filters this interpretation would not yield the desired 
+results. For this reason the interpretation of subrules 
+in filters is: all subrules must be applied (`AND'-relation).
+
+
+Both problems are caused by the fact that filters contain a hidden negation, 
+turning `OR' relations into `AND' relations.
+
+\section{Optional or Alternative Transformations}
+
+\label{opt}
+Certain sentences can be parsed by M-Parser in two (or more) different ways,
+though the difference between these two parses can only be found in the
+application of one (or more) different transformation(s). These two parses
+yield two identical syntactic derivation trees. Theoretically this is no 
+problem, since M-Parser yields a set of syntactic derivation trees, in which
+two identical D-trees cannot occur. In practice, however, M-parser does
+not yield a set of D-trees, but a list of D-trees. As a consequence,
+for certain sentences there are two identical IL-trees and a doubling of the
+translations. If the target language itself also has optional or alternative
+transformations for these sentences (in particular this is the case if 
+source and target language are identical) the number of translations is
+multiplied by four (or even more). 
+A typical example is a sentence such as 
+{\em  hij probeerde dit te doen}, which can be analyzed as a verb-raising
+structure ( the corresponding subordinate clause would look like
+{\em  ...dat hij dit probeerde te doen}) or as an extraposition structure
+(the corresponding subordinate clause would look like {\em ...dat hij probeerde
+dit te doen}). Nonreduced nonnominative pronouns in Dutch constitute another 
+example: they can be cliticized, or not (example {\em  ik zag hem}). This 
+latter case should actually be changed (the syntactic difference is 
+semantically relevant as well), but the general point remains: in certain cases
+too many syntactic derivation trees, hence too many translations are yielded
+because sets of syntactic derivation trees are implemented as lists of 
+syntactic derivation trees. 
+This problem should be solved by changing the implementation. 
+
+\section{Filters}
+
+\subsection{Postfilters}
+
+Filters are supposed to guarantee application of rules in a reversible way.
+The general strategy is to formulate a filter in such a way 
+that it has the same input model
+and the same input conditions as its associated rule or transformation
+It applies {\em after} the associated rule or transformation. They are
+sometimes called {\em  postfilters}, to distinguish them from 
+{\em  prefilters} (See the following subsection).
+However, there are situations where this strategy does not work correctly.
+
+In Spanish a transformation, called the {\em  hay}-rule, 
+was formulated in the following manner (abstracting
+away from irrelevant details):
+\begin{description}
+\item[input model] CL[mu1, V, mu2]
+\item[output model] CL[mu1, V, Y, mu2]
+\item[CA-pair(COMP)] C : V= haber ; A : @
+\end{description}
+
+This transformation was made optional, and an associated filter was written,
+in the following manner,
+
+\begin{description}
+  \item[model] CL[mu1, V, mu2] 
+  \item[Condition(COMP)] V= haber
+\end{description}
+
+\noindent
+following the strategy indicated above. The effect was that application
+of the relevant transformation was not guaranteed. In fact, all structures
+containing {\em  haber}, including those where the transformation has applied
+to, are filtered by this filter. In this particular example the problem could
+be solved by adding a restriction to the variable mu2, viz. that its first
+element is not {\em  Y}, but I doubt whether this is
+always possible. More generally,
+filters cause problems if there are trees that match both the input and
+the output model of the 
+related transformation and their associated conditions `in a similar way'.
+
+Notice, however, that filters are only crucially required for iterative
+rules that must apply if they can apply. 
+Optional rules accompanied by a filter 
+can usually be rewritten as obligatory rules with
+one default rule (though often this is not easy because the complement
+of one or more models must be described in these cases, and it is  not clear 
+whether it is always possible).
+The {\em  hay}-rule cannot be an iterative rule, 
+since it violates the measure
+condition, i.e. it will always lead to an infinite loop: it will create an 
+infinite number of structures of the form {\em  ...V Y$^{*}...$}. 
+This is caused by the same property as what causes the problems
+w.r.t the filter, i.e. there are trees that match both the input and
+the output model (and associated conditions) `in a similar way'.
+
+So, I think, there is not really something wrong with the concept of filters,
+though rule writers should be very careful!
+
+Perhaps, the concept of `trees matching both the input model and the 
+output model and their associated conditions in a similar way' can be 
+formalized by comparing
+the input model and the output model (and their conditions), so that 
+warnings can be issued when this is the case (to avoid measure problems
+and filter problems).
+
+\subsection{Prefilters}
+
+Apart from so-called {\em  postfilters} there are also certain pre-filters.
+Pre-filters are filters associated to some rule or transformation (class)
+that precede this rule or transformation (class) in generation.
+Most of the pre-filters are speed filters, i.e. they are used to accelerate
+the parsing process (in analysis).
+
+Certain prefilters, however, are not speed filters, but essential   
+filters in the system. They usually exist because certain conditions
+could not be formulated in an acceptable way in the start rules. The
+start rules specify that the second (third, fourth) argument of the rule
+must be a variable, but it does not impose further conditions on these
+variables. However, actually there should be a requirement that 
+the attribute {\bf cases} of NPVAR and CNVAR should be equal to
+{\em  [nominative]}, it should require that the attribute {\bf  NPhead}
+of NPVAR should not be {\em  enokNP}, etc. Since these conditions could
+not be formulated in an acceptable way in the start rules prefilters
+check such requirements. Examples of essential prefilters are
+{\em  Fpreerq, Fprecaseassignment1, Fpreca1, Fprecaseassignment2,
+Fprecaseassignment3, Fprecaseassignment4, Fpresadjca1, Fpresadjca2}.
+
+Writing prefilters is extremely dangerous. One canNOT in general
+(analogous to writing postfilters) take the analytical input 
+model of some rule
+and the analytical conditions, because this will lead to  too restricted
+a set of sentences accepted. The reason for this is that such a filter
+would filter all structures satisfying the analytical input model and
+the analytical conditions, which is correct only if such structures can
+be made exclusively by the associated rule. If there are other rules or
+combinations of rules that can create such structures that precede the
+rule discussed, then the prefilter must be written in a less restricted
+manner. Hence, writing a correct prefilter requires a very thorough
+understanding
+of the full grammar, and changing the grammar might always require adaptations
+in prefilters.  Prefilters should be avoided as much as possible.
+
+
+\section{Depth of application}
+
+Mrules are not very well suited to deal with phenomena that can
+apply at several depths of embedding in  a structure. 
+
+This problem arises in particular w.r.t the VP node assumed in all 
+three languages..
+I am strongly convinced of the fact that a VP node must be assumed in
+a correct description of Dutch (evidence in favor of VP can be derived from
+coordination facts and from topicalization facts ( and from many, more
+theory dependent, descriptions of certain phenomena)).
+Furthermore, assuming a VP node served an enormous heuristic value in getting 
+some grasp on the enormous mess of phrases that can occur in the
+so-called {\em  Mittelfeld} of Dutch sentences.
+In English the existence of a VP-node is even more strongly motivated.
+I do not know how strong the motivation in favor of a VP node in Spanish is.
+
+But quite apart from  VP, the problem arises also w.r.t PREPPs, and
+w.r.t ADJPs, and w.r.t. PREPPs inside ADJPs.
+
+The major problem w.r.t Mrules is that they often must 
+be doubled, because referring to some node under VP cannot
+be collapsed with referring to some node under S.
+
+It would be desirable if certain possibilities were created to have variables
+so that one rule can generalize over elements at different depths of embedding
+in a tree.
+One might e.g. investigate whether a notation such as
+
+\def\up{$\uparrow$}
+\def\down{$\downarrow$}
+
+
+\begin{description}
+  \item[model] CL[ mu1, \down mu2, rel1/NPVAR, mu3 \up mu4]
+  \item[Cond] \down\up : VP
+\end{description}
+
+\noindent
+can be introduced as an abbreviation for the models
+
+\begin{description}
+  \item[] CL[mu1, mu2, rel1/NPVAR, mu3, mu4] with mu2 and mu3 =[] 
+  \item[] CL[mu1, rel2/VP[mu2, rel1/NPVAR, mu3], mu4]
+\end{description}
+
+\noindent
+plus a convention on the matching order. If this is possible
+one might perhaps even 
+allow nesting of \down\  and {\up}s if this
+is desirable. 
+Such conventions would simplify many rules, and reduce the number of rules.
+Perhaps one can even allow Mrules that operate at indefinite depths, which is
+necessary in certain cases. (See below) 
+
+
+\section{Mrules applying at indefinite depths}
+
+
+In certain cases it is necessary for Mrules to apply at indefinite depths.
+One simple example, already known from Rosetta2, involves Case Assignment
+to NPs. If an NP contains two coordinated NPs, then case must be percolated
+one level deeper, and since these coordinated NPs themselves can contain
+coordinated NPs as well, etc., case must be percolated to indefinite depths.
+The Case Assignment procedure in {\em  lsmruquo} is suited to deal with such
+structures.
+
+There are also other cases where Mrules must apply at indefinite depths.
+None of these cases have been implemented yet:
+
+\begin{description}
+  \item[Anaphoric Rules] The distance between a reflexive or reciprocal
+pronoun is severely restricted, but it still can apply at indefinite depths,
+cf. {\em  hij zag zichzelf}, {\em  hij zag foto's van zichzelf}, {\em hij zag
+afbeeldingen van foto's van zichzelf}, etc.; {\em  zij zagen elkaar}, 
+{\em zij zagen foto's van elkaar}, {\em  Zij zagen afbeeldingen van foto's
+van elkaar}, etc. No rules have been made to deal with such cases. Apart from
+the indefinite depths on which such rules must apply, there is an additional 
+problem w.r.t. fact that the NP-internal elements can be changed only
+after substitution, though the anaphor rules must apply before substitution.
+  \item[Substitution Rules] Consider the following example:
+\begin{description}
+  \item[] hij wil die boeken niet lezen 
+\end{description}
+
+In this example the NP {\em  die boeken} precedes the negative element {\em  
+niet}. The syntactic structure belonging to this structure is relatively
+flat, i.e. it does not contain an embedded sentence. 
+Given the way substitution applies (desubstitution of NPs from left to
+right), this NP will be desubstituted before {\em  niet}. In the English 
+translation of this sentence the element {\em  not} (corresponding to {\em  
+niet}) is located in the main clause, though the NP {\em  those books} 
+is part of the infinitival subordinate clause (The brackets in the example
+indicate SENTENCE boundaries).
+\begin{description}
+  \item[] he does not want [ to read those books]
+\end{description}
+
+So it is required to have a rule in English that substitutes NPs into a subordinate
+sentence.
+
+But of course, we can extend the Dutch example sentence with more
+verbs almost at will, 
+introducing more sentential embedding into the English translations, cf.
+
+\begin{description}
+  \item[] Hij wil die boeken niet kunnen lezen
+  \item[] He does not want [to be able [to read these books]]
+  \item[] Hij lijkt die boeken niet te willen kunnen lezen
+  \item[] He does not seem [to want [to be able [to read those books]]]
+\end{description}
+
+
+As a consequence, rules substituting at indefinite depths must exist in 
+English. These rules have not yet been written, because they cannot be written
+in the current notation. They should exist in generation only.
+
+Notice that it is not possible to deal with these cases by assuming that 
+the relevant NPs are substituted in Dutch and in English in the subordinate
+clauses, and moved upward after substitution in Dutch. This is not a 
+possible alternative, for the following reasons: for quantificational NPs
+it would imply that scope is dealt with inadequately (a sentence such as
+{\em  hij wou \'{e}\'{e}n boek niet lezen} will be assigned the same meaning
+as {\em  hij wou niet \'{e}\'{e}n boek lezen}); for nonquantificational
+NPs it will be impossible to make distinction between idiom chunks and
+free arguments, so that {\em  hij wou de pijp niet aan Maarten geven}
+will be analyzed both literally (which is correct) and idiomatically
+(which is incorrect).
+\end{description}
+
+\section{Repetition in subrules}
+%, macros
+% cp. lsmruquo functions - e.g. caseassignment
+
+A clear disadvantage of the current Mrule notation is the fact that all
+variations in structural information lead to new subrules, and a repetition
+of the condition action pairs. Even for such small structural differences
+as presence or absence of a comma a new subrule plus a repetition of all
+conditions and actions is required. This leads to long and uninsightful rules,
+causes more errors, makes updating or changing rules more difficult, and it
+is extremely boring to write such rules.
+
+Certain functions from LSMRUQUO could have been written in the standard Mrule
+notation, but have not because they would yield far too complex rules, and
+they would require a copy in all of these rules. 
+
+Some examples of such functions are: {\em  varinradv}, {\em  elkaarant},
+{\em  errelinpp}, {\em  varinnp}, {\em  negphrase},  {\em  firstisapossnietnp},
+{\em  possnietxp}, all parts of {\em  assigncase} except the part dealing with
+coordinated NPs, {\em  bigpronp}. 
+The functions {\em  firstrel} and {\em  firstcat}, {\em  lastrel} and
+{\em  lastcat} have been written in PASCAL because with the normal
+notation such conditions can be expressed only in a very difficult manner.
+(cf. e.g. the subrules in Verbraising1). In a later version of the Mrule
+notation special, more general, functions have been added to express these
+things.
+
+The function {\em  Contain2sgsubj} is not written in Mrule notation because
+the EXIST function cannot appear in CA-pairs if it contains a matchcondition.
+Putting the EXIST condition in  matchconditions would solve this problem, but
+it would require a doubling of the existing rule, which was very long already.
+
+This is clearly a point where the Mrule notation can be ameliorated.
+One possibility would be to allow (perhaps in limited ways)  to specify 
+structural information inside CA-pairs. A different possibility would be to 
+allow for macros abbreviating CA-pairs.
+
+\section{Cross-categorial attributes}
+% temporal attributes; mood; information passing
+
+The MRULE notation cannot deal very well with cross categorial attributes.
+Originally the possibilities to deal with such cases were virtually nil. 
+During the writing of Mrules the possibilities have been extended somewhat,
+especially by the so-called WITH-construction, but they are still far from 
+perfect.
+
+The problems arose especially w.r.t temporal attributes of syntactic 
+categories, but also with purely syntactic attributes (e.g. mood) and with
+syntactic attributes that pass on information from node to node.
+
+The MRULE notation can be ameliorated here somewhat. The MRULE notation 
+originally followed the formalism strictly, in that attribute-value pairs are
+category dependent. Perhaps the formalism should allow explicitly for the
+presence of crosscategorial attributes.
+
+Certain functions in LSMRUQUO have been written to prevent that certain 
+rules would become enormously complex solely because new subrules must 
+be assumed to deal with a new category. Some examples are the functions
+{\em  temprefnotfound, tempretronotfound, tempfreqnotfound}. See also the
+section on repetitions in subrules.
+
+\section{ Special types of M-rules}
+%reciprocal, BIGPRO rules, relmarking
+
+There are a number of special mrules. They are special in the sense that they
+contain indices as a parameter that is not a LEVEL parameter.
+
+
+\begin{description} 
+  \item[Relmarking rules] These rules store the index 
+of the variable that has been relativized or topicalized as a parameter
+of the rule in analysis, and in generation they mark the variable with
+an index equal to this parameter in such a way that it must be relativized
+or topicalized. The distinction between topicalization and relativization is
+captured in a different parameter. For relativization these rules are strictly
+spoken not necessary, though they do speed up generation. For topicalization 
+the rules are crucially required, to retain the information 
+of which phrase has been topicalized in translation. 
+These rules have not been tested yet.
+  \item[Reciprocal Rules] The reciprocal rules are substitution rules (hence
+they have a LEVEL parameter) that substitute an NP heading a reciprocal 
+pronoun. At the same time the rule relates this reciprocal pronoun to its
+antecedent, by checking whether there is a variable that can serve as the
+antecedent for the reciprocal pronoun  and by storing the index of this 
+variable as a parameter. For the motivation to do these things in this
+manner, see doc. R0314 (XPPROPtoCLAUSE subgrammar). 
+  \item[BIGPRO rule] For the proper treatment of nonobligatory control the
+same mechanism is required as used for reciprocal rules, for analogous reasons.
+Since the control rules had been written originally as transformations, and
+since splitting them up into a set of transformations (for obligatory
+control) and a set of rules (for nonobligatory control with BIGPROs) would
+complicate the whole system considerably, it was decided to store a copy of
+the
+index of the antecedent in the BIGPRO itself (instead of storing it in the 
+control rule, which 
+would be impossible since it is a transformation). This index must 
+of course passed onto a parameter of some other  rule, because it is information
+relevant to  translation. This is performed in the rule forming an NP out of 
+a BIGPRO. This rule contains an integer parameter to store the index of the
+antecedent of BIGPRO. These rules have not yet been tested.
+\end{description}
+
+
+Originally, rules of this type were not possible because the transfer notation
+did not allow for integer parameters other than the LEVEL parameters. The 
+transfer
+notation has been extended to deal with the cases described here.
+
+
+\section{Internal Parameters}
+% and wh-shift
+
+In Rosetta3 so-called internal parameters do not exist. They did exist in 
+Rosetta2. Internal parameters are parameters that are not relevant to 
+translation that make it possible to collapse a number a rules
+that do almost the same into one rule: the differences are represented in the
+parameter.
+Internal parameters were used in Rosetta2  among others in the
+shift rules. The shift transformations in Rosetta3 are considerably more 
+complex than the corresponding rules in Rosetta2 because the effect of the
+internal parameters has to be  achieved by means of subrules. This is clearly
+a more complex and longer way of writing these things down. External 
+parameters could not be used either, since transformations do not allow
+parameters at all. 
+
+It clearly is more difficult to write down such rules in Rosetta3 than it was 
+in Rosetta2, so it would be nice if Rosetta3 could be extended with
+internal parameters or something like it (especially in transformations).
+
+In certain other cases  parameters have been used
+as internal parameters to avoid a problem with the matching convention
+(when the specification 
+ALL was not possible yet), cf. the rules RNegvar2 and Rnegvar3.
+
+\section{Use of relations}
+
+Very often in rules two (or more) list variables occur immediately next to one
+another (e.g. {\em mu1, mu2}, or {\em  sig1, mu2}). In order to be sure that 
+the elements of a structure are correctly partitioned over these two (or more)
+variables, an ordering has been defined over {\em 
+relations}. This ordering
+specifies for each pair of {\em relations}
+ {\em rel1,rel2} that can occur 
+under a certain node whether {\em  rel1 $\leq$ rel2} or {\em  rel2 $\leq$ rel1}
+under this node.
+
+Originally this ordering was implemented by defining 
+sets of {\em relations}
+that could precede (or follow) some given {\em relation}. 
+Some of these sets still
+exist and are used (e.g. the set of all {\em relations} that can 
+precede {\em  objrel}, called 
+{\em  preobjrels}, in dutch:lsauxdomain.auxdom).
+There were several reasons to change this method of defining sets. 
+
+Extremely much
+use has been made of this ordering, and it was foreseen that for certain 
+transformations (e.g. shift transformations) two sets would have to be
+defined for every relation that could be shifted!
+In addition, the ordering mentioned is transitive, but by encoding the
+ordering in sets the transitivity had to be guaranteed by hand (i.e. by
+correctly specifying all of the sets). 
+
+For these reasons, 
+specific functions
+have been defined for this purpose from a certain point in time. 
+These functions are {\em  Srelprec},
+{\em  VPrelprec} and {\em  AdjRelprec} and they are defined in 
+lsmruquo. In lsmruquo
+also the specification of the ordering is given (in Srelorder, VPrelorder, 
+Adjrelorder).
+
+In this way {\em relations} 
+(at least on the S and VP-level in Dutch) function more
+as position-indicators than as indicators of {\em  grammatical functions},
+though certain {\em relations} that occupy the same position are distinguished 
+according to their function, so one might consider the {\em  relations} 
+used in Rosetta3 as 
+{\em  qualified positions}.
+
+It would be desirable to add such specifications and functions as primitives
+in the M-rule notation, so that they can be removed from lsmruquo.
+
+
+
+\section{The \^{\ }-construction}
+
+For the purposes of idioms and semi-idioms a special construction has been
+introduced. This construction makes it possible to inspect a phrase that
+is going to be substituted (in generation) or has already been desubstituted
+(in analysis) by referring to its associated variable.
+It was not allowed to use this construction in normal Mrules.
+However, in the grammar of Dutch it has been used anyway, in one transformation 
+class (TC\_advRtoRpos). The reason for this was that not using this 
+construction would require addition of an attribute and revision of many rules.
+So, it is possible to write it without this special construction, but it 
+would require a lot of effort.
+
+\section{Reversibility}
+\subsection{Irreversible Mrules}
+
+The model part of Mrules is in general reversible. There is one exception:
+there is no guarantee that iterative  Mrules are reversible. 
+
+This is caused by the matching function used: without any specification
+only the left-most match that a list makes with a list description 
+is found.  If {\em  RIGHTTOLEFT} is specified  for some list, only the 
+right-most match is found.
+
+This matching function is not reversible. Consider the following (iterative)
+rule {\em R}:
+
+\begin{description}
+  \item[input model] CL[mu1, A, mu2] 
+  \item[output model] CL[mu1, B, mu2]
+  \item[CA] C=true; A=@.
+\end{description}
+ 
+Assume that this rule has the following associated filter, which must be 
+applied after the rule (speaking generatively):
+
+\begin{description}
+  \item[model] CL[ mu1, A, mu2] 
+  \item[Cond] C= true
+\end{description}
+
+This can be illustrated taking the structures {\em  CL[X A Y A Z]}, {\em  CL[X A Y B Z]}, {\em  CL[X B Y A Z]} and
+{\em  CL[X B Y B Z]} as input for generation. These will all be turned into {\em  CL[X B Y B Z]} by the rule and filter given.
+
+Reversibility now requires that all of the input structures are in the set of results of applying the filter
+and rules  analytically to  {\em  CL[X B Y B Z]}. The derivation process in analysis is illustrated in the following
+table:
+
+\begin{trivlist}
+\item[] \mbox{}
+\begin{tabular}[t]{|c|c|c|c|}
+\hline
+      &   {\em  CL[X B Y B Z]} &  {\em  CL[X B Y B Z]} &  {\em  CL[X B Y B Z]}\\
+\hline
+\hline
+filter &  ok                   & ok                    & ok \\
+\hline
+{\em  R}& --                 &  {\em  CL[X A Y B Z]} & {\em  CL[X A Y B Z]}\\
+\hline
+{\em  R}& --                 & --                    & {\em  CL[X A Y A Z]}\\
+\hline
+result & {\em  CL[X B Y B Z]} & {\em  CL[X A Y B Z]} &  {\em  CL[X A Y A Z]}\\
+\hline
+\end{tabular}
+\end{trivlist}
+
+The table illustrates all possibilities. The structure {\em  CL[X B Y A Z]} 
+cannot be derived in analysis, though it can be 
+an input structure in generation.
+
+If such  a situation occurs the specification ALL should be added.
+This specification guarantees that all possible matches between a list
+and a list description are found.\footnote{Notice, by the way, that applying
+the example rule to the example structurs yields the effect that the
+structure {\em CL[X A Y A Z]} can be derived in two different ways from
+{\em  CL[X B Y B Z]} without there being a difference in the derivation tree.
+This is caused by the fact that one can either replace first the leftmost 
+{\em  B} and then the rightmost one, or the other way around. From a 
+theoretical
+point of view this is no problem, but in practice the problem mentioned
+in section~\ref{opt} will occur.}
+An example of a rule requiring the specification
+ALL to guarantee reversibility is {\em Rsubstitution2} in the grammar of Dutch.
+
+In the rules Rnegvar2 and Rnegvar3 parameters (used internally) 
+have been added to guarantee application to all possible matches.
+
+\subsection{Notation}
+
+It would be desirable if the notation of the conditions and actions was
+made in such a way that only the generative  version need be written, plus
+an indication of where analysis deviates from generation. This would
+require less rule writing, and it would guarantee reversibility.
+Special care should be taken of efficiency sets which contain a purposeful
+asymmetry: in general, 
+in analysis only membership of some value is required, in 
+generation this value is made the only value of the set.
+
+If this is not done, then one might take a change of notation in 
+consideration. If the symbol {\em  =} is interpreted as an
+assignment in actions, and the symbol
+{\em  ;} is interpreted as {\em  AND} in conditions, copying from the 
+generative version to the analytical version will become easier.
+
+
+\subsection{Match Conditions} 
+
+A disadvantage of the current notation of match condition is that it
+makes it very difficult to see quickly whether a rule is reversible
+or not. This is so because e.g. a matchcondition in generation might correspond
+to an action in analysis, so that there is no symmetry of 
+condition action pairs, and no symmetry in matchconditions, but only symmetry
+in their combination. 
+The problem can partially be avoided by specifiying as much as possible
+in the condition action pairs, but this is not always possible. E.g.
+conditions on the index parameter are almost obligatorily put in the
+matchconditions, but the associated action can occur only in the
+condition action pairs.
+
+The problem is a real problem, in that it occurred very often that rule writers
+thought that they saw an asymmetry in the rule, and started to `ameliorate' it,
+only then finding out that there was no asymmetry at all.
+
+This problem can be solved by making Mrules reversible automatically,
+or by specifying match conditions simply in the condition action pairs
+with a marking that they are match conditions.
+
+\section{Record Numbering}
+
+In one of the first versions of the Mrule compiler it was required to change
+the name of a record in an output model if it was not simply a copy of some
+record from the input model. This requirement was dropped later, but it
+continued to be a convention, and most
+rules have been written satisfying this requirement.
+
+This requirement, however, has caused many errors. Furthermore, the
+convention complicated
+rule writing, especially if many different records of the same type occurred in 
+some rule, or if there were subrules in the rule. 
+
+One special situation that can be caused by making errors w.r.t. record numbers
+is the situation that the system does not operate correctly if it is not 
+debugged, while it operates correctly if the system is debugged! Such errors
+are extremely difficult to find, as one can understand.
+
+The situation can be ameliorated by not sticking to the convention (using the 
+same name for corresponding (but different) records of the same type, or
+by extending the Mrule notation in such a way that two related records have
+different but related names, e.g. allowing for names of recordvariables such
+as {\em  NOUNrec1'}, {\em  CLAUSErec2'} (corresponding to {\em  NOUNrec1},
+{\em CLAUSErec2} etc.)
+
+Furthermore, strong tests should be imposed on names of record variables
+occurring in conditions and actions, e.g. if some record variable name 
+{\em R} occurs in a generative condition, then it should occur in
+one of the (generative) input models as well, etc. Currently there are some
+of these tests, but they are too weak. 
+
+
+\section{Semantics of COPY  functions}
+
+COPY functions copy the values of shared attributes from one record to another
+when used in an assignment statement. For non shared attributes the values of
+the attributes of the record that is assigned to are set to a default value.
+
+In equation statements the values of shared attributes are compared for 
+equality, and nonshared nondefault attributes are checked for a default value.
+
+Though this is the correct reverse of the assignment statement, it turned out
+to be not very convenient. In practice most COPY assignments are followed
+by explicit assignments to the nonshared attributes. In the equation statement 
+corresponding to it, the COPY equation must now be extended with an EXCEPT
+clause for the nonshared attributes, which is not very convenient.
+
+It would perhaps be more convenient to have no check on nonshared attributes.
+If perfect reversibility is really required, it might be preferable not to
+assign default values to nonshared attributes in COPY assignments either,
+though this should be investigated. Certain rule writers prefer the current
+conventions.
+
+
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

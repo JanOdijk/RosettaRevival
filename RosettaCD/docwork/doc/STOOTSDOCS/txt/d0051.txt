@@ -1,0 +1,524 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta2.software
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Implementation problems
+
+         Author       :  C. Fellinger
+
+
+
+
+
+
+
+
+         Doc.Nr       :  51
+
+         Date         :  86/01/13
+
+         Status       :  approved
+
+         Supersedes   :  
+
+         Distribution :  project
+
+         Clearance    :  project
+
+         Keywords     :  modules, abstract datatypes, 
+                         Modula-2
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright (c) Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 51                      date:86/01/13
+$LD 4
+$Np 1
+$C1 Introduction
+$ This note describes some implementation problems we encountered when
+implementing Rosetta2. I have tried to give a practical solution and a
+theoretical solution for all problems. To make it possible to understand these
+solutions the note starts with some general background information.$ 
+
+$C1 A theoretical side step
+
+$C2 A design point of view
+$ A well-known technique in software design is to partition large programs into
+a number of logically related units. A very attractive kind of unit is the
+abstract datatype. An abstract datatype is a datastructure defined in terms of
+operations applicable to that datastructure. These operations may be defined in
+terms of yet other abstract datatypes.$ 
+$ The definition can be divided into a semantic and a syntactic part. The
+syntactic part, apart from introducing the names of the abstract datatype,
+its operations and their arguments, also defines the type of the arguments and
+the results. The semantic part defines the meaning of the operations. This
+can be done by using predicates or pre- and postconditions, and as a final
+escape one can resort to action descriptions.$ 
+$ The above mentioned partitioning is especially useful in showing the
+correctness of the design as wel as the implementation. Both can be proved
+correct in terms of the abstract datatypes they use. The correctness of the
+design as wel as the implementation of these abstract datatypes can be proved
+separately. This makes it possible to break down the proof into small and
+therefore manageable parts.$ 
+
+$C2 Implementation of abstract datatypes
+$ My personal opinion is that the closer an implementation follows the design
+the more likely it is that it is a correct implementation of the design. And as
+the design is done in terms of abstract datatypes, it is preferable to use as
+implementation language a language that supports the notion of abstract
+datatype. A good support of this notion must take into account the following.$
+$ The implementation of the abstract datatype mechanism consists of two parts.
+First there is a definition of the interface. This part corresponds to the 
+syntactic
+description of the abstract datatype. The interface description assures that
+this is the only way the abstract datatype can be used. Therefore the
+correctness of the implementation of the abstract datatype can be proved
+independent of its environment. Furthermore there is an implementation part, in
+which the implementation of the abstract datatype is described. This
+implementation must adhere to the semantic description of the abstract
+datatype. In this case the semantic description may be used in the correctness
+prove of the environment in which the abstract datatype is used.$ 
+$ Most languages will not support any check on the semantic part, but what is
+worse they also won't prevent the circumvention of the interface definition
+either, thereby destroying the possibility to prove the implementation of the
+abstract datatype without taking into consideration the rest of the program,
+and vice versa.$
+
+$C2 Another advantage of abstract datatypes
+$ The larger the program the nicer it is to be able to compile parts without
+having to compile the complete program.  This reduces recompilation time and
+improves the turnaround time. We will call this facility separate compilation.$
+$ By its very nature an abstract datatype is a perfect candidate for a separate
+compilation unit. Actually one needs two compilation units. An abstract
+ data type consists of an implementation and a
+definition part, and both these parts could well be compiled separately. This
+makes it possible to compile the complete interface description of the total
+design, and thereby checking it, before any implementation unit is made.
+Furthermore it is then possible to remake any implementation unit without
+having to recompile anything but that very unit itself. ( Because one need not
+recompile the complete program one saves on recompilation time, and as one only
+has to compile the changed implementation units, one can check the changes
+very quickly.)$ 
+
+$C1 The problems
+$ While implementing Rosetta2 we encountered some real problems. Only the most
+severe problems will be discussed here. For each of these problems I will give
+an example and some possible solutions.$ 
+$ A theoretical alternative solution to all our problems is to make one big
+program and restrict oneself to ISO Pascal. If one is able to circumvent the
+use of operating system dependent features the result is a completely portable
+program. That this is a highly theoretical solution will be clear if one thinks
+of the recompilation time problem.$ 
+
+$C2 problem 1: Recompilation time
+_problem_
+$ The compilation of the complete program for one language pair takes about
+one hour of CPU time. There are four such pairs and of every pair we maintain
+two versions. This means that even when recompilation is done at night, it is
+too great a burden for the VAX, as almost all its computer power is consumed by
+our demand for recompilation.$
+
+_general solution_
+$ The solution to this problem is a faster machine or, as it is called,
+separate compilation. A faster machine is very expensive and separate
+compilation is not part of ISO Pascal.$ 
+
+_solution in extended Pascal_
+$ In VAX/VMS Pascal however it is possible to split a program into smaller
+parts, these parts can be compiled separately and are often called _modules_.
+When a part is compiled a so called _environment_ file is created. This
+environment file contains all the global definitions in encoded form, and is
+used to pass information from one compilation unit to another so that all the
+type checking that is prescribed by the Pascal language can be done across
+compilation units. In order to use things from part A in part B it is necessary
+that part A is compiled before part B and that part B _'inherits'_ the
+environment file of part A.$ 
+$ A second way to make procedures and functions available outside a module is
+to declare them to be _global_. In order to use them elsewhere their headings
+have to be defined there again; this time they should be declared to be
+_external_. No checks are done to ensure that the routines exist, nor that
+the headings match.$
+
+_solution in Modula2_
+$ In Modula2 it is also possible to split a program into smaller parts, these
+parts are called modules too. Most modules exist in pairs, an
+_implementation_ and a _definition_ module, both to be compiled separately. In
+the definition module the interface of the implementation module is defined. By
+compiling a definition module all its declarations are _'exported'_. The
+compiled definition module is _'imported'_ into the modules that want to use
+it, it is also used during the compilation of its corresponding implementation
+module. So here too all type checks that are prescribed by the Modula2
+languages can by done across module boundaries. In order to use module A only
+its definition module needs to be compiled!$ 
+
+_separate compilation sec is not enough_
+$ There are two often occurring actions that endanger the gain in recompilation
+time by the use of separate compilation. Both will by discussed brief.$
+
+$C3 problem 1a:  changing the body of a procedure or function
+_problem_
+$ In standard Pascal even when only the body of a procedure or function has
+changed the complete program has to be recompiled. With the use of the VAX/VMS
+Pascal Inherit/Environment facility in its pure form one can restrict this to
+the modules that are involved in the change, for it is only necessary to
+recompile the module that contains the changed procedure or function and those
+modules that use that module and the modules that use them and so on.$
+$ In Rosetta a lot of function bodies change during the development period
+since all rules are implemented by functions, and these rules are often
+changed. This implies that still a lot of recompilation has to be done.$
+
+_general solution_
+$ If it were possible to make the distinction between implementation and
+definition of a module one only would have to recompile the module that
+contained the changed body. And only in case the interface of that procedure or
+function changed too it would be necessary to recompile the modules that use
+the recompiled module and so on.$ 
+
+_solution in Modula2_
+$ This distinction is part of Modula2, so the use of Modula2 would solve this
+problem adequately.$
+
+_solution in extended Pascal_
+$ By impurifying the VAX/VMS Pascal Inherit/Environment facility with the
+Global/External facility one can simulate this distinction in Pascal without
+losing too much of the checks. This is done as follows :$ 
+$ A module consists of a definition module and an implementation module, both
+with the same module name, both  to be compiled separately. The definition
+module contains only those declarations that are exported by the module. Only
+functions, procedures, types and constants may be exported. Each exported
+procedure or function must be declared _'EXTERNAL'_ in the definition module
+and _'GLOBAL'_ in the corresponding implementation module. An implementation
+module must inherit its corresponding definition module.$ 
+
+$ This impure Inherit/Environment mechanism is such that if in one
+(implementation ordefinition)module a procedure or function is known to be
+declared external as wel as global the compiler checks that the declarations
+match. This means that, as the definition part of the module is inherited by
+the implementation part of the module, one is sure that the exported procedure
+or function declaration matches the declaration of the implementation of that
+procedure or function. The compiler also checks, just as with normally declared
+procedures and functions, that the use of external-declared procedures and
+functions is in accordance with their declarations. Unfortunately the compiler
+does not check that the External mechanism is only used in definition modules,
+nor does it check that thus and only thus declared procedures and functions are
+also declared Global within their corresponding implementation modules. ( A
+selfmade checker or relying on visual checks solves this problem. ) The
+compiler does not check whether the modules are compiled in the right order (
+as it does when using the pure Inherit/Environment facility. The use of a tool
+like MMS solves this problem. MMS makes it possible to express dependencies
+between files in terms of their modification dates and to define actions that
+will be taken when the dependencies do not hold. ). And to make things worse it
+treats the thus declared procedures and functions of all modules as if they
+were all declared within the same scope, thus introducing the possibility of
+_unnoticed_ naming conflicts! ( a strict naming convention for exported
+procedures/functions solves this problem )$ 
+
+$C3 problem 1b:  changing the inside of a data structure
+_problem_
+$ As S-trees depend on the definition of VERBrecord, NOUNrecord etc.  and 
+D-trees depend on S-trees and almost all compilation units depend upon either
+of these trees it is necessary to recompile nearly the complete system whenever
+the declaration of VERBrecord etc changes, as necessarilly occurres during the
+development phase of a huge program like Rosetta2. As a substantial part of
+Rosetta2 does not use such language specific attributes one hopes that there is
+a way to prevent the huge recompilation.$ 
+
+_solution_
+$ The Ada generic mechanisme is the solution to this problem. In VAX/VMS Pascal
+as wel as in Modula2 it is possible to temporarily relax the type checking
+rules by special _type transfer functions_, some times called _type casting_.
+This makes it possible too to make the definition of S-tree independent of the
+structure of the VERBrecord. An S-tree now no longer contains a field r of type
+pointer to VERBrecord but a field r of a dummy type that has exactly the same 
+size as a pointer to VERBrecord. ( The VAX/VMS Pascal documentation as wel as
+the Modula2 language definition states that all pointer types use the same
+amount of memory, so a good dummy type is a pointer to integer. ) This makes it
+possible to declare S-tree without having to define VERBrecord. At those places
+where one needs the VERBrecord one uses a type transfer function to change the
+dummy typed r into a 'correctly' typed r.$ 
+$ Though a disadvantage is that this feature is easily misused writing
+incorrect programs circumventing the checks of the compiler, it is a solution
+to our problem.$ 
+
+$C2 problem 2: mutual dependencies between modules
+_problem_
+$ In generation we follow a depth first strategy, this means that G-TRANSFER
+calls M-GENERATOR repeatedly and M-GENERATOR calls LINEARIZER repeatedly,
+which on its turn calls G-MORPH repeatedly. Just before each component is
+activated we want to be able to print the intermediate results. In order to
+have to define this print action together with some other special actions only
+once we created an intermediate level called 'gencontroller'. This procedure 
+that
+is called by G-TRANSFER, M-GENERATOR and LINEARIZER, does the special actions
+and activates the next component. ( see also "a concise global design of
+Rosetta2", R36 ). Clearly gencontroller had to be mutually dependent with
+each of the four generative components, and as it is undesirable to put all
+five in one module, we just created mutually dependent modules.$
+
+_solution_
+$ The only neat solution to this problem is to make the distinction between the
+implementation and the definition of a module. Again this distinction is 
+standard in Modula2, and by impurifying the VAX/VMS Pascal Inherit/Environment
+facility with the Global/External facility one can simulate this distinction in
+Pascal as well without loosing too much of the checks ( see also problem 1a and
+its solution ).$ 
+
+$C2 problem 3: an-gen
+_problem_
+$ In analysis and in generation similar structures for the representation of
+eg. S-trees are used, and in case the source and the target languages are the
+same the very same structure is used. It is preferable to declare the common
+structure only once. However this is impossible in ISO Pacal due to naming
+conflicts.$
+
+_solution_
+$ To prevent these naming conflicts a kind of generic
+mechanism is necessary that provides a new name for each instantiation of the
+structure. This mechanism is simulated by means of the VAX/VMS Pascal
+Inherit/Environment facility in conjunction with the VAX/VMS Pascal Include
+mechanism. This made it possible to give modules a name depending on the
+language and version for which it was compiled. See also "The division of
+Roseta2 software" ([R0018]).$ 
+$ Another solution to this problem is to make separate programs for analysis
+and generation and let them communicate via intermediate files.$
+
+$C2 problem 4: Using language extensions
+_problem a_
+$ Not adhering to the standard of a language causes a real problem when
+transfering the program from one dialect to an other. We encountered this
+problem when we moved from Unix to VMS, this took us some months of which the
+main part was consumed by trying to let the compiler do more checks, as this
+had become possible now with the VAX/VMS Pascal Inherit/Environment facility.$ 
+
+_solution a_
+$ The best solution is to adhere to the ISO standard of the language, as most
+compilers will support a superset of the ISO standard. If the need for a
+language extension is very large it is better to switch to a more powerful
+language like Modula2 than to use that extension. When extensions are used
+it is advised to shield them with functions and procedures.
+ These routines should have headings that obey ISO Pascal, and it
+would be an extra aid if they were put in special modules. The latter is only
+possible in Modula2 and VAX/VMS Pascal, not in ISO Pascal.$
+
+_problem b_
+$ A related problem is that one is often forced to use operating system
+dependent features like file handling and special screen output routines (
+often those features are only accessible via the use of some language
+extensions ) making the program less portable too.$
+
+_solution b_
+$ There is no solution to this problem. But in order to keep it manageable it
+seems wise to restrict the use of operating system dependent features as much
+as possible, and above all to shield these features with functions and
+procedures.
+ These routines should have headings that obey ISO Pascal, and it
+would be an extra aid if they were put in special modules. The latter is only
+possible in Modula2 and VAX/VMS Pascal, not in ISO Pascal.$
+
+$C2 problem 5: The dictionary
+_problem a_
+$ Initialising the dictionaries within the analysis and generation components
+implies that this initialisation has to be done again before the translation of
+every single sentence. As the dictionaries are very large this would be too
+time consuming. Therefore they should be initialized in the main block, this
+however gives naming problems especially in the development fase ( see the
+an-gen problem ).$ 
+
+_solution a_
+$ We solved this by using modules in which the initialisation was defined. The
+initialisation routines are imported into the main module and activated once at
+the start of the program. This is possible both in Modula2 and in VAX/VMS
+Pascal.$ 
+
+_problem b_
+$ When the dictionaries grow even larger it becomes necessary to use fast
+access to disk files, and this is highly operating system dependent. This
+problem is already described in problem 4b.$
+
+$C2 problem 6: Include files
+_problem_
+$ In the Unix version all dependencies between modules were defined by means of
+include files. As long as include files are only included at one place it
+remains workable, although it is confusing, but as soon as they are included at
+more places it becomes difficult to keep track of the effect of changes made in
+the included file. An other disadvantage is that the compiler does not check
+whether all modules are compiled with the same version of the included files.
+And finally include files are not the appropriate medium to define the
+interface between modules as it is not clear what the compiler does with
+included declarations. For instance, do the same type declarations always lead
+to the same alignment optimalisations or has the use of the type within the
+compilation unit also some effect on the optimalisation? In the latter case
+types declared in include files are not necessarily used in the same way in all
+the modules in which they are included. ( In case of pointer types I already
+came across some unexpected things) This example invalidates the use of
+include files as interface descriptions.$ 
+
+_solution_
+$ The best solution is not to use include files, and certainly not to use them
+for defining the interface between modules, but to use the VAX/VMS Pascal
+Inherit/Environment facility or to use Modula2.$
+
+$C1 Conclusion
+$ Even if we would use Modula2 we still have portability problems due to the
+fact that we have to use operating system dependent features. A good design
+will encapsulate those features in separate modules, so that only their
+implementation modules need to be redefined when migrating  the program.$ 
+$ When we restrict ourselves to the above mentioned VAX/VMS Pascal extensions,
+namely Inherit/Environment to communicate between modules, External/Global to
+differentiate between implementation and definition and type casting to
+simulate generics, we will be able to solve the problems we encountered until
+now except for the operating system dependency problem. Besides translation
+of the program into Modula2 can be straightforward without the urge to
+redefine it, as the structure of the program already corresponds to the
+structure one would have given it when one started in Modula2. Only some minor
+problems are to be expected here, mainly because Modula2's set is a little more
+restricted than Pascal's and one has to define the input/output routines
+for structured files.$ 
+$ Maybe it is reassuring to realize that the Pascal program, when made in the
+proposed way, is relatively easily transformed into an ISO Pascal program. One
+merely has to put all the definitions from the definition modules at the
+beginning of the program, replacing the external-declarations of procedures and
+functions by forward-declarations, followed by the declarations of the
+implementation modules, replacing the global-declarations of procedures and
+functions by parameterless ones ( to match with the forward-declarations ).
+Name conflicts are resolved by prefixing all identifiers with the name of the
+module in which they were declared. All type cast operations are removed,  all
+declarations of hidden types are removed and at all other occurrences of the
+name of a hidden type it is replaced by the name of the type it was supposed to
+hide. Only in so far as no operating system dependent features are used will
+the resulting program be portable.$ 
+
+$A1 an example of the use of the proposed extensions.
+$ All the files related to on module have the same file name, only their
+file-extensions differ. The source of the implementation part of a module has a
+file-extension ".PAS", the definition part has a file-extension ".PAS". The
+compilation of the definition part gives rise to the creation of a so called
+environment file with the file extension ".PEN", containing the exported
+definitions. The compilation of the implementation part gives rise to the
+creation of an object file with the file extension ".OBJ", containing the
+generated code.$
+$ During the compilation of the implementation part the global-declarations
+are checked against the external-declarations from the definition part by
+'inheriting' them.$
+$ An expression is type casted by postfixing it with "::" and a type
+identifier.$
+$A2 definition/implementation
+
+_file Attributes.env_
+
+[ENVIRONMENT('Attributes')]
+MODULE Attributes;
+
+   TYPE
+      VERBrecord = RECORD
+                      ...
+                   END;
+
+END {Attributes}.
+
+
+_file Strees.env_
+
+[ENVIRONMENT('Strees')]
+MODULE Strees;
+
+   TYPE
+      StreePtr = ^Stree;
+      Stree    = RECORD
+                    ...
+                    r : ^INTEGER;
+                    ...
+                 END;
+
+END {Strees}.
+
+
+_file SurfaceRules.env_
+
+[ENVIRONMENT('SurfaceRules'),
+ INHERIT('Strees')]
+MODULE SurfaceRules;
+
+   [EXTERNAL] FUNCTION SurfaceRule(...) : StreePtr;
+   EXTERNAL;
+
+END {SurfaceRules}.
+
+
+_file SurfaceRules.pas_
+
+[INHERIT('SurfaceRules',
+         'Attributes',
+         'Strees')]
+MODULE SurfaceRules;
+
+   [GLOBAL] FUNCTION SurfaceRule(...) : StreePtr;
+   BEGIN
+      (* in deze body kan iets staan van de volgende vorm
+       *
+       *   IF s.r::VERBrecord.tijd = Ovt THEN ...
+       *
+       *)
+      ...
+   END {SurfaceRule};
+
+END {SurfaceRules}.
+
+
+_file SurfaceParser.env_
+
+[ENVIRONMENT('SurfaceParser'),
+ INHERIT('Strees')]
+MODULE Surfaceparser;
+
+   [EXTERNAL] PROCEDURE surfparser(s:Stree);
+   EXTERNAL;
+
+END {SurfaceParser}.
+
+
+
+
+_file SurfaceParser.pas_
+
+[INHERIT('SurfaceParser',
+         'Strees',
+         'SurfaceRules')]
+MODULE SurfaceParser;
+
+   [GLOBAL] PROCEDURE surfparser(s:Stree);
+   BEGIN
+      (* in deze body kan iets staan van de volgende vorm
+       *
+       *   s:= SurfaceRule(...)
+       *
+       *)
+      ...
+   END {parser};
+
+END {SurfaceParser}. 

@@ -1,0 +1,2710 @@
+
+DUTCH 46
+&
+\begin{verbatim}
+
+This file contains the following rules:
+
+NAME              TASK
+
+FpostunitNP       blocks the further generation of unitNPs with 
+                  incorrect number              
+RNPformation1     NP out of  DETP (simplex or partitive) and CN with head NOUN
+RNPformation2     NP out of  DETP (simplex or partitive) and CN with head EN 
+
+RNPformation3     NP out of 'de' and CN with head EN 
+RNPformation3a    NP out of 'die/dat' and CN with head EN 
+RNPformation4     NP out of 'de' or 'het' and CN with head NOUN
+RNPformation4a    NP out of 'een' and CN with head NOUN
+RNPformation5     NP with possessive detrel out of CN with head NOUN + posrel 
+RNPformation10    bare (plural or mass) NP out of CN with head NOUN
+RNPformation12    NP with -en suffix out of DETP and human CN with head EN
+TNPhop            prenominal DETP -> postnominal hopQP ('genoeg')
+
+_____________________________________________________________________________
+\end {verbatim}
+\newpage
+\begin{verbatim}
+NOTES: 
+
+veel van mij: massEN + posrel
+beide: INDEFPRO of kale DETP
+
+*een van de: volgt uit NPformation2-opzet
+? een van die
+ een van ons 
+------------------------------------------------------------------------------
+\end {verbatim}
+\newpage
+\begin{verbatim}
+%
+% FILTER FpostunitNP (* block the further generation of unitNPs with 
+                        singular plural NOUN that do not contain a 
+                        numeral modifier or determiner, or that do contain a 
+                        non-numerical modifier  *)
+
+< m : NP{NPrec1}[mu1,
+                 head/CN{CNrec1}
+                               [ mu2,
+                                 head/NOUN{NOUNrec1}[mu3],
+                                 mu4
+                                ]
+                ]
+>
+
+   MATCHCONDITIONS
+      <
+       m:( (* unitnoun IN CNrec1.actsubcs AND *)
+          CNrec1.numbers = [plural] AND
+          NOUNrec1.number = singular AND
+          ((NOT  EXIST (mu1, [detrel/I11::DETP{DETPrec1}[mu5]])) AND
+           (NOT  EXIST (mu2, [modrel/I12::DETP{DETPrec2}[mu6]]))) OR
+           (EXIST(mu2, [I13:rel3/T3])) OR
+           (EXIST(mu4, [I14:rel4/T4]))
+         )
+      I11: DETPrec1.definite = indef AND
+           plural IN DETPrec1.possnumbers (* extra attributen of key-set
+                                              nodig om `vele' en `weinige'
+                                              uit te sluiten van I11 en I12 *)
+      I12: DETPrec2.definite = indef AND
+           plural IN DETPrec1.possnumbers 
+      I13: (rel3 IN [modrel]) AND (T3.CAT IN [ADJP, SENTENCE])
+      I14: (rel4 IN [modrel, postmodrel]) AND 
+           (T4.CAT IN [SENTENCE, ADJP, PREPP, ADVP])
+      >
+
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+
+      (* No DECOMP *)
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] FpostunitNP
+\item[* relevant examples:] * een van de uur, *de uur, *uur, 
+*een van Jans' jaar, *mijn uur, *vele uur
+\item[* language:] Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] NPformation
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 4-AUG-1989 13:31:18  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To block NP's with a plural unitnoun head 
+with singular morphology
+when there is no plural 
+count indefinite determiner or modifier preceding it.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item This filter is neither a speedrule, nor a filter that is to
+check the correct application of an optional rule class. 
+It filters out a specific subset of illformed NPs that are 
+output op the RC:NPformation. 
+The reason to use the filter mechanism for this purpose is that 
+it is the only way to express the restriction on the use of the singular 
+paraphrase of plural unitnouns such as {\em uur} in a generalized way.
+The alternative would be to complicate at least four rules of RC:NPformation
+in order to exclude the formation of the illformed examples. 
+It would require more elaborate models and the addition of 
+rather complicated matchconditions. 
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% RULE RNPformation1                  (* NP uit DETP en CN met NOUN *)
+< m1: CN{CNrec1}[I1:mu1]
+ 
+  m2: DETP{DETPrec1}[mu2,
+                     I2:head/T1
+                    ]
+>
+
+< m : NP{NPrec1}[detrel/DETP{DETPrec2}[mu2,
+                                       I2:head/T1],
+                 head/CN{CNrec1}[I1:mu1]
+                ]
+>
+
+   MATCHCONDITIONS
+      <
+        I1: NOT EXIST(mu1,[head/EN{ENrec1}]) AND
+            NOT EXIST(mu1, [posrel/NP{NPrec2}[mu8]])
+        I2: (T1.CAT IN [DET, DEMADJ, QP, DETP, CARD])
+            OR 
+            (T1.CAT IN [NUM] WITH T1.REC.key <> KEY_een1NUMkey) 
+                             (* Er zijn twee NUMs `een': eentje met
+                                en eentje zonder accent; de laatste
+                                wordt hier uitgesloten en komt alleen
+                                door de regel voor de partitieve DETP
+                                `een van de'. `een' zonder accent is
+                                overigens ook ART.
+                             *)
+      >
+
+      COMP
+         <
+            C1: DETPrec1.posscomas * CNrec1.posscomas <> [] AND
+                  DETPrec1.possnumbers * CNrec1.numbers <> [] AND
+                 ((CNrec1.definite = DETPrec1.definite )
+                 OR (CNrec1.definite = omegadef)
+                 OR (CNrec1.definite = def AND DETPrec1.mood = wh)) AND
+                 (DETPrec1.superdeixis = CNrec1.superdeixis)
+    
+                 C11: plural IN CNrec1.numbers AND
+                      ((omegagender IN DETPrec1.possgenders ) OR
+                       (DETPrec1.eORenform = eform))
+                 A11: NPrec1.actcomas := [count];
+                      NPrec1.number := plural  
+                                   (* alle/veel/vele boeken;
+                                      always 'noform'!! *)
+                 C12: ((singular IN CNrec1.numbers) AND
+                      (mass IN CNrec1.posscomas)) AND
+                      ((DETPrec1.possgenders = [omegagender]) OR
+                       (DETPrec1.possgenders * CNrec1.genders <> []))
+                 A12: NPrec1.actcomas := [mass];
+                      NPrec1.number := singular    (* alle suiker *)
+                 C13: singular IN CNrec1.numbers  AND
+                      count IN CNrec1.posscomas AND
+                      ((omegagender IN DETPrec1.possgenders ) OR
+                       (DETPrec1.possgenders * CNrec1.genders <> []))
+                 A13: NPrec1.actcomas := [count];
+                      NPrec1.number := singular        (* elk boek; elke man *)
+         A1: NPrec1 := { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP  
+                         };
+              DETPrec2 := DETPrec1;
+              DETPrec2.superdeixis := omegadeixis;
+
+                          
+         >
+
+      DECOMP
+         <
+          C1:  NPrec1 = { posspred          : DETPrec2.posspred
+                          definite          : DETPrec2.definite
+                          possnietnp        : DETPrec2.possnietnp
+                          mood              : DETPrec2.mood
+
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP  
+                         }  AND
+         
+              (NPrec1.cases = [nominative]) AND
+              ((CNrec1.definite = DETPrec2.definite )
+              OR (CNrec1.definite = omegadef)
+              OR (CNrec1.definite = def AND DETPrec2.mood = wh))  AND
+              DETPrec2.posscomas * CNrec1.posscomas <>[] AND
+              DETPrec2.possnumbers * CNrec1.numbers <> [] AND
+              (DETPrec2.superdeixis = omegadeixis)           
+                                  (* probleem: een van de *)
+
+                   C11:(plural IN CNrec1.numbers) AND
+                       (NPrec1.actcomas * [count] <> []) AND
+                       (NPrec1.number = plural) AND
+                       ((DETPrec2.possgenders = [omegagender]) OR
+                        (DETPrec2.eORenform = eform))
+                   A11: @
+                   C12: (singular IN CNrec1.numbers) AND
+                        (mass IN CNrec1.posscomas) AND
+                        (NPrec1.actcomas * [mass]<> []) AND
+                        (NPrec1.number = singular) AND 
+                      ((DETPrec2.possgenders = [omegagender]) OR
+                       (DETPrec2.possgenders * CNrec1.genders <> []))
+                   A12: @
+                   C13: singular IN CNrec1.numbers AND
+                        NPrec1.actcomas * [count] <> [] AND
+                        NPrec1.number = singular AND
+                      ((DETPrec2.possgenders = [omegagender]) OR
+                       (DETPrec2.possgenders * CNrec1.genders <> []))
+                  A13:  @
+            A1:  DETPrec1 := DETPrec2;
+                 DETPrec1.superdeixis := CNrec1.superdeixis;
+         >
+
+
+
+&
+
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RNPformation1
+\item[* relevant examples:] 
+\begin{verbatim}
+T1 = DET:   die (aardige) jongen(s) / die (zoete) suiker
+            dat (mooie) boek / dat (doffe) zilver
+            deze (goede) zanger(s) / deze (lekkere) kaas
+            dit (mooie) boek / dit (donkere) goud
+T1 = NUM:   drie (groene) truien
+T1 = DET:   elke (oude) man -- elk (oud) boek    ('eForm' vs. 'noform';
+            menig                                  count/singular       )
+            ieder
+            ---
+
+            veel boeken  -- veel kaas            (always 'noform';
+            alle                                  count/plural vs. mass/singular)
+            sommige
+              ---
+
+           vele                                 (always 'noform';
+                                                always count/plural )
+\end{verbatim}
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] NP-formation
+\item[* class:] (name of rule, transformation or filter class) NPformationrules
+\item[* date of creation:] 9-FEB-1987 11:19:27  
+\item[* author:] Franciska de Jong, Elly van Munster
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 26/10/88\ \ \ \ \ author: LIsette Appelo
+\item date: 12/01/90\ \ \ \ \ author: Lisette Appelo\\
+Added NPrec1.class :=/= CNrec1.class 
+ \end{enumerate}
+\item[* task:]
+Making an NP out of a CN containing a NOUN, and a DETP containing a:
+\begin{enumerate}
+\item DEMADJ 
+\item NUM
+\item DET    
+\end{enumerate}
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+-$\rightarrow$ QP as the head of the DETP hasn't been considered yet.\\ \\
+-$\rightarrow$ There has to be written also a rule for: DEMADJ + {\em EN}.\\ \\
+Considering the following data: \\ \\
+\ \ \ \ \ \ - *dit EN \\ \\
+\ \ \ \ \ \ - *dat EN \\ \\
+\ \ \ \ \ \ -  dit mooie EN (Welk boek ...?  Dit mooie.) \\ \\  
+\ \ \ \ \ \ -  dat mooie EN
+(NB. Hij leest een mooi boek. vs. Hij leest een mooi{\em e}.) \\ \\           
+\item observations:\\
+\item modifications: 26/10/88: Superdeixis DETP added.\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% RULE RNPformation2   
+
+< m1:  CN{CNrec1}[mu1,
+                  head/EN{ENrec1},
+                  I3:mu2
+                  ]
+
+  m2: DETP{DETPrec1}[I2:mu3]
+>
+
+< m : NP{NPrec1}[detrel/DETP{DETPrec2}[I2:mu3],
+                 head/CN{CNrec1}[mu1,
+                                 head/EN{ENrec1},
+                                 mu2
+                                ]
+
+                ]                       
+>
+
+   MATCHCONDITIONS
+      <
+      I2: NOT EXIST(mu3, [head/ART{ARTrec1}])
+      I3: NOT EXIST(mu2, [posrel/NP{NPrec2}[mu8]])
+      >
+<
+
+   SUBRULE  (* 1: enokNP: kan zonder er *)
+      
+      <mu1: [I1:mu4] >
+      <mu1: [I1:mu4] >
+
+   MATCHCONDITIONS
+      <
+      I1: mu4 <> [] 
+      >
+
+      COMP
+         <
+          C1: (DETPrec1.posscomas * CNrec1.posscomas <> []) AND
+              (DETPrec1.possnumbers * CNrec1.numbers <> []) AND
+              (DETPrec1.superdeixis = CNrec1.superdeixis) AND
+              ((mass IN CNrec1.posscomas) 
+                                   -> (DETPrec1.definite = def))
+              (* to exclude a mass analysis for: (indef) veel mooie  *)
+              C11: plural  IN CNrec1.numbers   (* twee gele *)
+              A11: NPrec1.number := plural 
+              C12: singular  IN CNrec1.numbers (* een gele, die mooie *) 
+              A12: NPrec1.number := singular        
+          A1: 
+              NPrec1 := { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          NPhead     : enokNP
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                         } ;
+
+              NPrec1.actcomas :=  CNrec1.posscomas * DETPrec1.posscomas;
+              DETPrec2 := DETPrec1;
+              DETPrec2.superdeixis := omegadeixis;
+          >
+
+      DECOMP
+         <
+          C1: DETPrec2.posscomas * CNrec1.posscomas <> [] AND
+              DETPrec2.possnumbers * CNrec1.numbers <> [] AND
+              ((mass IN CNrec1.posscomas) -> (DETPrec2.definite = def))
+               AND
+              NPrec1 = { posspred          : DETPrec2.posspred
+                          definite          : DETPrec2.definite
+                          possnietnp        : DETPrec2.possnietnp
+                          mood              : DETPrec2.mood
+
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          NPhead     : enokNP
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                         }  AND
+
+               (NPrec1.actcomas * 
+                (CNrec1.posscomas * DETPrec2.posscomas) <> []) AND
+               (NPrec1.cases = [nominative]) 
+                C11: plural  IN CNrec1.numbers  AND   (*twee gele *)
+                     NPrec1.number = plural 
+                A11: @
+                C12: singular  IN CNrec1.numbers AND
+                     NPrec1.number = singular  (* een gele, die mooie *) 
+                A12: @
+          A1:   DETPrec1 := DETPrec2;
+                DETPrec1.superdeixis := CNrec1.superdeixis;
+      >
+
+   SUBRULE  (* 2:count enNP: kan niet zonder er
+                 mass enokNP: kan zonder er *)
+
+      <mu1: [] >
+      <mu1: [] >
+
+      COMP
+         <
+          C1: (DETPrec1.posscomas * CNrec1.posscomas <> []) AND
+              (DETPrec1.superdeixis = CNrec1.superdeixis) AND
+              (DETPrec1.possnumbers * CNrec1.numbers <> []) AND
+              (DETPrec1.definite IN  [indef, adef]) 
+
+              C11: count IN (DETPrec1.posscomas * CNrec1.posscomas) AND 
+                   plural  IN CNrec1.numbers      (* twee, vele, de meeste *) 
+              A11: NPrec1.number := plural ;
+                   NPrec1.NPhead := enNP;
+              C12: count IN (DETPrec1.posscomas * CNrec1.posscomas) AND 
+                   singular  IN CNrec1.numbers    (* een *)
+              A12: NPrec1.number := singular ;       
+                   NPrec1.NPhead := enNP;
+              C13: mass IN (DETPrec1.posscomas * CNrec1.posscomas) AND
+                   singular  IN CNrec1.numbers   (* veel *)
+              A13: NPrec1.NPhead := enokNP;
+                   NPrec1.number := singular; 
+                   
+          A1: 
+              NPrec1 := { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                         } ;
+
+              NPrec1.actcomas :=  CNrec1.posscomas * DETPrec1.posscomas;
+              DETPrec2 := DETPrec1;
+              DETPrec2.superdeixis := omegadeixis;
+          >
+
+      DECOMP
+         <
+          C1: DETPrec2.posscomas * CNrec1.posscomas <> [] AND
+              DETPrec2.possnumbers * CNrec1.numbers <> [] AND
+              DETPrec2.definite IN  [indef, adef] AND
+               NPrec1 = { posspred          : DETPrec2.posspred
+                          definite          : DETPrec2.definite
+                          possnietnp        : DETPrec2.possnietnp
+                          mood              : DETPrec2.mood
+
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                         }  AND
+               (NPrec1.actcomas * 
+                (CNrec1.posscomas * DETPrec2.posscomas) <> []) AND
+               (NPrec1.cases = [nominative]) 
+                C11: count IN (DETPrec2.posscomas * CNrec1.posscomas) AND 
+                     plural  IN CNrec1.numbers  AND   
+                               (* twee, vele, de meeste *)
+                     NPrec1.number = plural  AND
+                     NPrec1.NPhead = enNP
+                A11: @
+                C12: count IN (DETPrec2.posscomas * CNrec1.posscomas) AND 
+                     singular  IN CNrec1.numbers AND (* een *)
+                     NPrec1.number = singular AND
+                     NPrec1.NPhead = enNP
+                A12: @
+                C13: mass IN (DETPrec2.posscomas * CNrec1.posscomas)
+                     AND (* veel *)
+                     singular  IN CNrec1.numbers AND
+                     NPrec1.NPhead = enokNP AND
+                     NPrec1.number = singular
+                A13: @
+          A1:   DETPrec1 := DETPrec2;
+                DETPrec1.superdeixis := CNrec1.superdeixis;
+      >
+>
+&
+
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RNPformation2
+\item[* relevant examples:]
+         EN                 $\rightarrow$ drie EN, enkele EN, de meeste, 
+         gele EN            $\rightarrow$ drie gele EN, alle gele EN
+         honderd EN         $\rightarrow$ alle honderd EN
+         EN met een rietje  $\rightarrow$ drie EN met een rietje
+                  ................. etc.
+         excluded: beide EN, die EN daar; cf. RNPformation11 
+         excluded: die met een strikje: cf. Rnpformation3a
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] NP-subgrammar
+\item[* class:] (name of rule, transformation or filter class) NPformationrules
+\item[* date of creation:] 10-DEC-1986 11:22:32  
+\item[* author:] Franciska de Jong, Elly van Munster
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 26/10/88\ \ \ \ \ author: LIsette Appelo
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+The formation of an NP out of a CN with (a) an empty head (EN), and a DETP.
+Blocked: 'alle', 'elke', 'iedere', etc. 
+as bare NP (see above).
+\begin{verbatim}
+            NB. there is a problem with 'beide':
+                    *alle
+                    *alle met een strikje
+              
+              but:   beide
+                    *beide met een strikje
+           
+            If 'beide' is considered def, the problem is that 'beide'  
+            will be blocked wrongly;
+            if 'beide' is considered adef, the problem is that the 
+            ungrammatical 'beide met een strikje' won't be blocked.
+
+    $\rightarrow$ The best solution will probably be to assign 'beide' two categories: 
+                                       INDEFPRO / DET
+        Assuming now 'beide' is def, NPformation1 will block 'beide', but 
+        another rule for INDEFPRO's will accept it.
+
+\end{verbatim}
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+    Not yet specified: the value of NPrec1.possnietnp
+                                          .syntquant         ;
+    It should be investigated whether bare demonstratives (always 
+    definite!!) should be dealt with by this rule (which would possibly
+    require an extra attribute), or by another one.
+\item modifications: 26/10/88: Added superdeixis DETP\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% RULE RNPformation3           (* (NUM) (ADJ) EN --> de (NUM) (ADJ) EN *)
+
+< m1: CN{CNrec1}[I1:mu1,
+                 head/EN{ENrec1},
+                 I3:mu2
+                ]
+>
+
+< m:  NP{NPrec1}[detrel/DETP{DETPrec1}[head/ART(KEY_deartkey){ARTrec1}],
+                 head/CN{CNrec1}[I1:mu1,
+                                 head/EN{ENrec1},
+                                 mu2
+                                ]                       
+                ]
+>
+
+   MATCHCONDITIONS
+      <
+        I1:EXIST(mu1, [modrel/DETP{DETPrec2}[mu3, head/NUM{NUMrec1}]]) OR 
+           EXIST(mu1, [modrel/ADJP{ADJPrec1}[mu4]])                 
+        I3: NOT EXIST(mu2, [posrel/NP{NPrec2}[mu8]])
+      >
+
+      COMP
+         <
+          C1: true
+             C11: singular IN CNrec1.numbers
+             A11: NPrec1.number := singular;
+             C12: plural IN CNrec1.numbers
+             A12: NPrec1.number := plural;
+          A1: DETPrec1 := COPYT_ARTtoDETP(ARTrec1);
+              DETPrec1.posspred := true;
+              NPrec1 := { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : enokNP
+                         };
+                          NPrec1.actcomas   := CNrec1.posscomas;
+
+         >
+
+      DECOMP
+         <
+          C1:  
+               NPrec1 = { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : enokNP
+                         }  AND
+               NPrec1.actcomas * CNrec1.posscomas <> [] AND
+               NPrec1.cases = [nominative] AND
+               DETPrec1  = COPYT_ARTtoDETP(ARTrec1) AND
+               DETPrec1.posspred = true
+               C11: singular IN CNrec1.numbers AND
+                    NPrec1.number = singular
+               A11: @
+               C12: plural IN CNrec1.numbers AND
+                    NPrec1.number = plural
+               A12: @
+          A1:   @    
+         >
+&
+  
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RNPformation3
+\item[* relevant examples:] {\em (drie) (dure) EN} $\rightarrow$ 
+{\em {\bf de} (drie) (dure) EN} (ook singular: de gele EN)
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] NP-subgrammar
+\item[* class:] (name of rule, transformation or filter class) NPformationrules 
+\item[* date of creation:] 10-DEC-1986 13:39:23  
+\item[* author:] Franciska de Jong, Elly van Munster
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+Syncategorematic introduction of {\em de} in case of an empty CN head..
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:] 
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+\item rules:\\
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+
+% RULE RNPformation3a      (* (NUM) EN van x1  --> dat/die (NUM) EN van x1 *)
+
+
+< m1: CN{CNrec1}[I1:mu1,
+                 head/EN{ENrec1},
+                 I3:mu2
+                ]
+>
+
+
+< m:  NP{NPrec1}[detrel/DETP{DETPrec1}[I2:head/T1],
+                 head/CN{CNrec1}[I1:mu1,
+                                 head/EN{ENrec1},
+                                 I3:mu2
+                                ]                       
+                ]
+>
+
+   MATCHCONDITIONS
+      <
+        I1: ALL (mu1, modrel/DETP{DETPrec2}[mu4])
+        I2: (T1.cat IN [DEMADJ] WITH T1.REC.key = KEY_datDEMADJkey) OR
+            (T1.cat IN [DEMADJ] WITH T1.REC.key = KEY_dieDEMADJkey)
+        I3: EXIST(mu2, [rel1/PREPP{PREPPrec2}[mu8]])
+      >
+
+<
+(* 1 *)
+SUBRULE
+< >
+<T1:DEMADJ(KEY_dieDEMADJkey){DEMADJrec1}>
+
+      COMP
+         <
+          C1: true
+             C11: singular IN CNrec1.numbers
+             A11: NPrec1.number := singular;
+             C12: plural IN CNrec1.numbers
+             A12: NPrec1.number := plural;
+          A1: DETPrec1.definite := def;
+              DETPrec1.posscomas := [mass, count];
+              DETPrec1.possgenders := [mascgender, femgender];
+              DETPrec1.posspred := true;
+              DETPrec1.eORenForm := eForm;
+              DETPrec1.possnumbers := [plural, singular];
+              NPrec1 := { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : enokNP
+                         };
+                        NPrec1.actcomas     := CNrec1.posscomas;
+
+         >
+
+      DECOMP
+         <
+          C1: DETPrec1.definite = def AND
+              DETPrec1.posscomas = [mass, count] AND
+              DETPrec1.possgenders = [mascgender, femgender] AND
+              DETPrec1.posspred = true AND
+              DETPrec1.eORenForm = eForm AND
+              DETPrec1.possnumbers = [plural, singular] AND
+              DETPrec1.possnietnp = false AND
+              DETPrec1.mood = declxpmood  AND
+               NPrec1 = { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : enokNP
+                         }   AND
+                    
+              NPrec1.actcomas * CNrec1.posscomas <> [] AND
+              NPrec1.cases = [nominative]
+             
+               C11: singular IN CNrec1.numbers AND
+                    NPrec1.number = singular
+               A11: @
+               C12: plural IN CNrec1.numbers AND
+                    NPrec1.number = plural
+               A12: @
+          A1:  @
+         >
+
+(* 2 *)
+SUBRULE
+< >
+<T1:DEMADJ(KEY_datDEMADJkey){DEMADJrec1}>
+
+      COMP
+         <
+          C1: singular IN CNrec1.numbers
+          A1: DETPrec1.definite := def;
+              DETPrec1.posscomas := [mass, count];
+              DETPrec1.possgenders := [neutgender];
+              DETPrec1.posspred := true;
+              DETPrec1.eORenForm := NoForm;
+              DETPrec1.possnumbers := [singular];
+               NPrec1 := { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          number            : singular
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : enokNP
+                         };
+                          NPrec1.actcomas   := CNrec1.posscomas;
+
+         >
+
+      DECOMP
+         <
+          C1:  singular IN CNrec1.numbers AND
+              DETPrec1.definite = def AND
+              DETPrec1.posscomas = [mass, count] AND
+              DETPrec1.possgenders * [neutgender] <> [] AND
+              DETPrec1.posspred = true AND
+              DETPrec1.eORenForm = NoForm AND
+              DETPrec1.possnumbers = [singular] AND
+              DETPrec1.possnietnp = false AND
+              DETPrec1.mood = declxpmood  AND
+               NPrec1 = { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          number            : singular
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : enokNP
+                         }  AND
+              NPrec1.actcomas * CNrec1.posscomas <> [] AND
+              NPrec1.cases = [nominative]
+          A1:  @
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RNPformation3a
+\item[* relevant examples:] {\em (drie) (dure) EN van Jan/met een strikje } 
+$\rightarrow$ 
+{\em {\bf die} (drie) (oude) EN van Jan/met een strikje} 
+(niet alleen plural, d.w.z. ook: {\em {\bf dat} gele van 
+mij/in de hoek})
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] NP-subgrammar
+\item[* class:] (name of rule, transformation or filter class) NPformationrules 
+\item[* date of creation:] 12-NOV-1989 13:39:23  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+Syncategorematic introduction of demadjs in case of a CN with an empty head and 
+a postnominal PREPPmodifier. 
+The rule has the same meaning as RNPformation3 which 
+introduces a definite article to a CN with EN head.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]  LNPformation3.
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+\item rules:\\
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+Mapping onto Spanish:
+both {\em los de mi} and {\em estos de mi} are correct.
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+
+% RULE RNPformation4                    (* () + NOUN  --> de/het + [() + NOUN] *)
+
+< m1: CN{CNrec1}[mu1,
+                 head/NOUN{NOUNrec1}[mu2],
+                 I1:mu3]
+>
+
+< m:  NP{NPrec1}[detrel/DETP{DETPrec1}[head/T1],
+                 head/CN{CNrec1}[mu1,
+                                 head/NOUN{NOUNrec1}[mu2],
+                                 mu3]
+                ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: (NOT EXIST(mu3, [posrel/NP{NPrec8}[mu8]]) 
+                      (* a possible result of CNmodposs3 *)) AND
+           (NOT EXIST(mu3, [I11:posrel/PREPP{PREPPrec8}[I11:mu9]]))
+       I11: EXIST(mu9, [rel1/NP{NPrec9}[I111:mu10]])
+       I111: EXIST(mu10, [head/PERSPRO{PERSPROrec8}[mu11]])
+      >
+
+<
+(* 1 *)
+SUBRULE
+< >
+<T1:ART(KEY_deartkey){ARTrec1}>
+
+      COMP
+         <
+          C1: (NOUNrec1.genders * [mascgender,femgender] <>[])  OR
+                                                       (* see under remarks *)
+              (CNrec1.numbers = [plural])  (* ook: `uur' in `de drie uur' *)
+                                           (* `de uur' wordt via filter 
+                                              uitgesloten *)
+
+          A1: DETPrec1 := COPYT_ARTtoDETP(ARTrec1);
+              DETPrec1.posspred := true;
+
+               (* NPrec1 :=  COPYT_CNtoNP(CNrec1); *)
+               NPrec1 := { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          number            : NOUNrec1.number
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                         }  
+         >
+
+      DECOMP
+         <
+          C1: ((NOUNrec1.genders * [mascgender,femgender] <>[]) 
+                                                       (* see under remarks *)
+              OR (CNrec1.numbers = [plural]))
+
+              AND ( DETPrec1  = COPYT_ARTtoDETP(ARTrec1)) 
+              AND DETPrec1.posspred = true
+              (* 
+              AND (NPrec1  =  COPYT_CNtoNP(CNrec1) EXCEPT FOR [definite, cases, 
+                                                               generic])
+               *) AND
+               NPrec1 = { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          number            : NOUNrec1.number
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                         }  
+
+              AND (NPrec1.cases = [nominative]) 
+             
+          A1:  @
+         >
+
+(* 2 *)
+SUBRULE
+< >
+<T1:ART(KEY_hetartkey){ARTrec1}>
+
+      COMP
+         <
+          C1: (NOUNrec1.genders * [neutgender] <> [])
+              AND (NOUNrec1.number = singular)
+          A1: DETPrec1 := COPYT_ARTtoDETP(ARTrec1);
+              (* NPrec1 :=  COPYT_CNtoNP(CNrec1); *)
+               NPrec1 := { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          number            : singular
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                         }
+         >
+
+      DECOMP
+         <
+          C1: (NOUNrec1.genders * [neutgender] <> [])
+              AND (NOUNrec1.number = singular)
+              AND (DETPrec1 = COPYT_ARTtoDETP(ARTrec1))
+              (* (NPrec1  =  COPYT_CNtoNP(CNrec1) 
+                        EXCEPT FOR [definite, generic, cases]) *) AND 
+               NPrec1 = { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          number            : singular
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                         }  
+              AND (NPrec1.cases = [nominative]) 
+
+          A1:  @
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RNPformation4
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] NP-subgrammar
+\item[* class:] (name of rule, transformation or filter class) NPformationrules
+\item[* date of creation:]  18-DEC-1986 11:00:26  
+\item[* author:] Franciska de Jong, Elly van Munster
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+Syncategorematic Introduction of 'de'/'het'/`een` in case of non empty NP-head ,
+possibly  modified. The function of the matchcondition is to block the
+application of this rule where RNPformation5 should apply, viz. for CN-strings
+that contain a NP instead of a PREPP in posrel.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] No generation 
+for NPs with a pronoun in posrel: {\em de jas van hem}. Only {\em zijn jas} is 
+generated. Tough the former case 
+is probably used only with special intonation, the 
+asymmetry is for testing purposes.
+
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+-$\rightarrow$  C1 of SUBRULE 1 is equivalent to: \\ \\
+                   NOUNrec1.genders <= [neutgender]
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% RULE RNPformation4a                 (* () + NOUN  --> een + [() + NOUN] *)
+                                      (* aparte transformatie nodig voor 'n *)
+< m1: CN{CNrec1}[mu1,
+                 head/NOUN{NOUNrec1}[mu2],
+                 I1:mu3]
+>
+
+< m:  NP{NPrec1}[detrel/DETP{DETPrec1}[head/ART(KEY_eenartkey){ARTrec1}],
+                 head/CN{CNrec1}[mu1,
+                                 head/NOUN{NOUNrec1}[mu2],
+                                 mu3]
+                ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: NOT EXIST(mu3, [posrel/NP{NPrec2}[mu8]])
+      >
+
+      COMP
+         <
+          C1: (CNrec1.numbers = [singular]) AND
+              count IN CNrec1.posscomas
+          A1: DETPrec1 := COPYT_ARTtoDETP(ARTrec1);
+              DETPrec1.posspred := true;
+              DETPrec1.possnietnp := true;
+              DETPrec1.mood := declxpmood;              
+              NPrec1 := { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          number            : NOUNrec1.number
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : [count]
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                         }  
+         >
+
+      DECOMP
+         <
+          C1: CNrec1.numbers = [singular] AND
+              DETPrec1  = COPYT_ARTtoDETP(ARTrec1) AND
+              DETPrec1.posspred = true AND
+              DETPrec1.possnietnp = true AND
+              DETPrec1.mood = declxpmood AND
+              CNrec1.posscomas * [count] <> [] AND
+              NPrec1.actcomas * [count] <> [] AND
+              NPrec1 = { posspred          : DETPrec1.posspred
+                          definite          : DETPrec1.definite
+                          possnietnp        : DETPrec1.possnietnp
+                          mood              : DETPrec1.mood
+
+                          number            : NOUNrec1.number
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                         }  
+            
+              AND (NPrec1.cases = [nominative]) 
+             
+          A1:  @
+         >
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RNPformation4a
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 24-MAY-1988 15:37:18  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 12/01/90\ \ \ \ \ author: Lisette Appelo\\
+Added NPrec1.class :=/= CNrec1.class
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% RULE RNPformation5      (*  .. + NOUN + posrel --> detrel + [..  + NOUN] *)
+< m1: CN{CNrec1}[mu1,
+                 head/NOUN{NOUNrec3}[mu6],
+                 mu7,
+                 posrel/T1
+                ]
+>
+
+< m : NP{NPrec2}[detrel/T2,
+                 mu1,
+                 head/CN{CNrec1}[mu1,
+                                 head/NOUN{NOUNrec3}[mu6],
+                                 mu7
+                                 ]
+                ]
+>
+
+
+<
+   (* 1 *)      (* boek mijn vader --> mijn vaders boek *)
+   SUBRULE
+      < 
+        T1:NP{NPrec1}[mu2, 
+                      head/CN{CNrec2}[mu3,head/NOUN{NOUNrec1}[mu4]]]
+      >
+
+      < 
+        T2:NP{NPrec3}[mu2,
+                      head/CN{CNrec3}[mu3,head/NOUN{NOUNrec2}[mu4]]] 
+      >
+
+
+      COMP
+         <
+          C1: CNrec2.possgeni = true AND
+              NPrec1.cases = [nominative] AND
+              CNrec2.cases = [nominative] AND
+              NOUNrec1.geni = false
+          A1: NPrec3 := NPrec1;
+              NPrec3.cases := [genitive];
+              CNrec3 := CNrec2;
+              CNrec3.cases := [genitive];
+              NOUNrec2 := NOUNrec1;
+              NOUNrec2.geni := true;
+
+              NPrec2 := { posspred          : true
+                          definite          : def
+                          possnietnp        : false
+                          mood              : NPrec3.mood 
+                          number            : NOUNrec3.number
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                          cases      : [nominative]
+                         }  
+             (* The other attributes have default value *)
+         >
+
+      DECOMP
+         <
+           C1: CNrec3.possgeni = true AND
+               NOUNrec2.geni = true AND
+               NPrec3.cases = [genitive] AND
+               CNrec3.cases = [genitive] AND
+               
+               NPrec2 = { posspred          : true
+                          definite          : def 
+                          possnietnp        : false
+                          mood              : NPrec3.mood 
+
+                          number            : NOUNrec3.number
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                          cases      : [nominative]
+                         }  
+
+          A1:  NOUNrec1 := NOUNrec2;
+               NOUNrec1.geni := false;
+               CNrec2 := CNrec3;
+               CNrec2.cases := [Nominative];
+               NPrec1 := NPrec3;
+               NPrec1.cases := [Nominative];
+         >
+
+
+   (* 2 *)      (* boek ik --> mijn boek *)
+   SUBRULE
+      < 
+        T1:NP{NPrec1}[head/PERSPRO{PERSPROrec1}[head/BPERSPRO{BPERSPROrec1}]]
+      >
+
+      < 
+        T2:POSSADJ{POSSADJrec1}[head/BPERSPRO{BPERSPROrec1}] 
+      >
+
+
+      COMP
+         <
+          C1: NPrec1 = { req           : [pospol,negpol,omegapol]
+                         env           : [pospol,negpol,omegapol]
+                         class         : omegaTimeAdvClass
+                         superdeixis   : omegadeixis
+                         deixis        : omegadeixis
+                         aspect        : omegaAspect
+                         retro         : false
+                         definite      : def
+                         person        : PERSPROrec1.person
+                         number        : PERSPROrec1.number
+                         cases         : [nominative]
+                         genders       : [PERSPROrec1.gender] 
+                         actsubcs      : [othernoun]
+                         sexes         : []
+                         temporal      : false
+                         possgeni      : false
+                         animate       : PERSPROrec1.animate
+                         human         : Omegahuman
+                         thetanp       : omegathetanp
+                         nounpatternefs: []
+                         posspred      : true
+                         possnietnp    : false
+                         mood          : declxpmood
+                         generic       : omegageneric (* 11/11/88 FJ *)
+                         possRform     : PERSPROrec1.possRform
+                         syntquant     : omegaquant
+                         NPhead        : PERSPROrec1.NPhead
+                         specQ         : yesspec
+                        }  AND
+              NPrec1.actcomas * [count] <> [] 
+
+              AND
+              PERSPROrec1 = COPYT_BPERSPROTOPERSPRO(BPERSPROrec1) AND
+              PERSPROrec1.persprocases = [nominative]
+              C11: BPERSPROrec1.key <> KEY_wijBPERSPROkey
+              A11: POSSADJrec1.eORenForm  := noForm 
+              C12: BPERSPROrec1.key = KEY_wijBPERSPROkey AND     (* onze *)
+                   ((plural IN CNrec1.numbers) OR
+                    (singular IN CNrec1.numbers AND
+                     CNrec1.genders * [mascgender, femgender] <> []
+                    )
+                   )
+              A12: POSSADJrec1.eORenForm := eForm 
+              C13: BPERSPROrec1.key = KEY_wijBPERSPROkey AND      (* ons *)
+                   (singular IN CNrec1.numbers AND
+                     CNrec1.genders * [neutgender] <> []
+                   )
+              A13: POSSADJrec1.eORenForm := NoForm 
+
+              (* the POSSADJ happens to have default values, except for 
+                 eorenform *)
+
+
+          A1: NPrec2 := { posspred          : true
+                          definite          : def 
+                          possnietnp        : false
+                          mood              : POSSADJrec1.mood 
+
+                          number            : NOUNrec3.number
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                          cases      : [nominative]
+                         }  
+ 
+         >
+
+      DECOMP
+         <
+          C1: POSSADJrec1.antecedent = noant AND
+              POSSADJrec1.mood = declxpmood AND
+              POSSADJrec1.geni = false
+              (* .reduced doesn't have to be tested in analysis since
+                 both forms are accepted *)
+               AND 
+               NPrec2 = { posspred          : true
+                          definite          : def 
+                          possnietnp        : false
+                          mood              : POSSADJrec1.mood 
+
+                          number            : NOUNrec3.number
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                          cases      : [nominative]
+                         }  
+              C11: POSSADJrec1.eORenForm  = noForm AND
+                   BPERSPROrec1.key <> KEY_wijBPERSPROkey
+              A11: @
+              C12: POSSADJrec1.eORenForm  = eForm AND        (* onze *)
+                   BPERSPROrec1.key = KEY_wijBPERSPROkey AND
+                   ((plural IN CNrec1.numbers) OR
+                    (singular IN CNrec1.numbers AND
+                     CNrec1.genders * [mascgender, femgender] <> []
+                    )
+                   )
+              A12:@
+              C13: POSSADJrec1.eORenForm = NoForm  AND
+                   BPERSPROrec1.key = KEY_wijBPERSPROkey AND (* ons *)
+                   (singular IN CNrec1.numbers AND
+                    CNrec1.genders * [neutgender] <> []
+                   )
+              A13: @ 
+
+          A1: PERSPROrec1 := COPYT_BPERSPROTOPERSPRO(BPERSPROrec1);
+              (* persprocases remains default *)
+              NPrec1 := { req           : [pospol,negpol,omegapol]
+                          env           : [pospol,negpol,omegapol]
+                          class         : omegaTimeAdvClass
+                          superdeixis   : omegadeixis
+                          deixis        : omegadeixis
+                          aspect        : omegaAspect
+                          retro         : false
+                          definite      : def
+                          person        : PERSPROrec1.person
+                          number        : PERSPROrec1.number
+                          cases         : [nominative]
+                          genders       : [PERSPROrec1.gender] 
+                          sexes         : []
+                          actsubcs      : [othernoun]
+                          temporal      : false
+                          possgeni      : false
+                          animate       : PERSPROrec1.animate
+                          human         : Omegahuman
+                          actcomas      : [count]
+                          thetanp       : omegathetanp
+                          nounpatternefs: []
+                          posspred      : true
+                          possnietnp    : false
+                          mood          : declxpmood
+                          generic       : omegageneric (* 11/11/88; FJ *)
+                          possRform     : PERSPROrec1.possRform
+                          syntquant     : omegaquant
+                          NPhead        : PERSPROrec1.NPhead
+                          specQ         : yesspec
+                          };
+         >
+
+   (* 3 *)      (* boek ieder --> ieders boek *)
+   SUBRULE
+      < 
+        T1:NP{NPrec1}[mu2, head/INDEFPRO{INDEFPROrec1}[mu8]]
+      >
+
+      < 
+        T2:NP{NPrec3}[mu2, head/INDEFPRO{INDEFPROrec2}[mu8]] 
+      >
+
+      COMP
+         <
+          C1: INDEFPROrec1.possgeni = true AND
+              INDEFPROrec1.geni = false AND
+              NPrec1.cases = [nominative]
+          A1: INDEFPROrec2 := INDEFPROrec1;
+              INDEFPROrec2.geni := true;
+              NPrec3 := NPrec1;
+              NPrec3.cases := [genitive];
+
+              NPrec2 := { posspred          : true
+                          definite          : def 
+                          possnietnp        : NPrec1.possnietnp
+                          mood              : NPrec1.mood 
+
+                          number            : NOUNrec3.number         
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : NPrec1.syntquant 
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                          cases      : [nominative]
+                         }  
+         >
+
+      DECOMP
+         <
+          C1: INDEFPROrec2.possgeni = true AND
+              INDEFPROrec2.geni = true AND
+              NPrec3.cases = [genitive] AND
+            
+              NPrec2 = {
+                          posspred          : true
+                          definite          : def 
+                          possnietnp        : NPrec3.possnietnp
+                          mood              : NPrec3.mood 
+
+                          number            : NOUNrec3.number       
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : NPrec3.syntquant 
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                          cases      : [nominative]
+                         }  
+          A1:  INDEFPROrec1 := INDEFPROrec2;
+               INDEFPROrec1.geni := false;
+               NPrec1 := NPrec3;
+               NPrec1.cases := [Nominative];
+         >
+
+
+   (* 4 *)      (* boek Jan --> Jans boek *) 
+   SUBRULE
+      < 
+        T1:NP{NPrec1}[mu2, head/PROPERNOUN{PROPERNOUNrec1}[mu8]]
+      >
+
+      < 
+        T2:NP{NPrec3}[mu2, head/PROPERNOUN{PROPERNOUNrec2}[mu8]] 
+      >
+
+      COMP
+         <
+          C1: PROPERNOUNrec1.possgeni = true AND
+              PROPERNOUNrec1.geni = false AND
+              NPrec1.cases = [nominative]
+          A1: PROPERNOUNrec2 := PROPERNOUNrec1;
+              PROPERNOUNrec2.geni := true;
+              NPrec3 := NPrec1;
+              NPrec3.cases := [genitive];
+              NPrec2 := { posspred          : true
+                          definite          : def 
+                          possnietnp        : NPrec1.possnietnp
+                          mood              : declxpmood
+
+                          number            : NOUNrec3.number       
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : NPrec1.syntquant 
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                          cases      : [nominative]
+                         }  
+         >
+
+      DECOMP
+         <
+          C1: PROPERNOUNrec2.possgeni = true AND
+              PROPERNOUNrec2.geni = true AND
+              NPrec3.cases = [genitive] AND
+
+              NPrec2 = {  posspred          : true
+                          definite          : def 
+                          possnietnp        : NPrec3.possnietnp
+                          mood              : declxpmood
+
+                          number            : NOUNrec3.number         
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : NPrec3.syntquant 
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                          cases      : [nominative]
+                         }  
+          A1:  PROPERNOUNrec1 := PROPERNOUNrec2;
+               PROPERNOUNrec1.geni := false;
+               NPrec1 := NPrec3;
+               NPrec1.cases := [nominative];
+         >
+
+
+   (* 5 *)      (* boek wie --> wiens boek *) 
+   SUBRULE
+      < 
+        T1:NP{NPrec1}[head/WHPRO{WHPROrec1}[head/BWHPRO{BWHPROrec1}]]
+      >
+
+      < 
+        T2:POSSADJ{POSSADJrec1}[head/BWHPRO{BWHPROrec1}]
+      >
+
+      COMP
+         <
+          C1: 
+              WHPROrec1 = COPYT_BWHPROTOWHPRO(BWHPROrec1) AND
+              NPrec1 = NPrecdef EXCEPT FOR [animate, human, possRform,
+                sexes, number, definite, mood, specQ, posspred,
+                syntquant] AND
+              NPrec1.possRform = WHPROrec1.possRform AND
+              NPrec1.sexes = WHPROrec1.sexes AND
+              NPrec1.number = WHPROrec1.number AND
+              NPrec1.animate = WHPROrec1.animate AND
+              NPrec1.human = yeshuman AND
+              
+                           
+              NPrec1.definite  = indef AND
+              NPrec1.mood = wh AND
+              NPrec1.specQ = yesspec AND
+              NPrec1.posspred = true AND
+              NPrec1.syntquant = omegaquant (* 29-11-89; FJ*)
+                                    (* because of JO's modifications 
+                                       in RNPformation6 *)
+          A1: POSSADJrec1.geni := false;
+              POSSADJrec1.mood := wh;
+              NPrec2  := { posspred         : true
+                          definite          : indef
+                          possnietnp        : false
+                          mood              : wh
+
+                          number            : NOUNrec3.number
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                          cases      : [nominative]
+                         };
+         >
+
+      DECOMP
+         <
+          C1: POSSADJrec1.antecedent = noant AND
+              POSSADJrec1.eORenForm  = noForm AND
+              POSSADJrec1.mood = wh AND
+              POSSADJrec1.geni = false
+              (* .reduced doesn't have to be tested in analysis since
+                 both forms are accepted *) AND
+               NPrec2 = { posspred          : true
+                          definite          : indef
+                          possnietnp        : false
+                          mood              : wh
+
+                          number            : NOUNrec3.number
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : CNrec1.posscomas
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant 
+                          generic    : nogeneric
+                          superdeixis: omegadeixis
+                          NPhead     : otherNP
+                          cases      : [nominative]
+                         }  
+          A1:   
+              WHPROrec1 := COPYT_BWHPROTOWHPRO(BWHPROrec1);
+              NPrec1.possRform := WHPROrec1.possRform ;
+              NPrec1.sexes := WHPROrec1.sexes;
+              NPrec1.number := WHPROrec1.number; 
+              NPrec1.animate := WHPROrec1.animate;
+              NPrec1.human := yeshuman;
+              NPrec1.NPhead := otherNP;   (* altijd 'wie' *)
+              
+              NPrec1.posspred := true; 
+              NPrec1.syntquant := omegaquant;(* 29-11-89; FJ*)
+                                    (* because of JO's modifications 
+                                       in RNPformation6 *)
+              NPrec1.definite  := indef;
+              NPrec1.mood      := wh;
+              NPrec1.specQ     := yesspec;
+
+              (* rest of attributes, including superdeixis and
+                 generic, is default: *)
+              NPrec1 := { req           : [pospol,negpol,omegapol]
+                          env           : [pospol,negpol,omegapol]
+                          class         : omegaTimeAdvClass
+                          superdeixis   : omegadeixis
+                          deixis        : omegadeixis
+                          aspect        : omegaAspect
+                          retro         : false
+                          person        : 3
+                          cases         : [nominative]
+                          genders       : [omegagender] 
+                          actsubcs      : [othernoun]
+                          temporal      : false
+                          possgeni      : false
+                          actcomas      : [count]
+                          thetanp       : omegathetanp
+                          nounpatternefs: []
+                          possnietnp    : false
+                          generic       : omegageneric 
+                          };
+         >
+>
+&
+
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RNPformation5
+\item[* relevant examples:] \mbox{}\\
+\begin{enumerate}
+\item boek mijn vader $\rightarrow$ mijn vaders boek (SUBRULE 1)
+\item boek ik         $\rightarrow$ mijn boek        (SUBRULE 2)
+\item boek ieder      $\rightarrow$ ieders boek      (SUBRULE 3)
+\item boek Jan        $\rightarrow$ Jans boek        (SUBRULE 4)
+\item boek wie        $\rightarrow$ wiens boek       (SUBRULE 5)
+\end{enumerate}
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] NP-subgrammar
+\item[* class:] (name of rule, transformation or filter class) NPformationrules
+\item[* date of creation:] 16-FEB-1987 16:05:19  
+\item[* author:] Franciska de Jong, Elly van Munster
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 24/07/89\ \ \ \ \ author: Margreet Sanders\\
+Removed the head/NP from the main model to the T1 of the subrules (in T2 there 
+may be the same NP). Also added some conditions on default values in 
+generation, to make the rules reversible.
+\item date: 05/12/89\ \ \ \ \ author: Margreet Sanders\\
+Added conditions on case of CN in subrule 1.
+\end{enumerate}
+\item[* task:] Changing a postnominal 'posrel' (modification of a CN 
+containing a NOUN), into a prenominal 'detrel'. 
+(boek ik $\rightarrow$ mijn boek, etc.)
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+SUBRULE 2 and 5: In analysis both the reduced and the non-reduced form of the
+POSSADJ are accepted. Only the non-reduced form is generated.                 
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+'mijn vaders boek' is semantically equivalent to 'het boek van mijn vader',
+'mijn boek', to 'het boek van mij', etc.
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+Ad SUBRULE 3, A1:  NPrec2.definite := def
+It is assumes that 'iemands boek' is def, considering:
+               - *{\em Er} ligt iemands boek op tafel.
+If this sentence turns out to be grammatical though, 'definite := def'  can
+be changed into:   NPrec1.definite := INDEFPRO.definite
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% RULE RNPformation10
+
+< m1: I2::CN{CNrec1}[I1:mu1]
+>
+
+< m : NP{NPrec1}[head/I2::CN{CNrec1}[I1:mu1]
+                ]
+>
+
+
+   MATCHCONDITIONS             (* meant to block the formation of NP out of EN 
+                                  plus an numerical modifier or a postmodifier
+                                  while there is no ADJP or SENTENCE
+                                *)
+      < 
+        I1:(EXIST(mu1, [head/NOUN{NOUNrec1}[mu8]]) OR
+           EXIST(mu1, [I11:modrel/T1])) AND
+           NOT EXIST(mu1, [posrel/NP{NPrec2}[mu9]])
+        I11: T1.cat IN  [ADJP, SENTENCE]
+        I2: ([unitnoun] *  CNrec1.actsubcs = []) AND
+            ((mass IN CNrec1.posscomas) OR (plural IN CNrec1.numbers)) AND
+              (* to exclude 'koning' and 'gele boek';
+                 NB. 'hij is koning' is formed IN the NPPROP-subgrammar *)
+            CNrec1.definite <> def
+              (* in order to prevent the definite CN 'drie boeken'
+                 to become an NP *)
+
+      >
+
+      COMP
+         <
+          C1: true
+              C11: singular IN CNrec1.numbers AND
+                 mass IN CNrec1.posscomas 
+                 
+            A11: (* NPrec1 := COPYT_CNtoNP(CNrec1); *)
+               NPrec1 := { 
+
+                          number            : singular    (*NOUNrec.number *)
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : [mass]
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+        		  superdeixis: omegadeixis
+                          NPhead     : otherNP
+                         }  
+            C12: plural IN CNrec1.numbers AND
+                 count IN CNrec1.posscomas 
+            A12: (* NPrec1 := COPYT_CNtoNP(CNrec1); *)
+               NPrec1 := { 
+
+                          number            : plural 
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          actcomas          : [count]
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+                          NPhead     : otherNP
+        		  superdeixis: omegadeixis
+                         }  
+          A1: NPrec1.definite := indef;
+              NPrec1.posspred := true;
+              NPrec1.possnietnp := true; (* 'geen (gele) jassen' / 
+                                                      'geen (lekkere) kaas' *)
+
+         >
+
+      DECOMP
+         <
+          C1: (NPrec1.definite = indef) AND
+              (NPrec1.posspred =  true) AND
+              (NPrec1.possnietnp = true) AND
+              (NPrec1.cases = [nominative])
+              C11: mass IN NPrec1.actcomas AND
+                   NPrec1 = { 
+                          number            : singular (*NOUN.number *)
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+        		  superdeixis: omegadeixis
+                          NPhead     : otherNP
+                         }  
+              A11:@
+              C12: count IN NPrec1.actcomas AND
+                   NPrec1 = { 
+                          number            : plural
+                          nounpatternefs    : CNrec1.nounpatternefs
+                          thetanp           : CNrec1.thetanp
+                          human             : CNrec1.human
+                          animate           : CNrec1.animate
+                          possgeni          : CNrec1.possgeni
+                          temporal          : CNrec1.temporal
+                          actsubcs          : CNrec1.actsubcs
+                          sexes             : CNrec1.sexes
+                          genders           : CNrec1.genders
+                          class             : CNrec1.class 
+                          deixis            : CNrec1.deixis
+                          aspect            : CNrec1.aspect
+                          retro             : CNrec1.retro
+                          
+                          specQ      : yesspec (* auxiliary *)
+                          syntquant  : omegaquant (* auxiliary *)
+                          generic    : nogeneric
+        		  superdeixis: omegadeixis
+                          NPhead     : otherNP
+                         }  
+              A12:@
+
+           A1:  @
+         >
+&
+
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RNPformation10
+\item[* relevant examples:] (mooie) boeken, (lekkere) kaas.
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] NP-subgrammar
+\item[* class:] (name of rule, transformation or filter class) Npformationrule
+\item[* date of creation:] 2-FEB-1987 10:33:44  
+\item[* author:] Franciska de Jong, Elly van Munster
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] making a bare NP out of a  CN.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+Making an {\em indefinite} NP
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\ 
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% RULE RNPformation12   
+< m1: CN{CNrec1}[head/EN{ENrec1}]
+
+  m2: DETP{DETPrec1}[I1:mu1] 
+>
+
+< m : NP{NPrec1}[detrel/DETP{DETPrec2}[I1:mu1],
+                 head/CN{CNrec1}[head/EN{ENrec1}]
+                ]
+>
+
+   MATCHCONDITIONS
+      < 
+        I1:EXIST(mu1,[head/DET{DETrec1}[mu8]])
+      >
+
+          COMP
+         <
+          C1: DETPrec1.superdeixis = CNrec1.superdeixis AND
+              DETPrec1.posscomas * [count] <> [] AND
+              DETPrec1.possnumbers * [plural] <> [] AND
+              CNrec1.posscomas * [count] <> [] AND
+              CNrec1.numbers = [plural] 
+          A1: DETPrec2:= DETPrec1;
+              DETPrec2.eORenform := enForm;
+              DETPrec2.superdeixis := omegadeixis;
+              NPrec1 := 
+                  { human      :  yesHuman 
+                    animate    :  yesAnimate 
+                    definite   :  DETPrec2.definite 
+                    posspred   :  false 
+                    number     :  plural 
+                    actcomas   :  [count] 
+                    generic    :  nogeneric 
+                    cases      :  [nominative] 
+                    specQ      : yesspec (* auxiliary *)
+                    syntquant  : omegaquant (* auxiliary *)
+        	    superdeixis: omegadeixis
+                    nounpatternefs    : CNrec1.nounpatternefs
+                    thetanp           : CNrec1.thetanp
+                    possgeni          : CNrec1.possgeni
+                    temporal          : CNrec1.temporal
+                    actsubcs          : CNrec1.actsubcs
+                    sexes             : CNrec1.sexes
+                    genders           : CNrec1.genders
+                    class             : CNrec1.class 
+                    deixis            : CNrec1.deixis
+                    aspect            : CNrec1.aspect
+                    retro             : CNrec1.retro
+                    NPhead            : enokNP
+                    };
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = 
+                  { human      :  yesHuman 
+                    animate    :  yesAnimate 
+                    definite   :  DETPrec2.definite 
+                    posspred   :  false 
+                    number     :  plural 
+                    generic    :  nogeneric 
+                    cases      :  [nominative] 
+                    specQ      : yesspec (* auxiliary *)
+                    syntquant  : omegaquant (* auxiliary *)
+        	    superdeixis: omegadeixis
+                    nounpatternefs    : CNrec1.nounpatternefs
+                    thetanp           : CNrec1.thetanp
+                    possgeni          : CNrec1.possgeni
+                    temporal          : CNrec1.temporal
+                    actsubcs          : CNrec1.actsubcs
+                    sexes             : CNrec1.sexes
+                    genders           : CNrec1.genders
+                    class             : CNrec1.class 
+                    deixis            : CNrec1.deixis
+                    aspect            : CNrec1.aspect
+                    retro             : CNrec1.retro
+                    NPhead            : enokNP
+                    } AND
+              NPrec1.actcomas * [count] <> [] AND
+              DETPrec2.superdeixis = omegadeixis AND
+              DETPrec2.posscomas * [count] <> [] AND
+              DETprec2.possnumbers * [plural] <> [] AND
+              CNrec1.posscomas * [count] <> [] AND
+              CNrec1.numbers = [plural] AND
+              DETPrec2.eorenform = enform 
+           A1: DETPrec1 := DETPrec2;
+               DETPrec1.superdeixis := CNrec1.superdeixis;
+
+         >
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RNPformation12
+\item[* relevant examples:] velen, allen, sommigen, enkelen.
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] NP-subgrammar
+\item[* class:] (name of rule, transformation or filter class) NPformationrules
+\item[* date of creation:] 10-FEB-1987 13:57:22  
+\item[* author:] Franciska de Jong, Elly van Munster
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 26/10/88\ \ \ \ \ author: LIsette Appelo
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] Making a yeshuman NP (with 'head/DETP') out of a DETP + EN 
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+Velen, allen, etc. included in the lexicon as NP's.
+\item[\ \ clarification of variables:]
+Clarification of MATCHCONDITIONS:
+\begin{enumerate}
+\item I1: The head of the DETP has to be a DET (not a NUM, DEMADJ, ART or QP)
+\item I2: The head of the CN has to be an EN
+\end{enumerate}
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+This rule can probably be incorporated into 'RNPformation2'.
+\item modifications: 26/10/88: Added superdeixis for DETP.\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TNPhop
+< m1: NP{NPrec1}[mu1,
+                 detrel/DETP{DETPrec1}[head/QP{QPrec1}[head/I1::Q{Qrec1}]
+                                     ],
+                 head/CN{CNrec1}[mu2,
+                                 head/T1,
+                                 mu3],           
+                 mu4
+                ]
+>
+< m : NP{NPrec1}[mu1,
+                 head/CN{CNrec1}[mu2,
+                                 head/T1,
+                                 hoprel/QP{QPrec1}[head/I1::Q{Qrec1}],
+                                 mu3],           
+                 mu4
+                ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: Qrec1.hop = true
+      >
+
+      COMP
+         <
+          C1: DETPrec1 = { 
+                      req:               QPrec1.req
+                      env:               QPrec1.env
+                      possnietnp:        true
+                      definite:          QPrec1.definite
+                      posspred:          QPrec1.posspred
+                      possnumbers:       QPrec1.possnumbers
+                      posscomas:         QPrec1.posscomas
+                      mood:              QPrec1.mood
+                      syntquant:         omegaquant    
+                      possgenders:       [mascgender, femgender]   
+                      superdeixis:       QPrec1.superdeixis
+                          }
+
+
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: DETPrec1 := { 
+                      req:               QPrec1.req
+                      env:               QPrec1.env
+                      possnietnp:        true
+                      definite:          QPrec1.definite
+                      posspred:          QPrec1.posspred
+                      possnumbers:       QPrec1.possnumbers
+                      posscomas:         QPrec1.posscomas
+                      mood:              QPrec1.mood
+                      syntquant:         omegaquant    
+                      possgenders:       [mascgender, femgender]   
+                      superdeixis:       QPrec1.superdeixis
+                           }
+
+         >
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TNPhop
+\item[* relevant examples:] genoeg tijd $\rightarrow$ tijd genoeg
+\item[* language:]  Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:]  NPformation
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 16-DEC-1988 09:05:38  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To account for the occurrence of postnominal determiners (QPs).
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+%%

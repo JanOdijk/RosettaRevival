@@ -1,0 +1,362 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Context-free control grammars
+
+         Author       :  Joep Rous
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  40
+
+         Date         :  30/08/85
+
+         Status       :  informal
+
+         Supersedes   :  
+
+         Distribution :  Software group, Jan Landsbergen,
+                         Lisette Appelo
+
+         Clearance    :  Philips
+
+         Keywords     :  Controlled M-grammar, CF control grammar
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 40                      date:30/08/85
+$Np 1
+$LD 4
+$QM
+$C1 Introduction
+This paper has been written as a reaction to document RN8407
+("Controlled M-grammars") by Jan Landsbergen. In that paper Jan Landsbergen
+describes
+how M-grammars can be controlled by defining a set of predecessors for
+each M-rule. I will show in this paper that M-grammars can also be
+controlled by means of a context free grammar.
+$NL
+First the notion
+"well-formed D-tree" will be defined. In order to do that a new definition
+of D%M% is given (cf R0011). After that I want to show 
+that, given an M-Grammar M, a context-free grammar G%M% can be defined which
+also defines the set of well-formed D-trees . Furthermore I'll 
+define which requirements a CF grammar must meet so that it can be called
+a CF control grammar.
+Finally the definitions of M-PARSER and M-GENERATOR based on
+a CF control grammar will be given.
+$NL
+Definitions of terms, objects and domains which are not given in this paper,
+can be found in document R0011.
+$NP
+$C1 The definition of D%M%.
+Before a definition is given of D%M%, the set of well-formed syntactic
+D-trees, the definitions of T%M% and T%M&+& are repeated.
+$NL
+An M-Grammar M defines a set MRULES of syntactical rules R%i%. Each R%i%
+defines two functions F%Ri% and F%Ri%'. F%Ri% is the generative
+version of the rule and F%Ri%' the analitical one. Given the set B of
+basic S-trees, the set T%M&+& of possible S-trees is defined as
+follows:
+$NL 1
+T%M&+& is the smallest set so, as
+$NL 1
+$HL 4,1.
+B <= T%M&+&
+$HL 4,2.
+if t%1%,...,t%n% in T%M&+&, and R%i% is an n-ary rule in MRULES then
+$NL
+F%Ri%(t%1%,...,t%n%) <= T%M&+&.
+$NL 1
+$QM
+Now T%M% is defined as follows:
+$NL 1
+T%M% =%def% { t | t in T%M&+& and CAT(t) in TOPCATS }
+$NL 2
+Before we define the set of well-formed D-trees D%M%, the set TD%M&+& is 
+defined. TD%M&+& consists of pairs (s,d), where s is a possible syntactic 
+S-tree and d its corresponding syntactic D-tree:
+$NL 1
+TD%M&+& is the smallest set so, as
+$NL 1
+$HL 4,1.
+{ (b,_b_) | b : b in B } <= TD%M&+&, 
+$NL
+$LD 3
+$UM
+2.  { (s,d) | (s%1%,d%1%),...,(s%n%,d%n%) in TD%M&+&, R%i% in MRULES :
+              s in F%Ri%(s%1%,...,s%n%)  and
+              d = _R_%i%<d%1%,...,d%n%> } <= TD%M&+&
+
+$QM
+$LD 4
+The set D%M&+& of D-trees which corresponds with one or more S-trees in T%M&+&
+can now be defined as follows:
+$UM
+
+    D%M&+& =%def% { d | s : (s,d) in TD%M&+& }
+
+$NL
+$QM
+Now the set of pairs (s,d) where s is a well-formed S-tree and d its
+corresponding D-tree can be
+defined:
+$UM
+
+    TD%M% =%def% { (s,d) | (s,d) in TD%M&+& and CAT(s) in TOPCATS }
+
+$QM
+It is obvious that with the help of TD%M% the set of well-formed S-trees T%M%
+can be defined. Furthermore, we can use TD%M% for the definition of D%M%:
+$UM
+
+    T%M% =%def% { s | d : (s,d) in TD%M% }
+
+    D%M% =%def% { d | s : (s,d) in TD%M% }
+
+$QM
+D%M% is called the set of well-formed D-trees.
+$NP
+$C1 The context free grammar G%M%.
+On the basis of D%M% we can define a context free grammar G%M%. This grammar
+will have the property that the set of possible parsing trees P of the
+language L(G%M%) is equivalent with D%M%.
+$NL
+The context free grammar G%M% is a 4-tuple <V%N%,V%T%,S,R> in which 
+V%N%, V%T%, S and R are defined as follows:
+$UM
+    
+    R =%def% { r->b%1%,...,b%n% | d%1%,...,d%n% : 
+                            r<d%1%,...,d%n%> in D%M&+& and
+                            _A_%1<=j<=n%( (d%j% in B and b%j% = d%j% ) or
+                                      (not(d%j% in B) and d%j% = b%j%<...>)) }
+
+
+    S =%def% { r | d%1%,...,d%n% : r<d%1%,...,d%n%> in D%M% and
+                   A%1<=j<=n%( (d%j% in B and b%j% = d%j% ) or
+                   (not (d%j% in B) and d%j% = b%j%<...>) ) }
+
+    
+    V%N% =%def% { R | R in MRULES }
+
+    V%T% =%def% { _b_ | b: b in B }
+
+$QM
+$HL 5,Here
+R is the set of production rules, created on the basis of D%M&+&.
+Although it does not appear immediatly from the definition that R is
+a finite set, it can easely be proved. 
+$NL
+S is the set of starting symbols of the
+grammar. It is created by means of the set of well-formed D-trees D%M%. Taking
+the rulename of the topnode of a well-formed D-tree as a starting symbol 
+garantuees that each constructed parsing tree is equivalent to a well-formed
+D-tree.
+$NL
+V%T% is the set of terminals.
+$NL
+V%N% is the set of non-terminals.
+$NL 1
+$QM
+This grammar G%M% defines a language L :
+$UM
+ 
+    L(G%M%) =%def% { a in  SIGMA(V%T%) | s in S : s => a }
+
+$QM
+Here SIGMA(V%T%) is the set of all possible strings which can be made
+with the elements of V%T%.
+The language consists of sequences of basic S-trees. For each sequence in L
+a set of parsing trees can be constructed according to G%M%. Each parsing
+tree constructed in this way is equivalent with a well-formed
+syntactic D-tree in D%M%.
+$NP
+$C1 Definition of a CF control grammar
+Definition
+$NL 1
+The 5-tuple <V%N%,V%T%,S,R,C> is called a CF control grammar G of an M-grammar
+M if each parsing tree p of the set of parsing trees P defined by 
+<V%N%,V%T%,S,R>
+can be mapped onto a subset of D%M&+&, by means of the following function T:
+$NL 1
+$UM
+    T(p) = { _b_ | p in V%T% and b in B and C(p,b) } +
+           { R<d%1%,...,d%n%> | p%1%,...,p%n% :
+                            p = R<p%1%,...,p%n%> and R in MRULES and
+                            _A_%1<=j<=n% ( d%j% in T(p%j%) ) }
+
+and if
+
+    { _b_ | p,b : p in V%T% and b in B and C(p,b) } = B
+
+and if furthermore the following expression is valid:
+
+    D%M% <= { d | p : p in P and d in T(p) } 
+$NL 2
+$QM
+The grammar G%M% can be extended to a control grammar. Therefore we have
+to define a function C which defines a relation between the terminals of
+the CF grammar and the basic expressions of the M-grammar:
+$UM
+
+    C(p,b) = ( p = _b_ )
+ 
+$QM
+A control grammar defined in this way is called a complete control grammar.
+More formally said: a control grammar G is called complete with respect to
+an M-grammar M if:
+$UM
+
+ { d | p in P%G% and d in T(p) } = D%M%
+
+$QM
+$NP
+$C1 An Example
+Let M be an M-grammar with the following properties. For each rule R%i% of
+the set MRULES holds that the result of application of F%Ri% is a set of
+S-trees of one specific syntactic category. Furthermore, F%Ri% is only 
+applicable to S-trees of specific syntactic categories. It is possible to 
+define a function ARG-CAT(n,R%i%) which gives for an R%i% the category of the
+n&th& argument and a function RESULT-CAT(R%i%) which gives the category of
+the resulting S-trees.
+$NL 1
+Now we can construct a CF control grammar G'=<V%N%,V%T%,S,R,C> as
+follows:
+$UM
+
+    R = { _r_->_b_%1%,...,_b_%n% | r in MRULES and 
+                       _A_%1<=j<=n% (( b%j% in MRULES and
+                                   RESULT-CAT(b%j%) = ARG-CAT(j,r)) or
+                                   ( b%j% in B and
+                                     CAT(b%j%) = ARG-CAT(j,r)) )  }
+
+    S = { r | r in MRULES and RESULT-CAT(r) in TOPCATS }
+
+    V%N% = { r | r in MRULES }
+
+    V%T% = { R%basic% }
+
+    C(p,b) = ( p = R%basic% )
+
+$QM
+More information about M and B is needed to tell whether this grammar is
+a complete control grammar. The properties of the M-grammar given above 
+are valid for the current M-grammar of Rosetta2. So the specified 
+CF grammar could
+be used as a control grammar in Rosetta2. It is not complete with respect
+to the current grammar because it allows all possible combinations of
+basic expressions at the leaves of the D-trees as long as they have the
+correct syntactic categories.
+$NP
+$C1 Consequences for M-Parser and M-Generator.
+Until now we have derived a CF control grammar from the properties of a 
+given M-grammar. However it is also possible to specify an M-grammar M and
+a control grammar G and to define the set of well-formed S-trees T%M% in
+terms of these grammars as follows:
+$NL 1
+First the set TD%M&+& is defined. TD%M&+& is the smallest set so, as
+$NL 1
+$HL 4,1.
+{ (b,_b_) | b : b in B } <= TD%M&+&, 
+$NL
+$UM
+2.  { (s,d) | (s%1%,d%1%),...,(s%n%,d%n%) in TD%M&+&,
+              _r_->r%1%,...,r%n% in R%G% :
+              s in F%r%(s%1%,...,s%n%)  and
+              d = _r_<d%1%,...,d%n%> and 
+              _A_%1<=j<=n% ( TOPSYMBOL(d%j%) = r%j% } <= TD%M&+&
+
+The function TOPSYMBOL returns for a given D-tree the name of the topnode.
+Now T%M% can be defined as follows.
+
+    T%M% =%def% { s | d : (s,d) in TD%M% and CAT(s) in TOPCATS }
+
+$QM
+Having defined the set of well-formed S-trees we can give the new
+definitions of M-PARSER and M-GENERATOR. Notice that the function M-PARSER gets
+an extra argument, namely the name of an M-rule.
+$RL 14
+$UM
+
+    M-PARSER(s,_r_) =%def%
+
+    { _s_ | _r_ in V%T% and s in B } +
+
+    { d | _r_->r%1%,...,r%n% in R%G%, s%1%,...,s%n%, d%1%,...,d%n% :
+          s%1%,...,s%n% in F%r%'(s) and
+          d%1% in M-PARSER(s%1%,r%1%) and
+                   ...
+                   ...
+          d%n% in M-PARSER(s%n%,r%n%) and
+          d = _r_<d%1%,...,d%n%>             }
+
+
+$QM
+$RL 12
+$UM
+
+    M-GENERATOR(d) =%def%
+
+    { s | _s_=d and s in B } +
+
+    { s | _r_->r%1%,...,r%n% in R%G%, s%1%,...,s%n%, d%1%,...,d%n% :
+          d = _r_<d%1%,...,d%n%> and
+          r%1% = TOPSYMBOL(d%1%) and s%1% in M-GENERATOR(d%1%) and
+                                . . .
+                                . . .
+          r%n% = TOPSYMBOL(d%n%) and s%n% in M-GENERATOR(d%n%) and
+          s in F%r%(s%1%,...,s%n%)                                  }
+
+$QM
+$NP
+$C1 Conclusions
+Because the rules of the M-grammar are applied according
+to the CF control grammar, it is possible to have "weaker" M-rules.
+The fact is that the control grammar sees to it that the M-rules are 
+applied to S-trees of
+a specific class only. Therefore in principle an M-rule does not have to 
+check whether 
+the argument S-trees belong to that class.
+$NL
+I agree with Jan Landsbergen, however, that the applicability of the rules
+of an M-grammar should only depend on the presented expressions. But
+that does not exclude that a CF control grammar based on such an M-grammar
+is used for reasons of efficiency.
+$NL 
+Furthermore it is conceivable to enrich the CF control grammar with
+attributes to a so called attribute grammar, in order to be able to
+transfer information from one branch of a derivation tree to another,
+especially with respect to the generation process.

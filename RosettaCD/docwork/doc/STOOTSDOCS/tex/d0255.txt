@@ -1,0 +1,1313 @@
+R0255.tex
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{General}
+   \RosTitle{Half-yearly report to NEHEM, February 1988}
+   \RosAuthor{Jan Landsbergen}
+   \RosDocNr{0255}
+   \RosDate{February 29, 1988}
+   \RosStatus{approved}
+   \RosSupersedes{-}
+   \RosDistribution{project, NEHEM}
+   \RosClearance{Philips, NEHEM}
+   \RosKeywords{}
+   \MakeRosTitle
+\setlength{\parindent}{0 in}
+
+%
+\section{Introduction}
+
+This report covers the sixth half-year of the Rosetta project:
+the period from August 1, 1987 until February 1, 1988.
+
+As usual the report is brief and non-technical; we 
+refer to the relevant project documents for further 
+information.  
+In section 2 an overview is given of the activities in the past
+half-year. In section 3 we discuss some organisational aspects.
+In section 4 the main Rosetta documents written in this period
+are enumerated. 
+In section 5 an overview is given of the person-hours spent on the
+project.
+
+\newpage
+
+\section{Activities in the period from August 1, 1987 until February 1, 1988}
+
+\subsection{Introduction}
+
+
+For a better understanding of the activities, the
+global design of the Rosetta3 system and the tasks of its components
+are recapitulated here.
+
+\bigskip
+
+Rosetta3 consists of an analysis component and a generation component.
+
+
+The analysis component translates an input sentence or
+phrase of the source language into an expression of the interlingua,
+called a semantic derivation tree. It
+indicates the semantic structure of the sentence.
+The generation component translates an interlingua expression into a sentence 
+or
+phrase of the target language. 
+
+\bigskip
+
+Due to ambiguities the analysis component yields a {\bf set} of
+semantic derivation trees for each input phrase and the
+generation component yields a set of translations for each semantic derivation 
+tree, but in this short overview we ignore this aspect and describe the system 
+as though the two main components and each of their modules give exactly
+one result.
+
+\bigskip
+
+The {\bf analysis component} consists of four modules, to be applied 
+consecutively:
+
+\bigskip
+
+\begin{itemize}
+
+\item  {\bf A-MORPH}. This module converts the words of the input phrase 
+into `lexical S-trees', by means of a dictionary for stems and morphological
+rules for inflection and derivation.
+If we ignore complicating details, A-MORPH consists of three parts:
+
+\begin{enumerate}
+
+\item Segmentation phase. In this phase the word is divided into a stem and 
+affixes by application of segmentation rules.
+
+\item Dictionary phase. The dictionary gives the lexical information for the stem.
+
+\item Lextree phase. By application of so-called lextree-rules the sequence of 
+stem(with the lexical data)  and affixes is converted into a lexical S-tree.
+In a lexical S-tree the derivational
+structure of the word is made explicit and the inflection data are represented
+in the form of features, e.g. {\it number = plural} instead of the affix {\it s}.
+
+\end{enumerate}
+
+So the output of A-MORPH is a sequence of lexical S-trees.
+
+
+\item {\bf  S-PARSER}. By this module the sentence, i.e. the 
+sequence of lexical 
+structures, is parsed by means of surface rules.
+The result is a surface tree (S-tree), a constituent structure 
+of which the leaves are the
+lexical S-trees of the input sequence, in the original order.
+
+\item
+{\bf M-PARSER}. This module analyses the surface tree by means of
+so-called
+M-rules, which have the task to unravel the underlying syntactic 
+structure of the sentence, which corresponds to its semantic structure.
+  The result is a syntactic derivation tree,
+of which the leaves are basic expressions and the other nodes are labelled
+by the names of the M-rules that have been applied. 
+
+
+\item {\bf A-TRANSFER}. This module converts the syntactic derivation tree 
+into a semantic derivation tree of the interlingua. The isomorphic grammar
+approach of Rosetta requires that the grammars of different languages are tuned 
+in such a way that they assign
+similar syntactic derivation trees and identical semantic derivation trees
+to sentences that are each other's translation. Thanks to this, the module
+A-TRANSFER (and also G-TRANSFER) is relatively simple: 
+the M-rules in the syntactic  derivation tree are replaced by semantic rules
+and the basic expressions are replaced by basic meanings, by means of local
+transfer rules.
+
+\end{itemize}
+
+
+The {\bf generation component} consists of four modules:
+
+\begin{itemize}
+
+\item {\bf G-TRANSFER}. By this module the semantic derivation tree is 
+converted 
+into a syntactic derivation tree. The meaning rules in the semantic derivation 
+tree are replaced by syntactic M-rules of the target language 
+and the basic meanings are replaced by
+basic expressions of the target language.
+
+
+\item {\bf M-GENERATOR}. The syntactic derivation tree is converted 
+into a surface tree
+of the target language by applying M-rules in the way indicated by
+the derivation tree and the control expressions of the grammar.
+
+
+\item {\bf LEAVES}. The surface tree is converted into a sequence of 
+lexical S-trees
+which are the leaves of the surface tree, i.e. the subtrees with specific
+word categories at the top.
+
+
+\item {\bf G-MORPH}. The lexical S-trees are converted into words (strings) by
+applying morphological rules. The result is a phrase of the target language.
+
+\end{itemize}
+
+The analysis component and the generation component of a particular language
+are based upon the same grammar. This is possible because 
+the rules of the grammar can be used
+in two ways: for analysis and for generation. So A-MORPH and G-MORPH 
+make use of the same set of morphological rules, M-PARSER and M-GENERATOR use
+the same syntactic rules and A-TRANSFER and G-TRANSFER use the same
+transfer rules. The only exception to this is 
+S-PARSER which is based on surface rules that have to be written for analysis
+only. In generation the counterpart of S-PARSER is LEAVES,
+which does not need to apply surface rules, because the
+output of M-GENERATOR is always a correct surface tree.  
+
+\bigskip
+
+The activities in the project can be subdivided into three main  parts:
+
+\begin{enumerate}
+
+\item {\bf Formalism.} The formalism defines the function of the 
+system in a mathematical way, abstracting away from the implementation
+aspects. For each module it specifies the notation of the rules and their 
+interpretation and the way in which the function of the module follows from the 
+rules.
+
+\item {\bf Software.} The software work includes: (i) the implementation of the
+analysis and the generation component, in particular of the
+algorithms of the eight modules, (ii) building rule
+compilers which translate from rule notation into  programming language,
+(iii) building various kinds of tools, including a software management system 
+and a number of test tools.
+
+
+\item {\bf Linguistics.} The linguistic work includes the actual writing and
+testing of the 
+isomorphic grammars for our three languages Dutch, English and Spanish.
+
+\end{enumerate}
+
+\bigskip
+
+\subsection{Formalism}
+
+
+The formal definition of the Rosetta3 modules has been completed 
+now, except for 
+the treatment of semi-idioms (e.g. {\it make a decision}), where the
+translation of the predicate ({\it make}) depends on a very specific 
+argument ({\it  decision}). The proposal on semi-idioms described in 
+document 213 turned out to be hard to implement in an efficient way,
+an alternative proposal is under discussion.
+
+\bigskip
+
+
+The notation for defining the rules of the interlingua (including
+the parameters of the rules) has been fixed (doc. R0250). 
+The notation for defining the transfer relation between M-rules
+and interlingua rules has been fixed too.
+
+
+\bigskip
+
+In the morphological formalism a few minor extensions have been made.
+
+In the first place provisions have been made to deal with fixed idioms.
+Fixed idioms are expressions consisting of a sequence of strings
+(e.g. the preposition {\it with respect to}), 
+but which - from a syntactic and a semantic point of view -
+may be considered one word.
+
+In the second place the notation of segmentation rules
+was extended in order to make the morphological component suitable for 
+dealing with phonetic (instead of orthographic) representations. 
+(Currently a student-trainee writes a variant of the Dutch morphological
+component for phonetic representations). 
+ 
+
+\subsection{Software}
+
+{\bf Morphological modules.} 
+
+The algorithms for A-MORPH and G-MORPH 
+had already been completed in the previous half-year. In this period
+only a few minor additions in the algorithm and the rule compilers
+have been made. They relate to the above-mentioned
+extensions of the formalism for dealing  with fixed idioms and phonetic
+representations.
+
+\bigskip
+
+{\bf Syntactic modules} 
+
+The M-rule compiler which converts the M-rules from their original
+notation into Pascal, for both analysis and generation, has been 
+completed and tested.
+
+The algorithms for M-PARSER and M-GENERATOR have 
+been implemented and integrated with the results of the
+rule compiler for M-rules. These algorithms follow the formal definitions
+in a rather straightforward way, with one exception. The regular expressions
+which control the application of rules in a sub-grammar are not interpreted
+by M-PARSER (c.q. M-GENERATOR), but there is an initiation phase during
+which the order of rule applications is expressed in terms of successor
+relations between the rules (This way of defining the order 
+is formally equivalent, but more difficult to use for humans)
+The algorithms M-PARSER and M-GENERATOR make use of this successor 
+relation. This approach leads to a simpler and more efficient implementation. 
+
+The current implementation cannot yet deal with idiomatic expressions.
+
+\bigskip
+
+The algorithm LEAVES has been implemented. This is the simplest
+module of the system. It converts a surface tree into the sequence of its
+leaves, i.e. the subtrees corresponding to words.
+
+
+\bigskip
+
+{\bf Transfer modules}
+
+Rule compilers for specifying the rules of the interlingua and
+the transfer rules have been developed (doc. R0250).
+
+A version of the algorithms A-TRANSFER and 
+G-TRANSFER has been implemented, in which semi-idioms are not taken into
+account yet. This version includes disambiguating interaction in case
+of ambiguous basic expressions. (Interaction with the user for solving
+ambiguities was not planned for the Rosetta3 phase of the project, but
+for the Rosetta4 phase. Rosetta3 only has to give all possible translations.
+However, if a sentence contains a number of ambiguous words, the number of
+possible translations may become very large. By adding the possibility
+to let the user choose interactively between the possible meanings of a word,
+the output of the system can be reduced to a manageable number.)
+
+\bigskip
+
+{\bf Miscellaneous}
+
+Provisions have been made 
+for creating a short-cut between M-PARSER and M-GENERATOR
+of the same language, which is useful  for testing purposes.
+
+A number of test tools has been implemented, e.g. for tracing rule
+applications in M-PARSER and M-GENERATOR. Software for filling
+and compiling 
+the test dictionaries has been implemented (doc. R0249).
+
+Procedures for extracting information from the Van Dale dictionaries have been 
+implemented.
+
+\bigskip
+
+
+
+{\bf Recapitulation}
+
+The algorithms and the rule compilers for the analysis
+component of Rosetta3
+(including the modules A-MORPH, S-PARSER, M-PARSER, A-TRANSFER) 
+and the generation component 
+(including the modules G-MORPH, LEAVES, M-GENERATOR, G-TRANSFER) 
+have been implemented, except for some special provisions needed for
+idioms and semi-idioms. In addition a number of tools, for software
+management and for testing, have been implemented. 
+As a result one of the goals of the Rosetta3
+phase of the project has been achieved now: a translator-generator has been
+constructed in such a way that by supplying linguistic rules and dictionary
+entries for two languages, a new instance of the Rosetta3 translation
+system is generated. However, there is still much work to be done,
+especially on documentation, instruction, user-friendliness and efficiency.
+
+
+\bigskip
+
+
+
+
+
+
+\subsection{Linguistics}
+
+{\bf Morphological rules}
+
+The morphological rules for Spanish have been tested (for Dutch and English
+this has already been done in the previous period). Because for Spanish only
+a generative component is developed and morphological generation is the last
+step in this component, the problem was that testing would have to wait
+until all other modules would be ready. The input for the generative 
+morphological component consists of rather complicated tree structures,
+so entering these expressions manually is not an attractive alternative.
+Therefore it was decided to make an analytical version of the morphological
+rules too and to test the rules by making a short-cut between
+analytical and generative morphology, in a similar way as for Dutch and English.
+Thanks to the reversibility of the rules this took little extra
+time. 
+
+As a result we have now complete sets of morphological rules
+for inflection of Dutch, English 
+and Spanish, for both analysis and generation.
+
+\bigskip
+
+
+
+{\bf Syntactic and semantic rules}
+
+\bigskip
+
+\begin{enumerate}
+
+\item {\bf Word translator.}
+The local English M-rules for the word translator - a simple version
+of Rosetta3 for the translation of isolated inflected words - have been
+written (doc. R0233). 
+The Dutch and the English rules have been tested for a Dutch-to-Dutch
+and an English-to-English shortcut between M-PARSER and M-GENERATOR. 
+have been completed. 
+ The 
+testing of the translation relation had to wait until the transfer 
+modules were implemented, but this part of the test will be fairly simple.
+For Spanish no word translator will be made in this phase of the project
+(this follows from the decision to have only a small test dictionary for
+Spanish).
+
+\bigskip
+
+\item {\bf Phrase translator.}
+Most of the current linguistic efforts are related to writing M-rules
+for the phrase translator, for Dutch, English (analysis and generation)
+and Spanish (only generation).
+
+Most rules for the Dutch clause, the adjective phrase and a preliminary
+version of the noun phrase have been written, 
+syntactically checked and translated into correct Pascal. The actual testing
+of the rules has started recently. In addition the surface rules for 
+Dutch have been written and tested.
+
+Writing English and Spanish rules has started too. They are syntactically 
+checked and compiled into Pascal; the actual testing will have to wait 
+until the Dutch analysis component is operational.
+
+In parallel with the writing of the M-rules the semantic rules
+of the interlingua and the relation between the M-rules and the
+interlingua, used in A-TRANSFER and G-TRANSFER, are specified.
+
+\item {\bf Other linguistic work.}
+The status of the work on the Van Dale dictionaries is extensively described in
+doc. R0247. For each attribute of the open categories (noun, verb, adjective,
+adverb) it has been investigated whether and how its values can be derived
+from the Van Dale dictionaries. In addition it has been investigated to what 
+extent the information in the dictionaries Dutch-Dutch, Dutch-English and
+English-Dutch can be merged. The conclusion was that - because of the
+numerous irregularities, exceptions and mismatches between the three 
+dictionaries - too much handwork is needed for converting the Van Dale 
+dictionaries into Rosetta dictionaries, even for the word translator 
+(cf. the remarks on dictionaries in subsection 3.3).
+We will use the procedures developed for extracting information from the Van 
+Dales, but only for a small subset, for which corrections can be made by
+hand. For the closed
+categories (articles, pronouns etc.) all words from Van Dale will
+be included in our dictionaries, but the morphological and syntactic
+information will be entered manually.
+
+
+For testing purposes a test dictionary is maintained. 
+
+\bigskip
+
+Two student-trainees of the University of Utrecht are doing linguistic studies
+in the framework of Rosetta. 
+
+The first study concerns the characterisation and
+the translation
+of generic expressions. An example: 
+the translation of the noun phrase {\it pearls} into
+Spanish is {\it perlas} if it must be interpreted as existential quantification
+(as in {\it he gave her pearls}), 
+but it is
+{\it las perlas} if the noun phrase is used generically (as in {\it pearls are 
+expensive} ).
+
+In the second study a version of Dutch morphology is written for 
+phonetic representations instead of orthographic representations.
+This work may be useful for speech recognition and synthesis and
+also for spelling correction.
+
+\end{enumerate}
+
+
+
+
+\newpage
+
+\section{Management aspects}
+
+
+
+\subsection{Personnel}
+
+
+In the period from August 1, 1987 - February 1, 1988 the following people were
+involved in the project.
+\begin{verbatim}
+
+ir. S.P.J. Landsbergen, project leader   (Philips Nat. Lab.)
+ing. C. Fellinger                        (Philips Nat. Lab.) 
+dr. M.C.J. Leermakers                    (Philips Nat. Lab.)
+ing. J.H.G. Rous                         (Philips Nat. Lab.)
+ing. J.P. Medema                         (Philips Nat. Lab.)
+drs. E. Appelo                           (Philips Nat. Lab.) 
+drs. F.M.G. de Jong (8/10)               (Univ. of Utrecht)
+drs. E.L. van Munster                    (Univ. of Utrecht)
+drs. J.E. Odijk                          (Univ. of Utrecht)
+drs. M.J. Sanders                        (Univ. of Utrecht)
+drs. A.Y. Schenk                         (Univ. of Utrecht)
+drs. H.E. Smit                           (Univ. of Utrecht)
+
+\end{verbatim}
+
+E. Appelo is a Philips employee since January 1, 1988.
+
+Both C. Fellinger and A. Schenk participated in the start-up phase
+of a new pre-development project on work stations (cf. subsection 3.3)
+in the period October 1987 - January 1988. 
+Fellinger has joined this project definitively and leaves a vacancy
+in the Rosetta project. 
+
+J. Medema, who had joined the Rosetta project 
+temporarily, for work related to Van Dale and
+software management, has moved to a new research activity.
+He will continue to work for Rosetta about one day a week.
+
+\bigskip
+
+Student-trainees:
+\begin{verbatim}
+J. Zwarts (Univ. of Utrecht), from September 1, 1987.
+J. Schipper (Univ. of Utrecht), from September 1, 1987.
+
+C. Hazenberg completed his doctoral thesis in September 1987.
+
+\end{verbatim}
+
+Dr. J. Groenendijk (University of Amsterdam) 
+continued his two-year study on text-semantics, financed by
+Philips Research Laboratories.
+
+\subsection{Internal organisation of the project}
+
+
+The internal organisation of the project 
+did not change in the past half-year.
+
+There is a software subgroup currently consisting of only two people: 
+Rous (chairman) and Leermakers. 
+
+There is a linguistic subgroup, 
+consisting of: Odijk (chairman), Appelo, 
+De Jong, Van Munster, Sanders, Schenk and Smit.
+
+There are regular progress meetings of the project team as a whole and of the 
+subgroups.
+In addition there are incidental meetings for the discussion of new
+documents.
+
+\subsection{Planning}
+
+
+In the previous report (doc. R0216) we already mentioned the fact that in thes 
+implementation and testing phase
+of the project our cpu capacity has turned out to be insufficient
+and that this has caused a delay. Because of this it was decided to
+continue the Rosetta work on a new configuration, a cluster of two 785 VAXes. 
+The new situation will start at the end of February 1988. We expect
+that the new configuration will relieve, although not completely solve
+ our problems.
+
+Other causes for the delay of the project were described in the previous 
+report. An additional cause is the departure of Fellinger from the project.
+
+\bigskip
+
+NEHEM has given permission to shift the final date when the 
+Dutch-English and the Dutch-Spanish test 
+version must be ready, to November 1,
+1988. Our next report to NEHEM 
+will be the final report which will be delivered before 
+December 31, 1988. 
+
+\bigskip
+
+In the remaining period the small software group of Rosetta will
+be concerned mainly with supporting the linguists during the testing
+phase and adjusting the rule compilers, the software management system
+(which has to manage more than 5000 files at the moment) 
+and other software tools if necessary. In addition the 
+following topics have the highest
+priority:
+
+\bigskip
+
+- Documentation. Some parts of the software have been hardly documented,
+because getting the system running had the highest priority until
+recently. It is important that adequate documentation is written soon.
+
+\bigskip
+
+- Additions for dealing with idioms and semi-idioms.
+
+\bigskip
+
+- Test tools. During the testing of the linguistic rules, needs for
+new tools arise occasionally. 
+
+\bigskip
+
+- Robustness measures. The system as it has been implemented now is only capable
+of dealing with phrases that are correct with respect to the current grammar.
+If an input phrase is incorrect or if it contains an unknown word, no
+translation will be given at all. Robustness (or: fail-soft) measures are
+needed for ensuring that at least a partial (possibly: word by word)
+translation of   the input
+phrase is given. 
+
+\bigskip
+
+For the linguistic work in the next half year a detailed planning has been
+made (doc. R0251). We have opted for an incremental approach, where a narrow
+path through a sub-grammar is tested first and then extensions are made step by 
+step.
+
+\subsection{Miscellaneous}
+
+With respect to the transfer of the Rosetta research results to Philips product
+divisions the prospects are favourable. A joint project
+of product division TDS and research has started recently in which 
+advanced work stations will be developed.
+Presumably natural language
+applications, based on the Rosetta approach, 
+ will play an important role in this project. Two members of the Rosetta team
+have participated in the preparatory phase of the work station project.
+
+There is a reasonable chance that our dictionary problem (the
+problem that filling large dictionaries cannot be realized in a research 
+project, while on the other hand they are an absolute necessity for 
+demonstrating the capacities of a translation system) will be solved
+in this way. For the natural language applications on the work station
+large lexical data bases will have to be constructed, which will 
+be useful for research 
+purposes as well.
+
+
+\newpage
+\section{Documents of the past half-year}
+
+Since the project is in its implementation phase and most of the work 
+is related to implementing and testing, the number of produced 
+documents is smaller than it used to be.
+
+\bigskip
+
+{\bf On general topics:}
+\begin{verbatim}
+  R0216: J. Landsbergen - Half-yearly report to NEHEM, August 1987. 
+  R0234: H. Smit, J. Medema - Derde halfjaarlijkse verslag aan Van Dale 
+         Lexicografie.
+  R0241: J. Landsbergen - Machine Translation in Japan.
+  R0251: J. Landsbergen, J. Odijk - Planning linguistisch werk tot 1 juli 
+         1987.
+
+\end{verbatim}
+  
+Most decisions on organisational matters can be found in the minutes
+of the project meetings and of the subgroup meetings, which are not enumerated 
+here.
+
+\bigskip
+
+{\bf On the Rosetta3 programs and programming tools:}
+\begin{verbatim}
+
+  R0222: J. Rous - Scenarios for extending the Rosetta computer facilities.
+  R0223: J. Odijk - The linguistic consistency of dictionaries.
+  R0249: J. Rous - A Dictionary for testing purposes.
+  R0250: R. Leermakers - Interlingua definition.
+
+C. Hazenberg - M-rules in Pascal. Rosetta's M-rule compiler.
+          Master's Thesis Leiden University, September 1987
+
+\end{verbatim}
+{\bf On linguistic aspects of Rosetta3:}
+\bigskip
+
+Most of the current linguistic activity is writing and testing grammar
+rules. These rules are documented, but they do not have the form 
+of Rosetta documents.
+
+\begin{verbatim}
+  R0233: M. Sanders - Local M-rules for English and Dutch.
+  R0247: J. Medema, H. Smit - Using Van Dale for Rosetta.
+
+\end{verbatim}
+
+\newpage
+
+\section{Time records}
+
+The following table specifies the number of hours spent on the 
+project in the period from August 1, 1987 until and including January 31, 1988.
+
+\begin{verbatim}
+
+name                               hours 
+
+                        Aug   Sep   Oct   Nov   Dec   Jan     Total
+                                                            |
+E. Appelo                88   124   108   136   124   160   |  740          
+C. Fellinger            136   132   104     -     -     -   |  372          
+F.M.G. de Jong          132   116   100   120   100   100   |  668          
+S.P.J. Landsbergen       88   176   176   160   112   136   |  848         
+M.C.J. Leermakers       156   172   140   136   140   136   |  880          
+J. Medema               160    96   162   143   120    32   |  713          
+E.L. van Munster        136   144   148   132   120   124   |  804          
+J.E. Odijk              112   168   160   168    16   160   |  784          
+J.H.G. Rous             120   168   128   156   136   160   |  868
+M. Sanders              168   168   148   160   120   112   |  876          
+A.Y. Schenk             136   164   144    36     -    16   |  496          
+H.E. Smit               144   176   164   156    72   160   |  872         
+------------------------------------------------------------------
+Total                   1576  1804  1682  1503  1060  1296  | 8921             
+
+\end{verbatim}
+
+
+
+
+
+%
+\end{document}
+
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

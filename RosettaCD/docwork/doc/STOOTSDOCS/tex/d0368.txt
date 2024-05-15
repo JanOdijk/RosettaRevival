@@ -1,0 +1,1139 @@
+R0368.tex
+
+
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.Doc.Linguistics}
+   \RosTitle{Scope in Rosetta3}
+   \RosAuthor{Jan Odijk}
+   \RosDocNr{R0368}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Scope, Variables, Substitution order, Substitution Markers}
+   \MakeRosTitle
+%
+%
+
+\section{Introduction}
+
+This document describes how scope is dealt with in Rosetta3.
+
+Two ideas play a central role in the treatment of scope in Rosetta3:
+
+\begin{description}
+  \item[1] The first central idea, derived from Montague grammar, is to encode 
+scope relations by the order in which 
+scope bearing elements are substituted: the earlier some phrase is
+substituted, the narower its scope.
+\item[2] The second central idea is the assumption that left-right order
+of phrases corresponds directly with scope: the more to the left a phrase 
+occurs (in a sentence) the wider its scope is.
+\end{description}
+
+The latter central idea is incorrect in the sense that there are cases where 
+some phrase C1 appears to the right   of some other phrase C2 though it has
+narrow scope relative to C2, but it is nevertheless useful for the following 
+reasons:
+
+\begin{description}
+  \item[] Counterexamples always involve cases
+where syntactic and semantic condition do not determine uniquely some scope
+interpretation. The scope interpretation is either free (the sentence is 
+ambiguous), or is determined by extra-linguistic factors.
+  \item[] Counterexamples (almost) never 
+require different translations for the two (or more) different scope 
+interpretations
+\end{description}
+
+These two central ideas have been implemented in the following manner:
+\begin{description}
+  \item[1] There are substitution rules that encode scope interpretations.
+These substitution rules apply relatively late in the derivation, at a point
+where the definitive left-right order is known, and does not change anymore.
+  \item[2] These substitution rules are subject to a substitution order 
+condition that guarantees that substitution applies from right to left:
+first the rightmost phrase is substituted, then the one preceding this
+phrase etc. In practice this substitution order exists in two varieties:
+in analysis there is  a very strict condition, requiring substitution
+from right to left. In generation a slightly weaker condition holds, because
+the condition can be ignored if some phrase is not a scope bearing phrase.
+\end{description}
+
+The generative substitution order condition has been implemented in an 
+interesting way only in Dutch generation. In English and Spanish these
+conditions simply yield true in all cases.
+ 
+
+\section{The need for variables and Substitution markers}
+The substitution order conditions must implement the concept of
+'substitution from right to left'. Since a syntactic structure can contain
+all sorts of elements that do not partake in substitution, it is {\bf not} 
+possible 
+to implement this concept by stating the following condition:
+
+\begin{description}
+  \item[] substitution can take place only if there are no (NP,PREPP, ADVP)
+phrases to the left of it  
+\end{description}
+
+The idea here would be 
+that if some phrase C1 occurs to the left of the phrase to be 
+substituted, then this phrase C1 has been substituted too early.
+
+It is not possible to implement  the concept in this way because phrase
+C1 might have got there in some other way than by substitution, e.g. it
+might have been introduced syncategorematically (e.g.
+{\em  it } in {\em  it is raining hard}), or it might be part of an idiom
+(e.g. {\em  the cat} in {\em  the cat has got Mary's tongue}).
+
+In order to avoid this problem it would be necessary to make a distinction 
+between elements that are in the structure and got there by substitution 
+and elements that are in the structure that did not get there by substitution.
+There is no way to make this distinction in Rosetta, especially since the
+elements that are parts of idioms and elements that are introduced 
+syncategorematically can in general also be introduced into structures 
+by substitution (when used as arguments).
+
+The relevant effect can be achieved in some other way, however. Elements
+that are substituted are always substituted for some variable. Elements that
+are introduced syncategorematically or that are part of an idiom are not 
+substituted, hence there is no variable for them at any point in the derivation.
+It is now possible to implement `right-to-left substitution' by adopting the
+following condition:
+
+\begin{description}
+  \item substitution is possible only if no variable occurs to the right of
+the variable that is substituted for.
+\end{description}
+
+The idea here is that if some variable V1 occurs to the right of the variable that
+is substituted for, then this  variable V1 should have been substituted for
+earlier.
+
+This is the condition that we adopted for Rosetta3. It accounts neatly for
+the fact that there can be idiom chunks and elements that are introduced 
+syncategorematically. The following table illustrates which paths this 
+condition allows in analysis for three phrases P1, P2, P3, in this order
+(X1, X2, X3 indicate the variables that remain in the structure after 
+application of a substitution rule):
+
+\begin{tabular}[t]{|c|c|}
+\hline
+Substituted Phrase & Result \\
+\hline
+\hline
+--         &  P1 P2 P3\\
+P3         &  P1 P2 X3\\
+P3-P1      &  blocked \\
+P3-P2      &  blocked \\
+P2         &  P1 X2 P3\\
+P2-P3      &  P1 X2 X3\\
+P2-P3-P1   &  blocked\\
+P2-P1      &  blocked\\
+P1         &  X1 P2 P3\\
+P1-P3      &  X1 P2 X3\\
+P1-P3-P2   &  blocked\\
+P1-P2      &  X1 X2 P3\\
+P1-P2-P3   &  X1 X2 X3\\
+\hline
+\end{tabular}
+
+As one can see, all phrases can be idiom chunks or syncategorematic phrases
+and only one substitution order is allowed.
+
+This method, however, has one problem: Scope bearing elements that are
+introduced into the structure without there being a variable for them
+cannot be accounted for adequately. This problem arises w.r.t negation
+and certain adverbs. Negative elements were originally simply introduced
+into the structure. Doing this would allow for the following substitutions
+in analysis for a structure containing the phrase P1 and the negative 
+element N, in this order:
+
+\begin{tabular}[t]{|c|c|}
+\hline
+Substituted/introduced Phrase & Result \\
+\hline
+\hline
+N & P1 \\
+N-P1 & X1\\
+P1 & X1 N\\
+P1-N & X1\\
+\hline
+\end{tabular}
+
+As one can see, the structure containing only the variable X1 can be obtained
+in two different ways: either one first substitutes N and then P1, or
+one first substitutes P1 and then N. The problem here is that after
+the negative element N has been removed, it is not 'remembered' anymore
+that some scope relevant phrase has been removed already from a position to
+the right of P1.
+
+As a consequence, it is necessary to have elements that 
+mark that in a specific position a scope bearing element has
+been removed.
+
+This has been done for NEG and POS. There are rules that introduce special
+markers that indicate in generation where NEG or POS is going to be 
+introduced in the structure and that indicate in analysis on which positions
+NEG and POS were present before they were removed.
+The relevant markers are called NEGVAR and POSVAR, but they are NOT variables.
+(they are not member of LSDOMAINT\_VARCATSET, which is a necessary requirement 
+for variables, and they do not have an index attribute)\footnote{They are 
+member
+of the set LSAUXDOMAIN\_VARCATSET, but this has no significance other than that
+they are counted as relevant in the substitution order condition.} 
+They are introduced by the rules Rnegvar1, Rnegvar2, Rnegvar3, Rposvar.
+
+This technique has not (yet) been used for VP-modifying adverbs that cannot be
+substituted. As a consequence, for these adverbs scope is not accounted for 
+adequately (yet).
+
+Since the technique must be used in several cases, one might also generalize
+the technique to all cases: Assume the existence of exactly one
+substitution marker {\em S}. Assume a rule that applies 
+before substitution rules and 
+that introduces {\em S} into the structure, at right edge.
+Reformulate substitution and introduction rules in the following manner:
+Substitution and or introduction of some phrase is possible if the
+substitution marker {\em S} follows  the point of substitution or introduction;
+shift {\em  S} to a position immediately preceding the point of substitution.
+Finally there should be a rule that applies after the substitution rules 
+and that removes {\em  S}. 
+
+
+\section{SubstorderCondition}
+
+The substordercondition has been implemented by means of three functions
+(Substordercondition1, Substordercondition2, Substordercondition) in
+lsmruquo.
+These functions differ in the number of list variables that must be taken into
+account. Each of the functions simply checks whether there are elements
+from LSAUXDOMAIN\_VARCATSET\footnote{Notice that the reference must be made to
+{\bf LSAUXDOMAIN}\_VARCATSET, and crucially {\em not} to 
+{\em  {\bf LSDOMAINT}\_VARCATSET}. The first set contains variables and
+ substitution markers, the second set only variables. The naming is, due to
+historical reasons, very unfortunate. It would be better to change the name
+of {\em  {\bf LSAUXDOMAIN\_VARCATSET}} into 
+{\em  LSAUXDOMAINT\_SUBSTMARKERS} to avoid confusion.} in the list variables. 
+If there are, the functions
+yield {\em  false}, otherwise they yield {\em  true}.
+
+The functions should be used in the following manner:
+specify all list variables occurring to the 
+right of the variable to be substituted as parameters of the appropriate 
+function and call it as a matchcondition on the (analytical) input model.
+
+\section{Gsubstordercondition}
+
+The generative substitution order conditions always yield  {\em  true} 
+in the English and Spanish grammars. These grammars should be extended by more 
+interesting versions of these functions.
+
+In Dutch a more interesting version of these conditions exists. Again
+three different functions exist, differing in the number of list variables
+taken into account. They are called {\em  gsubstordercondition1, 
+gsubstordercondition2, gsubstordercondition}.
+The functions are functions from a number (1,2 or 3)
+of listvariables and a tree variable to a BOOLEAN.
+
+These functions are defined as follows:
+\begin{description}
+  \item[if] the substitution order condition used in analysis holds, then
+        the function yields {\em true},
+  \item[ otherwise] if the relevant tree to be substituted is not a 
+scope bearing phrase, then the function yields {\em  true} 
+ \item[otherwise] if the lists to the right of the place of substitution
+do not contain variables for scope bearing phrases, then the function yields
+{\em  true}
+  \item[otherwise] the function yields {\em  false}.
+\end{description}
+
+Whether the tree to be substituted is a scope bearing phrase is determined
+by the function {\em  quantificational}. Whether there are variables for
+scope bearing phrases 
+in a list is determined by the function {\em  Qvarinmu}
+
+The function {\em  qvarinmu} checks whether there are variables or
+substitution markers in a list
+for which the function {\em  quantificational} yields {\em true}. If so,
+the function {\em  qvarinmu} yields {\em  true}, otherwise it yields 
+{\em  false}.\footnote{There is an error in the function qvarinmu as it is
+currently implemented. The test whether the relevant tree is a substitution
+marker or variable is lacking in the first IF-statement.}
+
+
+The function {\em  quantificational} is a function from a tree to a boolean.
+It yields {\em  true} in the following cases:
+
+\begin{itemize}
+  \item[] If the category of the topnode is NP or NPVAR with the attribute 
+{\bf definite} set to {\em  indef} OR the attribute {\bf syntquant} set 
+unequal to {\em  omegaquant}
+  \item[] If the category of the topnode is NEG or NEGVAR
+  \item[] If the category of the topnode is ADVP or ADVPVAR which is
+a sentential adverb ({\em  sentadv}) or a temporal adverb which is
+not a reference or duration adverb.
+  \item[] If the category of the topnode is PREPP or VARPREPP and
+the function {\em  qvarinmu} applied to the list dominated by these nodes 
+yields {\em true}.
+\end{itemize}
+
+
+In all other cases the function yields false. Notice that the functions
+{\em  quantificational} and {\em  qvarinmu} call each other, creating a
+recursion.
+
+The treatment w.r.t. adverbs is somewhat ad hoc, due to the fact that there
+is no attribute on ADVPs that indicates whether it is relevant to scope
+or not.
+The treatment does not take the presence of scope bearing elements inside
+an ADJP into account.
+In is possible, in principle, to make the approach more robust by allowing
+certain configurations that are not allowed now, but lowering the
+correctness bonus.
+
+It might perhaps be useful to make the generative substitution order condition 
+sensitive to a distinction between A-positions and A'-positions. This 
+distinction derives directly from modern generative grammar. In this theory
+the following hypothesis is a very natural one:
+
+\begin{description}
+  \item[] For quantified phrases in A'-positions left right order\footnote{
+Actually, not the concept of left-right order would be relevant, but the notion
+of {\em c-command}. For the languages under discussion, however, this 
+corresponds directly to left-right order in most cases.} indicates
+directly the scope relations (the more to the left, the wider the scope) 
+  \item[] For quantified phrases in A-positions there is not necessarily
+a connection between
+scope relations and left-right order
+\end{description}
+
+If this hypothesis is true, we might allow substitution of quantified phrases
+in generation in A-positions even if they violate the current generative 
+substitution order conditions. One area where this might give positive results
+concerns the interaction between negation and direct objects. In Dutch
+a quantificational phrase to the left of a negated element has scope over
+the negated element (cf. e.g. {\em  Hij zag \'{e}\'{e}n boek niet}. 
+The position to the left of the negated element ({\em  preadvrel})is
+an A'-position. In English the relevant phrase will often function as a direct
+object({\em  objrel}), which (in English) is always an A-position. 
+By incorporating the
+hypothesis mentioned we might allow a translation of the Dutch sentence given
+simply as {\em  he did not see one book}, which is correct (I think) in this
+case. It should be investigated further whether this method might be useful.
+
+\section{Point of substitution}
+
+A general problem arose in connection w.r.t. the point of substitution.
+The question is: at what point of embedding do substitution rules take place.
+To make this question clearer the following example will be used: in a 
+sentence such as {\em  hij woont in deze stad}, is the NP {\em  dit zwembad}
+substituted in the PREPP subgrammars, or in the SENTENCE subgrammars?
+
+On the one hand, one would like to apply  substitution at the sentential
+level. After all, this is the level at which scope relations for the sentence
+should be defined. Furthermore, the PREPP can be shifted by the shift 
+transformations, and these apply usually only for PREPPs containing a variable.
+(cf. {\em  In deze stad woont hij, In welke stad woont hij?}). Notice that
+it is not possible to shift the variable for the whole PREPP, since 
+substitution of such PREPPs applies much earlier (because a crucial reference
+to and a change of material inside the PREPPPROP is necessary).
+In certain cases elements can even be shifted out
+of the PREPP (e.g. in the case of wh-questions, cf. 
+{\em  waar woont hij naast?}, etc.
+
+However, this cannot be the general strategy, because certain PREPPs can occur
+embedded under NPs (or under several NPs (and PREPPs)), 
+which would require that the 
+substitution rules apply at indefinite depths (cf.
+{\em  hij bekeek {\bf  het water in het zwembad}, hij bekeek {\bf het 
+chloorgehalte van het water in het zwembad}}, etc.).
+
+So it is also required to apply substitution of such NPs in the PREPP 
+subgrammars.
+
+If one would simply allow for both options, in many cases ambiguities w.r.t.
+the point of substitution of such NPs will arise. So, one would like
+to determine for each case individually, where substitution of NPs should
+apply, to avoid such ambiguities.
+
+Unfortunately, this is not always possible. In particular, for PREPPs used 
+at a sentential level one cannot exclude PREPPs in which NPs have been 
+substituted already (this would exclude all idioms containing such a PREPP),
+and one cannot exclude PREPPs in which NPs have not been substituted yet
+(this would exclude relativization and topicalization 
+of the relevant NP-positions).
+
+As a consequence, due to this fact in many cases ambiguities arise.
+
+
+A similar problem arises w.r.t. the subject of CLOSEDXPPROPs and
+closed SENTENCES, i.e.
+at what point in the derivation are the boldface phrases substituted:
+{\em  ik vind {\bf  hem} aardig, {\bf hij} lijkt mij aardig},
+{\em  ik kreeg {\bf de pen} in de standaard, {\bf hij} bleek aardig te zijn,
+{\bf  hij} schijnt te komen} etc.
+
+In these cases allowing both options creates ambiguities again, which
+can even be motivated semantically (e.g. if the subject is quantificational
+and the verb is {\em  seem}). An additional problem is that certain languages
+might not allow some of these constructions, e.g. one cannot say
+{\em  he turned out to be ill} in Spanish using an infinitival complement.
+Instead a finite sentence must be used, and the subject {\em  he} occurs
+in the embedded clause. So there is a meaning associated to some of these
+Dutch and English
+structures  that cannot be expressed in Spanish, creating an isomorphy problem.
+At the moment, rather ad-hoc conditions have been imposed upon 
+substitution rules in Dutch and English to avoid substitution in the 
+superordinate clause in such cases, though I actually think that Spanish
+should allow for substitution rules substituting an NP into the subject
+position of a subordinate clause.
+
+\section{Emptys}
+
+EMPTYs are substituted by special substitution rules, applying at  a different 
+point in the grammar than where other substitution rules apply, 
+so that an intermingling 
+with other substitution rules is
+not possible (EMPTYs always have narrower scope than normal NPs).
+
+
+
+If two or more EMPTYs occur in  a structure and no special conditions are 
+added, they can be substituted
+in principle in two (or more) ways, corresponding to two (or more) 
+different scope relations in
+syntax.
+Since it is assumed that EMPTYs have existential quantification as their
+semantics,
+these two (or more) distinct syntactic derivation trees yield two (or more)
+distinct IL-trees  which are semantically equivalent 
+($\exists_{x}\exists_{y} \phi$ is equivalent to $\exists_{y}\exists_{x} 
+\phi$).
+
+In order to avoid such unnecessary ambiguities conditions have been added in
+analysis that guarantee that desubstitution of EMPTYs applies from left to
+right. In generation no conditions on substitution exist. They are not
+necessary, and in fact not desired, since they might block certain derivations
+in generation, though there is no need to.
+
+
+\section{Propositional Phrases}
+
+Substitution of propositional phrases is performed in a separate rule class.
+In the first versions of these rules no special conditions have been added
+to guarantee that there are no superfluous ambiguities when there are two
+or more propositional phrases. In a later stage some of such conditions have
+been added, but not yet in a systematic way. This should be ameliorated.
+
+
+\section{Alternatives}
+
+Certain alternative ways of dealing with scope have circulated rather 
+informally. I will list two of them. They both attempt to find a solution to
+the major problem with the current method of dealing with scope, i.e.
+the fact that the NP-internal structure can be seen and changed in too late
+a stage in the derivation. There are certain processes that require
+an inspection or a change of the syntactic structure inside NPs before these NPs are 
+substituted.  For certain cases of inspection the relevant information can be
+encoded into attributes and percolated upward to the NP node, but this is
+not always possible, and often, when it is possible in theory, it does not 
+yield a natural description. Changing the NP-internal structure before
+substitution is not possible at all.
+Some example rules that require changes inside NPs before they have been
+substituted:  anaphoric rules (to account for the proper distribution and
+interpretation of {\em  elkaar} and {\em zichzelf}), rules to deal with
+inalienable possession constructions in Spanish (to interpret {\em  me} in
+{\em  me ha lavado las manos} as the possessor of {\em  las manos} and to 
+translate it into {\em  Hij heeft mijn handen gewassen}), certain cases
+of shifting (cf. {\em  {\bf  Wat} heeft hij {\bf voor boeken} gekocht?}),
+etc.
+
+\subsection{Indexed NPs}
+
+This alternative treatment, which I will call the 
+{\em  indexed NP}\footnote{In this paper I will restrict attention to NPs, but 
+the method should be extended to indexed ADVPs, PREPPs etc.} proposal,
+assumes that there are substitution rules, but that they do not encode
+scope relations. Scope relations are encoded by special scope rules.
+Substitution rules apply very early in the derivation process, in an arbitrary
+but unique order. Substitution rules substitute not simply NPs, but 
+indexed NPs. An indexed NP is an NP with a special attribute {\bf index} of 
+type {\em  integer}.
+Before substitution the NP has this attribute set to zero. A substitution rule
+substitutes this NP for some variable with index j, and assigns this index
+to the index attribute of the NP substituted. From this (early) point 
+in the derivation all sorts of
+rules and transformations can apply, and they have access to NP internal 
+material, which they can also change if required.
+In a very late stage of the derivation scope rules apply. These are rules
+taking one tree as an argument and one index parameter. They turn the 
+NP with index  attribute equal to the index parameter of the rule into an
+NP with its index attribute set to zero (in generation), provided that
+the generative substorder condition (no indexed NPs to the right
+of the relevant NP) holds.   
+
+In analysis the scope rules make NPs with index = 0 into NPs with some index,
+from right to left.
+The substitution rules desubstitute indexed NPs in an arbitrary but fixed
+order, turn them into NPs with index=0, and leave a variable with the index
+of the desubstituted NP.
+
+NP variables are now indexed NPs not dominating any material. They can be 
+deleted if some indexed NP with the same index occurs in the structure,
+so that control phenomena and  anaphora can be dealt with adequately. 
+
+The method requires a special type of pre-action, which appears
+to be slightly more complicated than the current one.
+ 
+A problem for this method is, that it is not clear whether a compositional
+semantics  can be found for it.
+
+\subsection{Order encoding}
+
+A second alternative, which has not been worked out yet in detail, but which
+I do want to mention is the following. Assume that substitution rules perform
+substitutions and encode scope relations. Assume furthermore that  they apply
+very early in the derivation. The fact that they apply very early in the 
+derivation should make it possible to avoid the problem w.r.t. NP-internal
+material. Reference to the actual left right order is made in an indirect 
+manner. Every substitution rule assigns some integer to the NP (in an 
+attribute called {\em  order}) it has 
+substituted. This integer  encodes the relative scope relations, i.e.
+the first substitution rule applied assigns {\em  1}, the second one 
+{\em  2}, etc.  Next, all other relevant transformations and rules apply.
+Finally, there are {\em  order rules}. These order rules check whether
+the relevant NPs are in the order as indicated by the {\em order} attributes.
+For every NP in the structure it must be true that its order attribute has
+a higher value than the order attribute of the NPs that follow.
+
+This method requires further investigation. Some initial questions that arise:
+what about control, anaphora? What are order rules exactly: are they
+rules with an order parameter?, and if so, is scope now not encoded twice
+in the structure?; if these order rules are rules, what is their semantics?
+The order rules might (in generation) be implemented as a filter as well. 
+In analysis, some procedure which is not official part
+of the grammar should then assign the correct order attributes to NPs. Is that
+possible?, etc.
+
+\end{document}
+
+
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

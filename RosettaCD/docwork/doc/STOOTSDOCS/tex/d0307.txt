@@ -1,0 +1,1777 @@
+R0307.tex
+
+
+\documentstyle{Rosetta}
+%\makeindex
+\begin{document}
+   \RosTopic{Rosetta3.Doc.Linguistics.Dutch}
+   \RosTitle{The treatment of R-pronouns in Rosetta3}
+   \RosAuthor{Jan Odijk}
+   \RosDocNr{R0307}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Syntax, R-pronouns}
+   \MakeRosTitle
+%
+%
+
+
+\def\erx{{\em ER$_{x}$\ }}
+\def\rname#1{{\em #1}\index{#1}}
+\def\to{$\rightarrow$}
+
+\section{Introduction}
+
+This document deals with the treatment of {\em R-pronouns} in the M-grammar of
+Rosetta3. {\em  R-pronouns} are the words {\em  er, hier, daar, waar, ergens, 
+nergens} and {\em  overal}.
+
+The treatment of R-pronouns is based on the proposal made by Angeliek van Hout
+(van Hout (1986)), and it actually follows this proposal rather closely. 
+Nevertheless, certain aspects have been implemented differently, and 
+certain aspects were not fully clear some years ago, but they are now.  
+
+It is assumed that the basic facts and the 
+major problems w.r.t. R-pronouns are known. They can be found in van Hout 
+(1986) and will not be discussed here in detail, though
+section~\ref{problem} repeats them briefly.
+
+\section{The problem}
+\label{problem}
+
+The following facts w.r.t R-pronouns must be accounted for
+
+
+\begin{enumerate}
+  \item all functions R-pronouns can assume 
+          (prepositional, quantitative, expletive, locative)
+  \item the distribution of R-pronouns
+  \item When can, and when must, and when mustn't  R-pronouns `melt together'?
+  \item When can expletive {\em  er} appear?, When can expletive
+                {\em  er} be left out?
+  \item Where can expletive {\em er} appear?
+  \item Orthography: how are combinations of {\em  er} and prepositions 
+written?
+\end{enumerate}
+
+
+\section{The function of R-pronouns}
+
+R-pronouns can serve many functions. All of them can indicate a location 
+(cf. {\em  hij woont daar}) and
+all of them can replace  pronouns when these are complements of certain 
+prepositions ( {\em  ernaar} instead of {\em *naar het} etc.). The R-pronoun
+{\em  er} can also have a quantitative function (cf. 
+{\em hij ziet er twee}) and an expletive function ({\em er wordt in de tuin
+gedanst}).
+
+
+R-pronouns have been assigned to a special category, RADV. 
+RADVs occur in phrases of 
+category RADVP. The function(s) of a certain RADVP are kept track of by the
+attribute {\bf kindefs}. This attribute can assume values of type
+{\bf kindsEFFSETtype}, a set of values
+from type {\bf kindstype}. 
+The type {\bf kindstype} consists of the following values:
+
+
+\begin{description}
+  \item[Lk] Locative function 
+  \item[Pk] Prepositional function
+  \item[Xk] eXpletive function
+  \item[Qk] Quantitative function
+  \item[XLk] eXpletive and Locative function
+  \item[XQk] eXpletive and Quantitative function
+  \item[XPk] eXpletive and Prepositional function
+  \item[LQk] Locative and Quantitative function
+  \item[QPk] Quantitative and Prepositional function
+  \item[XLQk] eXpletive, Locative and Quantitative function
+  \item[XPQk] eXpletive, Prepositional and Quantitative function
+\end{description}
+
+\noindent
+These values exhaust all possible functions of R-pronouns.
+The attribute {\bf  kindefs} is a (efficiency) set to avoid ambiguities in
+analysis.
+
+The attribute {\bf kinds} originally was a set as well. It has been turned into
+a simple type because SET OF SETs  are not allowed in Pascal. In order to
+be able to make use of it as a set anyway (e.g. to consider e.g. the value
+{\em XPQk} as a set consisting of the elements {\em [ Xk, Qk, Pk]}), special 
+functions have been defined (in dutch:lsmruquo). There is a function
+{\em  toset} which turns a simple value of type {\em kindstype} 
+into a set value of 
+type {\em kindsEFFSETtype}), and a function {\em tobase} which does the opposite.
+
+In the surface parser the set consisting of all values of type {\bf kindstype}
+ is 
+assigned to RADVPs.
+
+
+
+\subsection{Prepositional function}
+
+R-pronouns in the prepositional function are always introduced 
+syncategorematically, to replace their corresponding pronoun. The replacements
+done are given in the following table: 
+
+\begin{trivlist}
+\item[] \mbox{}
+\begin{tabular}[t]{|c|c|} 
+\hline
+pronoun   & R-pronoun\\
+\hline
+het & er\\
+\hline
+dit & hier\\
+\hline
+dat & daar\\
+\hline
+wat & waar\\
+\hline
+iets & ergens\\
+\hline
+niets & nergens\\
+\hline
+alles & overal\\
+\hline
+\end{tabular}
+\end{trivlist}
+
+In analysis, both the pronouns {\em  iets, niets, alles}
+and the R-pronouns {\em  ergens, nergens, overal} are accepted 
+when governed by a preposition.
+The replacements are done only when the preposition specifies that this is
+possible. This specification is given by the attribute {\em  postform}, which
+can have one of the following values:
+
+\begin{description}
+  \item[pre] the preposition can only be used with RADVs, e.g. {\em  mee, 
+toe, heen}:
+{\em  ermee} vs. {\em  *mee een hamer}
+  \item[post]  the preposition cannot be used with RADVs, e.g. {\em  met, tot,
+tijdens}: {\em  *ermet, *ertot, *ertijdens} 
+  \item[both] the preposition can be used with an RADV and with normal 
+complements, e.g. {\em op, voor }: {\em  op het huis, voor de oorlog } vs.
+{\em  erop, ervoor}
+\end{description}
+
+Certain prepositions have a different specification w.r.t. this attribute 
+depending on their function. Examples: {\em  naar} (postform=both
+ if used in a {\em  prepobjrel}, postform=pre if used  as a directional
+preposition (cf. {\em  hij heeft ernaar gekeken} 
+vs. {\em *hij is ernaar gegaan});
+{\em  door} in its directional interpretation does not allow {\em  er}
+(cf. {\em hij is door de tunnel gelopen} vs. *{\em  Hij is erdoor gelopen}), in 
+other functions it does (cf. {\em  ik werd door zijn komst verrast} vs.
+{\em  ik werd erdoor verrast}).
+
+The replacements are performed in several different manners.
+
+\begin{description} 
+  \item[PP-internal] This case involves pronouns that are 
+substituted in the PREPP or PREPPPROP subgrammars.
+
+First, a transformation puts an {\em objrel} variable into
+a position preceding the preposition with relation {\em errel} (cf. the 
+transformations \rname{TPPhettoer1}, \rname{TPPhettoer2} from the PREPP subgrammar
+and \rname{Thettoer1}, \rname{Thettoer2} from the PREPPPROPtoPREPPFORMULA subgrammar). 
+If necessary, the preposition is
+adapted ({\em  met} \to {\em  mee}, {\em  tot} \to {\em  toe}).
+
+Second, special substitution rules substitute the relevant pronouns and 
+replace them by the corresponding R-pronoun. This is performed by the rule
+{\em Rppsubstitution2} in the PREPP subgrammar and by the rule
+{\em Rpppsubstitution2} in the PREPPFORMULAtoPREPPPROP subgrammar. If 
+necessary, a GLUE is introduced to deal with orthography properly
+(cf. {\em  ernaast} vs. {\em  ergens naast}).
+
+Typical examples for these rules are {\em  het huis {\bf hiernaast}},
+{\em van {\bf ervoor}}. (NP and PREPP  internal PREPPs)
+
+  \item[S-internal] This case is applicable if the substitution rule takes
+place in the CLAUSEtoSENTENCE subgrammar.
+
+First, there are transformations that turn an object of a preposition into 
+an {\em errel}: the preposition and the object   are permuted, the
+object gets the node RADVP over it, and this RADVP gets the relation
+{\em errel}. The {\bf case} of the object is set to [Rcase]. This is a 
+historical residue, it is not necessary anymore. Its function was to mark
+that some NP, NPVAR or CNVAR had to be realized as an R-pronoun. This is now
+marked by the fact that the object gets dominated by RADVP.
+Notice that the actual  change into an Rpronoun is not performed here yet. This
+is not possible at this moment (before substitutiuon rules have applied) 
+because the objects can still be variables.
+The transformations performing the task described are \rname{TVPhettoer1}, 
+\rname{TVPhettoer2}, \rname{FVPhettoer12} (for PREPPs under VERBP), 
+\rname{TShettoer1}, \rname{Tshettoer2}, \rname{FShettoer12} (for PREPPs under
+SENTENCE), \rname{Tadjhettoer1}, \rname{Tadjhettoer2}, \rname{Fadjhettoer12} 
+(for PREPPs under ADJP under VERBP).
+If necessary, the preposition is
+adapted ({\em  met} \to {\em  mee}, {\em  tot} \to {\em  toe}).
+
+
+In a second step the node bearing relation {\em errel}, or the whole
+PREPP is moved into the special position {\em erposrel} (if possible
+or necessary), and 
+possibly
+from there into {\em shiftrel}. This will be discussed below.
+
+The substitution rules substitute NPs for the variables dominated by RADVP.
+This is performed by the substitution rules \rname{Rsubstitution17}, 
+\rname{Rsubstitution18}.
+The substitution rules do not perform any change yet. They simply substitute
+the relevant NPs for a variable that is dominated by RADVP.
+
+Finally, there are transformations that turn NPs dominated by RADVP into
+RADVs. This is performed by the transformations \rname{Ttoer1}, \rname{Ttoer2},
+\rname{Ftoer12}.
+
+An example of a typical derivation:
+
+\begin{description}
+  \item[after Case rules] x1 ADVPVAR [naar objrel/x2] keek 
+  \item[TVPhettoer1] x1 ADVPVAR [errel/RADVP[head/x2] naar] keek
+  \item[Tertoerpos1] x1 erposrel/RADVP[head/x2] ADVPVAR PREPP[naar] keek
+  \item[Substitution] hij erposrel/RADVP[head/NP[head/het]] gisteren 
+                  PREPP[naar] keek
+  \item[Ttoer1] hij erposrel/RADVP[head/er] gisteren PREPP[naar] keek
+  \item[Ultimately] hij keek er gisteren naar
+\end{description}
+
+\end{description}
+
+
+\subsection{Locative Function}
+
+A locative adverb phrase headed by an RADV can be generated as an 
+OPENADVPPROP or CLOSEDADVPPROP 
+(when it is going to be an locative argument) or as an ADVP
+(when it is going to be a a locative adverbial). OPENADVPPROPs are substituted
+by the proposition substitution rules. Control transformations turn them into
+ADVPs. ADVPs are substituted in the substitution rules. Special 
+transformations apply before these 
+substitution rules to account for the proper 
+positioning of locative R-pronouns.
+
+The substitution rules substituting locative adverbial ADVPs are \rname{
+Rsubstitution5} (for {\em er}), \rname{Rsubstitution6} (for {\em daar, hier},
+it should also apply for {\em waar} (but doesn't)), \rname{Rsubstitution7}
+(for other RADVs (it also applies to {\em waar}, though it shouldn't)).
+
+\subsection{Expletive Function}
+
+There are abstract expletive element in the grammar of Dutch. They are of
+category EC. This category has two members, {\em  ECkey} and {\em  erECkey}.
+{\em  ECkey} is an abstract expletive element that has no realization on the 
+surface at all. It does not impose restrictions on definiteness of 
+postsubjects and objects. It typically occurs with dyadic ergative verbs
+(cf. e.g. {\em  ..omdat hem dat boek beviel}) and with passivized ditransitive
+verbs (cf. e.g. {\em  ..omdat hem dat boek gegeven werd}).
+The abstract element {\em  erECkey} is an expletive element that is always
+replaced by 
+expletive {\em er}. It imposes definiteness restrictions on postsubjects and
+objects, if these are present.
+
+The elements of category EC are introduced in the objectok transformations.
+They are dominated by an NP-node, and they bear relation
+{\em  subjrel} after their introduction.
+
+These abstract elements exist because they must take care of subject verb 
+agreement. The abstract elements agree with the object or postsubjrel NP, CNVAR
+ or NPVAR, and the finite verb agrees with this abstract element. Notice
+that the object or postsubjrel that the abstract expletive elements agree with
+need not be objects or postsubjrels of  
+the finite verb that the abstract elements agrees with.
+cf. {\em  er schijnen mensen te komen}, where {\em  mensen} is an objrel
+of {\em  komen}, {\em  mensen} agrees with {\em  erEC}, and {\em  erEC} agrees
+with {\em  schijnen}.
+
+The function of carrying the agreement features cannot be performed by {\em  er}
+itself, because {\em  er} is not a subject (this can be shown by the looking
+at the distribution of {\em er}). If one would like to have {\em  er} carry
+these agreement features anyway, then several rules would have to be 
+complicated. e.g. the subject-verb agreement rule and 
+the subject-to-subject raising rule (\rname{Tobjectok2}) and, in addition,
+the 
+mechanisms used now to account for subject verb agreement
+are still necessary to take care of ECkey.
+
+As said, the elements erECkey and ECkey are introduced by the objectok
+transformations. They are introduced under the following circumstances:
+
+\begin{description}
+  \item[postsubjrel] {\em  erECkey} is introduced if there is a postsubjrel
+and no subjrel. 
+(e.g. {\em  Er zwemt iemand}, {\em  Er koopt iemand een boek}), by rule
+\rname{Tobjectok3}.
+  \item[no args] {\em  erECkey} is introduced if there is no subjrel, no
+postsubjrel, no objrel and no complrel (e.g. {\em  Er wordt gedanst},
+{\em  Er wordt beweerd dat hij dood is}), by rule \rname{Tobjectok4}.
+\item[object] {\em  erEckey} is introduced if there is an objrel, no subjrel
+and no postsubjrel, and if the object satisfies certain restrictions
+(it must be indefinite, and it must not be universally quantifying), by rule
+{\em  Tobjectok5}.
+\item[Dative Movement] {\em  ECkey} can be introduced when there is an
+indirect object and a direct object, cf. {\em  ..omdat hem dit boek werd 
+gegeven}, or {\em  ..omdat deze man dit boek opviel} by rule \rname{Tobjectok6}.
+(This rule should be extended to deal with
+extraposrels instead of objrels as well, cf. {\em  omdat hem verteld werd 
+dat er gedanst werd}).
+ \end{description}
+
+
+An important part of the distribution of expletive {\em  er} is determined by
+the issue of when a {\em postsubjrel} can appear.
+
+The rule \rname{Tobjectok1}
+should allow certain indefinite noun phrases to pass this 
+transformation class, e.g. wh-noun phrase (at least in analysis), 
+and perhaps indefinite noun phrases when there is a complrel or extraposrel.
+
+There are transformations to delete the abstract expletive elements. The 
+abstract element ECkey is simply deleted (by rule \rname{TECDel}).
+The abstract element {\em  erECkey} is deleted and at the same time
+the the RADVP dominating the RADV {\em  er} is introduced. This is performed
+by \rname{Terxins1}. This rule can apply in finite sentences only.
+(cf. {\em  hij ziet er iemand zwemmen}, where {\em  er} can only be interpreted
+as a locative adverb, and {\em  Er schijnt iemand te zwemmen} (both an
+expletive and an expletive-locative interpretation)). 
+Structures not containing an abstract expletive element are dealt with
+by rule \rname{Terxins0}.
+
+Finally, also expletive {\em  er} can be deleted under specific circumstances.
+This will be discussed below.
+
+\subsection{Quantitative Function}
+
+NP formation rules generate NPs headed by EN. If this EN is  {\em massENkey}, 
+EN
+is deleted inside the NP subgrammar. If this EN is {\em countENkey}, then NPs
+headed by it can occur in a sentence only iff quantitative {\em  er} is present
+as well.
+NPs headed by EN have the attribute {\bf NPhead} set to {\em ennp}. As a 
+consequence of the pre-action the NPVAR associated with this NP has
+its attribute {\bf NPhead}  set to {\em  ennp} as well.
+The rules \rname{Terq1}, \rname{Terq2}, \rname{Terq3}, \rname{Ferq} 
+check whether there is a count NPVAR with the attribute {\bf NPhead} 
+set to {\em enNP} and bearing relation {\em  objrel,argrel} (Terq1),
+{\em  postsubjrel, preadvrel} (Terq2) or {\em  subjrel} (Terq3). If this is
+the case,
+then {\em  er} is introduced under {\em  erqrel}, and the attribute
+{\em  NPhead} of the relevant NPVAR is set to {\em  enokNP}. The rules
+mentioned apply iteratively. If some {\em  er} is to be put under {\em  erqrel}
+and there already is an {\em  er} bearing relation {\em  erqrel}, then
+no new {\em  er} is added.
+
+The filter   \rname{Ferq} guarantees application of these transformations in
+generation.
+The filter \rname{Fpreerq} guarantees that no variables with the attribute
+{\bf NPhead} set to {\em  enokNP} will be accepted.
+
+\noindent
+The rules should be extended to deal with {\em  predrel} (NPVAR and NP) 
+as well.
+The prefilter does not operate correctly for VR-structures. Only if 
+substitution
+of NP applies at the superordinate level (for argrel) the structures can be 
+derived. This should be changed in the following way. The prefilter Fpreerq
+should make an exception to VR structures. A filter applying before the
+remove transformations (speaking generatively) should filter all NPVARs
+with the attribute {\bf NPhead} set to {\em  enokNP}.
+
+There are special substitution rules that substitute count NPs heading
+EN for variables that  have the attribute {\em  NPhead} set to {\em  enokNP}.
+These substitute the NPs and they delete the EN. These are the substitution 
+rules \rname{Rsubstennp1} (for substitution in {\em  shiftrel, subjrel, 
+preadvrel} or {\em  postsubjrel}), \rname{Rsubstennp2} (for substitution
+in {\em  objrel}). These substitution rules should be extended to deal with
+{\em predrel} as well. Furthermore, in these rules it is assumed that there
+are no modifications under CN next to EN, but this is not correct, so the
+rules should be adapted to deal with such cases as well.
+
+The introduction of quantitative {\em  er} is performed before substitution 
+because the distance between the relevant NP and {\em  er} can be unlimited,
+cf. {\em  {\bf Hoeveel} dacht jij dat Piet dacht dat hij {\bf er} gezien had?}. 
+
+A typical derivation of a sentence such as {\em  hij zag er twee} takes the 
+runs as follows:
+
+
+\begin{description}
+  \item[After tense rules] x1 x2(ennp) zag  
+  \item[Terq1] x1 erqrel/er x2(enOKnp) zag
+  \item[Substitution] (+ NP[ twee CN[EN]]) \to x1 erqrel/er NP[twee] zag
+  \item[Ultimately] Hij zag er twee
+\end{description}
+
+
+\section{Distribution}
+
+
+
+\subsection{Non quantitative functions}
+
+The distribution of R-pronouns (except for quantitative {\em er}) 
+is accounted for by assuming the following very simple assumptions:
+
+\begin{description}
+  \item[1] There is a special position, called {\em erposrel}. It is located
+to the left of VP, under S, to the right of the subject (in a number
+of special cases it can occur to the left of the subject), and to the right of
+all clitic pronouns.
+  \item[2] If {\em  er} can get into the special position {\em erposrel}, then
+it must  get into it. 
+  \item[3] An R-pronoun or a PP containing an R-pronoun inside VP cannot be 
+shifted to a sentence initial position. In order to get there, it must make 
+a stop in the special position {\em erposrel}, and move from this position
+into {\em  shiftrel}.
+\end{description}
+
+
+These assumptions account for most, but not all facts relevant to the
+distribution of R-pronouns. It will be indicated where these assumptions do
+not yield a correct description.
+
+It has been assumed in the actual Rosetta3 system that
+the Rpronouns {\em  hier,daar,waar} when used prepositionally
+must be moved into {\em erposrel} as well. Assuming this accounts for the 
+following facts:
+
+\begin{description} 
+  \item[] *Werd er daarnaar gekeken?
+  \item[] *Er werd daarnaar gekeken.
+  \item[] Werd daar naar gekeken?
+  \item[] Daar werd naar gekeken.
+  \item[] Er$_{X,P}$ werd daar$_{L}$ naar gekeken
+  \item[] Werd er$_{X,P}$ daar$_{L}$ naar gekeken
+\end{description}
+
+I found, however, that judgements on the first two sentences are somewhat
+unclear to many people. Many find them acceptable.
+
+In the Rosetta3 system the R-pronouns {\em  ergens, nergens, overal} when
+used prepositionally are also put obligatorily into {\em  erposrel}.
+It is is not fully clear to me whether this is correct. 
+Some relevant testing sentences are:
+
+\begin{description}
+  \item[] Er werd ergens$_{P}$ naar gekeken 
+  \item[] Werd er ergens$_{P}$ naar gekeken?
+  \item[] Ergens werd naar gekeken.
+  \item[] Werd ergens naar gekeken?
+\end{description}
+
+
+Most people (including myself) consider the former two sentences grammatical,
+and the latter two ungrammatical. If so, then this would be accounted for by
+assuming that prepositional {\em  ergens, nergens, overal} cannot be moved to
+{\em  erposrel}. So the relevant rules in the Rosetta3 system must be adapted.
+However, all R-pronouns are obligatorily preposed when they are
+in prepositional object to and ADJ, cf. {\em (hij is) *blij ergens mee 
+/ *tevreden overal over / *gek nergens op} vs. {\em  (hij is) ergens blij mee /
+overal tevreden over / nergens gek op} etc. This fact has not been taken into 
+account yet adequately, and requires further investigation.
+
+
+It is furthermore assumed that locative phrases headed by {\em  daar, hier, 
+waar} are in a special position called {\em  defRadvrel}. This position 
+immediately follows {\em  erposrel}. This accounts for the fact that these
+pronouns usually precede adverbs such as {\em  waarschijnlijk} and {\em  
+gisteren}, though words such as {\em  overal}, {\em  nergens} {\em ergens}
+usually follow. A problem with this assumption, however, is that
+a sentences such as {\em  hij kreeg daar de auto} are generated as a variant
+of {\em  hij kreeg de auto daar} in the interpretation {\em  hij kreeg het voor 
+elkaar dat de auto daar kwam}, which is wrong. This should be 
+ameliorated, by making movement into {\em defRadvrel} optional, 
+though preferred,
+and block it if some material (objects only?) precedes {\em locargrel} 
+inside VP.
+
+There are several transformations to account for this distribution
+
+\begin{itemize}
+  \item Locative argument RADVs are put in their proper position by the 
+transformations \rname{TargRtoRpos1} (puts {\em  er} in {\em  erposrel}),
+\rname{TargRtoRpos2} (puts {\em  hier,daar,waar} into {\em  defRadvrel})
+and \rname{TargRtoRpos0} (lets other {\em  locargrels} 
+pass this transformation class).
+  \item Locative adverb RADVs are put in their proper position by the 
+transformations \rname{TadvRtoRpos1} (puts {\em  er} into {\em  erposrel}),
+\rname{TadvRtoRpos2} (puts {\em  hier, daar, waar}) into {\em  defRadvrel}),
+and \rname{TadvRtoRpos0} (lets other {\em locadvrels} pass this transformation
+class).
+  \item Prepositional RADVPs are put in their proper position by the
+transformations \rname{Tertoerpos1}, \rname{Tertoerpos2} and 
+{\em  Fertoerpos12}. These transformations are currently incorrect yet. They
+require that all RADVPs inside PREPPs are turned into {\em erposrel}, instead
+of making a distinction between {\em  er, hier, daar, 
+waar} (obligatorily) and {\em  ergens, nergens, overal} (obligatorily not).
+In addition, the formulation of Tertoerpos2 is currently inconsistent with
+the treatment of these structures in the surface parser. It should be 
+ameliorated.
+
+There are also transformations putting RADVs into {\em  erposrel} when they 
+originate inside ADJPs: \rname{Tadjertoerpos1}, \rname{Tadjertoerpos2},
+\rname{Fadjertoerpos12}. They put all RADVs obligatorily into {\em erposrel}.
+
+There is also an associated prefilter to speed up analysis: 
+\rname{PFpreertoerpos}.
+  
+  \item PREPPs containing {\em  hier, daar, waar} or CNVAR that is going to be 
+spelled out as {\em  waar} can be moved into {\em  erposrel} as a whole.
+This accounts for such sentences as {\em  het huis waarnaar hij kijkt},
+{\em  hij kijkt daarnaar niet graag}, etc. It also accounts for the contrast 
+between {\em  de manier waarop (er) geantwoord werd} ({\em  er} is optionally
+present) vs. {\em  de vraag waarop
+(*er) geantwoord werd}\footnote{The notation *(..) means: the sentence is 
+ungrammatical if the elements between the brackets are absent; the notation
+(*..) means: the sentence is ungrammatical if the elements between the brackets
+are present} ({\em  er} is obligatorily absent).
+
+This is performed by rule \rname{TPPtoerpos1}. It applies in analysis only. 
+\end{itemize}
+
+
+
+
+ 
+
+
+% BUT: adjectives: hij is nergens tevreden over/ nergens blij mee vs
+%* hij is tevreden nergens over / blij nergens mee
+% ?? er is iemand nergens tevreden mee//
+
+% er is iemand blij mee; *er is iemand daar blij mee
+%
+\subsection{Quantitative {\em  er}}
+
+Quantitative {\em  er} is always put in a special position called 
+{\em  erqrel}. This position immediately precedes {\em  erposrel}. The fact
+that quantitative {\em  er} occurs in a different position than all other
+{\em  er}s accounts for the fact that it can cooccur with other {\em  er}s,
+cf. {\em  {\bf Er} werden {\bf er} twee gekocht}.
+
+\section{Melting}
+
+For melting of two RADVs into one a dictinction must be made between
+quantitative {\em  er} and nonquantitative RADVs.
+
+\subsection{Nonquantitative}
+
+Melting of several Rpronouns into one is accounted for 
+by the fact that the Rpronouns must get into the special position
+{\em  erposrel}. 
+If we combine all possible (nonquantitative) functions, then we see
+that melting is only possible with expletive {\em  er}. This has been
+implementented in the rules. Collapsing other functions of R-pronouns
+is not even possible in many cases in Rosetta3, since it would require
+deletion of variable without there being an antecedent.
+So, if a locative and a prepositional RADV both get into
+{\em  erposrel}, the derivation is blocked. If expletive RADV and any other
+RADV cooccur in {\em  erposrel}, then they melt together. Expletive
+{\em  er} is deleted, and the attribute {\bf kindefs} 
+of the other RADV are adapted in such a way that Xk is added.
+
+In certain cases two prepositional RADVs can melt together,  e.g.
+{\em  Hij is er mee naar toe gegaan}. This is possible only under very specific 
+circumstances (e.g. there must be a circumposition, or the PREPP must be inside 
+NP, cf.  {\em  *hij 
+heeft er mee naar gekeken} vs. {\em  Er stond een artikel over in} etc. 
+These cases cannot be dealt with in Rosetta3.
+
+\subsection{Quantitative}
+
+For quantitative {\em  er} melting can take place with other quantitative 
+{\em   er}s, or with {\em  er} with other functions. The first case has been 
+treated already in the preceding section. The second case wil be dealt with 
+here.
+
+Notice that quantitative {\em  er} can melt together only with {\em  er} and
+not with {\em  daar, hier, waar} etc. (cf. {\em  hij zag er daar twee},
+{\em  *hij zag daar twee}, {\em  *hij zag er er twee}, {\em  hij zag er twee}).
+Furthermore, in certain cases quantitative {\em  er} cannot melt 
+together with some other {\em  
+er}  (cf. {\em  er zijn er twee}, {\em  *Er zijn twee}).
+
+It is assumed  in Rosetta3 that quantitative {\em  er} and some other {\em  er}
+melt together when they are adjacent in the surface order. If they are not
+adjacent, e.g. because expletive {\em  er} has been 
+shifted into {\em  shiftrel}, then melting is not possible.
+
+The rules \rname{Terqer1}, \rname{Terqer2}, \rname{Terqer3}, 
+\rname{Terqer4}, \rname{Terqer0} account for this melting. In addition they
+turn an {\em  erqrel} into {\em  erposrel} if no {\em  erposrel} exists yet,
+and no {\em  er} occupies {\em  shiftrel}. This is necessary to avoid 
+superfluous
+ambiguities in the surface parser.
+
+\noindent
+Rule \rname{Terqer1} lets {\em  erqrel/er} and {\em  erposrel/er} melt together
+into {\em  erposrel/er}.
+
+\noindent
+Rule \rname{Terqer2} lets structures containing {\em  erposrel} but no
+{\em  erqrel} pass this transformation class.
+
+\noindent
+Rule \rname{Terqer3} turns {\em  erqrel/er} into {\em  erposrel/er} if no
+{\em erposrel} occurs in the structure and no occurence of {\em  er} occurs
+in {\em  shiftrel}.
+
+\noindent
+Rule \rname{Terqer4} lets structures containing {\em  erqrel/er} and
+a {\em shiftrel/er} but no 
+{\em erposrel/er} pass this transformation class.
+
+\noindent
+Rule \rname{Terqer0} lets structures that contain neither {\em  erqrel} nor
+{\em  erposrel} pass this transformation class.
+
+\section{Presence or absence of expletive {\em er}}
+
+Expletive {\em  er} can be optionally absent under certain conditions. 
+These conditions 
+are not fully clear to me yet, and the treatment adopted here is rather ad 
+hoc. A transformation has been added to deal with
+some of these situations, in analysis only. The relevant rule is
+\rname{Terxdeletion1}. It deletes expletive {\em  er} in the following 
+situations:
+
+\begin{description}
+  \item[] If a locative PREPP or ADVP is present as {\em  shiftrel}, cf.
+{\em  in de tuin werd (er) gedanst} . A sentence such as
+{\em  In de tuin zat een man} is now accounted for as well, but
+there is no account for the fact that {\em  *in de tuin zat er een man} is 
+ungrammatical. 
+
+Apparently, expletive {\em  er} cannot appear 
+if there is a topicalized
+locative PREPP and a {\em postsubjrel} or {\em objrel}.
+
+% {*in de tuin werkte er een man, In welke tuin werkte er een man?, *daar werkte
+%er een man, Waar werkte er een man?} 
+
+A more general objection to the treatment adopted here for expletive 
+RADVs is that it does not take preposed PREPPs and ADVPs into account in  
+a principled manner.
+
+It appears to be the case that preposed PREPPs have a specific influence
+on the presence of expletive {\em  er} that has not been accounted for yet.
+
+
+  \item[] In subordinate clauses if there
+is an extraposed sentence, e.g. {\em  omdat (er) beweerd werd dat hij gelijk
+had}. 
+\end{description}
+
+
+It should be investigated what the exact conditions for the optional absence
+of {\em  er} are, and how it interacts with preposed {\em  PREPPs} and {\em  
+ADVPs}. 
+Appendix~\ref{erx} contains a number of relevant facts that should be taken 
+into account.
+
+
+\section{The position of Expletive {\em  er}}
+
+\subsection{Interaction with {\em  zich}}
+
+The position of {\em  er} in {\em  erposrel} is usually to the right of
+the subject and to the right of all sorts of pronominal clitics 
+(cf. {\em  *omdat er hij iets ziet} vs. {..omdat hij er iets ziet} 
+{\em *..omdat hij er zich voor schaamt} vs. 
+{\em ..omdat hij zich ervoor schaamt},
+{\em *..omdat hij er 'm  zag} vs. {\em ..omdat hij 'm er zag}, etc.
+
+However, expletive {\em  er} must occur to the left of 
+{\em  zich}. This can be seen in the following examples:
+
+\begin{description}
+  \item[] ..omdat er zich iets voorgedaan heeft \\
+  \item[] ..omdat zich er iets voorgedaan heeft
+\end{description}
+
+In the first example {\em  er} can be interpreted as an expletive and as
+an expletive-locative, in the second example it can be interpreted only as a
+locative. These intuitions are rather subtle, but they 
+are confirmed by the following observations. The contrast 
+between the following two sentences can be accounted for 
+
+\begin{description}
+  \item[] Dit heeft zich er gisteren voorgedaan
+  \item[] *Dit heeft er zich gisteren voorgedaan
+\end{description}
+
+\noindent
+if {\em  er} in the second
+sentence must be interpreted as an expletive, hence requires an indefinite 
+subject, while {\em  er} in the first sentence only has a locative 
+interpretation and imposes no definiteness restrictions.
+If we replace the definite subject {\em  dit} by the indefinite subject
+{\em  wat} both sentences are grammatical again:
+
+\begin{description}
+  \item[] Wat heeft zich er gisteren voorgedaan? 
+  \item[] Wat heeft er zich gisteren voorgedaan?
+\end{description}
+
+A second observation that confirms our intuitions w.r.t the first sentence pair
+comes from the contrast between the following two sentences. 
+
+\begin{description}
+  \item[] ??Wat heeft zich er daar gisteren voorgedaan
+  \item[] Wat heeft er zich daar gisteren  voorgedaan
+\end{description}
+
+In the first sentence, {\em  er} can be interpreted only as a locative. Since
+also {\em  daar} can only be interpreted as a locative, the sentence is very 
+strange because it contains two locatives. In the second sentence, {\em  er}
+can be interpreted either as an expletive or as an expletive-locative. Since 
+in this sentence {\em  daar} is also a locative the interpretation of {\em  er}
+as an expletive-locative is rather strange, but there is also an interpretation
+of {\em  er} as an expletive, so that the sentence (under this latter 
+interpretation) is not strange at all.
+
+It appears to be the case that only {\em  er} in its expletive functions can
+precede {\em  zich}. It is impossible for {\em  daar, hier, waar}
+(cf. {\em *wat deed daar zich voor?}, {\em  *wat deed hier zich voor?},
+{\em  *wat deed waar zich voor?}).
+
+These facts have not been accounted for yet, though a first version of rules
+accounting for the facts has been written (these are not in the archive yet). 
+An additional problem for these sentences is that some 
+of them allow the absence of an overt expletive element. 
+Apparently, there is also
+no definiteness restriction if expletive {\em  er}  is absent
+(cf. {\em ..omdat zich toen de tweede gelegenheid voordeed om dit te doen}), 
+so perhaps the 
+environment for ECkey must be extended to deal with such cases.
+
+
+\subsection{Topicalization of ER}
+
+{\em  Er} cannot be topicalized (cf. {\em  *Er keek hij naar}, {\em  *Er woonde 
+hij}, {\em  *Er zag hij twee}). This fact is undoubtedly related to the fact
+that non-subject clitic pronouns in general cannot be topicalized (cf. 
+{\em *{\bf 'm} zag hij niet, *{\bf 'r} ontmoette hij in de trein} etc.). 
+Subject-clitics 
+can be topicalized (cf. {\em {\bf 'k} heb hem gezien}, 
+{\em  {\bf je} weet maar nooit} 
+etc.). If {\em  er} is related to the subject, i.e. if it is expletive, then
+one might expect it to behave as a subject-clitic.
+
+In that case it can be topicalized indeed,
+cf. {\em  Er werd gedanst, er kwam iemand}. If {\em  er} in 
+other functions can get additionally an expletive function, then it can be 
+topicalized as well, cf. {\em  Er keek iemand naar}, {\em  Er woonde iemand}.
+
+
+\section{Orthography}
+
+According to the orthographic rules of Dutch {\em  er}, {\em  hier}, {\em  daar} and
+{\em  waar} must be written as one word when they are adjacent to 
+the preposition they belong to, and serve no other functions. Hence one  should
+write 
+{\em  Hij keek ernaar/daarnaar/hiernaar}, {\em  Waarnaar keek hij?},
+{\em  omdat hij ernaar keek}, but {\em  omdat er naar gekeken werd}, etc.
+
+When the RADVPs are introduced in the PREPP or PREPPPROP subgrammars
+the relevant substitution rules introduce GLUEs in the appropriate cases.
+When the RADVPs are introduced in the  sentence subgrammars special 
+transformations take care of the introduction of GLUEs.
+
+The relevant transformations are:
+
+\begin{description}
+  \item[TerPglue] \index{TerPglue} puts a GLUE immediately to the right of
+{\em  erposrel} if it is followed immediately by predrel/VERBP with
+as its initial element  a PREPP that in its turn has a preposition as its first 
+element. Additional conditions are that the {\em erposrel} contains
+one of the RADVs {\em  er, hier, daar, waar} in a prepositional function
+(only). There is an associated filter, \rname{FerPglue} which guarantees
+application of \rname{TerPglue} in generation, but allows absence of the GLUE
+in analysis.
+  \item[TRinPPglue]\index{TRinPPglue} puts a GLUE between errel/RADV if
+RADV is {\em  er, hier, daar} or {\em  waar} and an adjacent prepositional head
+inside a PREPP bearing {\em  erposrel} or {\em  shiftrel}. 
+There is an associated filter \rname{FRinPPglue} that guarantees application
+of this rule.
+\end{description}
+
+No special rules have been written to take care of the combination of 
+{\em  er} and circumpositions.
+In Rosetta3 only the forms {\em  er op af} and {\em  erop af} are 
+accepted, i.e. all words written separately, or {\em  er} plus the first part
+of the circumposition written as one word and the second part of the 
+circumposition written separately. The second part of the circumposition
+cannot be written attached to a verb following in Rosetta3. So neither
+{\em  hij is eropaf gegaan} nor {\em  hij is erop afgegaan} are accepted
+(in the intended reading).
+In generation only {\em  erop af} is made.
+
+\section{Remaining Problems}
+
+As is clear, many small changes must be made to make everything work correctly.
+However, there are also more difficult problems.
+The following are the most important ones that are still to be solved:
+
+\begin{description}
+  \item[NP internal {\em  er}] Rosetta3 cannot deal with NP-internal {\em  er}s
+ at all. This is part of a more general problem: Rosetta3 cannot deal with any
+phenomenon that involves both an NP-internal and an NP-external position if 
+they are to be related to one another before the application of the 
+substitution rules.
+  \item[Double prepositional RADVS] Rosetta3 cannot deal with double 
+prepositional uses of an RADV, as e.g. in {\em  hij ging er mee naar toe}.
+This is a rather difficult problem, for it requires deletion of variables 
+without there being an antecedent. It should also be investigated what 
+additional restrictions hold for such constructions.
+  \item[Daar woont er iemand] Rosetta3 cannot account adequately for the 
+ungrammaticality of this sentence. The theoretical account that Rosetta is 
+based on (a generalization of van Riemsdijk's (1978) R-position hypothesis)
+cannot account for it either, nor can van Riemsdijk's original proposal.
+It actually shows very clearly that the R-position hypothesis misses a 
+generalization. An alternative theoretical proposal that does account
+for this sentence (and all other relevant facts) 
+can perhaps be given, but it is not easy to see how this can be 
+implemented in Rosetta3. 
+  \item[Expletive {\em er}] It should be investigated further under which 
+circumstances expletive {\em  er} can be left out optionally.
+  \item[AdjP] The status of the position of the RADVs in {\em  ergens blij mee}
+should be investigated further. Is it equal to {\em  erposrel}, or is it some
+other position?
+
+\newpage
+\appendix
+\section{Presence or absence of expletive {\em  er}}
+\label{erx}
+
+The tables following contain sentences in which some phrase is preposed.
+The preposing is caused by topicalization, by wh-questioning
+or by relativization. In the tables the relation in the first column indicates
+which phrase has been preposed.
+Preposing has been carried out in three different kinds of structures:
+\begin{enumerate}
+  \item in structures without a subjrel, postsubjrel or objrel
+  \item in structures without a {\em postsubjrel}
+  \item in ergative and passivized structures with an {\em objrel}
+\end{enumerate}
+ 
+I regrouped some of these facts in the following table, which indicates the
+possibilities of preposing of PREPP or RADVP arguments and PREPP or RADVP
+adverbs when expletive {\em  er} is present:
+
+\begin{tabular}[t]{|c|c|c|c||c|c|c|c|c|c|}
+\hline
+            & \multicolumn{3}{c|}{No arguments} & \multicolumn{3}{c|}{
+Postsubjrel} & \multicolumn{3}{c|}{Objrel}\\
+\hline
+            & Top & Wh & Rel & Top & Wh & Rel & Top & Wh & Rel \\
+\hline
+\hline
+aanobjrel   & -   & -  & -   &  *  & *  & *   & *  & v & *\\
+\hline
+dirargrel   & -   & -  & -   &  *  & *  & *   & *   & * & *\\
+\hline
+erposrel,R  & *   & *  & *   &  *  & *  & *   & *   & * & *\\
+\hline
+erposrel,PP & *   & ?  & *   &  *  & ?  & *   & *   & ? & *\\
+\hline
+locargrel,PP& -   & -  & -   &  *  & *  & *   & *   & * & *\\
+\hline
+locargrel,R & -   & -  & -   &  *  & *  & *   & -   & - & -\\
+\hline
+prepobjrel  & *   & v  & *   &  *  & v  & *   & *   & v & *\\
+\hline
+voorobjrel  & v   & v  & v   &  *  & *  & *   & v   & v & v\\
+\hline
+\hline
+locadvrel,PP& v   & v  & v   &  ?  & v  & ?   & v   & v & v\\
+\hline
+locadvrel,R & v   & v  & v   &  *  & ?  & *   & *   & v & *\\ 
+\hline
+tempadvrel  & v   & v  & v  &  ?  & ?  & v   & ?   & ? & ?\\
+\hline
+\hline
+byobjrel    & ??  & ?? & ??  &  -  & -  & -   & ?   & ? & ?\\
+\hline
+\end{tabular} 
+
+Remarks:
+
+\begin{enumerate}
+  \item the first part of the table concerns arguments, the second part 
+adverbs, the third part the relation {\em  byobjrel}.
+  \item {\em  erposrel} stands for sentences such as {\em  daar werd er naar 
+gekeken}
+\end{enumerate}
+
+
+\newpage
+
+
+\begin{tabular}[t]{|c|p{.7\textwidth}|}
+\hline
+base &        Er werd gedanst  \\
+\hline
+aanobjrel  & --\\
+agvpadvrel & Enthousiast werd *(er) gezwommen\\
+           & Hoe enthousiast werd *(er) gezwommen?\\
+           & --\\
+byobjrel   & Door iedereen werd ??(er) gezwommen\\
+           & Door wie werd ??(er) gezwommen?\\
+           & de man door wie ??(er) werd gezwommen\\
+dirargrel  & --\\
+erposrel,R & Er werd (*er) naar gekeken\\
+           & Waar$_{p}$ werd (*er) naar gekeken\\
+           & het programma waar (*er) naar gekeken werd\\
+erposrel,PP& Daarnaar werd (*er) gekeken\\
+           & Waarnaar werd (?er) gekeken?\\
+           & het programma waarnaar (*er) werd gekeken\\
+indobjrel  & --\\
+instradvrel& Met de zwemvliezen werd (er) gezwommen\\
+           & Met welke zwemvliezen werd (er) gezwommen\\
+           & de zwemvliezen met welke (er) werd gezwommen\\
+locadvrel,PP& In de tuin werd (er) gedanst\\
+           & In welke tuin werd (er) gedanst\\
+           & De tuin in welke (er) werd gedanst\\
+locadvrel,AdvP& Thuis werd (er) gedanst\\
+             & --\\
+             & --\\
+locadvrel,R & Daar werd (er) gedanst\\
+            & Waar werd (er) gedanst?\\
+            & De zaal waar (er) werd gedanst\\
+locargrel,PP& --\\
+locargrel,AdvP& --\\
+locargrel,R & --\\    
+\hline
+\end{tabular}
+\newpage
+\begin{tabular}[t]{|c|p{.7\textwidth}|}
+\hline
+objrel &   --\\
+postsubjrel & --\\
+predrel & --\\
+prepobjrel & Naar Piet werd (*er) niet omgekeken\\
+           & Naar wie werd (er) niet omgekeken?\\
+           & De jongen naar wie (* er) niet werd omgekeken \\
+sentadvrel & Waarschijnlijk werd *(er) gedanst\\
+           & --\\
+           & --\\
+subjrel    & --\\
+subjvpadvrel& --\\
+tempadvrelPP & Op die dag werd (er) niet naar de voetbal gekeken\\
+             & Op welke dag werd (er) niet naar de voetbal gekeken?\\
+             & De dag waarop (er) niet naar de voetbal gekeken werd\\
+tempadvrelAdvP& Toen werd ??(er) niet naar de voetbal gekeken\\
+              & Wanneer wordt ??(er) niet naar de voetbal gekeken?\\
+              & De dag dat ??(er) niet naar de voetbal gekeken wordt\\
+voorobjrel & Voor Peter werd (er) niet gezwommen\\
+           & Voor wie werd (er) niet gezwommen?\\
+           & de jongen voor wie (er) niet gezwommen werd\\
+\hline
+\end{tabular}
+
+\newpage
+
+\begin{tabular}[t]{|c|p{.7\textwidth}|}
+\hline
+base       &  Er zwom iemand     \\
+\hline
+aanobjrel  & Aan deze jongen gaf (*er) iemand iets\\
+           & Aan welke jongen gaf (*er) iemand iets\\
+           & Deze aan jongen aan wie (*er) iemand iets gaf\\
+agvpadvrel & Enthousiast zwom (*er) niemand\\
+           & Hoe enthousiast zwom (*er) iemand?\\
+           & --\\
+byobjrel   & --\\
+dirargrel  & Op deze oever zwom (*er) iemand af\\
+           & Op welke oever zwom (*er) iemand af\\
+           & De oever op welke (*er) iemand af zwom\\
+erposrel,R & Daar keek (*er) iemand naar\\
+           & Waar keek (*er) iemand?\\
+           & het programma waar (*er) iemand naar keek\\
+erposrel,PP& Daarnaar keek *(er) niemand\\
+           & Waarnaar keek ?(er) niemand\\
+           & het huis waarnaar *(er) niemand keek\\
+indobjrel  & E\'{e}n man gaf (*er) niemand iets\\
+           & Welke man/wie gaf (*er) niemand iets?\\
+           & De man die (*er) niemand iets gaf\\
+instradvrel& Met deze zwemvliezen zwom (?er) iemand/ was (?er) iemand aan het 
+                       zwemmen\\
+           & Met welke zwemvliezen zwom (er) iemand\\
+           & de zwemvliezen met welke (er) iemand zwom\\
+locadvrel,PP& In de tuin zwom (?er) iemand\\
+           & In welke tuin zwom (er) iemand\\
+           & de tuin in welke (?er) iemand zwom\\
+locadvrel,ADVP& Thuis zwom (er) iemand/ was (er) iemand aan het zwemmen\\
+             & --\\
+             & --\\
+locadvrel,R & Daar zwom (*er) iemand/ was (*er) iemand aan het zwemmen\\
+           & Waar zwom ?(er) iemand/ was ?(er) iemand aan het zwemmen\\
+           & de plaats waar (*er) iemand zwom/aan het zwemmen was\\
+locargrel,PP& In Lutjebroek woont (*er) niemand\\
+           & In welke stad woont (*er) iemand\\
+           & de stad, in welke (*er) iemand woont\\
+locargrel,AdvP& Thuis woont (?er) niemand meer\\
+             & --\\
+             & --\\
+locargrel,R & Daar woont (*er) iemand\\
+            & Waar woon (*er) iemand?\\
+            & de stad waar (*er) iemand van de televisie woont \\
+\hline
+\end{tabular}
+\newpage
+\begin{tabular}[t]{|c|p{.7\textwidth}|}
+\hline
+objrel       & Dat heeft (*er) iemand aan ons gegeven\\
+             & ?Wat heeft (er) iemand aan ons gegeven?\\
+             & Het boek dat (*er) iemand aan ons gegeven heeft\\ 
+postsubjrel & --\\
+            & wie zwommen ?(er) naar Amsterdam?\\
+            & --\\
+predrel &  Zo ziek was (*er) niemand\\
+        & ?Hoe ziek was (*er) iemand\\
+        & Ziek, wat (*er) niemand was, was hij ook niet\\
+prepobjrel & Naar deze jongen keek (*er) niemand\\
+           & Naar welke jongen keek (er) niemand\\
+           & de jongen naar wie (*er) niemand keek\\
+sentadvrel & Waarschijnlijk keek (er) niemand\\
+           & --\\
+           & --\\
+subjrel    & --\\
+subjvpadvrel& Graag zou (er) iemand bij u willen komen zwemmen\\
+            & Hoe graag zou (er) iemand bij u willen komen zwemmen\\
+tempadvrelPP& Op die dag gaf (?er) iemand een cadeau aan mij\\
+            & Op welke dag gaf (?er) iemand een cadeau aan mij\\
+            & De dag op welke/waarop (?er) iemand een cadeau aan mij gaf\\
+tempadvrelAdvP& Toen gaf (?er) iemand een cadeau aan mij\\
+              & Wanneer gaf (?er) iemand een cadeau aan mij\\
+              & De dag dat (er) iemand een cadeau aan mij gaf\\
+voorobjrel& Voor Peter kocht (*er) iemand een cadeau\\
+          & Voor wie kocht (*er) iemand een cadeau\\
+          & De jongen voor wie (*er) iemand een cadeau kocht\\
+\hline
+\end{tabular}
+
+\newpage
+
+\begin{tabular}[t]{|c|p{.7\textwidth}|}
+\hline
+base       & Er ging iemand weg/ Er werd iets weggegeven\\
+\hline
+aanobjrel  & Aan deze jongen werd (*er) iets gegeven\\
+           & Aan welke jongen werd (er) iets gegeven?\\
+           & De jongen aan wie (*er) iets werd gegeven\\
+agvpadvrel & Enthousiast werd (?er) iets gegeven/ kwam (?er) iemand binnen\\
+           & Hoe enthousiast werd (?er) iets gegeven/ kwam (?er) iemand binnen\\
+           & Zo enthousiast als ?(er) iets gegeven werd\\
+byobjrel   & Door de jongen werd (?er) niets gegeven\\
+           & Door wie werd (?er) niets gegeven\\
+           & De jongen door wie (?er) niets gegeven werd\\
+dirargrel  & Op dat huis ging (*er) iemand af\\
+           & Op welk huis ging (*er) iemand af\\
+           & het huis op welk (*er) iemand af ging\\
+erposrel,R & Daar werd (*er) iemand van beschuldigd\\
+           & waar werd (*er) iemand van beschuldigd\\
+           & de misdaad waar (*er) iemand van beschuldigd werd\\
+erposrel,PP& Daarvan werd (*er) niemand beschuldigd\\
+           & Waarvan werd (?er) niemand beschuldigd?\\
+           & de misdaad, waarvan *(er) niemand beschuldigd werd\\
+indobjrel  & E\'{e}n man werd (*er) niets gegeven\\
+           & Wie/Welke man werd (er) niets gegeven?\\
+           & De man, die (*er) niets gegeven werd\\
+instradvrel& Met de verrekijker werd (er) iets bekeken\\
+           & Met welke verrekijker werd (er) iets bekeken\\
+           & De verrekijker waarmee (??er) iets bekeken werd\\
+locadvrel,PP& Op het feest ging (er) iemand weg\\
+           & op welk feest kwam (er) iemand aan?\\
+           & Het feest op welk/waarop (er) iemand aankwam\\
+locadvrel,AdvP& Thuis ging (er) iemand weg\\
+             & --\\
+             & --\\
+\hline
+\end{tabular}
+\newpage
+\begin{tabular}[t]{|c|p{.7\textwidth}|}
+\hline
+locadvrel,R& Daar ging (*er) iemand weg\\
+           & Waar ging (er) iemand weg?\\
+           & De plaats waar (*er) iemand wegging\\
+locargrel,PP& Op die plaats werd (*er) iets gelegd\\
+            & Op welke plaats werd (er) iets gelegd\\
+            & De plaats, op welke (*er) iets gelegd werd\\
+locargrel,AdvP& Thuis werd werd (*er) niets gelegd\\
+              & --\\
+              & --\\
+locargrel,R& Daar werd (*er) iets neergezet\\
+           & Waar werd (er) iets neergezet?\\
+           & De plaats waar (*er) iets neergezet werd\\
+\hline
+\end{tabular}
+\newpage
+\begin{tabular}[t]{|c|p{.7\textwidth}|}
+\hline
+objrel & Een boek werd (?er) aan ons niet gegeven\\
+       & Wat werd (er) aan ons gegeven\\
+       & --\\
+postsubjrel & --\\
+predrel & Zo leuk werd (*er) niemand gevonden\\
+        & Hoe leuk werd (*er) niemand gevonden?\\
+        & zo leuk als (*er) niemand werd gevonden\\
+prepobjrel & Van moord werd (*er) niemand beschuldigd\\
+           & Van welke moord werd (er) niemand beschuldigd?\\
+           & de moord van welke (*er) niemand beschuldigd werd\\
+sentadvrel & Waarschijnlijk wordt ?(er) niemand beschuldigd\\
+subjrel    & --\\
+subjvpadvrel & --\\
+tempadvrelPP& Op die dag werd ?(er) een cadeau gekocht\\
+            & Op welke dag werd ?(er) een cadeau gekocht\\
+            & de dag op welke (?er) een cadeau gekocht werd\\
+tempadvrelAdvP& Toen werd (?er) een cadeau gekocht\\
+              & Wanneer werd (?er) een cadeau gekocht?\\
+              & De dag dat (?er) een cadeau gekocht werd\\
+voorobjrel& Voor Peter werd (er) geen cadeau gekocht\\
+          & Voor wie werd (er) geen cadeau gekocht?\\
+          & De jongen voor wie (er) geen cadeau gekocht werd\\
+\hline
+\end{tabular}
+
+\newpage
+\input{[odijkje.mrules]r0307idx.tex}
+
+
+\section*{References}
+
+\begin{description}
+  \item[] van Hout, Angeliek (1986), {\em {\bf  Er}-peculiarities in Rosetta:
+ an analysis of Dutch {\bf er} and its translations in English and Spanish},
+Master Thesis, University of Brabant, Tilburg.
+  \item[] van Riemsdijk, Henk (1978), {\em A case study in syntactic 
+markedness: the binding nature of prepositional phrases}. Foris Publications,
+Dordrecht. 
+\end{description}
+
+\end{description}
+
+\end{document}
+
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

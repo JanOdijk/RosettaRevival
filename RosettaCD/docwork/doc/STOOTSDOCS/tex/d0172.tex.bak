@@ -1,0 +1,1320 @@
+R0172.tex
+   \documentstyle{Rosetta}
+   \begin{document}
+      \RosTopic{software}
+      \RosTitle{Syntax for Compiler Writing}
+      \RosAuthor{Ren\'{e} Leermakers}
+      \RosDocNr{0172}
+      \RosDate{11-02-87}
+      \RosStatus{concept}
+      \RosSupersedes{-}
+      \RosDistribution{Software Group}
+      \RosClearance{Project}
+      \RosKeywords{compiler generator, syntax}
+      \MakeRosTitle
+\section{Introduction}
+This document describes the syntax of the input expected by an implementation 
+of the compiler generator, described in R0167. 
+In order to define a compiler with this generator, two files are to be
+written. One is called the Domain file and contains declaration type of
+information, i.e. reserved words and symbols, names of terminals and 
+non-terminals, attributes, output files, etc.
+The other is called the Grammar file and contains the grammar that defines the 
+syntax of the language under consideration, and its translation into the 
+target language. 
+
+For an introduction to the basic ideas, see doc R0167. The relation to the 
+present syntax is hopefully self-evident.
+In section 2, the syntax is described of the two files that form the
+input of the generator. This is followed by a specification of a small compiler
+in section 3. The implementation of the generator itself will be documented in 
+a subsequent paper.
+
+\section{Syntax of Input}
+\subsection{Domain File}
+\subsubsection{Syntax}
+The syntax of the domain file is as follows.
+\begin{verbatim}
+utt              =["DOMAIN"].alphabetspec.[symbolspec].[wordspec].
+                   [typespec].[setspec].[recordspec].[categoriespec].
+                   [outputfiles]."END"
+alphabetspec     ="ALPHABET".":"."<".{['].character}.">"
+symbolspec       ="SYMBOLS".":"."<".{symboldefinition}.">"
+wordspec         ="WORDS".":"."<".{worddefinition}.">"
+typespec         ="TYPES".":"."<".{typedefinition}.">"
+recordspec       ="ATTRIBUTES".":"."<".{recorddefinition}.">"
+categoriespec    ="CATEGORIES".":"."<".{catdefinition}.">"
+setspec          ="SETS".":"."<".{setelement}.">"
+outputfiles      ="OUTPUTFILES".":"."<".{identifier}.">" 
+
+setelement       =identifier."="."<".{attribname.":".typename}.
+                                  ">"
+symboldefinition =catname."=".['].character
+worddefinition   =catname."=".['].identifier
+typedefinition   =(enumdef|subrangedef|integerdef|booleandef|setdef)
+enumdef          =typename."="."(".identifier.{,identifier}.")".";"
+subrangedef      =typename."=".identifier.".",".".identifier.";"
+integerdef       =typename."="."INTEGER".";"
+booleandef       =typename."="."BOOLEAN".";"
+setdef           =typename."="."SET"."OF".typename.";"
+typename         =identifier
+character        =identifier (of length 1)
+
+recorddefinition =recordname."="."<"."SURFACE"."<".{attribname.":".typename.
+			                        ":".defaultvalue}.
+                                                ">"
+                                     "PROC"."INH"."<".{attribname.":".typename.}
+                                                  ">"
+                                     "PROC"."SYN"."<".{attribname.":".typename.}
+                                                  ">"
+                                  ">"
+attribname       =identifier
+defaultvalue     =(identifier|"[".[identifier{",".identifier}]."]")
+recordname       =identifier
+
+catdefinition    ="<".{catlist}.">".
+catlist          =catname.{",".catname}.":".recordname
+catname          =identifier
+\end{verbatim}
+\subsubsection{Example}
+The following domain contains all relevant topics.
+\begin{verbatim}
+DOMAIN
+
+ALPHABET: < a b c d e f g h i j k l m n o p q r s t u v w x y z 
+            A B C D E F G H I J K L M N O P Q R S T U V W X Y Z 
+            '1 '2 '3 '4 '5 '6 '7 '8 '9 '0 >
+SYMBOLS: < PLUS = '+
+           TIMES = '*
+           ROUNDOPEN = '(
+           ROUNDCLOSE = ')
+         >
+WORDS: <
+          SIMPLE = 'SIMPLE
+          SOMMETJE = 'SOMMETJE
+       >
+TYPES: <
+       int = INTEGER;
+       bool = BOOLEAN;
+       enum = (enum1,enum2,enum3);
+       digit = 1..9;
+       setje = SET OF enum;
+       >
+SETS: <  entry = < number1:int
+                    str:STRING_string
+                    b:bool
+                  >
+      >
+ATTRIBUTES: <
+       uttrecord = < SURFACE < str:STRING_string:empty
+                               table:setofentrys:empty
+                             >
+                     PROC INH < 
+                              > 
+                     PROC SYN <
+                              >
+                   >
+       sumrecord  =  < SURFACE < numofmults:int:0
+                              >
+                     PROC INH < indent:int
+                              > 
+                     PROC SYN < wrotefile:bool
+                              >
+                     >
+       multrecord  =  < SURFACE < 
+                              >
+                     PROC INH <
+                              > 
+                     PROC SYN < 
+                              >
+                     >
+         >
+CATEGORIES: <
+            <UTT:uttrecord>
+            <SUM:sumrecord>
+            <MULT:multrecord>
+            <SIMPLE,SOMMETJE,PLUS,TIMES,ROUNDOPEN,ROUNDCLOSE: TERMINAL>
+            >
+OUTPUTFILES: < of1
+             >
+END
+\end{verbatim}
+\subsubsection{Explanation}
+Below each section in the Domain file is explained.
+
+\begin{itemize}
+\item
+Under the caption ALPHABET the characters are given that are allowed to
+occur in reserved words and identifiers. A quote may be put before each
+character in this list, but it is obligatory in the cases 
+'$<$, '$>$, '(, '), '[, '], '=, ':, '; ', . These are the reserved symbols of
+the Domain file syntax itself.
+\item
+Under the caption SYMBOLS, the reserved symbols are mentioned and coupled
+to token names. The symbol characters must be
+characters that are not in the alphabet of words and identifiers. A
+declaration like PLUS = '+ means that the scanner will create the token PLUS
+if it sees the plus character. Again a quote before the symbol character
+is optional, but is obligatory before the above mentioned characters.
+\item
+Under the caption WORDS the reserved words are defined and coupled to token
+names. In the above example, the word "SIMPLE" is to be recognized by the 
+scanner. If it is encountered the token SIMPLE is to be created.
+The reserved-word definitions are to be given in alphabetical order (The
+words themselves are to be ordered, not the token names). Quotes before
+the reserved-word string are obligatory if one of the symbols 
+"$<$", "$>$", "(", ")", "[", "]", "=", ":", ";", "," occurs in it.
+\end{itemize}
+The above three sections of the Domain file together define the scanner of
+the compiler that is generated. The next sections are to define the possible
+attribuations of non-terminal syntax-tree nodes. 
+\begin{itemize}
+\item
+Under the caption TYPES pascal-like type definitions can be specified.
+The possibilities are integer, boolean, subrange and enumeration types.
+\item
+Under the caption SETS one can define (structured) types one wants to define
+set operations on. In the above example the type SETOFentrys will be created
+automatically as an abstract data type with four operations. Let S be a
+variable of type SETOfentrys and let E be of type entry. Then
+\begin{quote}
+INITsetofentrys(S) makes S empty.
+\end{quote}
+\begin{quote}
+APPENDentry(E,S) adds E to S.
+\end{quote}
+\begin{quote}
+TAKEentry(E,S) assigns to E an element of S, which is removed from the set.
+\end{quote}
+\begin{quote}
+STILLentrys(S) is a boolean which is true iff S is not empty.
+\end{quote}
+These set data types are implemented as lists, and may thus also be used 
+as tuples or tables. One should then know that after APPENDentry(E,S), E
+is the last element of S, and that TAKEentry(E,S) takes the first element
+out.
+\item
+Under the caption ATTRIBUTES, feature bundles are defined, containing
+three kinds of attributes, surface attributes and procedural attributes which
+are of inherited or synthesized kind. The roles of these attributes are 
+discussed below. The attributes are to be chosen out of the simple types 
+defined under TYPES, or are of the abstract 
+set data types declared under SETS, or the externally defined string type
+STRING$\_$string. Surface attributes also have a default value. The default
+value empty means that the attribute does not have a default.
+\item
+Under CATEGORIES the non-terminals of the grammar are to be specified, and 
+coupled to the attribute bundles defined under ATTRIBUTES. Also the terminals
+are given with as feature bundle TERMINAL. This bundle contains one (surface)
+attribute "str" of type STRING$\_$string. Identifiers, hence, have this 
+attribute, and the scanner assigns to it the string that gives rise to the 
+identifier. The starting-symbol non-terminal is to be called UTT, and the
+corresponding feature bundle may only contain surface attributes.
+\item
+Under OUTPUTFILES the names of any number of files can be given. 
+The output files are global variables. This is for implementation reasons,
+but one can view a file as an attribute of each non-terminal, which is both
+inherited and synthesized.
+\end{itemize}
+\subsection{Grammar file}
+Again, first the syntax is given and after that an example file consisting
+of a rule of the grammar of the final section. The rule uses files, terminals,
+non-terminals, attributes and types according to the above Domain file.
+\subsubsection{Syntax}
+\begin{verbatim}
+utt = {rule}
+rule = "%".catname."BASIS RULE".barerule."SURFACE PART".surfrule.
+      "PROCEDURAL PART".procrule."&"
+
+barerule = ident."=".graph.{helpgraph}
+graph = concgraph.{"|".concgraph}
+concgraph = elementarygraph.{".".elementarygraph}
+elementarygraph = "(".graph.")" | "[".graph."]" | "{".graph."}" |
+                   ident | ident."/".number
+helpgraph = ident."=".graph
+number = '1'|'2'| .. |'99'
+
+surfrule = ["VAR".{varlist.("::".domaintype|":".pascaltype)}].
+           "BEGIN"."<*".initblock1.{block1}.finalblock1."*>"."END;"
+initblock1 = "INIT:".compoundstatement.";"
+block1 = number.":"."<*"."LOCALCONDITION:".booleanexpression.
+                        "GLOBAL:"."#CONDITION:".booleanexpression.
+                                  "#ACTION:".compoundstatement.
+                    "*>"
+finalblock1 = "FINAL:"."#CONDITION:".booleanexpression.
+                      "#ACTION:"."BEGIN"."SEND_"cat.{statement}."END"
+
+procrule = "VAR".[{varlist.("::".domaintype|":".pascaltype)}].
+           "BEGIN".initblock2."<*".{block2}."*>".finalblock2."END;"
+initblock2 = "INIT:".compoundstatement.";"
+block2 = number.":"."<*"."SEND:".compoundstatement.
+                         "!"cat".".
+                        "RECEIVE:".compoundstatement.
+                    "*>"
+finalblock2 = "FINAL:".compoundstatement
+\end{verbatim}
+\subsubsection{Example}
+\begin{verbatim}
+%SUM
+BASIS RULE
+  SUM = MULT/2.{othersum}
+  othersum = PLUS/1.MULT/2
+SURFACE PART
+VAR multcounter::int;
+BEGIN
+<*
+ INIT:BEGIN multcounter:=0
+       END;
+ 1    :<*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN END
+       *>
+ 2    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN multcounter:=multcounter+1 END
+       *>
+ FINAL: #CONDITION: TRUE
+         #ACTION: BEGIN
+                  SEND_SUM;
+                  $SUM.numofmults:=multcounter
+                  END
+*>
+END;
+PROCEDURAL PART
+VAR numofmults,multcounter,indent::int;
+BEGIN
+INIT: BEGIN multcounter:=0;numofmults:=$SUM.numofmults;indent:=$$SUM.indent
+      END;
+<*
+1: <*SEND: BEGIN END
+     !.
+     RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN multcounter:= multcounter + 1;
+                  IF multcounter<>numofmults THEN 
+                      BEGIN
+                      BEGIN \of1. "SUM(" END;
+                      indent:=indent+4
+                      END;
+                  %%MULT.indent:= indent
+            END
+      !MULT.
+      RECEIVE: BEGIN IF numofmults<>multcounter THEN 
+                      BEGIN \of1. "," \\ TAB(of1,indent) END
+               END
+   *>
+*>
+FINAL:BEGIN WHILE multcounter<>1 DO
+                BEGIN
+                multcounter:=multcounter - 1;
+                BEGIN \of1. \\ TAB(of1,indent-1); ")" END;
+                indent:=indent-4
+                END
+      END
+END;
+&
+\end{verbatim}
+\subsubsection{Explanation}
+\begin{itemize}
+\item
+Under BASIS RULE, the non-terminal mentioned after "\%" at the start of the rule
+is 'defined' by an arbitrary regular expression of terminals and non-terminals.
+Each (non)terminal in the regular expression is accompanied by a number. 
+Each non-terminal may have only one such definition. The r.h.s. of a basis rule
+may contain (and does, in the above rule) help non-terminals that are defined 
+by help rules below the principal rule.
+\item
+Under SURFACE PART, the surface attributes of the non-terminal at the l.h.s.,
+also called the rule non-terminal,
+of the basis rule are evaluated in terms of the surface attributes of the 
+r.h.s. (non)terminals. Identifiers in this section are either parameters or
+attributes. Parameters are defined after VAR, and receive initial values under
+INIT. Parameters may be of PASCAL types or of types defined in the Domain
+File. The latter kind of parameters are declared with "::" between parameter
+name and typename, the former with ":".
+
+Each numbered block corresponds to one or more elements of the regular
+expression. If the element is an identifier or non-terminal, a unique block
+corresponds to it and the attributes referred to in the block are the attributes
+of this element, which called the block non-terminal or block identifier. 
+Attributes are prefixed with "\%" followed by the block non-terminal, and 
+a "." . The surface attribute "str" of an identifier is referred to as \%.str.
+A numbered block contains three parts; a local condition 
+involving attributes only, a global condition involving attributes 
+and parameters and an action part in which parameters are assigned values in 
+terms of parameters and attributes. Under FINAL the attributes of the rule
+non-terminal are set in terms of the rule parameters. The first statement of 
+this section has to be "SEND$\_$", followed by the rule non-terminal. The 
+attributes in FINAL are referred to as above but with "\$" instead
+of "\%".
+\item
+Under PROCEDURAL PART, the procedural attributes (the attributes declared
+under PROC INH and PROC SYN in the Domain File) and outputfiles are evaluated.
+Parameters are used just as in the surface part of the rule. Under INIT the
+parameters get values in terms of the PROC INH and SURFACE 
+attributes (with \$\$,\$ before the rule non-terminal,respectively). 
+Under FINAL the PROC SYN attributes of the rule non-terminal get a value in 
+terms of parameters.
+
+Each numbered block again consists of three parts; a SEND part in which the 
+PROC INH attributes (with \%\% before the block non-terminal) and parameters 
+get values, a wait statement - the name of the block non-terminal 
+between ! and . - , which causes a wait for a calculation of
+synthesized attributes of the block non-terminal and a RECEIVE section in which 
+parameters get values in terms of parameters and the calculated PROC SYN 
+attributes and surface attributes(with \%\%, \% before the block non-terminal,
+respectively). If a numbered block corresponds to a terminal, the wait 
+statement must be the empty one (!.).
+
+Outputfiles are of type FILES$\_$text and strings of type STRING$\_$string. The
+procedures and functions defined on these data types can be found in the 
+archive files GENERAL:FILES.ENV and GENERAL:STRING.ENV. Because the use of 
+these functions sometimes becomes somewhat tedious, a few shorthands exist for 
+writing in files. Shorthands appear in a compound write statement which is to 
+start with a declaration of the output file name,
+\begin{verbatim}
+    BEGIN \of1. {shorthand} END,
+\end{verbatim}
+where shorthand is
+\begin{verbatim}
+    shorthand = \\ | "string" | ""stringvar"" | """integervar""".
+\end{verbatim}
+The first option starts a new line. The second writes the string "string",
+the third the value of the variable stringvar, which is of type 
+STRING$\_$string.
+The fourth and last shorthand writes the value of the integer variable 
+integervar. The statement TAB(of1,i) writes i spaces in file of1. This statement
+may be put either inside or outside a compound write statement. Writing in
+output files is legitimate in each block of the procedural part.
+\end{itemize}
+\newpage
+\section{A Small Compiler}
+The following compiler translates an arbitrary arithmetic expression containing
+only the product and sum operations into a binary representation, e.g.:
+\begin{verbatim}
+
+SIMPLE SOMMETJE (a*b+c*(p+q)+e*f)*3 +4
+
+->
+
+SUM(PROD(SUM(PROD(a,
+                  b
+                 ),
+             SUM(PROD(c,
+                      SUM(p,
+                          q
+                         )
+                     ),
+                 PROD(e,
+                      f
+                     )
+                )
+            ),
+         3
+        ),
+    4
+   )
+\end{verbatim}
+\subsection{Domain File}
+\begin{verbatim}
+DOMAIN
+
+ALPHABET: < a b c d e f g h i j k l m n o p q r s t u v w x y z 
+            A B C D E F G H I J K L M N O P Q R S T U V W X Y Z 
+            '1 '2 '3 '4 '5 '6 '7 '8 '9 '0 >
+SYMBOLS: < PLUS = '+
+           TIMES = '*
+           ROUNDOPEN = '(
+           ROUNDCLOSE = ')
+         >
+WORDS: <
+          SIMPLE = 'SIMPLE
+          SOMMETJE = 'SOMMETJE
+       >
+TYPES: <
+       int = INTEGER;
+       >
+SETS: <
+      >
+ATTRIBUTES: <
+       uttrecord = < SURFACE < 
+                             >
+                     PROC INH < 
+                              > 
+                     PROC SYN <
+                              >
+                   >
+       sumrecord  =  < SURFACE < numofmults:int:0
+                              >
+                     PROC INH < indent:int
+                              > 
+                     PROC SYN < 
+                              >
+                     >
+       multrecord  =  <SURFACE < numofelements:int:0
+                               >
+                      PROC INH < indent:int
+                               > 
+                      PROC SYN < 
+                               >
+                      >
+       elementrecord = < SURFACE < 
+                                 >
+                          PROC INH < indent:int
+                                   > 
+                          PROC SYN < 
+                                   >
+                      >
+         >
+CATEGORIES: <
+            <UTT:uttrecord>
+            <SUM:sumrecord>
+            <MULT:multrecord>
+            <ELEMENT:elementrecord>
+            <SIMPLE,SOMMETJE,PLUS,TIMES,ROUNDOPEN,ROUNDCLOSE: TERMINAL>
+            >
+OUTPUTFILES: < of1
+             >
+END
+\end{verbatim}
+\newpage
+\subsection{Grammar File}
+\begin{verbatim}
+%UTT
+BASIS RULE
+  UTT = SIMPLE/1.SOMMETJE/1.SUM/2
+SURFACE PART
+
+BEGIN
+<*
+ INIT:BEGIN
+       END;
+ 1    :<*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+ 2    :<*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+ FINAL: #CONDITION: TRUE
+         #ACTION: BEGIN
+                  SEND_UTT;
+                  END
+*>
+END;
+PROCEDURAL PART
+VAR indent::int;
+BEGIN
+INIT:BEGIN indent:=0; FILES_open(of1,'outputfile',10,3) END;
+<*
+   1: <* SEND: BEGIN END
+         !.
+         RECEIVE: BEGIN 
+                  END
+      *>
+   2: <* SEND: BEGIN %%SUM.indent:=indent END
+         !SUM.
+         RECEIVE: BEGIN END
+      *>
+*>
+FINAL: BEGIN END
+END;
+&
+%SUM
+BASIS RULE
+  SUM = MULT/2.{PLUS/1.MULT/2}
+SURFACE PART
+VAR multcounter::int;
+BEGIN
+<*
+ INIT:BEGIN multcounter:=0
+       END;
+ 1    :<*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN END
+       *>
+ 2    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN multcounter:=multcounter+1 END
+       *>
+ FINAL: #CONDITION: TRUE
+         #ACTION: BEGIN
+                  SEND_SUM;
+                  $SUM.numofmults:=multcounter
+                  END
+*>
+END;
+PROCEDURAL PART
+VAR numofmults,multcounter,indent::int;
+BEGIN
+INIT: BEGIN multcounter:=0;numofmults:=$SUM.numofmults;indent:=$$SUM.indent
+      END;
+<*
+1: <*SEND: BEGIN END
+     !.
+     RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN multcounter:= multcounter + 1;
+                  IF multcounter<>numofmults THEN 
+                      BEGIN
+                      BEGIN \of1. "SUM(" END;
+                      indent:=indent+4
+                      END;
+                  %%MULT.indent:= indent
+            END
+      !MULT.
+      RECEIVE: BEGIN IF numofmults<>multcounter THEN 
+                      BEGIN \of1. "," \\ TAB(of1,indent) END
+               END
+   *>
+*>
+FINAL:BEGIN WHILE multcounter<>1 DO
+   		BEGIN
+                multcounter:=multcounter - 1;
+                BEGIN \of1. \\ TAB(of1,indent-1); ")" END;
+                indent:=indent-4
+   		END
+      END
+END;
+&
+%MULT
+BASIS RULE
+  MULT = ELEMENT/2.{TIMES/1.ELEMENT/2}
+SURFACE PART
+VAR elementcounter::int;
+BEGIN
+<*
+ INIT:BEGIN elementcounter:=0
+       END;
+ 1    :<*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN END
+       *>
+ 2    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN elementcounter:=elementcounter+1 END
+       *>
+ FINAL: #CONDITION: TRUE
+         #ACTION: BEGIN
+                  SEND_MULT;
+                  $MULT.numofelements:=elementcounter
+                  END
+*>
+END;
+PROCEDURAL PART
+VAR numofelements,elementcounter,indent::int;
+BEGIN
+INIT: BEGIN elementcounter:=0; numofelements:=$MULT.numofelements;
+            indent:=$$MULT.indent
+      END;
+<*
+1: <*SEND: BEGIN END
+     !.
+     RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN elementcounter:= elementcounter + 1;
+                  IF elementcounter<>numofelements THEN 
+                     BEGIN
+                     BEGIN \of1. "PROD(" END;
+                     indent:=indent+5
+                     END;
+                  %%ELEMENT.indent:= indent
+            END
+      !ELEMENT.
+      RECEIVE: BEGIN IF numofelements<>elementcounter THEN 
+                        BEGIN \of1. "," \\ TAB(of1,indent) END
+               END
+   *>
+*>
+FINAL:BEGIN WHILE elementcounter <> 1 DO
+                BEGIN
+                elementcounter:=elementcounter -1;
+                BEGIN \of1. \\ TAB(of1,indent-1); ")" END;
+                indent:=indent-5
+                END
+      END
+END;
+&
+%ELEMENT
+BASIS RULE
+  ELEMENT = (ROUNDOPEN/1.SUM/2.ROUNDCLOSE/1|IDENTIFIER/3)
+SURFACE PART
+<*
+ INIT:BEGIN
+       END;
+ 1    :<*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+ 2    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+ 3    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+ FINAL: #CONDITION: TRUE
+         #ACTION: BEGIN
+                  SEND_ELEMENT;
+                  END
+*>
+END;
+
+PROCEDURAL PART
+VAR indent::int;str:STRING_string;
+BEGIN
+INIT: BEGIN indent:=$$ELEMENT.indent END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN %%SUM.indent:= indent END
+      !SUM.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%.str; BEGIN \of1. ""str"" END END
+   *>
+*>
+FINAL:BEGIN END
+END;
+&
+\end{verbatim}
+\end{document}
+
+
+
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.2 - released  SEP-1986}
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1986 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

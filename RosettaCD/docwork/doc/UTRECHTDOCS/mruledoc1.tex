@@ -1,0 +1,1801 @@
+
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.Mrules.English}
+   \RosTitle{Rosetta3 English M-rules: VerbppropFormation}
+   \RosAuthor{Margreet Sanders, Lisette Appelo, Andr\'{e} Schenk}
+   \RosDocNr{310}
+   \RosDate{November 15, 1989}
+   \RosStatus{approved}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{English, M-rules, documentation, VerbppropFormation}
+   \MakeRosTitle
+%
+%
+\section{Introduction}
+The English sentence grammar is divided in three parts, in the same way as all
+other main category grammars. First, there is a subgrammar providing the 
+PROP-structure, 
+called {\bf VerbppropFormation}. Then, {\bf XPPROPtoCLAUSE} turns this prop
+into a clause. Finally, {\bf ClauseToSentence} makes a full sentence of this
+clause. Around the Sentence grammar there are two other, very small grammars.
+Prior to VerbppropFormation, there is the {\bf VerbDerivation} grammar, and
+following ClauseToSentence, there is the {\bf Utterance} grammar.
+
+The current document describes the contents of 
+the first Sentence subgrammar, Verbppropformation. The grammar consists of 
+a number of rule classes and transformation classes. A rule class in its turn
+consists of a number of rules and a transformation class of a number of 
+transformations. The relative ordering of the rules and transformations in the
+(sub)grammar is indicated by a {\em control expression}. A summary of this 
+control expression (i.e.\ a listing of the ordering of the rule classes, 
+without explicit mentioning of the rules themselves) is also included here, 
+and the initial (= head), import and export categories are given. Basically, 
+the document describes the system as it was when the document was first 
+written, i.e.\ in May 1989. Modifications that took place later have been added 
+in footnotes.
+
+In the section on the rules and transformations, only the rule names 
+are given, but not the exact rule formulation. What is attempted 
+is to provide a detailed overview of the workings of the (sub)grammars, and 
+how the different rule classes achieve this,
+together with some comments on the problems still to be solved, the reasons 
+behind certain choices, and perhaps possible alternatives. For every rule, an 
+example is given. If it is uncertain whether the example is correct (either 
+because it may not be an example of the phenomenon in question, or because it 
+may not be correct English), it is preceded by a question mark. Note that all 
+explanation of rules and transformations is given from a generative viewpoint 
+only, unless explicitly stated otherwise. Often, the information given in this 
+document is based strongly on the comment already present in the documentation
+of the rules themselves. Discrepancies between what is stated here and what is 
+said in the rule itself are usually caused by the fact that the rule file has 
+not been updated, although insights have changed.
+
+Whenever the current implementation differs widely from the strategy that was 
+devised in the definition phase of Rosetta3 (as laid down for English in docs.\ 
+150, {\em Subgrammars of English\/}, 153, {\em Rule and Transformation Classes 
+of English\/}, and 155, {\em Rule and Transformation Classes common to all 
+languages\/}, all written by Jan Odijk), this will be indicated explicitly in 
+the current document. Conditions on crucial orderings of rule classes will be 
+repeated here, even if they do not differ from the original strategy, to make 
+the document as self-contained as possible.
+
+Finally note that the rules described in this document have NOT been tested 
+properly. English analysis is not possible yet (there is no Surface Parser), 
+and English generation has only been tested in as far the construction was the 
+translation of a Dutch sentence to be tested.
+
+\newpage
+In principle, the authors of the rule classes have each documented their own 
+classes: Andr\'{e} Schenk wrote the sections on TC\_IdiomCheck, 
+RC\_IdStartVerbpRules and TC\_PossAdjSpelling, and Lisette Appelo wrote 
+the sections on TC\_AktionsartCalc and RC\_TempAdvVar. The other sections have 
+been written by Margreet Sanders.
+
+\newpage
+\section{Verbppropformation}
+The task of this subgrammar is to provide a subverb with its correct number of 
+argument variables, thus creating a prop-structure. Furthermore, variables for 
+a number of non-argument adverbials and subordinate clauses are introduced 
+here, and the structure is given a voice. Transformations take care of the 
+realization of verbpatterns, particles, inherent reflexives and Aktionsart.
+
+The general strategy for this subgrammar is the same as was mentioned in doc.\ 
+150. A few changes have been made, however. They mainly concern the 
+introduction of variables for non-argument adverbials. Instead of being all in 
+one large class, the rules have been separated into different classes. This was 
+mainly caused by a wish to keep the different cases separated until the 
+ordering of the rule classes and their interrelation had 
+been understood enough to incorporate the rules in one large class.
+This stage has not been reached yet, nor is it certain that for English 
+separation is not adequate\footnote{By the time this document was approved, the 
+classes were merged again. The strategy that is used to remove the variables 
+in analysis in different than in Dutch. There, they are removed strictly
+according to surface order, starting with the last one. In English, the strategy 
+chosen was to remove them class by class: first, all tempadvs are removed, then 
+the locadvs, and finally the conjsents and sentadvs. Thus, the presentation in 
+the current document is somewhat misleading: it might seem as if locadvs are removed 
+last. In generation, there only are conditions on the surface order of the 
+variables, but not on their order of insertion: whatever is demanded by the 
+source language is allowed. The strategy is to keep the surface order of 
+locatives, conjsents and sentadvs the same in Dutch and English. Temporal 
+elements have a reversed surface order in English compared to Dutch.}. 
+Note that English does not 
+have any rules yet for instrumental or comitative adverbials, which also 
+belong somewhere in these rule classes.
+
+Another change in strategy concerning variables for adverbials is the way in 
+which they are introduced. Doc.\ 155 announced an abstract preposition and an 
+OPENPREPPPROP for temporal, locative and causative adverbials. This has now 
+been changed to introduction of a simple PREPPVAR or ADVPVAR for all 
+non-sentential variables introduced in this class. 
+VP-modifying adverbials (including `agvpadvs'), which do require a PROP 
+variable, have been removed from this rule class and are now placed in the next 
+subgrammar, XPPROPtoCLAUSE.
+More information on this 
+subject can be found in the document on The Treatment of Adverbs in Rosetta3 
+(by Jan Odijk, to appear).
+
+The calculation of Aktionsart has been given its own transformation class, at 
+the end of the subgrammar. In doc.\ 155 it was assumed that this could be done 
+in the start rules.
+
+Finally, it should be noted that no rules have been written yet for pre-VP 
+modification. This rule class should come at the end of the subgrammar.
+
+
+\newpage
+\section{Subgrammar Specification}
+The subgrammar definition can be found in file 
+{\bf english:Verbppropformation.mrule}, which is {\em mrules3.mrule\/}.
+
+\begin{description}
+\item[Control Expression] \mbox{}
+\begin{verbatim}
+%SUBGRAMMAR Verbppropformation
+
+(  ( TIsNotIdiom . RC_StartVerbpRules:mrules50 )  
+ | ( TIsIdiom . RC_IdStartVerbpRules:mrules107 )   )
+.  ( TC_VerbPatternRules: mrules 49-45 )
+.  ( TC_ParticleSpelling: mrules44 )
+.  { RC_TempAdvVar: mrules36 }
+.  { RC_SentAdvvar:mrules91, begin }
+.  { RC_LocAdvvar:mrules91, end }
+.  ( RC_VoiceRules:mrules43 )
+.  ( TC_ReflexiveSpelling: mrules42, begin )
+.  ( TC_PossAdjSpelling: mrules42, end )
+.  ( TC_AktionsartCalc: mrules81 )
+
+\end{verbatim}
+
+  \item[Head]  SUBVERB FROM (VERBDERIVATION)
+  \item[Export]  VERBPPROP 
+  \item[Import] ADJPPROPVAR, ADVPPROPVAR, NPPROPVAR, PREPPPROPVAR, 
+                NPVAR, SENTENCEVAR, VERBPPROPVAR, CNVAR, PROSENTVAR,
+                EMPTYVAR, PREPPVAR, ADVPVAR 
+\end{description}
+
+\newpage
+\section{Rules and Transformations}
+\subsection{TC\_IdiomCheck}
+\begin{description}
+\item[Kind] Obligatory Transformation class
+\item[Task] To determine whether the skey of the head (SUBVERB) is an idiom key 
+or not. In case it is not, the ordinary startrules apply, in case it is, the
+idiom start rules are called. These transformations are used because otherwise 
+the `ordinary' startrules might be applied to an idiom verb, resulting in a 
+crash in morhology because an idiom does not have a string directly connected 
+with it. For more information, see doc.\ 273 on idioms.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TIsIdiom
+\item[Task] To check whether the skey of the SUBVERB is an idiom key. If it is,
+the special idiom startrules are called, and the ordinary startrules are 
+skipped (see control expression).
+\item[File] english:RC\_IdStartVerbpRules.mrule (mrules107.mrule)
+\item[Semantics] --
+\item[Example] lose (x1 lose\_x1's\_patience)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TIsNotIdiom
+\item[Task] To check whether the skey of the SUBVERB is not an idiom key. If it 
+is not, the special idiom startrules are skipped, and the ordinary startrules 
+can apply (see control expression).
+\item[File] english:RC\_IdStartVerbpRules.mrule (mrules107.mrule)
+\item[Semantics] --
+\item[Example] lose (x1 lose x2)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\item[Remarks] This transformation class is new compared to doc.\ 150. 
+\end{description}
+
+\newpage
+\subsection{RC\_StartVerbpRules}
+\begin{description}
+\item[Kind] Obligatory Rule class
+\item[Task] To provide a (non-idiom) subverb with its correct number of 
+argument variables and build a VERBP and VERBPPROP around it. There are rules
+for ordinary verbs and rules for semi-idioms.
+The import (i.e.\ the 
+argument(s) the verb takes) to the former rules may be variables of any kind.
+The import to the latter rules is subjected to an extra check.
+
+The subverb is given a new top node VERB, with all new attributes still at 
+default value. It was decided to write rules 
+for ergatives in English too, although it is not clear at all that they exist.
+For testing purposes, a few verbs were entered into the dictionary as 
+ergatives. Of course, the startrules needed for ergatives are the same 
+as for raising verbs, so they will be needed anyway.
+
+In English, no rules have been written yet for verbs with a deviant order of 
+arguments (esp.\ vp132). In case the surface order of VP-arguments is different 
+from the ordering in the startrules, a verbpattern is assigned which swaps 
+them.
+No theoretical considerations underly this decision; if it 
+is thought better, extra startrules may be written and current verbpattern rules 
+may be replaced by others. This is especially relevant if two verbpatterns 
+exist that differ only in the ordering of the VP arguments. In that case, one 
+of the two patterns can be deleted\footnote{By the 
+time this document was approved, a startrule for vp132 was written.}. 
+If a thetavp like 210 will be used, the realization
+cannot be taken care of by pattern rules anyway (the subject is not in the VP), 
+and new startrules must be added.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RStartVPPROP000
+\item[Task] To provide a prop structure for a verb that does not take any 
+arguments at all (weather verbs). A dummy subject {\em It\/} is introduced 
+here, of which it is not clear whether it is really non-referential. Perhaps it 
+may even function as an antecedent for `reflexive weather verbs' like 
+{\em It has rained itself out\/}. However, the reflexive spelling rules (see 
+below) are not suited yet to deal with NP antecedents; they only work on 
+variables.
+
+\item[File] english:RC\_StartVerbpRules.mrule (mrules50.mrule)
+\item[Semantics]
+\item[Example] rain $\rightarrow$ it rain
+\item[Remarks] For an extensive discussion of the argument status of 
+{\em It\/}, see section 4.1 of doc.\ 308 on the Dutch VERBPPROPformation.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RStartVPPROP100
+\item[Task] To provide a prop structure for a verb that takes one subject 
+argument, and no arguments in the VERBP.
+\item[File] english:RC\_StartVerbpRules.mrule (mrules50.mrule)
+\item[Semantics]
+\item[Example] swim $\rightarrow$ x1 swim
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RStartVPPROP010a
+\item[Task] To provide a prop structure for a verb that takes no subject, and 
+one argument in the VERBP. This may be an ergative, or a raising verb. The verb 
+is not a case assigner. No dummy subject is inserted, because the subject slot 
+must remain empty to allow raising.
+\item[File] english:RC\_StartVerbpRules.mrule (mrules50.mrule)
+\item[Semantics]
+\item[Examples] ergative: melt $\rightarrow$ melt x1\\
+\ \ \ \ \ \ \ \ raising verb: seem $\rightarrow$ seem x1
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RStartVPPROP010b
+\item[Task] To provide a prop structure for a verb that takes no subject, and
+one argument in the VERBP, while the verb is a case assigner. In this case, a 
+dummy subject is inserted to prevent the object from being raised. 
+\item[File] english:RC\_StartVerbpRules.mrule (mrules50.mrule)
+\item[Semantics]
+\item[Example] rain $\rightarrow$ it rain x1 (it rains invitations)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RStartVPPROP120
+\item[Task] To provide a prop structure for a verb that 
+takes two arguments, one a subject and the other in the VERBP.
+\item[File] english:RC\_StartVerbpRules.mrule (mrules50.mrule)
+\item[Semantics]
+\item[Example] hit $\rightarrow$ x1 hit x2; eat $\rightarrow$ x1 eat x2
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RStartVPPROP012
+\item[Task] To provide a prop structure for a verb that takes two arguments, 
+both of them in the VERBP. They may be ergatives or raising verbs.
+\item[File] english:RC\_StartVerbpRules.mrule (mrules50.mrule)
+\item[Semantics]
+\item[Example] ergative: come $\rightarrow$ come x1 x2 (for testing purposes)\\
+\ \ \ \ \ \ \ \ raising verb: seem $\rightarrow$ seem x1 x2
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RStartVPPROP123
+\item[Task] To provide a prop structure for a verb that takes three arguments,
+one a subject and the other two in the VERBP.
+\item[File] english:RC\_StartVerbpRules.mrule (mrules50.mrule)
+\item[Semantics]
+\item[Example] give $\rightarrow$ x1 give x2 x3
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSIDStartVPPROP120
+\item[Task] To provide a prop structure for a verb which is part of a semi 
+idiom and which takes two arguments,
+one a subject and the other in the VERBP. The head of the argument NP in VERBP 
+is specified as being equal to the key the bverb expects for the semi-idiom.
+\item[File] english:RC\_StartVerbpRules.mrule (mrules50.mrule)
+\item[Semantics]
+\item[Example] give $\rightarrow$ x1 give x2=shout
+\item[Remarks] The semi-idiom BVERB is replaced by an `ordinary' BVERB (which is 
+the same except for its key) without changing the SUBVERB heading it. This is 
+possible because the {\bf key}-attribute does not percolate upwards.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSIDStartVPPROP123
+\item[Task] To provide a prop structure for a verb which is part of a semi 
+idiom and which takes three arguments,
+one a subject and the other two in the VERBP. The head of the first (`object') 
+argument NP in the VERBP is specified as being equal to the key the bverb 
+expects for the semi-idiom.
+\item[File] english:RC\_StartVerbpRules.mrule (mrules50.mrule)
+\item[Semantics]
+\item[Example] give $\rightarrow$ x1 give x2=demonstration x3
+\item[Remarks] The semi-idiom BVERB is replaced by an `ordinary' BVERB (which is 
+the same except for its key) without changing the SUBVERB heading it. This is 
+possible because the {\bf key}-attribute does not percolate upwards.
+\end{description}
+
+\vspace{1 cm}
+\item[Remarks] The calculation of the Aktionsart of the VERBPPROP is not done 
+here, as was assumed in doc.\ 155, but in a separate transformation class 
+coming at the end of the subgrammar. This is necessary since the calculation 
+rules are quite complex and crucially need information on the kind of arguments
+the verb takes, and not the just the number of arguments.
+\end{description}
+
+\newpage
+\subsection{RC\_IdStartVerbpRules}
+
+\begin{description}
+\item[Kind] Obligatory Rule Class
+\item[Task] On the basis of a syntactic derivation tree that is specified in 
+the M-rule  model the syntactic S-tree for an idiom is built. This includes 
+much more than just a VERBP and a VERBPPROP. For further explanation, see doc.\ 
+273 on Idioms.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdDeriv1
+\item[Task] Build the S-tree for the case of a verb with a free subject and 
+one (direct) object singular noun argument in the VERBP as part of the idiom
+\item[File] english:rc\_idstartverbprules.mrule (mrules107.mrule)
+\item[Semantics]
+\item[Example] bury $\rightarrow$ x1 bury the hatchet
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdDeriv3
+\item[Task] Build the S-tree for the case of a verb with a free subject and 
+one (direct) object 
+mass or plural noun argument in the VERBP as part of the idiom. This argument 
+contains a 
+free element which is identical with the subject and will be realized as a 
+possessive.
+\item[File] english:rc\_idstartverbprules.mrule (mrules107.mrule)
+\item[Semantics]
+\item[Example] lose $\rightarrow$ x1 lose x1 patience
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdDeriv7
+\item[Task] Build the S-tree for the case of a verb with a free subject,
+one (free) object 
+argument in the VERBP and one LocOpenPREPPPROP argument as part of the idiom.
+The subject of the PROP is identical with the object.
+\item[File] english:rc\_idstartverbprules.mrule (mrules107.mrule)
+\item[Semantics]
+\item[Example] leave $\rightarrow$ x1 leave x2 [x2 in the lurch]
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdDeriv8
+\item[Task] Build the S-tree for the case of a verb with a free subject and 
+one singular noun (direct) object 
+argument in the VERBP as part of the idiom. This argument contains a free 
+element which will be spelled out as a possessive.
+\item[File] english:rc\_idstartverbprules.mrule (mrules107.mrule)
+\item[Semantics]
+\item[Example] break $\rightarrow$ x1 break x2 heart
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdDeriv9
+\item[Task] Build the S-tree for the case of a verb with a free subject and 
+two arguments in the 
+VERBP, one singular noun (direct) object as part of the idiom, and one free 
+(indirect) object.
+\item[File] english:rc\_idstartverbprules.mrule (mrules107.mrule)
+\item[Semantics]
+\item[Example] give $\rightarrow$ x1 give x2 the boot
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdDeriv10
+\item[Task] Build the S-tree for the case of a verb with a free subject and 
+two arguments in the 
+VERBP, one Loc/DirOpenPREPPPROP argument as part of the idiom, and one (free) 
+object. The PROP contains a free 
+element which will be spelled out as a possessive, and the subject of the PROP 
+is identical to the verb object.
+\item[File] english:rc\_idstartverbprules.mrule (mrules107.mrule)
+\item[Semantics]
+\item[Example] lay $\rightarrow$ x1 lay x2 [x2 at x3 door]
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdDeriv12
+\item[Task] Build the S-tree for the case of a verb with a free subject and 
+one (direct) object 
+singular noun argument in the VERBP as part of the idiom. This argument contains
+a free element which is identical with the subject and will be realized as a 
+possessive.
+\item[File] english:rc\_idstartverbprules.mrule (mrules107.mrule)
+\item[Semantics]
+\item[Example] sling $\rightarrow$ x1 sling x1 hook
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdStartVPPROP1VAR2ID0
+\item[Task] This rule is an alternative to RIdDeriv1, and is NOT a part of the 
+translation system. Instead of specifying in the rule the Derivation tree 
+for the idiom parts (i.e.\ the rules 
+to be applied in building the S-tree), this rule spells out the S-tree itself
+(in this case an S-tree for a verb with a subject and 
+one (direct) object argument in the VERBP as part of the idiom. The article 
+going with the object is determined by the idiom key). For further comment, 
+see doc.\ 273 on Idioms.
+\item[File] english:rc\_idstartverbprules.mrule (mrules107.mrule)
+\item[Semantics]
+\item[Example] bury $\rightarrow$ x1 bury the hatchet
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_VerbpatternRules}
+
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] Check the categories of the argument variables in the VERBP 
+against the verbpatterns specified for the 
+verb, and assign a specific relation name to these arguments.
+The synvpefs attribute of the VERBPPROP is set at the value actually 
+chosen from the synvps of the VERB. Some verbpatterns are still missing, 
+because they had not been thought of yet. They will be added. 
+For comment on the ordering of the two VP-arguments, see what was said in 
+section RC\_StartVerbpRules.
+
+The names of the verbpatterns are not given here, only the ordering of the two 
+variables, their categories and their relations. For more information on 
+verbpatterns, see doc.\ 248, {\em Verbpatterns of English\/}.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVerbPattern0
+\item[Task] To let verbs that have no VP arguments (vp000 and vp100) pass this 
+transformation class.
+\item[File] english:TC\_VP1.mrule (mrules49.mrule)
+\item[Semantics] --
+\item[Example] x1 sleep $\rightarrow$ x1 sleep
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVerbPattern1
+\item[Task] Specify the relation name and check the category of the VP-argument of 
+verbs with vp010 and vp120
+\item[File] english:TC\_VP1.mrule (mrules49.mrule)
+\item[Semantics] --
+\item[Examples] (ordered by subrule)
+\begin{description}
+  \item[1a] x1 beat argrel/VAR $\rightarrow$ x1 beat objrel/NPVAR \\
+(Mary beat John)
+  \item[1b] x1 beat argrel/VAR $\rightarrow$ x1 beat objrel/CNVAR \\
+(The man whom Mary beat)
+  \item[2] x1 eat argrel/VAR $\rightarrow$ x1 eat objrel/EMPTYVAR \\
+(They ate in silence)
+  \item[3a] become argrel/VAR $\rightarrow$ become complrel/(closed)NPPROPVAR
+ \\
+(She became President)
+  \item[3b] ? x1 act argrel/VAR $\rightarrow$ x1 act complrel/(open)NPPROPVAR
+ \\
+(He is always acting the experienced man)
+  \item[4a] seem argrel/VAR $\rightarrow$ seem complrel/(closed)ADJPPROPVAR 
+\\
+(She seemed ill)
+  \item[4b] ? smell argrel/VAR $\rightarrow$ smell complrel/(open)ADJPPROPVAR
+ \\
+(The book smelt old)
+  \item[5] x1 weigh argrel/VAR $\rightarrow$ x1 weigh 
+complrel/(open-measurephrase)NPPROPVAR
+(The lorry weighed a ton)
+  \item[6] x1 act argrel/VAR $\rightarrow$ x1 act complrel/(asif)SENTENCEVAR
+ \\
+(He acted as if he had gone mad)
+  \item[7a1] x1 put argrel/VAR $\rightarrow$ x1 put 
+locargrel/(locclosed)PREPPPROPVAR 
+(They put him in bed)
+  \item[7a2] x1 put argrel/VAR $\rightarrow$ x1 put 
+locargrel/(locclosed)ADVPPROPVAR 
+(They put him there)
+  \item[7b1] x1 stand argrel/VAR $\rightarrow$ x1 stand
+locargrel/(locopen)PREPPPROPVAR 
+(He stood behind the door)
+  \item[7b2] x1 live argrel/VAR $\rightarrow$ x1 live
+locargrel/(locopen)ADVPPROPVAR 
+(He lives southwards)
+  \item[8a1] ? x1 see argrel/VAR $\rightarrow$ x1 see
+dirargrel/(dirclosed)PREPPPROPVAR 
+(They saw him to the door)
+  \item[8a2] x1 verb argrel/VAR $\rightarrow$ x1 verb
+dirargrel/(dirclosed)ADVPPROPVAR 
+(no example found)
+  \item[8b1] x1 jump argrel/VAR $\rightarrow$ x1 jump
+dirargrel/(diropen)PREPPPROPVAR 
+(She jumped off the fence)
+  \item[8b2] x1 swim argrel/VAR $\rightarrow$ x1 swim
+dirargrel/(diropen)ADVPPROPVAR 
+(They swam westwards)
+  \item[9a1] ? seem argrel/VAR $\rightarrow$ seem
+complrel/(otherclosed)PREPPPROPVAR 
+(She seemed with child)
+  \item[9a2] x1 verb argrel/VAR $\rightarrow$ x1 verb
+complrel/(otherclosed)ADVPPROPVAR 
+(no examples found)
+  \item[9b1] x1 verb argrel/VAR $\rightarrow$ x1 verb
+complrel/(otheropen)PREPPPROPVAR 
+(no examples found)
+  \item[9b2] x1 verb argrel/VAR $\rightarrow$ x1 verb
+complrel/(otheropen)ADVPPROPVAR 
+(no examples found)
+  \item[10a] x1 have argrel/VAR $\rightarrow$ x1 have 
+complrel/(closed)VERBPPROPVAR 
+(They had a house built)
+  \item[10b] x1 verb x2 argrel/VAR $\rightarrow$ x1 verb 
+complrel/(open)VERBPPROPVAR 
+(no examples found)
+  \item[11a] can argrel/VAR $\rightarrow$ can 
+complrel/(closedinf)SENTENCEVAR \\
+(He can come - possibility)
+  \item[11b] x1 can argrel/VAR $\rightarrow$ x1 can 
+complrel/(openinf)SENTENCEVAR 
+(He can come - ability)
+  \item[12a] x1 expect argrel/VAR $\rightarrow$ x1 expect
+complrel/(closedtoinf)SENTENCEVAR 
+(I expect you to be there)
+  \item[12b] x1 decide argrel/VAR $\rightarrow$ x1 decide
+complrel/(opentoinf)SENTENCEVAR 
+(We decided to leave)
+  \item[13] x1 prefer argrel/VAR $\rightarrow$ x1 prefer
+complrel/(fortoinf)SENTENCEVAR 
+(I prefer for John to stay)
+  \item[14] x1 know argrel/VAR $\rightarrow$ x1 know 
+complrel/(that)SENTENCEVAR \\
+(He knows that you cannot refuse)
+  \item[15] x1 wonder argrel/VAR $\rightarrow$ x1 wonder
+complrel/(q)SENTENCEVAR \\
+(I wonder what to do know)
+  \item[16a] x1 watch argrel/VAR $\rightarrow$ x1 watch
+complrel/(accing)SENTENCEVAR 
+(I watched him singing)
+  \item[16b] x1 burst (out) argrel/VAR $\rightarrow$ x1 burst (out)
+complrel/(opening)SENTENCEVAR 
+(I burst out singing)
+  \item[17] x1 wonder argrel/VAR $\rightarrow$ x1 wonder
+complrel/PROSENTVAR \\
+(I wonder)
+  \item[18] x1 think argrel/VAR $\rightarrow$ x1 think 
+complrel/(so)PROSENTVAR \\
+(They thought so)
+  \end{description}
+\item[Remarks] Some subrules were written although no examples could be found
+(just in case). Other verbpatterns have been discovered since, that have not 
+been incorporated yet, e.g.\ a synFRONTSOPROSENT, to 
+cover structures like {\em So he indicated\/}. 
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVerbPattern2
+\item[Task] Specify the relation name and check the category of the VP-argument of 
+verbs with vp010 or vp120 having the synpattern synITTHATSENT
+\item[File] english:TC\_VP1.mrule (mrules49.mrule)
+\item[Semantics] --
+\item[Example] x1 believe argrel/VAR $\rightarrow$ x1 believe it 
+complrel/(that)SENTENCEVAR 
+(I can't believe it that I've won the lottery)
+\item[Remarks] Perhaps this verbpattern may be used to disambiguate factive 
+from non-factive readings (a factive reading would require `it', a non-factive
+reading would not). This idea has not been worked out, however.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVerbPattern3
+\item[Task] Specify the relation name and check the category of the VP-argument of 
+verbs with vp010 or vp120, in case this argument is a prepositional phrase. The 
+preposition is introduced syncategorematically. The relation name always is 
+prepobjrel.
+
+English does not distinguish between {\em for\/}, {\em to\/} and other preps, as 
+does Dutch, since there does not seem to be any difference in the behaviour of 
+these preps, nor in their position in the sentence. If differences are found, 
+extra rules can be added simply.
+
+\item[File] english:TC\_VP2.mrule (mrules48.mrule)
+\item[Semantics] --
+\item[Examples] (ordered by subrule)
+  \begin{description}
+  \item[1a] x1 count argrel/VAR $\rightarrow$ x1 count [upon NPVAR] \\
+(I count upon you)
+  \item[1b] x1 count argrel/VAR $\rightarrow$ x1 count [on CNVAR] \\
+(The relief which I was counting on)
+  \item[2a] x1 verb argrel/VAR $\rightarrow$ x1 verb [prep (closed)NPPROPVAR] 
+\\ (no examples found)
+  \item[2b] x1 come (across) argrel/VAR $\rightarrow$ x1 come (across) [as
+(open)NPPROPVAR] 
+(He came across as a nice person) 
+  \item[3a] x1 count argrel/VAR $\rightarrow$ x1 count [on (accing)SENTENCEVAR] 
+\\
+(You cannot count on the weather being fine)
+  \item[3b] x1 hesitate argrel/VAR $\rightarrow$ x1 hesitate [about
+(opening)NPVAR] \\
+(I am hesitating about joining the expedition)
+  \item[4] x1 wait argrel/VAR $\rightarrow$ x1 wait [for 
+(closedtoinf)SENTENCEVAR] \\
+(He waited for the president to speak)
+  \item[5] x1 verb argrel/VAR $\rightarrow$ x1 verb [prep
+(closed)ADJPPROPVAR] \\
+(no examples found)
+  \item[6] x1 talk argrel/VAR $\rightarrow$ x1 talk [about (q)SENTENCEVAR] \\
+(We all talked about why he would have murdered here)
+  \item[7] x1 verb argrel/VAR $\rightarrow$ x1 verb [prep
+(otherclosed)PREPPPROPVAR] 
+(no examples found)
+  \item[8] x1 count argrel/VAR $\rightarrow$ x1 count [on (that)SENTENCEVAR] \\
+(He counted on that the train would be late; it-insertion follows later)
+  \end{description}
+
+\item[Remarks] No definition has been found yet for a sensible check on the 
+possible patterns going with the prep introduced in this rule. For the moment,
+it is assumed the prep takes more or less the same pattern as the verb, minus 
+the prep itself.
+
+One new verbpattern with a prep has been discovered until now:\\
+x1 amount argrel/VAR $\rightarrow$ x1 amount [to (open-measurephrase)NPPROP)] \\
+(His debts amount to over \$1,000)
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVerbPattern4
+\item[Task] Specify the relation names and check the categories of the VP-arguments
+of verbs with vp012 or vp123, with the second VP argument becoming an indirect
+object preceding the other argument.
+
+There still are mistakes in the mapping of Dutch and English verbpatterns in 
+the dictionary with respect to the ordering of the VP arguments. The verb 
+{\em persuade\/} e.g.\ has synIONP\_OPENTOSENT in English (the IONP is supposed 
+to be the second VAR in the VP), but DONP\_OPENOMTESENT in Dutch (with the DONP 
+as the first VAR in the VP). This will have to be checked thoroughly. Perhaps 
+some of the example verbs below will be given a new pattern as a result of this 
+check.
+
+\item[File] english:TC\_VP3.mrule (mrules47.mrule)
+\item[Semantics] --
+\item[Examples] (ordered by subrule)
+  \begin{description}
+  \item[1a] x1 give argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 give indobjrel/NPVAR objrel/NPVAR \\
+(I gave them a kiss)
+  \item[1b] x1 give argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 give indobjrel/NPVAR objrel/CNVAR \\
+(The kiss which I gave them)
+  \item[1c] x1 give argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 give indobjrel/CNVAR objrel/NPVAR \\
+(The people whom I gave a kiss)
+  \item[1d] x1 give argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 give indobjrel/CNVAR objrel/CNVAR \\
+(?)
+  \item[2a] x1 allow argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 allow
+indobjrel/EMPTYVAR objrel/NPVAR (only for verbs that have no paraphrase with a 
+preposition; in case they may take a prep, they are covered by 
+TVerbpattern5) \\
+(We'll allow it this time)
+  \item[2b] x1 allow argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 allow indobjrel/EMPTYVAR objrel/CNVAR \\
+(The things which we will allow this time)
+  \item[3a] x1 tell argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 tell indobjrel/NPVAR complrel/(that)SENTENCEVAR \\
+(We told them that she was ill)
+  \item[3b] x1 tell argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 tell indobjrel/CNVAR complrel/(that)SENTENCEVAR \\
+(The man whom we told that she was ill)
+  \item[4] x1 promise argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 promise indobjrel/EMPTYVAR complrel/(that)SENTENCEVAR \\
+(We promised that we would do it)
+  \item[5a] x1 tell argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 tell indobjrel/NPVAR complrel/(so)PROSENTVAR \\
+(We told you so)
+  \item[5b] x1 tell argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 tell indobjrel/CNVAR complrel/(so)PROSENTVAR \\
+(The man whom we told so)
+  \item[6a] x1 ask argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 ask indobjrel/NPVAR complrel/(q)SENTENCEVAR \\
+(They asked a servant where the entry was)
+  \item[6b] x1 ask argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 ask indobjrel/CNVAR complrel/(q)SENTENCEVAR \\
+(The man whom they asked where the entry was)
+  \item[7a] x1 persuade argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 persuade indobjrel/NPVAR complrel/(opentoinf)SENTENCEVAR \\
+(They persuaded him to stay)
+  \item[7b] x1 persuade argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 persuade indobjrel/CNVAR complrel/(opentoinf)SENTENCEVAR \\
+(They people whom they had persuaded to stay)
+  \item[8] x1 promise argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 promise indobjrel/EMPTYVAR complrel/(opentoinf)SENTENCEVAR 
+(We promised to come back)
+  \item[9a] x1 cost argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 cost indobjrel/NPVAR complrel/(open-measurephrase)NPPROPVAR
+(It cost me a fortune)
+  \item[9b] x1 cost argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 cost indobjrel/CNVAR complrel/(open-measurephrase)NPPROPVAR
+(The fortune which it cost me)
+  \item[10] x1 cost argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 cost indobjrel/EMPTYVAR complrel/(open-measurephrase)NPPROPVAR
+(It cost a fortune)
+  \item[11] x1 ask argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 ask indobjrel/EMPTYVAR complrel/(q)SENTENCEVAR \\
+(We asked where the entrance was)
+  \item[12a] x1 tell argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 tell indobjrel/NPVAR complrel/PROSENTVAR \\
+(I told you)
+  \item[12b] x1 tell argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 tell indobjrel/CNVAR complrel/PROSENTVAR \\
+(Whom did you tell?)
+  \item[13] x1 ask argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 ask indobjrel/EMPTYVAR complrel/PROSENTVAR \\
+(I'll ask)
+  \item[14] x1 allow argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 allow indobjrel/EMPTYVAR complrel/(opening)SENTENCEVAR \\
+(I don't allow smoking here)
+  \end{description}
+
+\item[Remarks] As a new verbpattern (not added to the present rules yet), the 
+following construction was discovered:\\
+x1 say argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 say indobjrel/EMPTYVAR complrel/(so)PROSENTVAR \\
+(I said so)
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVerbPattern5
+\item[Task] Specify the relation names and check the categories of the 
+VP-arguments
+of verbs with vp012 and vp123, with the first VP argument receiving objrel or 
+complrel and preceding the second argument.
+\item[File] english:TC\_VP4.mrule (mrules46.mrule)
+\item[Semantics] --
+\item[Examples] (ordered by subrule)
+  \begin{description}
+  \item[1a] x1 force argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 force objrel/NPVAR complrel/(opentoinf)SENTENCEVAR \\
+(We forced them to cooperate)
+  \item[1b] x1 force argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 force objrel/CNVAR complrel/(opentoinf)SENTENCEVAR \\
+(The man whom we forced to cooperate)
+  \item[2a] x1 elect argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 elect objrel/NPVAR complrel/(open)NPPROPVAR \\
+(They elected him President)
+  \item[2b] x1 elect argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 elect objrel/CNVAR complrel/(open)NPPROPVAR \\
+(The man whom they elected President)
+  \item[3a] x1 paint argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 paint objrel/NPVAR complrel/(open)ADJPPROPVAR \\
+(We painted the door green)
+  \item[3b] x1 paint argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 paint objrel/CNVAR complrel/(open)ADJPPROPVAR \\
+(The door which we painted green)
+  \item[4a1] x1 put argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 put objrel/NPVAR locargrel/(locopen)PREPPPROPVAR \\
+(I put the book on the table)
+  \item[4b1] x1 put argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 put objrel/CNVAR locargrel/(locopen)PREPPPROPVAR \\
+(The book which I put on the table)
+  \item[4a2] ? meet argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+meet objrel/NPVAR locargrel/(locopen)ADVPPROPVAR \\
+(The cars met head-on)
+  \item[4b2] ? meet argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+meet objrel/CNVAR locargrel/(locopen)ADVPPROPVAR \\
+(The cars that met head-on)
+  \item[5a1] x1 drive argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 drive objrel/NPVAR dirargrel/(diropen)PREPPPROPVAR \\
+(He drove the car into the yard)
+  \item[5b1] x1 drive argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 drive objrel/CNVAR dirargrel/(diropen)PREPPPROPVAR \\
+(The car which he drove into the yard)
+  \item[5a2] ? x1 send argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 send objrel/NPVAR dirargrel/(diropen)ADVPPROPVAR \\
+(The sent the boy home)
+  \item[5b2] ? x1 send argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 send    objrel/CNVAR dirargrel/(diropen)ADVPPROPVAR \\
+(The boy whom they sent home)
+  \item[6a] x1 tell argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 tell    objrel/NPVAR prepobjrel/EMPTYVAR \\
+(He told the whole story)
+  \item[6b] x1 tell argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 tell    objrel/CNVAR prepobjrel/EMPTYVAR \\
+(The story which he told)
+  \item[7] seem argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+seem    complrel/(closed)ADJPPROPVAR prepobjrel/EMPTYVAR \\
+(He seemed ill)
+  \item[8] seem argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+seem    complrel/(closed)NPPROPVAR prepobjrel/EMPTYVAR \\
+(He seemed a fraud)
+  \item[9] seem argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+seem    complrel/(otherclosed)PREPPPROPVAR prepobjrel/EMPTYVAR
+(He seemed against the proposal)
+  \item[10a] x1 tear argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 tear    objrel/NPVAR complrel/(otheropen)PREPPPROPVAR \\
+(He tore the letter to pieces)
+  \item[10b] x1 tear argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 tear     objrel/CNVAR complrel/(otheropen)PREPPPROPVAR \\
+(The letter which he tore to pieces)
+  \item[11] say argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+say    complrel/SENTENCEVAR locargrel/(locopen)PREPPPROPVAR 
+(It said in the paper that the war is over)
+  \end{description}
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVerbPattern6
+\item[Task] Specify the relation names and check the categories of the VP-arguments 
+of verbs with vp012 and vp123, when the second VP argument (VAR2) must be realised 
+as a full prepositional 
+phrase and must precede the other argument in the VP (cf.\ patterns 8, 9 and 10)
+\item[File] english:TC\_VP4.mrule (mrules46.mrule)
+\item[Semantics] --
+\item[Examples] (ordered by subrule)
+  \begin{description}
+  \item[1a] x1 mention argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 mention     prepobjrel/[to NPVAR] complrel/(that)SENTENCEVAR
+(He mentioned to me that he would be back early)
+  \item[1b] x1 mention argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 mention     prepobjrel/[to CNVAR] complrel/(that)SENTENCEVAR 
+(The girl to whom he mentioned that he would be back early)
+  \item[2a] x1 require argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 require    prepobjrel/[of NPVAR] complrel/(q)SENTENCEVAR \\
+(I required of him what he wanted)
+  \item[2b] x1 require argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 require    prepobjrel/[of CNVAR] complrel/(q)SENTENCEVAR \\
+(The man of whom he inquired what he wanted)
+  \item[3a] x1 sign argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 sign    prepobjrel/[to NPVAR] complrel/(opentoinf)SENTENCEVAR
+(The policeman signed to me to stop)
+  \item[3b] x1 sign argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 sign    prepobjrel/[to CNVAR] complrel/(opentoinf)SENTENCEVAR
+(The man to whom the policeman signed to stop)
+  \item[4a] x1 talk argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 talk    prep(1)objrel/[to NPVAR] prep(2)objrel/EMPTYVAR \\
+(He talked to his father)
+  \item[4b] x1 talk argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 talk    prep(1)objrel/[to CNVAR] prep(2)objrel/EMPTYVAR \\
+(The guy whom he talked to)
+  \item[5a] seem argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+seem     prepobjrel/[to NPVAR] complrel/(closedtoinf)SENTENCEVAR
+(He seems to me to be ill)
+  \item[5b] seem argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+seem     prepobjrel/[to CNVAR] complrel/(closedtoinf)SENTENCEVAR
+(The doctor to whom he seemed to be ill)
+  \end{description}
+\item[Remarks] 
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVerbPattern7
+\item[Task] Specify the relation names and check the categories of the VP-arguments 
+of verbs with vp012 and vp123, in case both arguments are full prepositional 
+phrases.
+\item[File] english:TC\_VP5.mrule (mrules45.mrule)
+\item[Semantics] --
+\item[Examples] (ordered by subrule)
+  \begin{description}
+  \item[1a] x1 talk argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 talk    prep(1)objrel/NPVAR prep(2)objrel/NPVAR \\
+(I talked to my father about his work)
+  \item[1b] x1 talk argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 talk    prep(1)objrel/NPVAR prep(2)objrel/CNVAR \\
+(The work about which I talked to my father)
+  \item[1c] x1 talk argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 talk    prep(1)objrel/CNVAR prep(2)objrel/NPVAR \\
+(The man to whom I talked about his work)
+  \item[1d] x1 talk argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 talk    prep(1)objrel/CNVAR prep(2)objrel/CNVAR \\
+(?)
+  \end{description}
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVerbPattern8
+\item[Task] Specify the relation names and check the categories of the VP-arguments 
+of verbs with vp012 and vp123, when the second VP argument (VAR2) must be realised 
+as a full prepositional 
+phrase and must follow the other argument in the VP (cf.\ patterns 6, 9 and 10) 
+\item[File] english:TC\_VP5.mrule (mrules45.mrule)
+\item[Semantics] --
+\item[Examples] (ordered by subrule)
+  \begin{description}
+  \item[1a] x1 regard argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 regard    objrel/NPVAR prepobjrel/[as (open)NPPROPVAR] \\
+(They regard her as a friend)
+  \item[1b] x1 regard argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 regard    objrel/CNVAR prepobjrel/[as (open)NPPROPVAR] \\
+(The girl whom they regard as a friend)
+  \item[2a] x1 change argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 change    objrel/NPVAR prepobjrel/[into (open)ADJPPROPVAR] \\
+(We changed the main colour from brown to red)
+  \item[2b] x1 change argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 change    objrel/CNVAR prepobjrel/[into (open)ADJPPROPVAR] \\
+(The colour which we changed from brown to red)
+  \item[3a] x1 give argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 give    objrel/NPVAR prepobjrel/[to NPVAR] \\
+(I gave the book to John)
+  \item[3b] x1 give argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 give    objrel/CNVAR prepobjrel/[to NPVAR] \\
+(The book which I gave to John)
+  \item[3c] x1 give argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 give    objrel/NPVAR prepobjrel/[to CNVAR] \\
+(The man to whom I gave the book)
+  \item[3d] x1 give argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 give    objrel/CNVAR prepobjrel/[to CNVAR] \\
+(?)
+  \item[4a] x1 talk (out) argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 talk (out)    objrel/NPVAR prepobjrel/[of (openIng)NPVAR] \\
+(They talked him out of doing it)
+  \item[4b] x1 talk (out) argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 talk (out)    objrel/CNVAR prepobjrel/[of (openIng)NPVAR] \\
+(? The man whom they talked out of drowning himself)
+  \item[5a] seem argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+seem    complrel/(closed)ADJPPROPVAR prepobjrel/[to NPVAR] \\
+(He seemed ill to me)
+  \item[5b] seem argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+seem    complrel/(closed)ADJPPROPVAR prepobjrel/[to CNVAR] \\
+(The man to whom he seemed ill)
+  \item[6a] seem argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+seem    complrel/(closed)NPPROPVAR prepobjrel/[to NPVAR] \\
+(He seemed a fool to me)
+  \item[6b] seem argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+seem    complrel/(closed)NPPROPVAR prepobjrel/[to CNVAR] \\
+(The man to whom he seemed a fool)
+  \item[7a] seem argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+seem    complrel/(otherclosed)PREPPPROPVAR prepobjrel/[to NPVAR] 
+(He seemed against the analysis to me)
+  \item[7b] seem argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+seem    complrel/(otherclosed)PREPPPROPVAR prepobjrel/[to CNVAR] 
+(The man to whom he seemed against the analysis)
+  \item[8a] x1 regard argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 regard    objrel/NPVAR prepobjrel/[as (otheropen)PREPPPROPVAR]
+(I regard him as without principles)
+  \item[8b] x1 regard argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 regard    objrel/CNVAR prepobjrel/[as (otheropen)PREPPPROPVAR]
+(The man whom I regard as without principles)
+  \end{description}
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVerbPattern9
+\item[Task] Specify the relation names and check the categories of the VP-arguments 
+of verbs with vp012 and vp123, when the first VP argument (VAR1) must be realised 
+as a full prepositional 
+phrase and must precede the other argument in the VP (cf.\ patterns 6, 8 and 10)
+\item[File] english:TC\_VP5.mrule (mrules45.mrule)
+\item[Semantics] --
+\item[Examples] (ordered by subrule)
+   \begin{description}
+  \item[1a] strike argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+strike    indobjrel/NPVAR prepobjrel/[as (closed)ADJPPROPVAR] \\
+(He struck me as pompous)
+  \item[1b] strike argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+strike    indobjrel/CNVAR prepobjrel/[as (closed)ADJPPROPVAR] \\
+(The man whom he struck as pompous)
+  \item[2a] x1 ask argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 ask    indobjrel/NPVAR prepobjrel/[about NPVAR] \\
+(I'll ask him about it)
+  \item[2b] x1 ask argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 ask    indobjrel/NPVAR prepobjrel/[about CNVAR] \\
+(The book which I asked him about)
+  \item[2c] x1 ask argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 ask    indobjrel/CNVAR prepobjrel/[about NPVAR] \\
+(The man whom I asked about it)
+  \item[2d] x1 ask argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 ask    indobjrel/CNVAR prepobjrel/[about CNVAR] \\
+(?)
+   \end{description}
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVerbPattern10
+\item[Task] Specify the relation names and check the categories of the VP-arguments 
+of verbs with vp012 and vp123, when the first VP argument (VAR1) must be realised 
+as a full prepositional 
+phrase and must follow the other argument in the VP (cf.\ patterns 6, 8 and 9)
+\item[File] english:TC\_VP5.mrule (mrules45.mrule)
+\item[Semantics] --
+\item[Examples] (ordered by subrule)
+   \begin{description}
+  \item[1a] x1 talk argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 talk    prep(1)objrel/EMPTYVAR prep(2)objrel/[about NPVAR] \\
+(He talked about a new car)
+  \item[1b] x1 talk argrel/VAR1 argrel/VAR2 $\rightarrow$ \\
+x1 talk    prep(1)objrel/EMPTYVAR prep(2)objrel/[about CNVAR] \\
+(The new car which he talked about)
+   \end{description}
+\item[Remarks] In the current implementation, the verbpattern going with this 
+rule is simply {\em synEMPTY\_PREPNP\/}. This is not enough, since there is an 
+extra demand, viz.\ that there are two prepkeys for the verb (prepkey2 is the 
+one that is realised). A sentence like {\em We asked EMPTY for a break\/} 
+would also have to be made by the same pattern, and there is only one prepkey 
+for the verb {\em ask\/}. Therefore, the example with {\em talk\/} given here 
+will have to be renamed into something like {\em synEMPTY\_PREP2NP\/}, and the 
+appropriate rule for the `one prep case' has to be added to the set of 
+verbpatterns.
+
+It must also be checked whether verbs 
+having the pattern synEMPTY\_PREPNP really always expect the correct VAR in the 
+VP to be EMPTY, for the same reasons as were stated in TVerbpattern4. In case 
+they expect the `wrong' VAR to be EMPTY, the thetavp of the verb may be 
+changed.
+
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TIdVerbPattern
+\item[Task] Vacuous transformation to let idioms get through this 
+transformation class
+\item[File] english:TC\_VP3.mrule (mrules48.mrule)
+\item[Semantics] --
+\item[Example] all idioms
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_ParticleSpelling}
+
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] Find out if a verb needs a particle, and if so, to spell it out.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TNoParticleInsertion
+\item[Task] To let verbs that do not take a particle pass this transformation 
+class
+\item[File] english:TC\_ParticleSpelling.mrule (mrules44.mrule)
+\item[Semantics] --
+\item[Example] buy $\rightarrow$ buy
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TParticleInsertion
+\item[Task] To spell out the particle for verbs that take one (as specified in 
+the attribute {\bf .particle}).
+\item[File] english:TC\_ParticleSpelling.mrule (mrules44.mrule)
+\item[Semantics] --
+\item[Example] turn $\rightarrow$ turn on
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\item[Remark] Contrary to what was said in doc.\ 153, all particles are put 
+directly behind the verb, even if there is a simple NP argument. The full 
+burden of accounting for the surface position of the particle is placed on the 
+Particle Hop Transformations (at the end of the next subgrammar) rather than 
+distributed over two transformation classes. 
+\end{description}
+
+\newpage
+\subsection{RC\_TempAdvVar}
+
+\begin{description}
+\item[Kind] Iterative Rule Class
+\item[Task] to introduce variables for time adverbials. The variable may be for 
+a sentence, a prepp, or an advp (perhaps nps will be added too). The rule class is 
+iterative, but the formulation of the rules is such that within the rule class 
+there is only one 
+ordering of var-introduction possible for the different adverbials in analysis.
+ This is to 
+prevent unnecessary ambiguities\footnote{At the time this document 
+was approved, the three advvar classes (tempadv, locadv, and sentadv) had been 
+merged again (cf. section 2). The rules are 
+written in such a way that in generation, every order of insertion (loc - temp 
+- sent) is possible, but in analysis tempadvvars are removed first.}. In 
+English, the surface order of tempadvs is the reverse of Dutch.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RrefvarInsertion
+\item[Task] To introduce a variable for a referential time adverbial that is 
+not retrospective
+\item[File] english:RC\_TempVar.mrule (mrules36.mrule)
+\item[Semantics] 
+\item[Example] x1 work $\rightarrow$ x1 work refVAR (He worked yesterday)
+\item[Remarks] No decision has been taken yet how disjunct complex referential 
+expressions must be introduced (Yesterday, he arrived at three o'clock)
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RdurvarInsertion
+\item[Task] To introduce a variable for a durational time adverbial 
+\item[File] english:RC\_TempVar.mrule (mrules36.mrule)
+\item[Semantics] 
+\item[Example] x1 work $\rightarrow$ x1 work durVAR (He worked for three hours)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RretrovarInsertion
+\item[Task] To introduce a variable for a referential time adverbial that is 
+retrospective
+\item[File] english:RC\_TempVar.mrule (mrules36.mrule)
+\item[Semantics] 
+\item[Example] x1 work $\rightarrow$ x1 work retroVAR (He has worked for three 
+hours)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RfreqvarInsertion
+\item[Task] To introduce a variable for a frequential time adverbial 
+\item[File] english:RC\_TempVar.mrule (mrules36.mrule)
+\item[Semantics] 
+\item[Example] x1 work $\rightarrow$ x1 work freqVAR (He works every day)
+\item[Remarks] This rule has NOT been added to the control expression and the 
+transfer yet!
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_SentAdvVar}
+
+\begin{description}
+\item[Kind] Iterative Rule class
+\item[Task] To introduce a variable for adverbial subordinate sentences and 
+prepps in 
+different positions and sentence or causal adverbs in 
+initial position. The conjunction may also be a preposition. No rules have 
+been written yet for abstract conjunctions. 
+
+The rules are in an iterative rule class, but have been written in such a way 
+that in analysis only one order of application is possible. This to prevent 
+unnecessary ambiguities\footnote{At the time this document 
+was approved, the three advvar classes (tempadv, locadv, and sentadv) had been 
+merged again (cf. section 2). The rules are 
+written in such a way that in generation, every order of insertion (loc - temp 
+- sent) is possible, but in analysis sentadvvars and conjsentvars are removed 
+last.}. In generation, the same surface order of sentadvs and conjsents should 
+occur as in the source language, esp.\ since it might reflect on the reference 
+of pronominal expressions ({\em The man$_{i}$ cried because he$_{i}$ had killed
+her - Because he$_{i,j}$ had killed her, the man$_{i}$ cried\/}). 
+However, since Dutch has a `middle' conjsent 
+while English does not, this is not always possible. In the current rule class, 
+all rules (covering all positions) are mapped onto all relevant rules of IL. 
+In the proposition substitution rules, however, there is a preference for 
+sentences of the same position to be mapped onto each other (see the 
+XPPROPtoCLAUSE subgrammar, RConjSentSubst, RFinalConjSentSubst, etc.).
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RConjSentVar
+\item[Task] To introduce a variable for an adverbial subordinate sentence or 
+sentential prepp in initial position.
+\item[File] english:RC\_AdvvarRules.mrule (mrules91.mrule)
+\item[Semantics]
+\item[Example] x1 leave $\rightarrow$ sentPREPPVAR x1 leave (Without having 
+warned us, he left)\\
+x1 put on x2 $\rightarrow$ advSENTENCEVAR x1 put on x2 (In order to read the 
+letter, she put on her glasses)
+\item[Remarks] The comma that is probably obligatory after the subordinate 
+sentence is not added here, but in the proposition substitution rules (see 
+the XPPROPtoCLAUSE subgrammar, RConjSentSubst and RConjPrepNPSubst).
+
+Although the rule class is iterative, there may be only one leftdislocrel. See 
+RSentAdvVar below for a possible problem.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RFinalConjSentVar
+\item[Task] To introduce a variable for an adverbial subordinate sentence or 
+sentential PREPP in final position.
+\item[File] english:RC\_AdvvarRules.mrule (mrules91.mrule)
+\item[Semantics]
+\item[Example] x1 leave $\rightarrow$ x1 leave sentPREPPVAR (He left without 
+having warned us)\\
+x1 put on x2 $\rightarrow$ x1 put on x2 advSENTENCEVAR (She put on her glasses
+in order to read the letter)
+\item[Remarks] The comma that may be present in analysis between the main 
+sentence and the subordinate sentence is not accounted for here, but 
+in the proposition substitution rules (see 
+the XPPROPtoCLAUSE subgrammar, RFinalConjSentSubst and RFinalConjPrepNPSubst).
+
+No precautions have been taken to check the position of the subordinate 
+sentence relative to a temporal sentence also present in the VERBPPROP. Given 
+the current formulation of the rules, temporal sentences (like tempadvs) always 
+precede other final sentences.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSentadvVar
+\item[Task] To introduce a variable for a causal or sentence advp in 
+initial position. 
+\item[File] english:RC\_AdvvarRules.mrule (mrules91.mrule)
+\item[Semantics]
+\item[Example] x1 leave $\rightarrow$ sentADVPVAR x1 leave (Probably, he left);
+\\
+x1 leave $\rightarrow$ causADVPVAR x1 leave (Therefore, he left)
+\item[Remarks] No rules have been written yet to account for other positions 
+of the adverbial; this may cause problems when there already is a sentence in 
+initial position, since there may be only one leftdislocrel. 
+In that case, the adverb should be put elsewhere, in 
+accordance with the values of its {\bf position} attribute. This has not been 
+done yet.
+
+The comma that is probably obligatory after the adverbial
+is not added here, but in the substitution rules (see 
+the CLAUSEtoSENTENCE subgrammar, RSentAdvSubst).
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSentpreppVar
+\item[Task] To introduce a variable for a prepositional causal or 
+sentence adverbial in initial position. 
+\item[File] english:RC\_AdvvarRules.mrule (mrules91.mrule)
+\item[Semantics]
+\item[Example] x1 leave $\rightarrow$ sentPREPPVAR x1 leave (For that reason, 
+he left)
+\item[Remarks] No rules have been written yet to account for other positions 
+of the prepp; this may cause problems when there already is a sentence in 
+initial position, since there may be only one leftdislocrel. 
+In that case, the prepp should be put elsewhere. Probably, the only possibility 
+is to put it sentence-finally (there is no {\bf position} attribute for prepps).
+ This has not been done yet.
+
+The comma that is probably obligatory after the prepp
+is not added here, but in the substitution rules (see 
+the CLAUSEtoSENTENCE subgrammar, RSentPreppSubst).
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_LocadvVar}
+
+\begin{description}
+\item[Kind] Iterative Rule Class
+\item[Task] To introduce a variable for a non-argument locative. The rule class 
+is iterative, but the rules have been written in such a way that only one order 
+of application is possible in analysis\footnote{At the time this document 
+was approved, the three advvar classes (tempadv, locadv, and sentadv) had been 
+merged again (cf. section 2). The rules are 
+written in such a way that in generation, every order of insertion (loc - temp 
+- sent) is possible, but in analysis tempadvvars are removed first, and then 
+locadvs.}. In generation, the same surface order of locadvs will be produced as 
+existed in the source language.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RlocadvVar
+\item[Task] To introduce a variable for a non-argument adverbial locative
+\item[File] english:RC\_AdvvarRules.mrule (mrules91.mrule)
+\item[Semantics]
+\item[Example] x1 paint x2 $\rightarrow$ x1 paint x2 locADVPVAR (He painted it 
+there)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RlocpreppVar
+\item[Task] To introduce a variable for a non-argument prepositional locative
+\item[File] english:RC\_AdvvarRules.mrule (mrules91.mrule)
+\item[Semantics]
+\item[Example] x1 paint x2 $\rightarrow$ x1 paint x2 locPREPPVAR (He painted it 
+at the club)
+\item[Remarks]
+\end{description}
+
+\item[Remarks] No rules have been written in English to account for other 
+surface poositions of locatives, e.g.\ in initial (leftdislocrel?) position. 
+They still have to be included.
+\end{description}
+
+\newpage
+\subsection{RC\_VoiceRules}
+
+\begin{description}
+\item[Kind] Obligatory Rule Class
+\item[Task] To give active or passive voice to the prop-structure, and to 
+change the subject in a by-object and the verb into a participle 
+in case of a passive. The rules make use of a 
+parameter, {\em voicepar\/}, so that a certain voice in one language is mapped 
+onto both voices 
+in another language with the original voice in the parameter. Then the 
+restriction holds that the rule with the `different' voice may apply only if 
+the rule with the same voice is impossible in the target language. E.g.\ when 
+a Dutch 
+sentence has an active voice, in English both voice rules are called, with the 
+parameter `active'. The passive rule (with parameter `active') may apply only 
+if the verb in question does not have an active form\footnote{By the time this 
+document had been approved, another case was allowed, viz.\ when the verb does 
+have an active form, but there is an EMPTY subject in the sentence. This is 
+especially useful for the translation of a Dutch AanActive: {\em Ik liet het 
+boek lezen\/} will then translate in {\em I let the book be read\/}. }. 
+This is explained in more 
+detail in doc.\ 315, {\em Voice in Dutch\/}, by Jan Odijk.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RActive
+\item[Task] To put a sentence in active voice, either because the original 
+sentence was active (in analysis and in generation; voice parameter = active)
+or because the English verb used in the translation cannot form a passive 
+(in generation only; voice parameter = passive)
+\item[File] english:RC\_VoiceRules.mrule (mrules43.mrule)
+\item[Semantics]
+\item[Example] x1 sing x2 $\rightarrow$ x1 sing x2 (John sang an aria)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RPassive1
+\item[Task] To put a sentence in passive voice, either because the original 
+sentence was passive (in analysis and in generation; voice parameter = passive)
+or because the English verb used in the translation cannot form an active
+(in generation only; voice parameter = active). The subject of the sentence, 
+which is an NP/CNVAR or an EMPTYVAR, is put in a by-object. The first verb is 
+changed into a participle. The auxiliary of the passive will be introduced 
+later (in the clause-formation rules).
+\item[File] english:RC\_VoiceRules.mrule (mrules43.mrule)
+\item[Semantics]
+\item[Example] x1 sing x2 $\rightarrow$ sung x2 by x1 (The aria was sung by John)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RPassive2
+\item[Task] To put a sentence in passive voice, either because the original 
+sentence was passive (in analysis and in generation; voice parameter = passive)
+or because the English verb used in the translation cannot form an active
+(in generation only; voice parameter = active). The subject of the sentence, 
+which is a wh or yesno SENTENCEVAR, is put in a by-object. The first verb is 
+changed into a participle. The auxiliary of the passive will be introduced 
+later (in the clause-formation rules).
+\item[File] english:RC\_VoiceRules.mrule (mrules43.mrule)
+\item[Semantics]
+\item[Example] ? x1 puzzle x2 $\rightarrow$ puzzled x2 by x1 (I was 
+puzzled by what to do next)\\
+NB: this may be incorrect English: Longman only gives {\em I 
+was puzzled (about) what to do next\/}, suggesting only that there is an 
+adjective {\em puzzled (about)\/}, but not a verb.
+\item[Remarks] Perhaps this rule is not needed: all examples found are either 
+doubtful English or may well be simple NPs, like in {\em I was surprised by 
+$_{NP}$[what you told me] \/}.
+\end{description}
+
+\vspace{1 cm}
+\item[Remarks] \mbox{}
+  \begin{itemize}
+  \item The voice rules are ordered crucially before TC\_ReflexiveSpelling and 
+TC\_\-PossAdjSpelling, because those transformation classes need a subject as 
+antecedent. In case of a passive structure, the subject has been moved to a by-
+phrase, and hence reflexives or other subject-bound anaphora cannot occur.
+  \item No rules have been written to account for middle voice ({\em This book 
+sells well\/}). Analysis of the middle voice construction is not conclusive 
+enough to implement any well-defined strategy.
+  \end{itemize}
+\end{description}
+
+\newpage
+\subsection{TC\_ReflexiveSpelling}
+
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] To spell out the reflexive pronoun for verbs that are inherently 
+reflexive. It is assumed that all reflexives in English take the subject of the 
+verb as antecedent (cf.\ Dutch, were {\em zich voordoen\/} is considered an 
+ergative, and hence takes the object as antecedent). The number, person and 
+gender of the subject determine the actual form of the reflexive. Note what was 
+said in RStartVPPROP000: the rules only deal with VAR subjects.
+
+Also, it is assumed that 
+English does not have any inherently reciprocal reflexives. Perhaps the 
+attribute 
+value {\bf reciprocal} may still be used in English, to indicate that a verb
+may delete the `reciprocal' argument: {\em They met each other $\rightarrow$ 
+they met\/} (again cf.\ Dutch, 
+where the verb {\em ontmoeten\/} takes an obligatory reciprocal if no other 
+argument is specified: {\em Zij ontmoetten elkaar\/}). Note that argument 
+reflexives and reciprocals are not covered by 
+this rule class. They are dealt with in TC\_ArgReflSpelling and 
+RC\_ReciprocalSpelling, which are in the next subgrammar.
+
+In English, a difference is made between direct object reflexives (the usual 
+case) and indirect object reflexives. Usually, the reflexive is put in direct 
+object position, but indirect object reflexives receive an indobjrel
+(only example so far: {\em have\/}: they had themselves a ball). 
+
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TNoReflInsertion
+\item[Task] To let verbs which are not reflexive (or perhaps reciprocal) pass 
+this transformation class
+\item[File] english:TC\_ReflexiveSpelling.mrule (mrules42.mrule)
+\item[Semantics] --
+\item[Example] x1 swim $\rightarrow$ x1 swim
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TObjReflInsertion1
+\item[Task] To spell out the reflexive for ordinary inherently reflexive verbs, 
+when the subject antecedent is an NPVAR
+\item[File] english:TC\_ReflexiveSpelling.mrule (mrules42.mrule)
+\item[Semantics] --
+\item[Example] x1 perjure $\rightarrow$ x1 perjure himself/yourselves/oneself 
+etc. (He perjured himself)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TObjReflInsertion2
+\item[Task] To spell out the reflexive for ordinary inherently reflexive verbs, 
+when the subject antecedent is a CNVAR
+\item[File] english:TC\_ReflexiveSpelling.mrule (mrules42.mrule)
+\item[Semantics] --
+\item[Example] x1 perjure $\rightarrow$ x1 perjure himself/herself 
+etc. (The man who perjured himself)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TIndObjReflInsertion1
+\item[Task] To spell out the reflexive for an inherently indirect object 
+reflexive verb ({\em have\/}), when the subject antecedent is an NPVAR
+\item[File] english:TC\_ReflexiveSpelling.mrule (mrules42.mrule)
+\item[Semantics] --
+\item[Example] x1 have x2 $\rightarrow$ x1 have himself/yourselves/oneself x2
+etc. (They had themselves a ball)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TIndObjReflInsertion2
+\item[Task] To spell out the reflexive for an inherently indirect object 
+reflexive verb ({\em have\/}), when the subject antecedent is a CNVAR
+\item[File] english:TC\_ReflexiveSpelling.mrule (mrules42.mrule)
+\item[Semantics] --
+\item[Example] x1 have x2 $\rightarrow$ x1 have himself/itself x2
+etc. (The people who had themselves a ball)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\item[Remarks] \mbox{}
+  \begin{itemize}
+  \item In doc.\ 150, it was assumed that there was one transformation class, 
+TC\_BoundAnaphorCheck. In the current implementation, this one class has been 
+divided into two parts, one for reflexives, and one for idiom possessives (see 
+below)
+  \item This transformation class is ordered crucially after the voice rules. 
+Reflexives are allowed only if there still is a subject, so passive structures 
+cannot have a reflexive. Also, the transformations must be ordered before 
+object-to-subject raising.
+  \end{itemize}
+\end{description}
+
+\newpage
+\subsection{TC\_PossAdjSpelling}
+
+\begin{description}
+\item[Kind] Optional Transformation, followed by Obligatory Filter
+\item[Task] Check whether there is an object NP with a determiner NPVAR/CNVAR 
+which is identical to the subject NPVAR/CNVAR, and spell the determiner out 
+as a full 
+adjectival possessive pronoun (POSSADJ), taking the subject as the antecedent.
+This will only occur in case the object NP has been introduced by an idiom rule
+(non-idioms still have VARs as object).
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TPossAdjSpelling1
+\item[Task] To spell out a determiner NPVAR/CNVAR in an object NP 
+(introduced by an idiom rule) as a full 
+adjectival possessive pronoun (POSSADJ), taking the subject as the antecedent.
+\item[File] english:TC\_ReflexiveSpelling.mrule (mrules42.mrule)
+\item[Semantics] --
+\item[Example] x1 lose x1 patience $\rightarrow$ x1 lose his/my/their patience
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] FPossAdjSpelling1
+\item[Task] To check that all determiner NPVAR/CNVARs in an object NP 
+(introduced by an idiom rule) are realised as full 
+adjectival possessive pronouns (POSSADJ) in generation.
+\item[File] english:TC\_ReflexiveSpelling.mrule (mrules42.mrule)
+\item[Example] --
+\item[Remarks] This filter is needed because the transformation is optional.
+\end{description}
+
+\vspace{1 cm}
+\item[Remarks] \mbox{}
+  \begin{itemize}
+  \item In doc.\ 150, it was assumed that there was one transformation class, 
+TC\_BoundAnaphorCheck. In the current implementation, this one class has been 
+divided in two parts, one for reflexives (see above), and one for idiom 
+possessives.
+  \item This transformation class is ordered crucially after the voice rules. 
+Idiomatic PossAdjs are allowed only if there still is a subject, so passive 
+structures 
+cannot have a PossAdj. Also, the transformation must be ordered before 
+object-to-subject raising.
+  \end{itemize}
+\end{description}
+
+\newpage
+\subsection{TC\_AktionsartCalc}
+
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] To calculate the value for the attribute {\em aktionsarts\/} of the 
+VERBPPROP on basis of properties of the main VERB (attribute {\em classes\/})
+and properties of the arguments in the VP. There are 13 rules:
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] taktactivity1
+\item[Task] To assign the value {\em activity\/} to the Aktionsart attribute of 
+the VERBPPROP. This rule is for non-ergative verbs with type 
+{\em durativeclass}. No object or prepobject argument is allowed, unless it 
+is an EMPTYVAR or part of an idiom.
+In this rule a subject argument is allowed (but not needed) without 
+restrictions.
+\item[File] english:TC\_AktionsartCalc.mrule (mrules81.mrule)
+\item[Semantics] --
+\item[Example] x1 sleep, x1 work, x1 write, x1 walk, rain, x1 eat EMPTY
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] taktactivity2
+\item[Task] To assign the value {\em activity\/} to the Aktionsart attribute of 
+the VERBPPROP. This rule is for verbs with type {\em movementclass}.
+In this rule a subject, object, indobject  or prepobject argument are
+allowed (but not needed) and there are no restrictions 
+on properties of these arguments. A directional argument is not allowed except 
+for directional arguments that are part of an idiom or EMPTY.
+\item[File] english:TC\_AktionsartCalc.mrule (mrules81.mrule)
+\item[Semantics] --
+\item[Example] x1 push x2, x1 push, x1 go
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] taktactivity3
+\item[Task] To assign the value {\em activity\/} to the Aktionsart attribute of 
+the VERBPPROP. This rule is for non-ergative verbs with type 
+{\em durativeclass\/} 
+and non-specified quantity object or prepobject arguments that 
+are not CNVAR or EMPTYVAR nor part of an idiom.
+In this rule a subject argument is allowed (but not needed) without
+restrictions.
+\item[File] english:TC\_AktionsartCalc.mrule (mrules81.mrule)
+\item[Semantics] --
+\item[Example] x1 eat sandwiches, x1 write letters, x1 build houses, 
+x1 play music
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] taktactivity4
+\item[Task] To assign the value {\em activity\/} to the Aktionsart attribute of 
+the VERBPPROP. This rule is for verbs with type {\em movementclass}.
+ In this rule a subject, object, indobject  or prepobject argument are
+allowed (but not needed) and there are no restrictions 
+on properties of these arguments. A non-specified quantity directional argument
+must be present that is not EMPTY or part of an idiom.
+\item[File] english:TC\_AktionsartCalc.mrule (mrules81.mrule)
+\item[Semantics] --
+\item[Example] x1 push x2 to houses, x1 goes to clients(?)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] taktactivity5
+\item[Task] To assign the value {\em activity\/} to the Aktionsart attribute of 
+the VERBPPROP. This rule is for non-ergative (3-place) verbs with type {\em 
+movementclass\/} and a non-specified quantity object or prepobject argument 
+that is not part of an idiom or EMPTY or CNVAR,
+and a specified quantity directional argument.
+In this rule a subject argument is allowed (but not needed) without
+restrictions.
+\item[File] english:TC\_AktionsartCalc.mrule (mrules81.mrule)
+\item[Semantics] --
+\item[Example] x1 push carts to the house
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] taktactivity6
+\item[Task] To assign the value {\em activity\/} to the Aktionsart attribute of 
+the VERBPPROP. This rule is for ergative verbs with type {\em durativeclass} or 
+verbs with type {\em iterativeclass}.
+In this rule a subject argument is allowed (but not needed) without 
+restrictions.
+\item[File] english:TC\_AktionsartCalc.mrule (mrules81.mrule)
+\item[Semantics] --
+\item[Example] boil x1, x1 hit, x1 knock
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] taktaccomplishment1
+\item[Task] To assign the value {\em accomplishment\/} to the Aktionsart 
+attribute of the 
+VERBPPROP. This rule is for non-ergative verbs with type {\em 
+durativeclass\/} and specified quantity object or prepobject arguments 
+(including CN) that are not EMPTY or part of an idiom.
+In this rule a subject argument is allowed (but not needed) without
+restrictions.
+\item[File] english:TC\_AktionsartCalc.mrule (mrules81.mrule)
+\item[Semantics] --
+\item[Example] x1 eat an apple, x1 write a letter, x1 build thirty houses
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] taktaccomplishment2
+\item[Task] To assign the value {\em accomplishment\/} to the Aktionsart 
+attribute of the 
+VERBPPROP. This rule is for (non-ergative) 3-place verbs with type {\em 
+movementclass\/} and specified quantity object or prepobject arguments that 
+are not EMPTY or part of an idiom, and a specified quantity directional 
+argument.
+There are no restrictions on the subject.
+\item[File] english:TC\_AktionsartCalc.mrule (mrules81.mrule)
+\item[Semantics] --
+\item[Example] x1 push the cart to the house
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] taktaccomplishment3
+\item[Task] To assign the value {\em accomplishment\/} to the Aktionsart 
+attribute of the 
+VERBPPROP. This rule is for 2-place verbs with type {\em movementclass}.
+In this rule subject, object, indobject  or prepobject arguments are
+allowed (but not needed) and there are no restrictions 
+on properties of these arguments. A specified quantity directional argument
+must be present that is not EMPTY or part of an idiom.
+\item[File] english:TC\_AktionsartCalc.mrule (mrules81.mrule)
+\item[Semantics] --
+\item[Example] x1 go to Groningen
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] taktachievement1
+\item[Task] To assign the value {\em achievement\/} to the Aktionsart attribute 
+of the VERBPPROP. This rule is for verbs with type {\em momentaryclass}.
+In this rule arguments are allowed (but not needed) without restrictions.
+\item[File] english:TC\_AktionsartCalc.mrule (mrules81.mrule)
+\item[Semantics] --
+\item[Example] x1 die, x1 reach the top, x1 explode
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] taktstative1
+\item[Task] To assign the value {\em stative\/} to the Aktionsart attribute of 
+the VERBPPROP. This rule is for verbs with type {\em stativeclass}.
+In this rule arguments are allowed (but not needed) without restrictions.
+\item[File] english:TC\_AktionsartCalc.mrule (mrules81.mrule)
+\item[Semantics] --
+\item[Example] x1 love x2, x1 possess x2, x1 be x2
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] taktstative2
+\item[Task] To assign the value {\em stative\/} to the Aktionsart attribute of 
+the VERBPPROP. This rule is for verbs with type {\em dynstativeclass}.
+In this rule arguments are allowed (but not needed) without restrictions.
+\item[File] english:TC\_AktionsartCalc.mrule (mrules81.mrule)
+\item[Semantics] --
+\item[Example] x1 lie, x1 sit
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\item[Remark] In doc.\ 155, it was assumed that Aktionsart calculation could be 
+done in the Startrules. However, the rules are complex, and crucially need 
+information about the kind of arguments the verb takes, not just about their 
+number. Therefore, the calculation had to be postponed to at least after the 
+pattern rules and the introduction of reflexives. More information on the 
+subject can be found in docs.\ 53, {\em Translation of Temporal Expressions in 
+Rosetta3\/}, and 263, {\em Documentation on the rules for the translation of 
+temporal expressions in Rosetta3, part I\/}, both by Lisette Appelo.
+\end{description}
+
+\end{document}

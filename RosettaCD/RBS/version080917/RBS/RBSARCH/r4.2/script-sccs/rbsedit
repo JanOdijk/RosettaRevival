@@ -1,0 +1,114 @@
+#!/bin/sh
+#
+# (C) Philips Electronics N.V. 1994
+# All rights are reserved. Reproduction in whole or in part is prohibited
+# without the written consent of the copyright owner.
+#
+# File         : actions.sh
+#
+# Description  : This example shell script is started by DocBrowser if the user
+#                activates an action (e.g. View, Print) on selected documents.
+#
+#                The first parameter of this script is the name of the action
+#                (e.g. View, Print) and the next arguments are the document
+#                locations of the selected documents in DocBrowser.
+#                This example shell script offers support for the actions
+#                "View" and Print" for the document types "txt" (ASCII),
+#                "wp" (WordPerfect), "fm" (FrameMaker), and "ps" (PostScript).
+#                
+#
+#
+# Determine platform
+PLATFORM=`uname -s`
+if [ "$PLATFORM" = "SunOS" ]
+then
+  ARCH=sun4
+fi
+if [ "$PLATFORM" = "HP-UX" ]
+then
+  ARCH=hp700
+fi
+
+
+#action="$1"
+#shift 1
+#
+#while [ "$#" != "0" ]
+#do
+	location="$1"
+	shift 1
+#	if [ "$action" = "View" ]
+#	then
+  		case "$location" in
+			*.ps|*.eps|*.epsi)
+				ghostview "$location"				
+				;;
+			*.wp|*.fwp|*.wp51)
+				if [ "$ARCH" = "sun4" ]
+				then
+				  xwp "$location"
+				else
+				  wp "$location"
+				fi
+				;;
+			*.doc|*.book|*.fm)
+				LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/cadappl/X11R4/usr/lib
+				export LD_LIBRARY_PATH
+				FM_PROGNAME=$HOME/cadbin/imaker
+				export FM_PROGNAME
+#				copy_file=`basename "${location}`
+#				cp -p ${location} "/tmp/${copy_file}"
+#				chmod 777 "/tmp/${copy_file}"
+				if [ "$ARCH" = "sun4" ]
+				then
+#				  clclient -f "${location}"
+				  fmclient -f "${location}"
+				else
+				  /usr/cst/sb_1.1/bin/clclient -f "$location"
+				fi
+				;;
+			*.dvi)
+				xpreview "$location"
+				;;
+			*)
+				PAGER=${PAGER:-more}
+				xterm -e sh -c "$PAGER \"$location\"; echo; echo \"Please return to exit\"; read garbage"				
+				;;
+		esac
+#	fi
+
+#	if [ "$action" = "Print" ]
+#	then
+#  		case "$location" in
+#			*.ps|*.eps|*.epsi)
+#				if [ "$ARCH" = "sun4" ]
+#				then
+#				  lpr "$location"
+#				else
+#				  lp "$location"
+#				fi
+#				;;
+#			*.wp|*.fwp|*.wp51)
+#				if [ "$ARCH" = "sun4" ]
+#				then
+#				  xwp "$location"
+#				else
+#				  wp "$location"
+#				fi							#
+#				;;
+#			*.doc|*.book|*.fm)
+#				fmprint -i "$location"				
+#				;;
+#			*)
+#				if [ "$ARCH" = "sun4" ]
+#				then
+#				  lpr "$location"
+#				else
+#				  lp "$location"
+#				fi							#
+#				;;
+# 		esac
+#	fi
+#done
+
+exit 0

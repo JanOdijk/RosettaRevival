@@ -1,0 +1,972 @@
+MRULEDOC17.tex
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.Mrules.English}
+   \RosTitle{Rosetta3 English M-rules: IdentPropFormation}
+   \RosAuthor{Margreet Sanders}
+   \RosDocNr{396}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{English, documentation, Mrules, Identificational Propositions}
+   \MakeRosTitle
+%
+%
+
+\section{IdentPropFormation}
+The current document describes the contents of 
+the subgrammar that forms Identificational Propositions, {\bf 
+IdentPropFormation}.
+This subgrammar is an alternative to two other subgrammars that form 
+propositions around nominal constituents, viz.\ {\bf ExistPropFormation} and {
+\bf NPPROPformation}. These two grammars are described in docs.\ 395, {\em 
+Rosetta3 English Mrules: ExistPropFormation\/}, and 392, {\em Rosetta3 English 
+Mrules: NPPROPformation\/}, respectively. 
+
+The export of all three grammars is 
+an NPPROP, to be used as head of the XPPROPtoCLAUSE subgrammar, where the 
+copula {\em be\/} is introduced and the NPPROP-node is pruned again. 
+The difference between the grammars is to be 
+found in their heads and import: in {\bf IdentPropFormation}, the head is an 
+NPVAR (or a SENTENCEVAR in special occasions), which is combined with a 
+specific subject NP (a member of the set {\em it, this, that, they, these, 
+those\/}) in the startrules (or, again in special occasions, with an NPVAR). 
+In {\bf ExistPropFormation}, the head of the 
+subgrammar is an indefinite NPVAR, which is turned into an NPPROP all 
+on its own. A dummy subject {\em There\/} will be inserted later, 
+in the SubjOK rules of the sentence grammar. 
+In {\bf NPPROPformation\/}, the head of the subgrammar is a 
+full NP, which combines with any subject variable.
+
+The three subgrammars forming nominal propositions are not isomorphic with any 
+other subgrammars, and contain only the minimum amount of rules necessary 
+to make the 
+NPPROP an acceptable input to the XPPROPtoCLAUSE subgrammar. Next to the 
+startrules, there only are a few rule classes to provide the various variables 
+needed. In doc.\ 150, {\em Subgrammars of English\/}, in which the general 
+lay-out of the Rosetta3 system as devised in the definition phase of the 
+project was presented, it was assumed that the copula {\em be\/} would be 
+the head of the IdentPropFormation subgrammar; this was necessary 
+because the proposition was to be input to the VERBPPROPtoCLAUSE subgrammar
+(no general XPPROPtoCLAUSE subgrammar was planned at that time). Also, it was 
+thought that the subgrammar would contain PreVPmodrules. However, these rules 
+have not even been written for the VERBPPROPformation subgrammar, and they are 
+not included here either.
+
+As any subgrammar, {\bf IdentPropFormation} consists of 
+a number of rule classes. A rule class in its turn
+consists of a number of rules. The relative ordering of the rules in the
+(sub)grammar is indicated by a {\em control expression}. A summary of this
+control expression (i.e.\ a listing of the ordering of the rule classes, 
+without explicit mentioning of the rules themselves) is also included here, 
+and the initial (= head) and export categories are given. 
+
+In the section on the rules, only the rule names are given, 
+but not the exact rule formulation. What is attempted 
+is to provide a detailed overview of the workings of the subgrammar, and 
+how the different rule classes achieve this. For every rule, an 
+example is given. If it is uncertain whether the example is correct (either 
+because it may not be an example of the phenomenon in question, or because it 
+may not be correct English), it is preceded by a question mark. Note that all 
+explanation of rules and transformations is given from a generative viewpoint
+only, unless explicitly stated otherwise. Often, the information given in this 
+document is based strongly on the comment already present in the documentation 
+of the rules themselves. Discrepancies between what is stated here and what is 
+said in the rule itself are usually caused by the fact that the rule file has 
+not  been updated, although insights have changed. The semantics of the rules 
+has been left unspecified in the current documentation, since it is not at all 
+clear.
+
+Finally note that the rules described in this document have NOT been tested 
+properly. English analysis is not possible yet (there is no Surface Parser), and 
+English generation has only been tested in as far as the construction was the 
+translation of a Dutch sentence to be tested.
+
+\newpage
+\section{Subgrammar Specification}
+The subgrammar definition can be found in the file which also contains all the 
+rules of this subgrammar, {\bf IdentPropFormation.mrule}, which is 
+{\em mrules98.mrule\/}.
+
+\begin{verbatim}
+%SUBGRAMMAR IdentPropFormation
+
+
+   ( RC_StartIdentificational )
+.  { RC_IdentTempAdvVar }
+.  { RC_IdentSentAdvVar }
+.  { RC_IdentLocAdvVar }
+
+\end{verbatim}
+
+\begin{description}
+  \item[Head]  NPVAR \ \ \ \ BASIC EXPRESSION\\
+               SENTENCEVAR \ \ \ \ BASIC EXPRESSION
+  \item[Export] NPPROP
+  \item[Import] NP, NPVAR, PREPPVAR, ADVPVAR, SENTENCEVAR
+\end{description}
+
+\newpage
+\section{Rules and Transformations}
+
+\subsection{RC\_StartIdentificational}
+\begin{description}
+\item[Kind] Obligatory Rule Class
+\item[Task] To build an NPPROP around an NPVAR and its subject argument, 
+putting the NPVAR in {\em idrel\/} (there is no predicate). 
+Also, the Aktionsarts of the NPPROP are 
+set to {\em [stative]\/}; no separate transformation classs is needed to 
+determine this standard value. The rest of the NPPROP attributes remains at 
+default value. If the subject is a full NP, its {\bf
+superdeixis} value is reset to {\em omegadeixis\/}, and the attribute {\bf 
+generic} is reset to {\em omegageneric\/}.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RDemproIdentSg
+\item[Task] To make an NPPROP for an NPVAR taking as subject one of the NPs {
+\em it, this, that\/}. The NPVAR may not be the word {\em what\/} (see 
+RDemproWhIdentSg). In case the NPVAR has a PERSPRO as its head, it may be
+plural; otherwise, it must be singular.
+\item[File] english:IdentPropFormation.mrule (mrules98.mrule)
+\item[Semantics]
+\item[Example] x1 + this $\rightarrow$ this x1 (This is my brother, This is us, 
+This is who)
+\item[Remarks] Wh-shift will take place in the sentence grammar.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RDemproIdentPl
+\item[Task] To make an NPPROP for an NPVAR taking as subject one of the NPs {
+\em it, this, that\/}. The NPVAR may not be the word {\em what\/} (see 
+RDemproWhIdentPl). The NPVAR must be plural (and not a PERSPRO; see the 
+previous rule); thus, the singular subject is replaced by a plural form, {
+\em they, these, those\/}. The replacement of the singular subject by a plural 
+one is needed because Dutch only has singular basic expressions: {\em het, dit, 
+dat\/}. These cannot be called plural, because they never behave as such with 
+other words than the verb {\em zijn\/}:  $^*${\em Wat bewijzen dat?\/}. Mapping 
+of the English plural forms to the Dutch singular ones might cause 
+ambiguities.
+\item[File] english:IdentPropFormation.mrule (mrules98.mrule)
+\item[Semantics]
+\item[Example] x1 + this $\rightarrow$ these x1 (These are my brothers, These 
+are who(pl) )
+\item[Remarks] Wh-shift will take place in the sentence grammar. For comment on 
+the ambiguity of {\em They\/}, see below under RPersproIdent.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RDemproWhIdentSg
+\item[Task] To make an NPPROP for an NPVAR heading the word {\em what\/} and 
+taking as subject one of the NPs {\em it, this, that\/}. 
+\item[File] english:IdentPropFormation.mrule (mrules98.mrule)
+\item[Semantics]
+\item[Example] x1 + this $\rightarrow$ this x1 (This is what)
+\item[Remarks] Wh-shift will take place in the sentence grammar.\\
+This rule might have been collapsed with the ordinary singular rule. However, 
+because the plural WhIdent rule cannot be collapsed (see below), it was decided 
+to keep all WhIdent rules separate, even in IL.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RDemproWhIdentPl
+\item[Task] To make an NPPROP for an NPVAR heading the word {\em what\/} and 
+taking as subject one of the NPs {\em they, these, those\/}. However, since the 
+basic expressions provided by translation are the singular forms {\em it, this, 
+that\/} (see above, in RDemproIdentPl), the plural forms must be explicitly 
+created here.
+\item[File] english:IdentPropFormation.mrule (mrules98.mrule)
+\item[Semantics]
+\item[Example] x1 + that $\rightarrow$ those x1 (Those are what)
+\item[Remarks] Wh-shift will take place in the sentence grammar.\\
+This rule cannot be collapsed with the ordinary plural rule, because both the 
+NPVAR heading {\em what\/} and the subject NP are singular, and still it has to 
+be remembered somehow that a plural has to be formed. This is done now by 
+having a specific plural rule, and mapping it only to other WhIdentPlural rules 
+in other languages.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RPersproIdent
+\item[Task] To make an NPPROP for a definite NPVAR taking as subject 
+an NPVAR heading a PERSPRO. 
+\item[File] english:IdentPropFormation.mrule (mrules98.mrule)
+\item[Semantics]
+\item[Example] [x1]$_{def}$ + [x2]$_{perspro}$ $\rightarrow$ x2 x1 (He is my 
+brother, They are the new champions)
+\item[Remarks] Sentences with {\em They\/} are ambiguous: \\
+{\em They are the new champions\/} $\rightarrow$ \\
+1) {\em Zij zijn de nieuwe kampioenen\/} (by the present rule)\\
+2) {\em Het zijn de nieuwe kampioenen\/} (by RDemproIdentPl).\\
+This still seems to be needed to be able to deal with cases like {\em They are 
+my
+shoes, not yours\/}, translating to {\em Het zijn mijn schoenen, niet de jouwe 
+}, and not to {\em Zij zijn mijn schoenen...\/}. Perhaps this ambiguity may be 
+solved by using the attribute {\em animate\/}: {\em They\/} + animate NP = 
+PERSPRO, {\em They\/} + inanimate NP = DEMPRO.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSentIdent
+\item[Task] To make an NPPROP for a subordinate SENTENCEVAR taking as subject 
+a definite NPVAR.
+\item[File] english:IdentPropFormation.mrule (mrules98.mrule)
+\item[Semantics]
+\item[Example] [x1]$_{S}$ + [x2]$_{defNP}$ $\rightarrow$ x2 x1 (The problem is 
+that he has taken the map with him)
+\item[Remarks] 
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_IdentTempAdvVar}
+\begin{description}
+\item[Kind] Iterative Rule Class
+\item[Task] To introduce a variable for a time adverbial. The variable may be 
+for a sentence, a prepp or an advp. The rule class is iterative, but only one 
+rule has been written (no retrospective or durational temporals are allowed as 
+yet), and this one rule may be applied only once. Perhaps other rules are 
+needed too: {\em This was my hideaway during the war; ? That has always been 
+our main motive}.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdentRefVarInsert
+\item[Task] To introduce a variable for a referential time adverbial that is 
+not retrospective.
+\item[File] english:IdentPropFormation.mrule (mrules98.mrule)
+\item[Semantics]
+\item[Example] This x1 + refVAR $\rightarrow$ This x1 refVAR (This is my 
+brother)
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_IdentSentAdvvar}
+\begin{description}
+\item[Kind] Iterative Rule Class
+\item[Task] To introduce variables for adverbial subordinate sentences in 
+different positions, and sentence or causal adverbials in initial position. The 
+conjunction may also be a preposition. No rules have been written yet for 
+abstract conjunctions.
+
+The rules are in an iterative class, but have been written in such a way that 
+only one order of application is possible. This to prevent unnecessary 
+ambiguities in analysis. Also, the IL strategy in mapping the different 
+conjsent rules is to preserve the surface order used in the source language as 
+much as possible, because it may be of importance for pronominal reference.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdentConjsentVar
+\item[Task] To introduce a variable for an adverbial subordinate sentence (or 
+sentential PREPP) in initial (leftdislocrel) position.
+\item[File] english:IdentPropFormation.mrule (mrules98.mrule)
+\item[Semantics]
+\item[Example] \mbox{}\\
+x1 x2 + advSENTENCEVAR $\rightarrow$ advSENTENCEVAR x1 x2\\
+(Although we do not live here yet, we are your new neighbours)\\
+x1 x2 + advPREPPVAR $\rightarrow$ advPREPPVAR x1 x2 candidate\\
+(Without wanting to make you nervous, you are our best candidate)
+\item[Remarks] No comma is introduced at the end of the adverbial sentence, 
+although it is probably obligatory. This will have to be added.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdentFinalConjsentVar
+\item[Task] To introduce a variable for an adverbial subordinate sentence (or 
+sentential PREPP) in final (postsentadvrel) position.
+\item[File] english:IdentPropFormation.mrule (mrules98.mrule)
+\item[Semantics]
+\item[Example] \mbox{}\\
+x1 x2 + advSENTENCEVAR $\rightarrow$ x1 x2 advSENTENCEVAR \\
+(We are your new neighbours, although we do not live here yet)\\
+x1 x2 + advPREPPVAR $\rightarrow$ x1 x2 advPREPPVAR \\
+(You are our best candidate, without considering all the details of your 
+application)
+\item[Remarks] 
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdentSentadvVar
+\item[Task] To introduce a variable for a causal or sentence adverbial or a 
+causal prepp in 
+initial position. No rules have been written to account for any other position 
+of the adverbial, or to relate its position to that of an adverbial or temporal 
+sentence also present in the clause.
+\item[File] english:IdentPropFormation.mrule (mrules98.mrule)
+\item[Semantics]
+\item[Example] \mbox{}\\
+x1 x2 + sentADVVAR $\rightarrow$ sentADVVAR x1 x2\\
+(Probably, he is (will be?) our new manager)\\
+x1 x2 + causPREPPVAR $\rightarrow$ causPREPPVAR x1 x2\\
+(For that reason, we are the champions)
+\item[Remarks] No comma is introduced at the end of the adverbial, 
+although it is probably obligatory. This will have to be added.
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_IdentLocAdvVar}
+\begin{description}
+\item[Kind] Iterative Rule Class
+\item[Task] To introduce variables for non-argument locatives (ADVP or PREPP) 
+at a fixed position (locadvrel) following the NP. No rules have been 
+written to account for any other position 
+of the locative, or to relate its position to that of an adverbial or temporal 
+sentence also present in the clause.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdentLocAdvVar
+\item[Task] To introduce a variable for a non-argument locative ADVP 
+\item[File] english:IdentPropFormation.mrule (mrules98.mrule)
+\item[Semantics]
+\item[Example] That x1 + locADVVAR $\rightarrow$ That x1 locADVVAR
+(That is our problem here)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdentLocPreppVar
+\item[Task] To introduce a variable for a non-argument locative PREPP
+\item[File] english:IdentPropFormation.mrule (mrules98.mrule)
+\item[Semantics]
+\item[Example] That x1 + locADVVAR $\rightarrow$ That x1 locADVVAR
+(That is the problem in this country)
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\end{document}
+
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

@@ -1,0 +1,939 @@
+\documentstyle{article}
+\begin{document}
+\parindent 0cm
+\tableofcontents
+\section{Introduction}
+In this document we will describe the configuration management system RBS. RBS
+is not a professional package. It was written at Philips Research Labs in a
+machine translation project as a tool for a very interdisciplinary team to
+manage their software. In the course of the project it
+became clear that it would have been impossible to develop the huge machine
+translation system without RBS, although RBS was far from perfect. The most
+important reason for the success of RBS was, at least in my opinion, that it
+imposed a formal procedure on the software development trajectory. In each
+phase of the development it was very clear to the developer what actions he had
+to undertake. It should be said, however, that another reasons for its success
+was the fact that the people who wrote RBS were always available to provide some
+kind of work-around if things went wrong.
+
+It would be a good idea  to give one member of your project team the honor
+to be `archive manager'. It would be the task of the archive manager to get to know
+all strange pecuiarities of the RBS system. This is needed to be able to
+take the appropriate steps if something might get wrong (which in most cases
+is not the result of RBS dificiencies but of irresponsible user behaviour).
+Together with RBS the archive manager should be able to keep the archive
+consistent.  
+
+\subsection{Archive versus Local Workspaces}
+RBS distinguishes two kinds of software: local and archived. Archived software
+is shared by everybody in the system. This means that archived software is
+accessible by every user and therefore it has to be approved. The archive also 
+keeps track of the history of all approved software to avoid the problem
+of untraceable modifications as much as possible. The latest version of all
+archived files (sources and targets) is immediately available. Local software
+is only accessible by those that have created it. 
+
+\subsection{Consistency}
+One of the most important aspects of RBS is that the archive is consistent at
+all times. This consistency is checked by an approval procedure by which 
+changes in the archive are checked. A major part of that procedure is to
+guarantee that the archive does not suffer from the problems with an
+uncontrolled environment and the problems with keeping all software up to date.
+\begin{itemize}
+\item all files in the archive are compiled or generated with the appropriate
+     compiler or generator. This means that the generation of the software
+     is completely controlled.
+
+\item all generated files are generated from other files in the correct order
+
+\item no files are missing
+\end{itemize}
+
+In future releases of RBS we will also provide a built-in procedure to 
+enable the user to specify a test set which must be passed successfully before
+software may be placed into the archive.
+
+See the section `Mutual Exclusive Operations' for additional comments on this
+subject.
+
+\subsection{Releases and Components}
+In RBS the software has to be subdivided into releases and within releases into
+components. Each component in its turn should contain related software.
+RBS distinguishes domain dependent (DD) and domain independent (DI) components. The basic idea behind this distinction is that one might want to make a system
+which can be applied to several domains, e.g. a spelling checker. Such a
+checker may contain language independent code and language dependent code
+in which spelling rules are coded etc. Each domain dependent component will
+have its own file with spelling rules. If one sticks to the convention to give
+these files the same name in all DD components then it is possible in
+RBS to abstract in the `make' files, i.e. in the files in which 
+the dependencies between the different modules of the system are specified, from
+the name of the actual DD components.
+
+Each component in a user's local workspace contains three sections. Each of 
+these sections is intended to contain a special type of software. First, RBS
+distinguishes
+{\em genuine sources}. Genuine sources are files which cannot be generated from
+other files, they can be looked at as the foundation of the system that is
+being developed. Next, RBS distinguished {\em targets}, i.e. files that can be
+derived, generated from other files. Finally, each component has a place
+where they are invisible for all RBS commands, except, of course, 
+for the command which makes them visible again.
+
+\subsection{View and Visibility}
+A software developer using RBS has certain software in view. This comprises all
+unapproved software he has made and which has not been approved yet plus
+the latest versions of the approved software in the archive. When a developer
+wants to combine his unapproved software with the software in the archive to 
+test his local chages, RBS will use all local software plus the software in the
+archive, insofar as it has not been `replaced' by the local software. In other
+words:
+when searching through the software, RBS will search among the local software first and only if it is not found there, it will look for it in the archive.
+It is possible, however, to tell RBS that certain files have to be ignored.
+Obviously, these ignored files will not be archived.
+
+\section{Installation}
+
+\subsection{Archive Installation}
+
+Setting up an RBS archive takes several steps, some of which should be accepted
+as being just magic.
+
+\begin{enumerate}
+\item Log in with the user-id of the user that you want to contain the archive
+   directories and execute the following commands:
+\begin{verbatim}   
+   setenv RBS_DIR /home/rous/RBS
+   set path = ( $RBS_DIR $path )
+   source $RBS_DIR/setup
+   rehash
+\end{verbatim}
+\item
+RBS requires that all users of the same archive, i.e. the people that
+   are allowed to integrate software, belong to the same (UNIX) group. 
+   So, before you set up the archive structure, you have to decide which group
+   id that will be. You can choose an existing one or you can ask the system
+   manager to create a new one. Before you continue you have to select
+   this new group id:
+\begin{verbatim}
+   newgrp <group id>
+\end{verbatim}
+\item Setup an archive directory structure by executing the command
+\begin{verbatim}
+   install_archive
+\end{verbatim}
+Now, several questions will be asked to the user:
+\begin{itemize}
+\item
+RBS will ask for the path name of the archive directory to be created, e.g.
+\begin{verbatim}
+    /home/user/archive
+\end{verbatim}  
+\item Next, RBS will ask for a relative path to your release directory, e.g.
+\begin{verbatim}
+    /release3
+\end{verbatim}  
+\item RBS will ask for a list of domain dependent components. If such a division
+    makes no sense for your application, you should specify a dummy 
+    componentname here, anyway.
+    In the example of the spelling checker one could create a domain dependent
+    component for each language, e.g. 
+\begin{verbatim}
+    dutch english spanish
+\end{verbatim}  
+    In RBS these domain dependent components have a special status, as is
+    explained in the introduction.
+    The RBS manager should specify at least one component
+    here (even if the distinction domain dependent - independent does not
+    apply here).
+\item Finally, RBS will ask for the domain independent components ( again in list
+    representation ). E.g in the wordprocessing example one could define
+    the components
+\begin{verbatim}
+    general utilities
+\end{verbatim}
+\end{itemize}
+The result of these actions is that a directory structure has been created. There are two components which have been created by RBS itself: \verb+doc+
+ and \verb+actions+.
+Furthermore, a number of files have been created in the archive directory and some of its subdirectories:\\
+\\
+\begin{tabular}{|l|p{5cm}|}
+\hline
+\verb+fuid+ &                an executable needed by RBS to change
+                                        the owner of a file which is stored in
+                                        the archive. \\ \hline
+\verb+<release>/RBS_install+ &  a script which is to be used by RBS
+                         for the installation of a new RBS user. \\ \hline
+\verb+<release>/RBS_domains+ &  the list with domain specific
+                                        components. \\ \hline
+\verb+<release>/RBS_users+ &  a list of RBS users of the current
+                                        archive. \\ \hline
+\verb+<release>/RBS_logicals+ & a file containing the basic path
+                                        definitions. \\ \hline
+\verb+<release>/history.rbs+ &  contains the history of the integration
+                                        actions, i.e. who changed the archive
+                                        and when was it changed. \\ \hline
+\verb+<release>/doc/doc_survey.rbs+ & contains the documents which have
+                                          been
+                                        created by the RBS users, i.e.
+                             doc. nr.: user : date: filename: title \\ \hline
+\verb+<release>/doc/doc.make+  & basic make file for LaTex documents. \\
+                                \hline
+\end{tabular} 
+\item In order to guarantee the correctness of the archive it is necessary that
+   integration actions do not overlap. For that purpose RBS requires that they
+   are queued. So, go to your system manager and ask him, after you have
+   selected a machine on which you want the integration actions to be
+   executed, to add a queue on that machine. He probably will look quite
+   puzzled, so help him by saying : "The name of my queue is `r', and you
+   have to add the following line to the file 
+    \verb+/var/spool/cron/queuedefs+ :"
+\begin{verbatim}
+   r.1j
+\end{verbatim}
+   Of course you do not have to take the letter `r'. You can also choose any
+   other queue name that is not present in the file\\ 
+   \verb+/var/spool/cron/queuedefs+.
+\end{enumerate}
+
+\subsection{User Installation}
+\begin{enumerate}
+\item For setting up the user environment the following lines should be added 
+to your own \verb+.cshrc+ file:
+\begin{verbatim}
+setenv RBS_DIR /home/rous/RBS
+set path = ( $RBS_DIR $path )
+source $RBS_DIR/setup
+source <yourfile> 
+\end{verbatim}
+In the last command \verb+<yourfile>+ is the path of the RBS environment file (path including the file name) which has to contain the following commands (Notice
+that the command arguments are examples and should be replaced by your own
+environment.) :
+\begin{verbatim}
+rbs_env             <yourfile>            
+rbs_archive         /home/apeall/archive  
+rbs_release         /Apeall               
+rbs_user_root       /home/rous            
+rbs_user            /user                 
+rbs_batch_machine   prles5                
+rbs_batch_queue     i                     
+rbs_editor          "textedit -font 6x13" 
+rbs_deditor         "textedit -font 6x13" 
+rbs_root_makefile   makefile.make         
+rbs_root_makecomp   general               
+\end{verbatim}
+In the table below these commands are explained.
+\begin{tabular}{|l|p{5cm}|}
+\hline
+\verb+rbs_env+             & the path to the current file\\ \hline
+\verb+rbs_archive+         & the path to your archive\\ \hline
+\verb+rbs_release+         & the relative path to the release\\ \hline
+\verb+rbs_user_root+       & the path to your root directory\\ \hline
+\verb+rbs_user+            & the relative path to your RBS user \\ \hline
+\verb+rbs_batch_machine+   & machine that executes the integrate\\ \hline
+\verb+rbs_batch_queue+     & name of the integrate batch queue\\ \hline
+\verb+rbs_editor+          & prefered software sources editor\\ \hline
+\verb+rbs_deditor+         & prefered document editor\\ \hline
+\verb+rbs_root_makefile+   & root make file name\\ \hline
+\verb+rbs_root_makecomp+   & name of the component in which the  make file resides \\ \hline
+\end{tabular}
+If you work with several archives and several releases you can have more than
+one file with environment settings. Switching from one environment
+to the other can be done with the command:
+\begin{verbatim}
+source <yourfile>
+\end{verbatim}
+\item Make sure you select the group id that was used to install the archive:
+\begin{verbatim}
+   newgrp <group id>
+\end{verbatim}
+\item Setting up the directory structure
+   \begin{itemize}
+   \item Start with sourcing the .cshrc file:
+\begin{verbatim}
+      source .cshrc
+\end{verbatim}
+      (or logout and login again)
+
+   \item Create the directory that you specified in the environment file as the
+      \verb+rbs_user+.
+
+   \item If you are convinced you specified the RBS environment file correctly, 
+      you can issue the command
+\begin{verbatim}
+      install_user
+\end{verbatim}
+      After this command, a complete directory structure exists and the RBS
+      commands can be used.
+   \end{itemize}
+\item Make sure that you can perform a rsh command (without requiring a password!!)
+   to the machine that you specified in the environment file. Add the machine
+   from which you issue the \verb+integrate+ command together with your
+   user id to the \verb+.rhosts+ file.
+\end{enumerate}
+
+
+\section{Logicals}
+
+RBS uses so-called {\em logicals} to define search paths from the user directories
+to the archive directory. The file in which these logicals are defined
+is \verb+RBS_logicals+ in the release directory of the archive. This file is created at installation time. It contains an entry for each 
+component in the release. An entry for component X in this file looks like:
+\begin{verbatim}
+X    <path1> + <path2> + <path3>
+\end{verbatim}
+This entry specifies that if a file \verb+X+ is to be looked up by RBS, the 
+directories \verb+path1+, \verb+path2+ and \verb+path3+
+ have to be inspected in this order. The default is that\\
+\\
+\verb+path1+ corresponds to the source directory of the user.\\
+\verb+path2+ is the target directory of the user.\\
+\verb+path3+ the the component directory in the archive.\\
+\\
+It is possible for the archive manager to specify additional paths for
+selected components. These paths may point to components in release directories
+of other archives. For archive consistency reasons this is only possible for 
+a release and all the users of this release: not for individual users. In RBS
+terminology these archives are called {\em foreign archives} and RBS 
+provides some commands to use the information in these archives.
+
+\section{Make files}
+\subsection{File specifications}
+
+In the RBS environment file one has to specify what the location and
+the name of the current make file is ( cf. the section on User Installation ).
+File specifications in an RBS make file always have a fixed form. A file
+is to be specified as:  \verb+<component name>/<file name>+.
+This means that in the make file one has to abstract from the exact location
+of the file. RBS uses the search path defined in \verb+RBS_logicals+
+to locate the file before the actual make starts. In other words, before a
+build action the make file is expanded in accordance with the actual
+situation, i.e. the actual location of all files.
+There is one exception to the form of the file specification: the 
+\verb+integrate+
+target. A make file, that is, a root make file together with all its includes,
+must contain exactly one target with the specification:
+\begin{verbatim}
+integrate
+\end{verbatim}
+The integrate dependency defines which software is to be build and
+transferred to the archive during the integrate action.
+
+As explained in the introduction the system distinguishes domain dependent and
+domain independent components. RBS provides a built-in macro which can be
+used for files which appear in all DD components. In stead of 
+\begin{verbatim}
+<component name>/<file name>
+\end{verbatim}
+ one can also specify 
+\begin{verbatim}
+$(domain)/<file name>
+\end{verbatim} 
+.
+\subsection{Dependencies}
+
+The dependency between source and target files has to be specified in a
+format similar to the one used for the standard UNIX make utility:
+\begin{verbatim}
+<target_comp>/<target> : <source_comp_1>/<source_1>  \
+                          ..........
+                         <source_comp_n>/<source_n> ;
+<TAB>"action line"
+\end{verbatim}
+In the action line one specifies how the target is to be generated if
+it is out of date. We advise to use the following format for the action line:
+\begin{verbatim}
+@actions/<script> <component> <file>
+\end{verbatim}
+This line means that there is a file \verb+<script>+ in component 
+\verb+actions+ which is
+to be executed with two parameters: the component and the file which has to
+be generated. In general the file is specified without extension since
+the specified script already uniquely determines the extension.
+The following dependency is an example of an object file depending on a C
+source and some include files:
+\begin{verbatim}
+tools/test.o : tools/test.c \
+               system/globaldef.h \
+               unix/system.h ;
+        @actions/c tools test 
+\end{verbatim}
+The script \verb+c+ in component \verb+actions+ specifies in detail how the 
+file \verb+test+
+is to be compiled. In section "Action files" we will give more
+information about these scripts.
+
+It will be clear that if one of the sources of a certain target is a domain
+dependent file the the target is also domain dependent, so the above dependency
+could look like:
+\begin{verbatim}
+$(domain)/test.o : tools/test.c \
+                   system/globaldef.h \
+                   $(domain)/rules.h \
+                   unix/system.h ;
+        @actions/c tools test $(domain)
+\end{verbatim}
+Notice that the script \verb+c+ in the actions line gets as extra parameter value
+the name of the specific domain, implying that the target file has to be
+placed in the target component of the actual domain dependent component.
+
+\subsection{Include files}
+
+A make file may contain include specifications. Such a specification should
+have the following format:
+\begin{verbatim}
+!include <component_name>/<file_name>
+\end{verbatim}
+RBS will try to find the actual location of the include file whenever
+necessary. The maximal nesting level of include files is 5.
+
+\subsection{Miscellaneous}
+
+It is also possible to add lines to a make file which obey the unix make
+syntax, e.g. macro definitions. These lines should be preceded in the first
+column with a star `*'.
+
+\section{Action files}
+
+
+An action file is a UNIX script which specifies how a target is to be generated.
+The writer of the script can assume that the script is to be executed
+in the release directory of the user. The script writer is responsible for the
+fact that all error messages generated by the compiler are written to
+the file \verb+warnings+ in the release directory. RBS provides some tools that
+can be used by the script writer to find actual locations of files etc.
+
+The following script is an example of a script (with comment) that is to be 
+used to generate an object file from a C source file:
+\begin{verbatim}
+--------------------------Example-------------------------------
+#! /bin/sh -e
+#
+# set a trap which will be executed if the script is interrupted 
+# at an unexpected moment.
+#
+trap 'echo "c: Error during compilation" ; rm -f $2.c; exit 1' 0
+#
+# add a newline to the file warnings
+#
+echo "  " >> warnings
+#
+# write to standard output that the compilation has started
+#
+echo "cc: $1:$2"
+#
+# try to locate the source file. The RBS utility "get_fname" 
+# returns the full path name of the file it it has been located,
+# otherwise it returns the empty string.
+#
+src = `$RBS_DIR/get_fname RBS_logicals $1 $2.c`
+if test -z "$src"
+then echo "cc: Could not find file $2.c"
+     exit
+fi
+#
+# copy the source file to the release directory to prevent the C
+# compiler from looking for include files in the directory where
+# the source file has been found.
+#
+rm -f $2.o
+cp $src .
+#
+# execute the compilation command. Specify with -I the include
+# directiories in the appropriate order, i.e. first source 
+# directory, next target directory and finally archive directory.
+# Since include files may also be found in other components, 
+# these directories have to be specified as well. Again, take 
+# care that the compiler error messages are appended to the 
+# care that the compiler error messages are appended to the 
+# "warnings" file
+#
+cc -g -c -D_NO_PROTO -DSUN4 \
+    -I$1/source -I$1/target -I$RBS_ARCHIVE$RBS_RELEASE/$1 \
+    -Isystem/source -Isystem/target \
+    -I$RBS_ARCHIVE$RBS_RELEASE/system \
+    -I/cadappl/X11R4/usr/include \
+    -I/usr/local/parr/openwin/include \
+     $2.c -lm 1>> warnings 2>&1
+#
+# remove the temporary copy of the include file and move the
+# object file to the target directory of the specified component.
+#
+rm -f $2.c
+if test -s $2.o 
+then 
+  rm -f $1/target/$2.o
+  mv $2.o $1/target/$2.o
+fi
+#
+# reset the trap
+#
+trap 0
+#
+#
+----------------------------------------------------------------
+\end{verbatim}
+RBS provides a utility called \verb+extract+ which looks in the current make file for
+a dependency of the specified target file and which extracts from this 
+dependency all correctly expanded source file paths. The exact specification is:
+\begin{verbatim}
+$RBS_DIR/extract <domain> <file>
+\end{verbatim}
+The output of this command is written to standard output. The \verb+<domain>+ 
+parameter specifies what the domain is for which the make file has to be expanded. In the current version of RBS it is assumed that a file name is 
+unique for all targets in the make file, i.e. if a file name occurs
+somewhere as a target it will occur in no other targets.
+The following file shows how this utility can be used for linking
+a number of object files into an executable.
+\begin{verbatim}
+------------------------------Example---------------------------
+
+#! /bin/sh -e
+#
+# set a trap which will be executed if the script is interrupted  
+# at an unexpected moment.
+#
+trap 'echo "opt: Error during linking" ; exit 1' 0
+#
+# write to standard output that the link action has started
+#
+echo "opt: $1:$2"
+#
+# create the file `linkfile' which eventually will contain a 
+# script which executes the actual link.
+#
+rm -f linkfile
+echo "#! /bin/sh -e" > linkfile
+echo "cc -Bstatic -o $1/target/$2.exe \\" >> linkfile
+#
+# extract from the make file all object files which are needed to 
+# link the executable. Append the actual file names of the files 
+# to `linkfile'. 
+#
+$RBS_DIR/extract $1 $2 >> linkfile
+#
+# redirect standard error to the file `warnings'
+#
+echo "1>> warnings 2>&1" >> linkfile
+#
+# make the linkfile executable and execute it
+# 
+chmod u+x linkfile
+echo "  "  >> warnings
+linkfile
+#
+# reset the trap
+#
+trap 0
+
+----------------------------------------------------------------
+\end{verbatim}
+ 
+\section{General Usage}
+
+Suppose we already have a working system in the archive and we want to add
+a new file to it. The first action we have to undertake is the creation of
+the new file in the archive, this can be done with the \verb+create+ command:
+\begin{verbatim}
+create <component> <newfile>
+\end{verbatim}
+Next, we are going to grab this file from the archive. Of course, we want
+to lock the file to prevent other users from working on the same file. Both
+operations are performed by the \verb+grab+ command:
+\begin{verbatim}
+grab <component> <newfile>
+\end{verbatim}
+Now, the file is in our local work space and we can edit it:
+\begin{verbatim}
+modify <component> <newfile>
+\end{verbatim}
+If we are satisfied with the contents of the file, we have to connect the
+file to the system. We do so by changing and adding the appropriate dependencies
+in the make file. So, first we grab and modify the make file:
+\begin{verbatim}
+grab <component> <makefile>
+modify <component> <makefile>
+\end{verbatim}
+Suppose the system consists of one executable \verb+system.exe+ in component
+\verb+general+, then we can now try to build this executable in our local
+work space:
+\begin{verbatim}
+build general system.exe
+\end{verbatim}
+With the command
+\begin{verbatim}
+sholog
+\end{verbatim}
+we can see what the build operation is actually doing. The trace of
+previously executed commands can be seen with
+\begin{verbatim}
+sholog <nr>
+\end{verbatim}
+where \verb+<nr>+ specifies the trace \verb+<nr>+-1 builds ago.
+
+If the build did not succeed, e.g. because of compilation errors, we can 
+inspect the file with warning and error messages with the command:
+\begin{verbatim}
+showa
+\end{verbatim}
+We can repeat this sequence of modification and building until we are convinced
+that everything is correct. The final step is to put the local software into 
+the archive and to remove the lock on the grabbed files. For that purpose
+we can use the \verb+integrate+ command:
+\begin{verbatim}
+integrate
+\end{verbatim}
+The integrate command executes a remote shell in order
+to make sure that the software you developed does not depend on your
+local environment. Furthermore, it removes all generated targets from your
+target directories. Next, it tries to build the system again according to
+the specifications in the make file. If this succeeds, it will move your
+local software, sources and targets to the archive.
+
+\section{Mutual Exclusive Operations}
+In order to guarantee the consistency of the software in the archive the
+integration actions have to be scheduled. We can distinguish two subactions
+within the integration actions:
+\begin{enumerate}
+\item building the `integrate' target
+\item moving the software to the archive.
+\end{enumerate}
+It will be clear that the archive will become inconsistent if we would
+allow one RBS user to build the \verb+integrate+ target while another user is
+moving software to the archive. During the transfer of software the archive
+is temporarily inconsistent. Therefore, RBS locks the archive
+for builds and integrates of other users during this period. This is not the only problem, however. If two users would do phase 1. in parallel and phase 2.
+sequentially, the archive would also become inconsistent because the build
+of user A does not take into acount the changes of user B and vice versa.
+In order to overcome this problem integrate actions have to be performed
+sequentially. This is the reason that a special integration queue has to be
+defined which allows only one job at the time to be executed.
+A third way to make the archive inconsistent would be if user would be able to perform
+\verb+grab+, \verb+free+, \verb+modify+ or \verb+build+ actions during an
+\verb+integrate+. As a consequence, RBS does not allow to execute these operations in parallel.
+With respect to the local workspace it is the RBS philosophy that this is
+the responsibility of the user. He can do whatever he wants as long as he
+uses the RBS procedures to put software into the archive\footnote{Of course we
+highly recommend to use only RBS commands.}.  There is one exception: it is not allowed
+to start a new build while your previous one has not yet finished.\\
+\\
+RBS handles these mutual exclusive operations with lock files. A weak point
+in this implementation is the fact that if an operation is killed in an
+unexpected way the lock file is not removed. As a result RBS does not allow
+other operations to be executed. A user can repair this by removing the
+lock files in question with the \verb+rmlock+ command. The user can use one of
+the following parameter values for this command: \verb+modify+, \verb+build+,
+ \verb+free+, \verb+grab+ or \verb+integrate+, depending on the action that crashed. 
+
+Since RBS cannot check whether the \verb+rmlock+ utility is used correctly by the
+user, an appeal is made to his sense of responsibility.
+
+
+\section{Security}
+
+RBS uses the UNIX facility to define `groups'. All users in the same group
+have the right to change the archive. Of course it is assumed that the archive
+will only be changed with the `integrate' action. RBS cannot prevent users
+in a group to actually alter or delete files directly in the archive. Assuming
+they they don't do these things on purpose, the only thing RBS can do is
+to provide enough functionality for a user, so he doesn't feel the need
+to perform UNIX shell operations directly on archive files.
+
+Users which are not in the group have read privilige on all files in the
+archive.
+
+
+\section{The Ten RBS Commandments}
+\begin{enumerate}
+\item Thou shalt use only RBS commands to operate on RBS files and directories.
+\item Thou shalt not use RBS commands in an improper way.
+\item Thou shalt not try to be smarter than RBS.
+\item Thou shalt not forget to keep your make files consistent with your software.
+\item Thou shalt only covet thy neighbour's files via the archive.
+\item Thou shalt not repair the result of offences against the commandments with
+    new offences. Thou should warn the RBS manager immediately.
+\item Thou shalt accept that RBS cannot fulfill all your desires.
+\item Thou shalt not try to change the RBS scripts
+\item Thou shalt treat the RBS developer kindly since he is always right.
+\item Thou shalt always obey the ten RBS commandments and especially the tenth
+    one.
+\end{enumerate}
+\section{Making a document}
+This document is called rbsmanual.tex. To create it I gave the command
+\begin{verbatim}
+   dcreate rbsmanual.tex
+\end{verbatim}
+The command dcreate asks for the title and provides the number of the document.
+This number could be used for you project document administration.
+the \verb+dcreate+ adds the name of your document, its number, and its
+owner to a file, which you can inspect by typing
+\begin{verbatim}
+    dsurvey
+\end{verbatim}
+If you do it you will see to see that this document indeed exists.
+ You can type
+\begin{verbatim}
+    dinspect userbs.tex
+\end{verbatim}
+to see (the latex source of) my document, as it is in the archive. 
+
+If you have `dcreated' a file, say myfile, or if you want to change
+a document that is in the archive, say
+\begin{verbatim}
+    dgrab myfile
+\end{verbatim}
+Now a copy of the file comes in your document source directory. 
+Only one person
+can grab a file. If someone else has it, you are notified. If `myfile' is a 
+text file, you can modify it with 
+\begin{verbatim}
+    dmodify myfile
+\end{verbatim}
+(or {\tt modify doc myfile})
+which opens the file with your favorite texteditor (specified in your
+ environment file).
+This command works in any directory, so you will not have to know its exact
+location. If it is a framemaker
+document, there is no such command, so you must know the directory.
+ If you want to use framemaker for a new file, you 
+must overwrite the empty file that is created by the first dgrab.
+This means that you must perform the command 
+\begin{verbatim}
+    cdsource doc
+\end{verbatim}
+This is not so for latex commands.\\
+\\
+The command \verb+dbuild+
+can be used from any directory:
+\begin{verbatim}
+    dbuild file.dvi
+\end{verbatim}
+builds the \verb+dvi+ file from \verb+file.tex+. The first time it will run 
+latex
+three times. After that, it will run latex {\em exactly} as many times as needed
+to get cross-references right. Likewise,
+\begin{verbatim}
+    dbuild file.preview
+\end{verbatim}
+makes a preview of the file. If the \verb+dvi+ file is not up to date it
+will first execute latex to make it up to date. This also works if
+the \verb+tex+ file is in the archive. One could change the file doc.make
+such that the command
+\begin{verbatim}
+    dbuild file.print1
+\end{verbatim}
+prints the file two-sidedly (after making the dvi file up to date), 
+on the first floor,
+\begin{verbatim}
+    dbuild file.print2
+\end{verbatim}
+does the same on the second floor. 
+If `file.fm' is a framemaker document, then
+\begin{verbatim}
+    dbuild file.fmview
+\end{verbatim}
+starts framemaker with the file. If the file has been grabbed this
+is the same as {\tt dmodify file.fm}, if your environment file
+states that your document texteditor is framemaker. If the
+file is in the archive {\tt dbuild file.fmview} also works, but
+modifications made to the file are ignored. 
+
+For other latex commands (bibtex), or
+another previewer, or for printing your file somewhere else, other 
+targets can be added in a very simple way (by {\em you}: in the file doc.make 
+in component {\em doc}). 
+
+When your document is finished you may say
+\begin{verbatim}
+    dintegrate
+\end{verbatim}
+This command is a bit rough. It moves all grabbed document files to
+the archive. It mails to all group members (the ones that have installed
+themselves as RBS users) which documents have been integrated. Thus,
+if you get a mail that a new version of file \verb+myfile.tex+
+has been integrated, you can type 
+\begin{verbatim}
+    dbuild myfile.print1
+\end{verbatim}
+to send it to the printer at the first floor. If it is `file.fm', a
+framemaker document,
+\begin{verbatim}
+    dbuild file.fmview
+\end{verbatim}
+loads the file in framemaker so that you can print it.
+\section{RBS commands}
+\subsection{Most often used commands}
+\begin{tabular}{l p{7.7cm}}
+\verb+build <component> <file>+ & build target \verb+<file>+ belonging to component
+                                  \verb+<component>+. All results (final and 
+                                  intermediate are placed in the "target"
+                                  directory of the corresponing component.
+                                  The build progress can be inspected with the
+                                  "sholog" command (see below). The error
+                                  messages produced by compilers and linkers
+                                  can be inspected by the "showa" command.\\
+\verb+create <component> <file>+ & creates a new file \verb+file+ in the 
+                                  specified
+                                  component in the archive.  \\
+\verb+free <component> <file>+  & releases the lock on the file in the archive
+                                  and removes the file from the source 
+                                  directory!\\
+\verb+grab <component> <file>+ & tries to lock \verb+<file>+ in \verb+<component>+ 
+                                  in the
+                                  archive and puts a copy into the user's
+                                  source directory if the lock succeeds.\\
+\verb+inspect <component> <file>+ & put a copy of the corresponding file in the
+                                  archive in an edit window.\\
+\verb+integrate+                       & cleanup the user components (cf \verb+cleanup+
+                                  command), build the 
+                                  integrate target (specified in the makefile)
+                                  and move all files to the archive, if the
+                                  build succeeds.\\
+\verb+modify <component> <file>+ & edit the corresponding file in your source
+                                  directory.\\
+\verb+newa+                            & throws away all old compiler error messages.\\
+
+\verb+sholog <nr>+                     & if \verb+<nr>+ is empty or equals 1 the command 
+                                  shows the results of the last (current) build,
+                                  higher numbers show previous build results.
+                                  RBS will only remember the results of the
+                                  10 most recent "builds".\\
+\verb+showa+                           & shows the error messages produced by \verb+build+
+                                  commands.\\
+\end{tabular}
+\subsection{Some more information-providing commands}
+\begin{tabular}{l p{7.7cm}}
+\verb+allsources+                      & shows all source files that have been grabbed
+                                  by you.\\
+\verb+alltargets+                      & shows all files that have been generated
+                                  by you in the target directory.\\
+
+\verb+allsaves+                      & shows all files that have been placed
+                                  by you into the save directory.\\
+
+\verb+shoenv+                          & shows the settings of the current RBS
+                                  environment.\\
+\verb+archs <component> ["pattern"]+   & gives an overview of all files belonging to
+                                  the specified component in the archive.
+                                  Only the files that match the
+                                  specified pattern will be presented.\\
+\verb+sources <component> ["pattern"]+ & 
+                                 gives an overview of all sources belonging to
+                                  the specified component that have been
+                                  grabbed by you. Only the files that match the
+                                  specified pattern will be presented.\\
+\verb+targets <component> ["pattern"]+ & gives an overview of all targets belonging to
+                                  the specified component that have been
+                                  generated in your own local directory. Only
+                                  the files that match the specified pattern
+                                  will be presented.\\
+\verb+saves <component> ["pattern"]+ & gives an overview of all saved files 
+                                  belonging to
+                                  the specified component that have been
+                                  generated in your own local directory. Only
+                                  the files that match the specified pattern
+                                  will be presented.\\
+\end{tabular}
+\subsection{More file-manipulaton commands}
+\begin{tabular}{l p{7.7cm}}
+\verb+cleanup+                         & removes all files from all target directories,
+                                  checks if all source files are legally grabbed
+                                  and removes all junk files from the source
+                                  directory.    \\
+\verb+rmlock <command>+                & it can happen that lock files remain after
+                                  a command has been killed externally. In that
+                                  case the lock files created by the specified
+                                command can be removed manually with "rmlock".\\
+\verb+tcopy <component> <file>+ & makes a copy of the corresponding file in the
+                                  archive and puts it into your target
+                                  directory. Notice the difference with the
+                                  grab command.\\
+\verb+tmodify <component> <file>+ & edit the corresponding file in your target
+                                  directory.\\
+\verb+tosave <component> <file>+ & moves the specified file to a "safe" place, in
+                                  which it cannot be found by a build or 
+                                  integrate.  \\
+\verb+tosource <component> <file>+ & 
+                                 moves the specified file from its "safe" place
+                                  to the source directory.\\
+\end{tabular}
+\subsection{Commands related to other users}
+\begin{tabular}{l p{7.7cm}}
+\verb+info <component>+            & shows which files are locked in the specified
+                                  component.\\
+\verb+hisint+                          & gives a history of the integrate actions.\\
+\verb+shoiq+                           & gives an overview of the integrate jobs in
+                                  the integrate queue.\\
+\verb+whbusy+                       & shows which users are building or integrating.\\
+\verb+whgrab <component>+       & shows which files of the specified component
+                                  are grabbed.\\
+\end{tabular}
+\subsection{Commands related to other releases}
+\begin{tabular}{l p{7.7cm}}
+\verb+sdrag <fromrelease> <component>+ & move all files from the source 
+                                   directory of 
+                               the \verb+<component>+ of the specified release
+                                  (the full path to the release has to be
+                                  specified) to the source directory of the
+                                  \verb+<component>+ of your current release.\\
+\verb+setup <archive> <release> <user>+ & 
+                                  specify the archive, the release and the
+                                  user directories by means of (relative)
+                                  pathnames.\\
+\verb+tdrag <fromrelease> <component>+ & move all files from the target directory of 
+                             the \verb+<component>+ of the specified release
+                                  (the full path to the release has to be
+                                  specified) to the target directory of the
+                             \verb+<component>+ of your current release.\\
+\end{tabular}
+\subsection{Commands to quickly go to RBS directories}
+\begin{tabular}{l p{7.7cm}}
+\verb+cdarch <component>+   & go to the directory \verb+<component>+ of the archive. \\  
+\verb+cdrelease +   & go to the release directory of the user. \\  
+\verb+cdactions +   & go to the \verb+actions+ directory of the user. \\  
+\verb+cdsource <component>+   & go to the source directory 
+                                of \verb+<component>+. \\
+\verb+cdtarget <component>+   & go to the target directory of
+                                 \verb+<component>+. \\  
+\verb+cdsave <component>+   & go to the save directory of
+                                 \verb+<component>+. \\  
+\end{tabular}
+\subsection{Commands related to foreign archives}
+\begin{tabular}{l p{7.7cm}}
+\verb+fgrab <component> <file>+        & creates a new file in the archive, 
+grabs the 
+                                  newly created file and instantiates it with 
+                                  the contents of the corresponding file
+                                  in the foreign archive. \\     
+\verb+finspect <component> <file>+     & view the file in the foreign archive.\\
+\verb+fsetup <archive> <release>+    & specify the archive and release of the foreign
+                                  archive by means of (relative) pathnames.\\
+\verb+ftcopy <component> <file>+       & makes a copy of the corresponding file in the
+                                  foreign archive and puts it into your target
+                                  directory. Notice the difference with the
+                                  "fgrab" command.\\
+\end{tabular}
+\subsection{Document Commands}
+\begin{tabular}{l p{7.7cm}}
+\verb+dcleanup+                    & removes all files from the doc target directory,
+                                  checks if all source files are legally grabbed
+                                  and removes all junk files from the source
+                                  directory. \\   
+\verb+dbuild <file>+                  & Performs actions according to the file
+                                     doc.make in component doc.\\
+\verb+dcreate <file>+                  & creates a new document file in the archive
+                                  and gives the document number belonging to
+                                  the file. The user is asked
+                                  to specify the title of the document.\\
+\verb+dfree <file>+                    & removes your own document file and releases
+                                  the lock in the archive.\\
+\verb+dgrab <file>+                    & puts a copy of the archive file in your
+                                  doc directory and locks the corresponding
+                                  file in the archive.\\
+\verb+dinspect <file>+                 & inspect the last version of the corresponding
+                                  file in the archive.\\
+\verb+dintegrate+                      & copy all grabbed (!!) user documents to the
+                                  archive.\\
+\verb+dmodify <file>+                  & modify the specified document.\\
+\verb+dsurvey+                         & give a survey of all numbered documents.\\
+\end{tabular}
+\end{document}

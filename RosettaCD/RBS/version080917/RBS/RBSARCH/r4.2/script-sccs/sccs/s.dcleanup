@@ -1,0 +1,65 @@
+h56886
+s 00044/00001/00000
+d D 1.2 95/10/17 11:07:20 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 95/10/17 08:59:24 rous 1 0
+c date and time created 95/10/17 08:59:24 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+#! /bin/sh
+#set -x
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+rm -f contents.rbs
+#
+#if ( test -s $RBS_USER_ROOT$RBS_RELEASE/lock.rbs ) 
+#then echo "DCLEAR: No clearing allowed during integrate"
+#     exit
+#fi
+#
+wrongo=""
+             echo "DCLEAR: clearing directory doc/source"
+             rm -f doc/source/*% doc/source/*~ doc/source/.[BC]* doc/source/.emacs_* doc/source/warnings
+             if (test -d doc/source/sccs )
+             then 
+                rmdir doc/source/sccs
+             fi
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/doc/source
+             for j in `ls` ; do
+                k=`basename $j`
+                { test -s $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/s.$k.ascii ; } || \
+                { echo "DCLEAR: Strange file $k in directory doc/source"; wrongo="$k"; }
+                { test -s $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/p.$k.ascii ; } || \
+                { echo "DCLEAR: File $k in directory doc/source not grabbed!"; wrongo="$k"; }
+                touch $k
+             done
+#             sccs -d$RBS_ARCHIVE$RBS_RELEASE/doc -psccs clean > /dev/null
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/doc/target
+             echo "DCLEAR: clearing directory doc/target"
+             for targetf in `ls`; do
+                echo "DCLEAR: removing file $targetf"
+                rm -f $targetf
+             done
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+cd $savedir
+#
+if ( test -z "$wrongo" )
+then echo "DCLEAR: Cleaning up finished"
+else echo "DCLEAR: Found at least one illegal file"
+     exit 1
+fi
+E 2
+E 1

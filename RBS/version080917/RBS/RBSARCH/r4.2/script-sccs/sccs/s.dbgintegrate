@@ -1,0 +1,92 @@
+h47078
+s 00013/00006/00025
+d D 1.4 96/02/15 20:31:11 rous 4 3
+c 
+e
+s 00004/00001/00027
+d D 1.3 95/11/27 13:36:10 rous 3 2
+c 
+e
+s 00028/00001/00000
+d D 1.2 95/10/18 16:03:23 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 95/10/18 15:52:29 rous 1 0
+c date and time created 95/10/18 15:52:29 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+#! /bin/sh -e
+#
+# dbgintegrate [<platform>]
+#
+#
+case $# in
+0) ;;
+1) ;;
+*) echo "Usage: integrate [<platform>]"; exit 1;;
+esac
+#
+I 4
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+E 4
+#set -x
+#set -v
+I 4
+rm -f intusers.rbs
+#
+E 4
+echo "What is the intended effect of your integration? (one-liner)"
+read effect
+I 4
+#
+if ( test -r inteffect.rbs )
+then chmod o+rw inteffect.rbs
+fi
+echo "    $effect" > $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/inteffect.rbs
+#
+#
+E 4
+echo "Which users should be informed? (list of usernames seperated by a space)"
+read usernames
+D 3
+echo "$USER integrating. Effect: $effect" | mail "$usernames $USER"
+E 3
+I 3
+for u in $USER $usernames ; do
+D 4
+   echo "informing user $u"
+   echo "user $USER integrated. Effect: $effect" | mail $u@prle
+E 4
+I 4
+   echo " $u" >> intusers.rbs
+E 4
+done
+E 3
+#
+D 4
+if ( test -r $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/inteffect.rbs )
+then chmod o+rw $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/inteffect.rbs
+fi
+echo "    $effect" > $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/inteffect.rbs
+E 4
+I 4
+chmod o+rw intusers.rbs
+E 4
+#
+if ( test -s $RBS_ENV )
+then rsh $RBS_MACHINE "source $RBS_ENV; $RBS_DIR/batchintegrate debug $1 &"
+else rsh $RBS_MACHINE "$RBS_DIR/batchintegrate debug $1 &"
+fi
+E 2
+E 1

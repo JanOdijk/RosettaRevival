@@ -1,0 +1,78 @@
+case $# in
+0) ;;
+1) ;;
+*) echo "Usage: makemake [domain_name]"; exit ;;
+esac
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+rm -f newcontents.rbs
+touch newcontents.rbs
+touch contents.rbs 
+#
+directs=`ls -d *`
+for i in $directs; do
+   if ( test -d $i ) 
+   then 
+       if ( test "$i" = "doc" )
+       then echo ""
+       else if ( test "$i" = "actions" )
+        then 
+             cd actions
+             for j in `ls` ; do
+                case $j in
+                *%) ;;
+                *) echo "actions/$j" >> $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/newcontents.rbs ;;
+                esac
+             done
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+        else
+             cd $i/source
+             for j in `ls` ; do
+                case $j in
+                *%) ;;
+                *) echo "$i/source/$j" >> $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/newcontents.rbs ;;
+                esac
+             done
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/$i/target
+             for targetf in `ls`; do
+                case $targetf in
+                *.make) ;;
+                *\%) ;;
+                *) echo "$i/target/$targetf" >> $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/newcontents.rbs ;;
+                esac
+             done
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+        fi
+     fi
+   fi
+done
+#
+rm -f diff.rbs
+diff contents.rbs newcontents.rbs > diff.rbs
+#
+# mv newcontents.rbs contents.rbs can be found in build, if nothing went wrong
+# 
+#
+found="false"
+flang=""
+for lang in `cat $RBS_ARCHIVE$RBS_RELEASE/RBS_domains`
+do if ( test "$flang" = "" )
+   then flang="$lang"
+   fi
+   if ( test "$lang" = "$1" ) 
+   then found="true"
+        if ( test -s diff.rbs )
+        then echo "MAKE: Sorry, I have to generate new makefiles....."
+             $RBS_DIR/expandmake $1
+        fi
+   fi
+done
+if ( test "$found" = "false" )
+then if ( test -s diff.rbs )
+     then echo "MAKE: Sorry, I have to generate new makefiles......"
+          $RBS_DIR/expandmake $flang
+     fi
+fi
+#
+cd $savedir

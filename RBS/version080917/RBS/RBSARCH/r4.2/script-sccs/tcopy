@@ -1,0 +1,53 @@
+#! /bin/sh -e
+#
+case $# in
+0) echo "Usage: tcopy componentname filename"; exit 1;;
+1) echo "Usage: tcopy componentname filename"; exit 1;;
+2) ;;
+*) ;;
+esac
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+#
+#
+trap '' 1 2 3
+#
+trap 'echo "TCOPY: No tcopy allowed during your other grabs"; umask 22; cd $savedir; exit 2' 0
+umask 222
+( echo "  " > $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs ) 2> /dev/null
+umask 22
+#
+#
+set -e
+trap 'echo "TCOPY: No tcopy allowed during your integrate"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs ; cd $savedir; exit 2' 0
+if ( test -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs )
+then exit 0
+fi
+#
+#
+set -e 
+trap 'echo "TCOPY: Error during tcopy" ; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs ; cd $savedir ; exit 2' 0
+#
+#
+#
+if ( test "$1" = "actions" )
+then cd actions
+else cd $1/target
+fi
+if ( test -s  $2 )
+then echo "TCOPY: File already exists in your target directory!"
+     exit
+elif ( test -s $RBS_ARCHIVE$RBS_RELEASE/$1/$2 )
+then cp $RBS_ARCHIVE$RBS_RELEASE/$1/$2 $2
+     echo "copied (not grabbed!) file $2"
+     chmod a+x $2
+else echo "TCOPY: File does not exist in the archive!"
+     exit 
+fi
+#
+#
+#
+rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs
+cd $savedir
+trap 0

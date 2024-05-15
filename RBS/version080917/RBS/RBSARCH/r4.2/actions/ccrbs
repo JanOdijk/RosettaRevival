@@ -1,0 +1,32 @@
+#! /bin/sh -e
+#
+# ccrbs <component_in> <component_out> <file> <debug>
+#
+echo "ccrbs: $1 to $2 $3 $4"
+#
+trap 'echo "ccrbs: Error during compilation"; rm -f $2.c; exit 1' 0
+#
+echo "  " >> warnings
+#
+#
+fname=`$RBS_DIR/get_fname RBS_logicals $1 $3.c`
+if test "$fname"
+then echo "ccrbs: compiling: $fname" 
+else echo "ccrbs: Could not find file $fname"
+     exit
+fi
+if test -s $3.o
+then  rm -f $3.o
+fi
+cp $fname .
+#
+cc -I$1/source -I$1/target -I$RBS_ARCHIVE$RBS_RELEASE/$1 -c $3.c 
+#
+rm -f $3.c
+if test -s $3.o 
+then 
+  rm -f $2/target/$3.o
+  mv $3.o $2/target/$3.o
+fi
+trap 0
+

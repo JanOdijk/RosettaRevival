@@ -1,0 +1,202 @@
+#! /bin/sh -e
+#
+# exeintegrate <debug> [<platform>]
+#
+#
+case $# in
+0) ;;
+1) ;;
+2) ;;
+*) echo "Usage: exeintegrate <debug> [<platform>]"; exit 1;;
+esac
+set -x
+set -v
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+set -e
+trap 'echo "INTEGRATE: Your archive might be inconsistent: warn the RBS system manager!!"; cd $savedir; exit 2' 0
+if ( test -f $RBS_ARCHIVE$RBS_RELEASE/cons.rbs )
+then exit
+fi
+#
+set -e
+trap 'echo "INTEGRATE: You are already integrating"; umask 22; cd $savedir; exit' 0
+umask 222
+(echo "  " > $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs ) 2> /dev/null
+umask 22
+#
+#
+set -e
+trap 'echo "INTEGRATE: No integrate allowed during your build"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs; cd $savedir; exit 2' 0
+if ( test -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/build.rbs )
+then exit 0
+fi
+#
+#
+set -e
+trap 'echo "INTEGRATE: No integrate allowed when grabbing"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs; cd $savedir; exit 2' 0
+if ( test -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs )
+then exit 0
+fi
+#
+#
+set -e
+trap 'echo "INTEGRATE: No integrate allowed when freeing"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs; cd $savedir; exit 2' 0
+if ( test -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/free.rbs )
+then exit 0
+fi
+#
+#
+set -e
+trap 'echo "INTEGRATE: No integrate allowed when you are modifying a file"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs; cd $savedir; exit 2' 0
+mods=`(ls $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/modify*.rbs 2> /dev/null) | head -1`
+if test -z "$mods"
+then :
+else exit 0
+fi
+#
+#
+d4=`date`
+echo "INTEGRATE: integrate started at $d4!"
+#
+#
+trap 0
+echo "  " > $RBS_ARCHIVE$RBS_RELEASE/integrate$$.rbs
+#
+# Clear user work directories
+#
+set -e
+trap 'echo "INTEGRATE: error during cleanup"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs; rm -f $RBS_ARCHIVE$RBS_RELEASE/integrate$$.rbs; cd $savedir; exit 2' 0    
+cleanup
+cp $RBS_ARCHIVE$RBS_RELEASE/RBS_logicals RBS_logicals
+#
+# Generate a make file for each of the specified domains
+#
+set -e
+trap 'echo "INTEGRATE: error during makefile generation"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs; rm -f $RBS_ARCHIVE$RBS_RELEASE/integrate$$.rbs; cd $savedir; exit 2' 0
+#
+# Expand the makefile
+#
+expandmake $2
+#
+# Throw away old actions file and initialize new one
+#
+rm -f actions_.rbs
+echo "#! /bin/sh -e" > actions_.rbs
+echo "set -e" >> actions_.rbs
+#
+# make integrate target
+#
+set -e
+trap 'echo "INTEGRATE: Error during make"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs; rm -f $RBS_ARCHIVE$RBS_RELEASE/integrate$$.rbs; cd $savedir; exit 2' 0
+#
+make -S -n -f $RBS_MAKECOMP/target/$RBS_MAKEFILE.rbs integrate debug=$1 pf=$2 | sed "s/^make/# make/" >> actions_.rbs
+chmod u+x actions_.rbs
+echo "==============================================================================" >> $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/warnings
+#
+d3=`date`
+echo "INTEGRATE: build actions started at $d3!"
+#
+set -e
+trap 'echo "INTEGRATE: Error during build"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs; rm -f $RBS_ARCHIVE$RBS_RELEASE/integrate$$.rbs; cd $savedir; exit 2' 0
+actions_.rbs 1> buildlog$$.rbs 2>&1
+#
+set -e
+trap 'echo "INTEGRATE: Someone else is consolidating!"; umask 22; cd $savedir; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs; rm -f $RBS_ARCHIVE$RBS_RELEASE/integrate$$.rbs; exit 2' 0
+umask 222
+(echo "  " > $RBS_ARCHIVE$RBS_RELEASE/cons.rbs) 2> /dev/null
+umask 22
+trap 0
+#
+#
+locks=`(ls $RBS_ARCHIVE$RBS_RELEASE/build*.rbs 2> /dev/null) | head -1`
+while : 
+do if test -z "$locks"
+   then break
+   else :
+   fi
+   echo "INTEGRATE: waiting for a build to continue..." 
+   sleep 30
+   locks=`(ls $RBS_ARCHIVE$RBS_RELEASE/build*.rbs 2> /dev/null) | head -1`
+done
+#
+#set -e
+trap 'rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs; rm -f $RBS_ARCHIVE$RBS_RELEASE/integrate$$.rbs; echo "INTEGRATE: Error during consolidate";  exit 2' 0
+#
+d2=`date`
+echo "CONSOLID: consolidation actions started at $d2!"
+directs=`ls -d *`
+for i in $directs; do
+   if ( test -d $i ) 
+   then 
+       if ( test "$i" = "actions" )
+        then echo "CONSOLID: consolidating component $i"
+             cd $i
+             for j in `ls`; do
+                echo "CONSOLID: consolidating $j"
+                k=`basename $j`
+                chmod ug+rwx $k
+                $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                rm -f $RBS_ARCHIVE$RBS_RELEASE/$i/$k
+                $RBS_ARCHIVE/fuid "cp -p $k $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                $RBS_ARCHIVE/fuid "chmod ug=rx $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                sccs -d$RBS_ARCHIVE$RBS_RELEASE/$i -psccs delta -s -y $k
+                chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$i/sccs/s.$k
+             done
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+        elif ( test "$i" = "doc" )
+        then echo "CONSOLID: skipping component $i"
+        else echo "CONSOLID: consolidating component $i"
+             cd $i/source
+             for j in `ls`; do
+                echo "CONSOLID: consolidating $j"
+                k=`basename $j`
+                chmod ug+rwx $k
+                $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                rm -f $RBS_ARCHIVE$RBS_RELEASE/$i/$k
+                $RBS_ARCHIVE/fuid "cp -p $k $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                $RBS_ARCHIVE/fuid "chmod ug=rx $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                sccs -d$RBS_ARCHIVE$RBS_RELEASE/$i -psccs delta -s -y $k
+                chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$i/sccs/s.$k
+             done
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/$i/target
+             for j in `ls`; do
+                echo "CONSOLID: consolidating $j"
+                k=`basename $j`
+                chmod ug+rwx $k
+                if ( test -f $RBS_ARCHIVE$RBS_RELEASE/$i/$k )
+                then $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                     rm -f $RBS_ARCHIVE$RBS_RELEASE/$i/$k
+                fi
+                $RBS_ARCHIVE/fuid "cp -p $k $RBS_ARCHIVE$RBS_RELEASE/$i" || exit
+                $RBS_ARCHIVE/fuid "chmod ug=rx $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                rm -f $k
+             done
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+        fi
+   fi
+done
+#
+#
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+#
+d1=`date`
+echo "CONSOLID: consolidation actions completed at $d1!"
+#
+d=`date`
+echo "$USER: $d" >> $RBS_ARCHIVE$RBS_RELEASE/history.rbs
+#
+cat $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/inteffect.rbs >> $RBS_ARCHIVE$RBS_RELEASE/history.rbs
+effect=`cat $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/inteffect.rbs`
+#
+for u in `cat intusers.rbs`; do
+      echo "user $USER integrated. Intended effect: $effect" | mail $u@prle
+done
+#
+rm -f $RBS_ARCHIVE$RBS_RELEASE/cons.rbs
+rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs 
+rm -f $RBS_ARCHIVE$RBS_RELEASE/integrate$$.rbs
+cd $savedir
+trap 0

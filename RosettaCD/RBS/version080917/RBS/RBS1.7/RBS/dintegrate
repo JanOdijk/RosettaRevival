@@ -1,0 +1,43 @@
+#! /bin/sh -e
+case $# in
+0) ;;
+*) echo "Usage: dintegrate"; exit 1;;
+esac
+# set -v
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+rm -f RBS_logicals
+cp $RBS_ARCHIVE$RBS_RELEASE/RBS_logicals RBS_logicals
+#
+set -e
+#
+trap 'echo "DINTEGRATE: Error during consolidate"; loopforever "DCONSOLID: Error" ; exit 2' 0
+#
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/doc/source
+for j in `ls`; do
+   k=`basename $j`
+   if ( test -s $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/s.$k.ascii )
+   then
+      echo "DCONSOLID: consolidating document file $j"
+      rm -f $RBS_ARCHIVE$RBS_RELEASE/doc/$k
+      rm -f $k.ascii
+      uuencode $k $k > $k.ascii
+      chmod ug+rwx $k
+      chmod ug+rwx $k.ascii
+#      $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+      $RBS_ARCHIVE/fuid "cp -p $k $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+      $RBS_ARCHIVE/fuid "chmod ug=rx $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+      rm -f $k
+      sccs -d$RBS_ARCHIVE$RBS_RELEASE/doc -psccs delta -s -y $k.ascii
+      chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/s.$k.ascii
+      users=`cat $RBS_ARCHIVE$RBS_RELEASE/RBS_users`
+      for u in `cat $RBS_ARCHIVE$RBS_RELEASE/RBS_users`; do
+         echo "informing user $u"
+         echo "user $USER integrated document $k" | mail -s "DINTEGRATED: $k" $u@prle
+      done
+   fi
+done
+#
+rm -f  $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/doc/target/* 
+cd $savedir
+trap 0

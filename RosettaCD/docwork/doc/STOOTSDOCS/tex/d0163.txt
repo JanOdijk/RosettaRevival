@@ -1,0 +1,1392 @@
+R0163.tex
+
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{General}
+   \RosTitle{Superdeixis and Polarity}
+   \RosAuthor{Jan Odijk}
+   \RosDocNr{0163}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Linguists}
+   \RosClearance{Project}
+   \RosKeywords{Superdeixis, Polarity, Projection and Percolation of Features}
+   \MakeRosTitle
+%
+%   \input{R0000_Chap1}
+%   \input{R0000_App1}
+%
+\section{Introduction}
+In this note I describe the actions to be taken w.r.t superdeixis and polarity
+attributes.
+
+These conditions and actions will appear in many different rules, and
+it would be nice if the treatment of these phenomena is being done uniformly.
+
+In the ideal situation we would like to write separate functions or
+procedures for the things being done here, so that a simple call of e.g. 
+{\em checkandadaptsuperdeixis } or {\em adaptpolarity } applied to the relevant
+attributes would suffice.
+
+Unfortunately, this is not directly possible, for reasons we will sketch below.
+
+The section on superdeixis is based on doc. 0053 (Lisette Appelo- Translation 
+of Temporal Expressions in Rosetta3). 
+
+The section on polarity is based on doc. 0141 ( Franciska de Jong and 
+Jan Odijk- Dutch Domain T. Documentation), section 4.
+
+\section{What to do with superdeixis?}
+
+The following assumptions are made:
+\begin{itemize}
+  \item {\em  deixis} and {\em  superdeixis} are set in the deixisrules,
+         that will be written by Lisette. Before that point, these attributes
+         are either not present, or they have an omegavalue. 
+       (Superdeixis is present in the XPPROPrecords, although it is 
+superfluous there. It should be present only in the records for XPFORMULAs,
+and OPEN/CLOSEDXPPROPs, but these have the same record as XPPROPs.)
+  \item {\em superdeixis } can get a value by the rules specified below
+        if no deixis attribute is present, or if it has the value Omegadeixis
+  \item The deixis rules make every CLAUSE fourfold ambiguous: 
+         \begin{enumerate}
+           \item deixis is independent:\\
+                 superdeixis:=Omegadeixis               
+	       \begin{enumerate}
+		 \item deixis:=presentdeixis
+		 \item deixis:=pastdeixis
+	       \end{enumerate}
+           \item deixis is dependent\\
+                 deixis:=Omegadeixis
+	       \begin{enumerate}
+		 \item superdeixis:=presentdeixis 
+		 \item superdeixis:=pastdeixis
+	       \end{enumerate}
+          \end{enumerate}
+Since the setting of deixis is translationally relevant, in fact there will
+be only a two-fold ambiguity.
+  \item I assume that it is specified somehow that certain of these options
+        are excluded in certain environments, e.g. (without claiming reality
+of these specific examples) main sentence must have
+        independent deixis, relative clause must have dependent deixis etc.
+If this is not specified somewhere, then it makes the superdeixis mechanism
+partially superfluous, since no form is excluded anywhere. The superdeixis
+mechanism is then only necessary for clauses without any overt tense
+whatsoever (infinitives, participles). If the superdeixis attributes is
+used for this latter purpose only, then I'd prefer the approach taken in 
+Rosetta2 (where a record has either a deixis attribute, or a superdeixis attribute,
+never both).
+ \end{itemize}
+
+The typical situation w.r.t superdeixis is a situation where two S-trees
+are combined (speaking generatively) into one new S-tree. (For other situations
+see below). The records relevant to superdeixis transmittal will be called
+here {\em rec1 } and {\em rec2 }. In the output model there are corresponding
+records, called {\em rec3 } and {\em rec4 }, respectively. So {\em rec3} 
+corresponds to {\em rec1 } and {\em rec4 } to {\em rec2 }
+This new S-tree will have a node as a topmost element. Its record
+must be {\em rec4 }. 
+Some examples:
+\begin{enumerate}
+  \item NP is substituted for a VAR in SENTENCE, resulting in\\
+ SENTENCE[...NP..]: rec1=NPrec, rec2=SENTENCErec in the input models;
+rec3 = NPrec, rec4=SENTENCErec in the output model.
+  \item NP is substituted for a VAR in SENTENCE to form a NP modified by a
+     relative clause: NP[ .. SENTENCE ]: rec1=SENTENCErec, rec2=NPrec
+in the input models; rec3=SENTENCErec, rec4 = NPrec in the output model. 
+\end{enumerate}
+
+
+So the node associated with rec4 must dominate the node associated with rec3
+in the output model, and, in fact  rec4 must be the topnode of this outputmodel.
+
+Normally, the actions and conditions w.r.t superdeixis can be carried out upon
+combining two S-trees. However, there is at least one exception to this:
+
+The RC:Propositionsubstitution is applied before anything is known about
+deixis. For that reason the conditions and actions to be carried out for
+superdeixis are carried out in the PROPOKrules.
+
+A second case where problems might occur concerns adverbials: if ADVP-s can
+contain sentences with dependent deixis (e.g. {\em interessanter dan
+Piet schreef} , and if such adverbials are introduced before deixis rules
+(this is the case at this moment), then a similar problem arises:
+(cf. {\em  Hij vertelde interessanter dan Piet schreef}).
+
+This latter problem has not been solved yet.
+
+In the next subsections it is described what action is to be taken w.r.t 
+superdeixis.
+
+\subsection{Generatively}
+
+Several subcases must be distinguished, basically w.r.t.  whether rec1 or rec2
+have a deixis attribute or not.
+The relevant conditions and actions have been written down as condition-action
+pairs.
+
+
+
+
+\begin{enumerate}
+  \item rec1 has no deixis attribute
+	    \begin{enumerate}
+	      \item rec2 has no deixis attribute (e.g. NP under PP)
+
+	       \begin{verbatim}
+                 C1: rec2.superdeixis = Omegadeixis
+                 A1: rec3:=rec1;
+                     rec4:=rec2;
+                     rec4.superdeixis:= rec3.superdeixis
+
+                 C2: rec2.superdeixis = presentdeixis
+                     C21: rec1.superdeixis <> pastdeixis
+                     A21: rec3:=rec1;
+                          rec4:=rec2
+                 A2: @
+                 
+                 C3: rec2.superdeixis = pastdeixis
+                     C31: rec1.superdeixis <> presentdeixis
+                     A31: rec3:=rec1;
+                          rec4:=rec2;
+                 A3:@
+	       \end{verbatim}
+
+C2-A2 and C3-A3 are necessary if rec2.superdeixis has been set already by 
+some other rule.
+
+	      \item rec2 has a deixis attribute  (e.g. NP under SENTENCE)
+              \begin{verbatim}
+               C1: rec2.deixis = Omegadeixis
+                   C11: rec1.superdeixis = Omegadeixis
+                   A11: rec3:=rec1;
+                        rec4:=rec2
+                   
+                   C12: rec1.superdeixis <> Omegadeixis
+                        C121: rec2.superdeixis = rec1.superdeixis
+                        A121: rec3:=rec1;
+                              rec4:=rec2
+                   A12: @
+               A1: @
+
+               C2: rec2.deixis <> Omegadeixis
+                   C21: (rec2.deixis = rec1.superdeixis) OR
+                        ( rec1.superdeixis = Omegadeixis )
+                   A21: rec3:=rec1;
+                        rec4:=rec2
+               A2: @
+              \end{verbatim}
+	    \end{enumerate}
+  
+  \item rec1 has a deixis attribute
+	    \begin{enumerate}
+	      \item rec2 has no deixis attribute (e.g. SENTENCE under NP)
+              \begin{verbatim}
+               C1: rec1.deixis = Omegadeixis
+                   C11: rec2.superdeixis = Omegadeixis
+                   A11: rec3:=rec1;
+                        rec4:=rec2;
+                        rec4.superdeixis := rec3.superdeixis
+
+                   C12: rec2.superdeixis = presentdeixis
+                        C121: rec1.superdeixis <> pastdeixis
+                        A121: rec3:=rec1;
+                              rec4:=rec2
+                   A12: @
+
+                   C13: rec2.superdeixis = pastdeixis
+                        C131: rec1.superdeixis <> presentdeixis
+                        A131: rec3 := rec1;
+                              rec4 := rec2
+                   A13: @
+               A1: @
+
+               C2: rec1.deixis <> Omegadeixis
+               A2: rec3:=rec1;
+                   rec4:=rec2
+	      \end{verbatim}
+	      \item rec2 has a deixis attribute  (e.g. SENTENCE under SENTENCE)
+            \begin{verbatim}
+               C1: rec1.deixis = Omegadeixis
+                   C11: rec2.deixis = Omegadeixis
+                        C111: rec2.superdeixis = rec1.superdeixis
+                        A111: rec3 := rec1;
+                              rec4 := rec2
+                   A11: @
+
+                   C12: rec2.deixis <> Omegadeixis
+                        C121: rec1.superdeixis = rec2.deixis
+                        A121: rec3 := rec1;
+                              rec4 := rec2
+                   A12: @
+               A1: @
+
+               C2: rec1.deixis <> Omegadeixis
+               A2: rec3 := rec1;
+                   rec4 := rec2
+	    \end{verbatim}
+
+	    \end{enumerate}
+  
+
+
+\end{enumerate}
+
+
+\subsection{Analytically}
+
+The following are the analytical variants of the conditions and actions to be
+taken for superdeixis.
+
+\begin{enumerate}
+  \item rec3 has no deixis attribute
+	    \begin{enumerate}
+	      \item rec4 has no deixis attribute (e.g. NP under PP)\\
+	       \begin{verbatim}
+
+                 C1: rec4.superdeixis = rec3.superdeixis
+                 A1: rec1:=rec3;
+                     rec2:=rec4;
+                     rec2.superdeixis:= Omegadeixis
+
+
+                 C2: rec4.superdeixis = presentdeixis
+                     C21: rec3.superdeixis <> pastdeixis
+                     A21: rec1:=rec3;
+                          rec2:=rec4
+                 A2: @
+                 
+                 C3: rec4.superdeixis = pastdeixis
+                     C31: rec3.superdeixis <> presentdeixis
+                     A31: rec1:=rec3;
+                          rec2:=rec4;
+                 A3:@
+	       \end{verbatim}
+
+C2-A2 and C3-A3 are necessary if rec4.superdeixis has been set already by 
+some other rule.
+
+
+	      \item rec4 has a deixis attribute  (e.g. NP under SENTENCE)
+              \begin{verbatim}
+               C1: rec4.deixis = Omegadeixis
+                   C11: rec3.superdeixis = Omegadeixis
+                   A11: rec1 := rec3;
+                        rec2 := rec4
+
+                   C12: rec3.superdeixis <> Omegadeixis
+                        C121: (rec4.superdeixis = rec3.superdeixis) 
+                        A121: rec1 := rec3;
+                              rec2 := rec4
+                   A12: @
+               A1: @
+
+               C2: rec4.deixis <> Omegadeixis
+                   C21: (rec4.deixis = rec3.superdeixis) OR
+                        (rec3.superdeixis = Omegadeixis )
+
+                   A21: rec1:=rec3;
+                        rec2:=rec4
+               A2: @
+              \end{verbatim}
+	    \end{enumerate}
+  
+  \item rec3 has a deixis attribute
+	    \begin{enumerate}
+	      \item rec4 has no deixis attribute (e.g. SENTENCE under NP)
+              \begin{verbatim}
+               C1: rec3.deixis = Omegadeixis
+                   C11: rec4.superdeixis = rec3.superdeixis
+                   A11: rec1:=rec3;
+                        rec2:=rec4;
+                        rec2.superdeixis := Omegadeixis
+
+                   C12: rec4.superdeixis = presentdeixis
+                        C121: rec3.superdeixis <> pastdeixis
+                        A121: rec1:=rec3;
+                              rec2:=rec4
+                   A12: @
+
+                   C13: rec4.superdeixis = pastdeixis
+                        C131: rec3.superdeixis <> presentdeixis
+                        A131: rec1 := rec3;
+                              rec2 := rec4
+                   A13: @
+               A1: @
+
+               C2: rec3.deixis <> Omegadeixis
+               A2: rec1:=rec3;
+                   rec2:=rec4
+	      \end{verbatim}
+	      \item rec4 has a deixis attribute  (e.g. SENTENCE under SENTENCE)
+            \begin{verbatim}
+               C1: rec3.deixis = Omegadeixis
+                   C11: rec4.deixis = Omegadeixis
+                        C111: rec4.superdeixis = rec3.superdeixis
+                        A111: rec1 := rec3;
+                              rec2 := rec4
+                   A11: @
+
+                   C12: rec4.deixis <> Omegadeixis
+                        C121: rec3.superdeixis = rec4.deixis
+                        A121: rec1 := rec3;
+                              rec2 := rec4
+                   A12: @
+               A1: @
+
+               C2: rec3.deixis <> Omegadeixis
+               A2: rec1 := rec3;
+                   rec2 := rec4
+	    \end{verbatim}
+
+	    \end{enumerate}
+  
+
+\end{enumerate}
+
+
+\subsection { Other Situations }
+
+The following are situations that differ slightly from the situations
+described above:
+\begin{enumerate}
+  \item rec2 does not exist.\\
+         Example: put a CN over a NOUN. Here
+        rec1,rec3 = NOUNrecord; rec4 = CNrecord. 
+       Normally no deixis attribute is present on the relevant records.
+The actions to be taken are:
+	       \begin{itemize}
+		 \item \mbox{}
+		       \begin{verbatim}
+rec3 := rec1;
+rec4.superdeixis := rec3.superdeixis
+		       \end{verbatim}
+
+	       \end{itemize}
+
+  \item rec2 does not exist and there are {\em n} rec1's.
+Example: Form a NP out of NP$_{1}$, ..., NP$_{n}$ with a CONJ
+        In this case the following actions are to be taken: Do all
+C-A's (to the extent that they are relevant) for each pair (rec1$_{n}$, rec4)
+
+\end{enumerate}
+
+\subsection{ Some changes in the Method}
+
+There is one changes that might be added to the proposal as done now:
+\begin{enumerate}
+  \item adopting the (what might be called) 'Mountain Climber Method': This
+is the method adopted in R2, where rec3.superdeixis is always set to Omega
+at the end of a rule. The major advantage of this method is that the
+surface parser need not take care of superdeixis.
+\end{enumerate}
+
+This method should be worked out somewhat more.
+
+\section{What to do with polarityattributes?}
+
+\subsection{Generatively}
+
+\begin{enumerate}
+  \item rec1 has the attribute {\em env } (CLAUSE, SENTENCE, VERBPPROP?)
+	 \begin{enumerate}
+	   \item rec2 has the attribute {\em env }
+             \begin{verbatim}
+               C1: rec1.env = Omegapol
+                   C11: rec1.req = pospol
+                        C111: rec2.req = pospol
+                        A111: rec3 := rec1;
+                              rec4 := rec2;
+                              rec4.req := pospol;(*strictly spoken superfluous*)
+                              rec4.env := omegapol
+
+                        C112: rec2.req = Omegapol
+                        A112: rec3 := rec1;
+                              rec4 := rec2;
+                              rec4.req := pospol;
+                              rec4.env := omegapol
+                   A11: @
+
+                   C12: rec1.req = negpol
+                        C121: rec2.req = negpol
+                        A121: rec3 := rec1;
+                              rec4 := rec2;
+                              rec4.req := negpol;
+                              rec4.env := omegapol
+
+                        C122: rec2.req = Omegapol
+                        A122: rec3 := rec1;
+                              rec4 := rec2;
+                              rec4.req := negpol;
+                              rec4.env := omegapol
+                   A12:@
+
+                   C13: rec1.req = omegapol
+                   A13: rec3 := rec1;
+                        rec4 := rec2
+               A1: @
+
+               C2: rec1.env <> omegapol
+               A2: rec3 := rec1;
+                   rec4 := rec2
+
+             \end{verbatim}
+
+	   \item rec2 does not have the attribute {\em env }
+\begin{verbatim}
+               C1: rec1.env = Omegapol
+                   C11: rec1.req = pospol
+                        C111: rec2.req = pospol
+                        A111: rec3 := rec1;
+                              rec4 := rec2;
+                              rec4.req := pospol;(*strictly spoken superfluous*)
+
+                        C112: rec2.req = Omegapol
+                        A112: rec3 := rec1;
+                              rec4 := rec2;
+                              rec4.req := pospol;
+                   A11: @
+
+                   C12: rec1.req = negpol
+                        C121: rec2.req = negpol
+                        A121: rec3 := rec1;
+                              rec4 := rec2;
+                              rec4.req := negpol;
+
+                        C122: rec2.req = Omegapol
+                        A122: rec3 := rec1;
+                              rec4 := rec2;
+                              rec4.req := negpol;
+                   A12:@
+
+                   C13: rec1.req = omegapol
+                   A13: rec3 := rec1;
+                        rec4 := rec2
+               A1: @
+
+               C2: rec1.env <> omegapol
+               A2: rec3 := rec1;
+                   rec4 := rec2
+
+\end{verbatim}
+
+
+
+	 \end{enumerate}
+
+  \item rec 1 does not have the attribute {\em env }
+	 \begin{enumerate}
+	   \item rec2 has the attribute {\em env }
+
+\begin{verbatim}
+               C1: rec1.req = pospol
+                   C11: rec2.req = pospol
+                   A11: rec3 := rec1;
+                        rec4 := rec2;
+                        rec4.req := pospol; (*superfluous *)
+                        rec4.env := omegapol
+
+                   C12: rec2.req = omegapol
+                   A12: rec3 := rec1;
+                        rec4 := rec2;
+                        rec4.req := pospol; 
+                        rec4.env := omegapol
+               A1: @          
+
+               C2: rec1.req = negpol
+                   C21: rec2.req = negpol
+                   A21: rec3 := rec1;
+                        rec4 := rec2;
+                        rec4.req := negpol; (*superfluous *)
+                        rec4.env := omegapol
+
+                   C22: rec2.req = omegapol
+                   A22: rec3 := rec1;
+                        rec4 := rec2;
+                        rec4.req := negpol; 
+                        rec4.env := omegapol
+               A2:@
+
+               C3: rec1.req = Omegapol
+               A3: rec3 := rec1;
+                   rec4 := rec2
+\end{verbatim}
+
+
+	   \item rec2 does not have the attribute {\em env }
+
+\begin{verbatim}
+               C1: rec1.req = pospol
+                   C11: rec2.req = pospol
+                   A11: rec3 := rec1;
+                        rec4 := rec2;
+                        rec4.req := pospol; (*superfluous *)
+
+                   C12: rec2.req = omegapol
+                   A12: rec3 := rec1;
+                        rec4 := rec2;
+                        rec4.req := pospol; 
+               A1: @          
+
+               C2: rec1.req = negpol
+                   C21: rec2.req = negpol
+                   A21: rec3 := rec1;
+                        rec4 := rec2;
+                        rec4.req := negpol; (*superfluous *)
+
+                   C22: rec2.req = omegapol
+                   A22: rec3 := rec1;
+                        rec4 := rec2;
+                        rec4.req := negpol; 
+               A2:@
+
+               C3: rec1.req = Omegapol
+               A3: rec3 := rec1;
+                   rec4 := rec2
+\end{verbatim}
+
+
+	 \end{enumerate}
+\end{enumerate}
+
+
+\subsection{Analytically}
+
+\begin{enumerate}
+  \item rec3 has the attribute {\em env } (CLAUSE, SENTENCE, VERBPPROP?)
+	 \begin{enumerate}
+	   \item rec4 has the attribute {\em env }
+\begin{verbatim}
+               C1: rec3.env = Omegapol
+                   C11: rec3.req = pospol
+                        C111: rec4.req = pospol
+                              rec4.env = omegapol
+                        A111: rec1 := rec3;
+                              rec2 := rec4;
+                              rec2.req := pospol (*superfluous*)
+                        
+                        C112: rec4.req = pospol
+                              rec4.env = omegapol
+                        A112: rec1 := rec3;
+                              rec2 := rec4;
+                              rec2.req := omegapol
+                   A11: @
+
+                   C12: rec3.req = pospol
+                        C121: rec4.req = negpol
+                              rec4.env = omegapol
+                        A121: rec1 := rec3;
+                              rec2 := rec4;
+                              rec2.req := negpol (*superfluous*)
+                        
+                        C122: rec4.req = negpol
+                              rec4.env = omegapol
+                        A122: rec1 := rec3;
+                              rec2 := rec4;
+                              rec2.req := omegapol
+                   A12: @
+
+                   C13: rec3.req = omegapol
+                   A13: rec1 := rec3;
+                        rec2 := rec4
+               A1: @
+
+               C2: rec3.env <> omegapol
+               A2: rec1 := rec3;
+                   rec2 := rec4
+\end{verbatim}
+
+	   \item rec2 does not have the attribute {\em env }
+\begin{verbatim}
+               C1: rec3.env = Omegapol
+                   C11: rec3.req = pospol
+                        C111: rec4.req = pospol
+                        A111: rec1 := rec3;
+                              rec2 := rec4;
+                              rec2.req := pospol (*superfluous*)
+                        
+                        C112: rec4.req = pospol
+                        A112: rec1 := rec3;
+                              rec2 := rec4;
+                              rec2.req := omegapol
+                   A11: @
+
+                   C12: rec3.req = pospol
+                        C121: rec4.req = negpol
+                        A121: rec1 := rec3;
+                              rec2 := rec4;
+                              rec2.req := negpol (*superfluous*)
+                        
+                        C122: rec4.req = negpol
+                        A122: rec1 := rec3;
+                              rec2 := rec4;
+                              rec2.req := omegapol
+                   A12: @
+
+                   C13: rec3.req = omegapol
+                   A13: rec1 := rec3;
+                        rec2 := rec4
+               A1: @
+
+               C2: rec3.env <> omegapol
+               A2: rec1 := rec3;
+                   rec2 := rec4
+\end{verbatim}
+
+
+
+	 \end{enumerate}
+
+  \item rec 3 does not have the attribute {\em env }
+	 \begin{enumerate}
+	   \item rec4 has the attribute {\em env }
+
+\begin{verbatim}
+               C1: rec3.req = pospol
+                   C11: rec4.req = pospol AND
+                        rec4.env = omegapol
+                   A11: rec1 := rec3;
+                        rec2 := rec4;
+                        rec2.req := pospol; (*superfluous *)
+
+                   C12: rec4.req = pospol AND
+                        rec4.env = omegapol
+                   A12: rec1 := rec3;
+                        rec2 := rec4;
+                        rec2.req := omegapol
+               A1: @          
+
+               C2: rec3.req = negpol
+                   C21: rec4.req = negpol AND
+                        rec4.env = omegapol
+                   A21: rec1 := rec3;
+                        rec2 := rec4;
+                        rec2.req := negpol; (*superfluous *)
+
+                   C22: rec4.req = negpol; 
+                        rec4.env = omegapol
+                   A22: rec1 := rec3;
+                        rec2 := rec4;
+                        rec2.req := omegapol
+               A2:@
+
+               C3: rec3.req = Omegapol
+               A3: rec1 := rec3;
+                   rec2 := rec4
+\end{verbatim}
+
+
+	   \item rec2 does not have the attribute {\em env }
+
+\begin{verbatim}
+               C1: rec3.req = pospol
+                   C11: rec4.req = pospol 
+                   A11: rec1 := rec3;
+                        rec2 := rec4;
+                        rec2.req := pospol; (*superfluous *)
+
+                   C12: rec4.req = pospol 
+                   A12: rec1 := rec3;
+                        rec2 := rec4;
+                        rec2.req := omegapol
+               A1: @          
+
+               C2: rec3.req = negpol
+                   C21: rec4.req = negpol 
+                   A21: rec1 := rec3;
+                        rec2 := rec4;
+                        rec2.req := negpol; (*superfluous *)
+
+                   C22: rec4.req = negpol 
+                   A22: rec1 := rec3;
+                        rec2 := rec4;
+                        rec2.req := omegapol
+               A2:@
+
+               C3: rec3.req = Omegapol
+               A3: rec1 := rec3;
+                   rec2 := rec4
+\end{verbatim}
+
+
+	 \end{enumerate}
+\end{enumerate}
+
+\section{How to use all this}
+
+Ideally, we would like to write a separate procedure to take care of
+superdeixis, and polarity. A problem with this approach, however, is formed
+by the fact that the CA-pairs of superdeixis and polarity can create 
+ambiguities (in particular, analytically). Given this fact it is not easy to 
+rebuild these CA-pairs as procedures.
+
+Th\'{i}s problem could be solved by making an additional procedure
+for each case where an ambiguity can arise, and calling these procedures
+in separate condition action pairs, e.g. splitting up (1a) of the superdeixis
+case into two procedures, gensuperdeixis1a1 and gensuperdeixis1a2, that
+are applied to the parameters (super1,super2:deixistype; VAR super3, super4:
+deixistype), where gensuperdeixis1a1 applies all CApairs (in the form of IF
+THEN statemnets) except C1A1, and gensuperdeixis1a2 applis C1A1. It must be
+assumed here that the copying of the records has been done independently.
+The procedures can be called in the following way:
+\begin{verbatim}
+
+
+         C1: ...(* other conditions *)
+             C11: true
+             A11: rec3 := rec1;
+                  rec4 := rec2;
+                  gensuperdeixis1a1(rec1.superdeixis, rec2.superdeixis,
+                                    rec3.superdeixis, rec4.superdeixis)
+             C12: true
+             A12: rec3 := rec1;
+                  rec4 := rec2;
+                  gensuperdeixis1a2(rec1.superdeixis, rec2.superdeixis,
+                                    rec3.superdeixis, rec4.superdeixis)
+         A1: (* other actions *)
+\end{verbatim}
+
+By nesting polarity CA pairs inside these, also these can be accounted for.
+
+The problem with this approach, however, is the following:
+If the conditions inside the special procedures are not met in any case , 
+then a new structure is created {\em without any adaptations w.r.t. superdeixis
+and/or polarity}, which is the wrong result: In that case the rule should not
+be applicable, i.e. not yield any structure whatsoever.
+
+Another option  would be to make separate transformations following 
+substitution rules that account for superdeixis, and for polarity.
+
+The disadvantages of that approach, however are:
+\begin{enumerate} 
+  \item It is a rather complex mechanism, used only to check whether the values
+        of certain attributes have the appropriate value, or to adapt these 
+        slightly. 
+  \item It is not guaranteed that the same conditions and actions w.r.t 
+superdeixis and polarity are applied again and again
+  \item If these transformations should have to apply independently of
+        substitution rules in certain cases (see section 2), and if they have
+        to apply iteratively, then a measure condition prioblem will arise.
+        (Procedures can be included in other rules for which there is no 
+        problem w.r.t. the measure conditions)
+\end{enumerate}
+
+At the moment I see no satisfactory way to resolve these disadvantages and
+problems adequately. All suggestions are welcome.
+
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.2 - released  SEP-1986}
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1986 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

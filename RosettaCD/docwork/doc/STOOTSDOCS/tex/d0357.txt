@@ -1,0 +1,1272 @@
+R0357.tex
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.linguistics.spanish}
+   \RosTitle{Spanish M-rules: CNformation}
+   \RosAuthor{Franciska de Jong, Elly van Munster}
+   \RosDocNr{357}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Spanish, M-rules, CNformation}
+   \MakeRosTitle
+
+\input{[dejong.mrules]mrudocdef}
+
+
+\section{Introduction}
+In this document the subgrammar CNformation for Spanish is described.
+In general the task of this subgrammar 
+is to handle the phenomena involved in the proces of NPformation that pertain 
+syntactically and/or semantically to the level CN.
+It is not relevant to {\bf all} 
+NPs, but only to those 
+that are headed by CN. (This holds for NPs containing either a full NOUN or a 
+EN (empty head).)
+It does not apply to NPs without a CN head (NPs 
+headed by singular proper names or a pronoun.)
+The subgrammar is not supposed to be isomorphic to any other subgrammar 
+of Spanish. 
+
+
+\section{Subgrammar Specification}
+
+\begin{description}
+  \item[Head] SUBNOUN, EN
+  \item[Export] CN
+  \item[Import] OPENADJPPROP,  DETP, OPENPREPPPROP, 
+NP, PROPERNOUN, SENTENCE, NPVAR, SENTENCEVAR
+
+  \item[File] spanish:NPsubgrammars.mrule (mrules77.mrule)
+\end{description}
+
+
+\section{Control Expression}
+
+ The control expression can be represented in the following way:
+
+\begin{verbatim}
+
+    [( RSUBNOUNTONOUN1/1 | RSUBNOUNTONOUN2/2)]
+
+   . ( RCNFORMATION1/3 | RCNFORMATION2/4 | RCNFORMATION3/5 
+     | RCNFORMATION4/6  )
+
+   . (RCNPresentSuperdeixis/100   | RCNPastSuperdeixis/101)
+
+   . [RNOUNargmod1/110  | RNOUNargmod2/111 ]
+
+   . [RCNmodbareNP/16] 
+
+   . [RCNspecProperName/17]
+
+   .{ RCNMODADJP1/7 | RCNMODADJP2/8  | RCNMODNUM/9 | RCNMODPP/10
+     | RCNMODPOSS1/11 | RCNMODPOSS2/12 | RCN     | RCNMODRELSENT1/14}
+
+   .[TRELadeGLUEel/20]
+   .FRELadeGLUEel/22
+
+   .[TPPadeGLUEel/60]
+   .FPPadeGLUEel/61
+\end{verbatim}
+
+
+\section{Rules and Transformations}
+
+\begin{mruleclass}{RC\_SUBNOUNtoNOUN}
+\begin{classdescr}
+\kind Optional Rule Class
+\classtask 
+\begin{enumerate}
+  \item 
+Introduction of the syntactic level NOUN
+  \item
+Determination of the value for .number
+\end{enumerate}
+\classremarks 
+In Rosetta, the morphological aspect of number (inflection),
+as well as the translation
+of number for CNs with a non-empty head
+are dealt with by this RC.
+That is, the two rules that assign values for .number 
+are each mapped onto  a different IL-rule, 
+namely one 
+for singular count nouns (LSUBNOUNTONOUN1), the other both for singular
+mass nouns and plural nouns  (LSUBNOUNTONOUN2).
+
+Note that for CNs with an empty head (EN)
+there is no morphology and hence no number assignment 
+on the the CN head. (The record of category EN contains only the attribute 
+.key). The CN itself {\bf is} 
+specified for number. The translation
+of EN number is dealt with by the mapping of the rules of RC\_CNformation. 
+
+For more detailed comment on the treatment of number in Rosetta3 
+cf. doc:R412 (to appear).
+
+\nofilters
+\nospeedrules
+
+\noplannedrules
+
+\norulesnotince
+
+\rulelist
+\end{classdescr}
+
+\begin{members}
+\begin{member}
+\rulename SUBNOUNtoNOUN1
+\ruletask\mbox{}
+ \begin{enumerate}
+  \item 
+introducing the syntactic level NOUN
+  \item
+assigning singular number to 
+count NOUNs
+\end{enumerate}
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics \nosemantics
+\example hombre, libro, buey, actriz
+\remarks\mbox{}
+
+\end{member}
+\begin{member}
+\rulename SUBNOUNtoNOUN2
+\ruletask \mbox{}
+\begin{enumerate} 
+\item introducing the syntactic level NOUN
+\item
+assigning plural number to count nouns
+\item assigning singular number to mass nouns 
+\end{enumerate}
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics \nosemantics
+\example queso, hombres, juguetes, libros
+\remarks\mbox{}
+
+\end{member}
+\end{members}
+
+\end{mruleclass}
+
+
+\begin{mruleclass}{RC\_CNformation}
+\begin{classdescr}
+\kind Obligatory Rule Class
+\classtask
+ \begin{enumerate}
+  \item 
+Introduction of  the syntactic level CN.
+  \item
+Account for the number of CNs headed by EN.
+\end{enumerate}
+\classremarks\mbox{}
+\begin{enumerate}
+  \item 
+
+As a consequence of the present approach, the translation of 
+number is distributed over two rule classes, pertaining to different
+syntactic levels: RC\_subnountonoun and RC\_CNformation.
+Morphology (inflection) has played a decisive role
+in this decision. As
+ there is no translational relation between full nouns and EN, 
+it does not
+affect the translational performance.
+
+Alternatively we might choose for an approach that translates uniformly on the
+level of CNformation. This would require that RCNformation is split up and 
+mapped onto ILrules in a way comparable to the present rules RsubnounTOnoun1 
+and RsubnounTOnoun2. The latter two should then be replaced by one rule
+(or transformation) that generatively spoken makes all 
+forms available for 
+a certain noun. I.e. 
+a temporal ambiguity would be introduced: one path for
+each possible values for .number.
+
+This alternative would at least have the following advantage of 
+a uniform level for the translation of number
+Future research is needed in order to decide whether this alternative is 
+to be preferred. Especially ellipsis on the basis of contextual information
+should be studied in more detail.
+ 
+ \item Two ENs are distinguished: one for count interpretations and one for 
+mass interpretations. This distinction is a.o. motivated for Dutch. Cf. doc.
+R409.
+  \item
+Among the three rules introducing a CN node to dominate an empty head (EN) 
+the same semantic distinction has been made as for the rules of RC\_
+subnounTOnoun.
+They are mapped on two ILrules: 
+CNformation 3 is mapped onto LCNformationcountsing, the other two
+onto 
+LCNformationmassplur.
+
+\item
+Uptil now, 
+nouns that semanically seem to be mass and plural are treated as count plurals. 
+E.g. {\em vacaciones}, that is considered a count noun because of the criteria 
+in doc. nr. R0284. 
+
+
+\end{enumerate}
+\nofilters
+\nospeedrules
+
+\noplannedrules
+
+\norulesnotince
+
+\rulelist
+\end{classdescr}
+
+\begin{members}
+\begin{member}
+\rulename CNformation1
+\ruletask Introducing the syntactic level CN for NOUNs
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics Lcnformation1
+\example actriz, juguetes, queso
+\remarks\mbox{}
+
+\end{member}
+\begin{member}
+\rulename CNformation2
+\ruletask 
+Introducing a CN node (singular, mass) for a mass EN (empty noun).
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics LCNformationmassplur
+\example mucho/a EN
+\remarks\mbox{}
+
+\end{member}
+\begin{member}
+\rulename CNformation3
+\ruletask Introducing a CN node (singular, count) for a count EN (empty noun).
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics LCNformationcountsing
+\example una/o EN, este/a EN
+\remarks\mbox{}
+
+\end{member}
+\begin{member}
+\rulename CNformation4
+\ruletask Introducing a CN node (plural, count) for a count EN (empty noun).
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics LCNformationmassplur
+\example tres EN, algunas EN, tres EN malos, muchos EN
+\remarks\mbox{}
+
+\end{member}
+\end{members}
+
+\end{mruleclass}
+
+
+\begin{mruleclass}{RC\_CNsuperdeixis}
+\begin{classdescr}
+\kind Obligatory Rule Class
+\classtask To deal with superdeixis
+\classremarks
+\nofilters
+
+\nospeedrules
+
+\noplannedrules
+
+\norulesnotince
+
+\rulelist
+\end{classdescr}
+
+\begin{members}
+\begin{member}
+\rulename RCNPresentsuperdeixis
+\ruletask In generation: set value for superdeixis at presentdeixis.\\
+               In analysis: set value for superdeixis at omegadeixis.    
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics \nosemantics
+\example all CNs
+\remarks\mbox{}
+
+\end{member}
+\begin{member}
+\rulename RCNPastsuperdeixis
+\ruletask In generation: set value for superdeixis at pastdeixis.\\
+               In analysis: set value for superdeixis at omegadeixis.    
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics \nosemantics
+\example all CNs
+\remarks\mbox{}
+
+\end{member}
+\end{members}
+
+\end{mruleclass}
+
+
+\begin{mruleclass}{RC\_NOUNarmod}
+\begin{classdescr}
+\kind Optional Rule Class
+\classtask To introduce variablesfor complements to nouns
+\classremarks
+\begin{enumerate}
+  \item 
+The application of this rule is constrained by  conditions on the attributes 
+{\em 
+thetanp} and {\em nounpatterns}. Optional complements are not introduced as 
+EMPTYs. Instead it is assumed that the application of 
+noun-modification is optional.
+  \item
+In its present state the RC is provisional: it accounts for 
+ varinsertion (only NPVAR), and   caseassignment.
+\end{enumerate}
+
+\nofilters
+
+\nospeedrules
+
+\noplannedrules
+
+\norulesnotince
+
+\rulelist
+\end{classdescr}
+
+\begin{members}
+\begin{member}
+\rulename RNOUNargmod1
+\ruletask To introduce a variable for a prepositional argument.
+\file spanish:CNmodification.mrule (mrules109.mrule)
+\semantics modification
+\example (la) respuesta a NP
+\remarks\mbox{}
+
+\end{member}
+\begin{member}
+\rulename RNOUNargmod2
+\ruletask To introduce a variable for a sentential complement.
+\file spanish:CNmodification.mrule (mrules109.mrule)
+\semantics modification
+\example (el) hecho que ...; (la) cuesti\'{o}n de si ...
+\remarks\mbox{}
+
+\end{member}
+\end{members}
+
+\end{mruleclass}
+
+\begin{mruleclass}{RC\_CNmodbareNP}
+\begin{classdescr}
+\kind Optional Rule Class
+\classtask To specify the content of the head NOUN of the CN
+\classremarks
+\nofilters
+
+\nospeedrules
+
+\noplannedrules
+\rulelist
+\end{classdescr}
+
+\begin{members}
+\begin{member}
+\rulename RCNmodbareNP
+\ruletask To specify the content of the head NOUN of the CN, by
+introducing an NP in postnominal position, preceded by {\em de}.
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics restrictive modification 
+\example \mbox{}
+\begin{enumerate}  
+\item 
+botella (CN) + leche (NP) $\rightarrow$ botella de leche
+  \item
+bolsa (CN) + patatas (NP) $\rightarrow$ bolsa de patatas
+\end{enumerate}
+\remarks\mbox{}
+
+\end{member}
+\end{members}
+
+\end{mruleclass}
+
+\begin{mruleclass}{RC\_CNspecPN}
+\begin{classdescr}
+\kind Optional Rule Class
+\classtask To add a specifying proper name  to a nominal head 
+\classremarks
+\nofilters
+
+\nospeedrules
+
+\noplannedrules
+\rulelist
+\end{classdescr}
+
+\begin{members}
+\begin{member}
+\rulename RCNspecProperName
+\ruletask To add a specifying propername to a nominal head.
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics restrictive modification
+\example \mbox{}
+
+\begin{enumerate} 
+  \item
+proyecto (CN) + Rosetta (proper name) $\rightarrow$ (el) proyecto Rosetta
+  \item
+hermana (CN) + Margreet (proper name) $\rightarrow$  (mi) hermana Margreet
+\end{enumerate}
+\remarks\mbox{} This rule should not be confused with the rule for NP-
+appositions.
+
+\end{member}
+\end{members}
+
+\end{mruleclass}
+
+
+\begin{mruleclass}{RC\_CNmodification}
+\begin{classdescr}
+\kind Recursive Rule Class
+\classtask Introduction of (restrictive) modifiers to the head of the CN.
+\classremarks\mbox{}
+This RC contains a rather heterogeneous set of modification rules. 
+More detailed documentation on the the subset of modpossrules 
+(which deals with possessive modification)
+can be found in doc:r413 
+(to appear).
+\nofilters
+
+\nospeedrules
+
+\begin{plannedrules}
+\item
+Rules that introduce a postnominal gerundio-construction, i.e. 
+a verbal head accompanied by complements or modifiers.
+\end{plannedrules}
+
+\rulelist
+\end{classdescr}
+
+\begin{members}
+\begin{member}
+\rulename RCNmodADJP1
+\ruletask Postnominal modification of a CN by an ADJP  (BADJ.posicion IN 
+[postPosicion, ambosposicion]).
+This involves
+substitution  of the CNVAR of an ADJPPROP.
+\semantics Substitution of the argument variable of the
+ADJPPROP by a CN.
+\file spanish:CNformation.mrule (mrules76.mrule)
+\example x1  frescas + fresas $\rightarrow$ fresas frescas
+\remarks\mbox{}
+\end{member}
+\begin{member}
+\rulename RCNmodADJP2
+\ruletask Modification of a CN  by an ADJP
+that appears in prenominal position (BADJ.posicion IN [preposicion, 
+ambosposicion]).
+This involves
+substitution  of the CNVAR of an ADJPPROP.
+
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics Substitution of the argument variable of the
+ADJPPROP by a CN.
+\example \mbox{}
+
+\begin{enumerate}
+  \item 
+x1 mal + chico $\rightarrow$ (el) mal chico 
+  \item
+x1 gran + idea $\rightarrow$  (la) gran idea
+\end{enumerate}
+\remarks\mbox{}
+
+\end{member}
+\begin{member}
+\rulename CNmodNUM
+\ruletask making a {\em definite} CN out of a CN ('omegadef') and a NUM.
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics numerical modification (specification of the cardinality of the 
+presupposed set)
+\example (los) {\em tres} hombres
+\remarks\mbox{}
+The default value for the CN attribute .definite is made {\em definite} by 
+this rule. Definite CNs are excluded from the formation of determinerless NPs.
+Hence it excluded that on NP-level the numeral is not preceded by a determiner.
+NPs with an initial numeral are derived via NPformation1 and are not
+considered modifiers. 
+\end{member}
+\begin{member}
+\rulename CNmodPP
+\ruletask modification of a CN by a PREPP.  Tthis involves the substitution of 
+the CNVAR of a PREPPPROP.
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics Substitution of the argument variable of the PREPPPROP by a CN.
+\example hombre + [x1 con el chico] $\rightarrow$ (el) hombre  con el chico
+\remarks\mbox{}
+
+\end{member}
+\begin{member}
+\rulename CNmodposs1
+\ruletask
+Introduction of postnominal possessive 'de'-modifiers.
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics modification
+\example libro + yo $\rightarrow$ libro de m\'{\i} 
+
+\remarks\mbox{}
+
+\end{member}
+\begin{member}
+\rulename CNmodposs2
+\ruletask
+Introduction of possessive 'de'-modifiers in case of an empty head noun.
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics modification
+\example \mbox{}
+
+\begin{enumerate}
+  \item 
+EN + yo $\rightarrow$ (las) EN de m\'{i}
+  \item
+EN ammarillos + Juan $\rightarrow$  (los) EN amarillos  de Juan
+\end{enumerate}
+
+\remarks\mbox{}
+
+\end{member}
+\begin{member}
+\rulename CNmodposs3
+\ruletask
+Introduction of possessive modifiers that end up in prenominal position
+via NPformation.\\
+(Compare the semantically equivalent rule CNmodposs1: libro {\em de} mi
+padre  etc.)
+\file spanish:CNformation.mrule (mrules76.mrule)
+\semantics modification
+\example libro + yo $\rightarrow$ libro yo (which ends up as: mi libro)
+\remarks\mbox{}
+
+\end{member}
+
+
+\begin{member}
+\rulename CNmodRELSENT1
+\ruletask Modification of a CN by a restrictive, finite, relative SENTENCE.
+\file spanish:NPsubgrammars.mrule (mrules77.mrule)
+\semantics substitution of the sentential CNvar by a CN
+\example \mbox{}
+
+\begin{enumerate} 
+  \item
+
+casa + [x2 \'{e}l veo ] $\rightarrow$ [casa [ que \'{e}l veo ]]
+  \item
+hombre(s) + [x2 yo sue\~{n}o ] $\rightarrow$ [hombre(s) [con quien(es) yo sue\~{n}o]]
+  \item
+casa(s) + [con x2 yo sue\~{n}o  ] $\rightarrow$ [casa(s) [ con (la(s)) 
+que yo sue\~{n}o]]
+  \item
+hombre + [x2 yo veo ] $\rightarrow$ [hombre [al que yo veo ]]
+  \item (planned subrule !)
+ciudad + [  locrel/x2 vive  ] 
+$\rightarrow$ [ciudad [ donde vive]]
+\end{enumerate}
+\remarks\mbox{}
+\end{member}
+\end{members}
+
+\end{mruleclass}
+
+
+\begin{mruleclass}{TC\_FC\_CNRELGLUErules}
+\begin{classdescr}
+\kind Optional Transformation Class plus Filter
+\classtask
+Glue placement
+\classremarks
+\begin{filters}
+\begin{member}
+\rulename FRELadeGLUEel
+\ruletask To guarantee that TRELadeGLUEel applies if possible.
+\file spanish:NPsubgrammars.mrule (mrules77.mrule)
+
+\end{member}
+\end{filters}
+
+\nospeedrules
+
+\noplannedrules
+
+\norulesnotince
+
+\end{classdescr}
+
+\begin{members}
+\begin{member}
+\rulename TRELadeGLUEel
+\ruletask Putting a GLUE between the PREP 'a' or 'de' + elARTkey in a 
+RELSENT.
+\file spanish:NPsubgrammars.mrule (mrules77.mrule)
+\semantics \nosemantics
+\example el hombre {\bf a el} que doy un libro $\rightarrow$
+                            el hombre {\bf al} que doy un libro
+\remarks\mbox{}
+
+\end{member}
+\end{members}
+
+\end{mruleclass}
+\begin{mruleclass}{TC\_FC\_CNPPGLUErules}
+\begin{classdescr}
+\kind Optional Transformation Class plus Filter
+\classtask 
+Glue placement
+\classremarks
+
+\begin{filters}
+\begin{member}
+\rulename FPPadeGLUEel
+\ruletask To guarantee that TPPadeGLUEel applies if possible.
+\file spanish:NPsubgrammars.mrule (mrules77.mrule)
+
+\end{member}
+\end{filters}
+\end{classdescr}
+
+\begin{members}
+\begin{member}
+\rulename TPPadeGLUEel
+\ruletask Putting a GLUE between the PREP 'a' or 'de' + elARTkey in a 
+PREPP. (NB. Also for "idiom prepositions" ending on 'a' or 'de' !!)
+\file spanish:NPsubgrammars.mrule (mrules77.mrule)
+\semantics \nosemantics
+\example
+ la casa de el hombre $\rightarrow$
+                            la casa {\bf del} hombre
+\remarks\mbox{}
+
+\end{member}
+\end{members}
+
+\end{mruleclass}
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1 (RWR-102-RO-89#1-RO)}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

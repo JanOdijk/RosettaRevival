@@ -1,0 +1,225 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3.linguistics.morph
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Verslag 26-11-1985 
+
+         Author       :  Agnes Mijnhout
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  62
+
+         Date         :  2/12/85
+
+         Status       :  informal
+
+         Supersedes   :  
+
+         Distribution :  morfo's
+
+         Clearance    :  morfo's
+
+         Keywords     :  morphology, verslag
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 62                    date:2/12/85
+$Np 1
+
+
+Bijeenkomst morfologiegroep 26-11-1985.
+
+Aanwezig: Joep Rous, Jan Odijk, Elly van Munster, Harm Smit, Agnes Mijnhout
+
+
+_Derivatieregels in Rosetta3_
+
+$ Veel derivatieprocessen zijn niet volledig regelmatig: sommige woorden kunnen
+niet gemaakt worden en de semantiek van bestaande woorden is niet voorspelbaar.
+Dit soort afgeleide woorden staan in het woordenboek. Regelmatige, produktieve
+derivatieprocessen kunnen gebruikt worden om nieuwe woorden te maken. Hiervoor
+zijn derivatieregels in Rosetta3 nodig.$
+
+$ Twee strategiee@"n zijn voorstelbaar:$
+a. Eerst in het woordenboek kijken; als het woord erin staat, worden er geen 
+   derivatieregels meer toegepast.
+b. Er wordt gekeken of het woord in het woordenboek staat en tegelijkertijd
+   worden de derivatieregels toegepast.
+$ Voordeel van benadering a is dat ambigui@"teiten vermeden worden. Voordeel 
+van benadering b is dat van afgeleide woorden zowel de idioom- als de 
+regelmatige betekenis worden gegenereerd. Het woord _kapper_, b.v., staat in 
+het woordenboek alleen in de betekenis _hairdresser_ en niet in de regelmatige
+betekenis van iemand die iets kapt. De voorkeur wordt daarom aan de tweede
+benadering gegeven, op de volgende manier: een afgeleid woord wordt zowel in
+het woordenboek opgezocht als bewerkt door de derivatieregels. Als het woord
+in het woordenboek wordt gevonden, krijgt het een hogere bonus dan het woord
+dat het resultaat is van de derivatieregels.$
+
+$ Er moeten in principe derivatieregels geschreven worden voor alle processen
+waarmee nieuwe woorden gemaakt kunnen worden. In eerste instantie moeten zeer
+produktieve processen, waarvan weinig woorden in het woordenboek zijn 
+opgenomen, beregeld worden. Verder in ieder geval een aantal representatieve
+gevallen. De deadline zal uiteindelijk bepalen in hoeverre we volledigheid 
+kunnen bereiken.$
+
+_Output van de morfologische komponent_
+
+$ De output van de morfologische komponent zijn lexikale S-trees. In Rosetta2
+zijn dit ook terminale S-trees; voor Rosetta3 zal dit, in verband met de 
+toevoeging van derivatieprocessen, niet voldoende zijn. Derivatieprocessen zijn
+in principe rekursief, b.v. [[[[ kleur ]N loos ]A heid ]N loos ]A, en de aanpak
+met attributen, zoals bij inflektie mogelijk is, ligt niet voor de hand.$
+$ De lexikale S-trees kunnen er als volgt uitzien:$
+
+           CAT                                 CAT
+            |                                   |
+         SUBCAT                              SUBCAT
+                            of
+
+      BCAT    BSUFF                        BPREF   BCAT
+
+$ De BCATs en BAFFs staan in het woordenboek, de SUBCATs niet. De BCATs hebben
+een key, maar geen inflektie, de SUBCATs hebben geen key en ook geen inflektie,
+de CATs hebben geen key en wel inflektie. Inflektieregels werken dus tussen 
+SUBCAT en CAT, de derivatieregels tussen BCAT en SUBCAT en tussen de 
+verschillende niveaus van SUBCATs. De bomen zijn altijd binair en er kunnen
+meerdere niveaus van SUBCATs zijn.$
+
+                           CAT
+                            |
+                         SUBCAT{affix: BSUFF}
+
+                 SUBCAT{affix: BPREF}   BSUFF
+
+           BPREF          SUBCAT{affix: BSUFF}
+
+                     BCAT          BSUFF
+
+$ Derivatieregels moeten zowel op BCATs als op SUBCATs toepasbaar zijn. De
+SUBCATs kunnen via een attribuut _affix_ dat als mogelijke waarden de affixen
+heeft, onthouden wat het laatst toegevoegde affix is. Derivatieregels hoeven
+dan nooit verder te kijken dan de sisternode. (zie ook onder "afgeleide woorden
+in het woordenboek.)$
+$ Er zijn nu twee soorten M-regels: morfologische en andere. De CAT is de grens
+tussen de ene soort en de andere: morfologische M-regels werken onder het 
+niveau van CAT, de andere M-regels erboven. Inflektieregels kunnen in Rosetta3
+in principe op dezelfde manier geformuleerd worden als in Rosetta2.$
+$ De volgorde waarin prefixen en suffixen worden toegevoegd aan BCATs en 
+SUBCATs is niet arbitrair. Het Engelse prefix _un-_, b.v., kan niet voor het
+prefix _dis-_ voorkomen: *_undishonest_. Als _dis-_ echter niet op de laatste
+cyklus is toegevoegd is het niet meer zichtbaar voor _un-_ en kan deze volgorde
+van prefixen wel voorkomen: _undiscoverable_. De lexikale S-trees zouden zijn:$
+
+             A                                       A
+
+BPREF      SUBADJ{affix:dis}             BPREF          SUBADJ{affix: able}
+
+ un    BPREF       BADJ                   un      SUBVERB{affix: dis}    BSUFF
+
+       dis        honest                      BPREF     BVERB            able
+
+                                               dis      cover
+
+$ De regel die _un-_ voor een SUBADJ plaatst hoeft alleen naar de waarde van
+het attribuut _affix_ te kijken.$
+$ De lextree regels moeten zo geformuleerd worden dat de juiste lexikale 
+S-trees worden gegenereerd (er mogen ook onjuiste lexikale S-trees worden 
+gemaakt, als maar gegarandeerd is dat de juiste erbij zitten). De morfologische
+M-regels mogen alleen juiste strukturen accepteren en genereren.$
+
+_Afgeleide woorden in het woordenboek_
+
+$ Op afgeleide woorden die in het woordenboek staan kunnen weer produktieve 
+morfologische regels worden toegepast. Om deze regels goed te kunnen laten
+werken zal het nodig zijn om deze woorden een attribuut te geven met als
+waarde het buitenste prefix of suffix.$
+
+_Suffix-klassen_
+
+$ Er zijn suffixen die dezelfde kategorie-verandering veroorzaken en ook 
+dezelfde betekenis hebben. B.v. _-ness_, _-ity_, en _-cy_ veranderen een A in 
+een N met dezelfde betekenisverandering. Nederlandse vertaling: _-heid_, 
+_-iteit_. Morfologische M-regels kunnen in principe op drie manieren worden
+geformuleerd voor deze suffixen.$
+1. De suffixen worden syncategorematisch ingevoerd.
+2. Er wordt een abstrakte basisexpressie geformuleerd voor deze klasse van
+   suffixen.
+3. Ieder suffix is een basisexpressie.
+$ Er zijn op dit moment geen argumenten om aan een van deze drie benaderingen
+de voorkeur te geven.$
+
+_GLUEs_
+
+$ Een woord als _opbellen_ wordt in de morfologische komponent gesplitst in
+op, GLUE, bellen. Het is niet nodig dat de lextree regels hier weer een
+boom van maken. De S-parser moet _opbellen_ wel als een konstituent opleveren.$
+
+_Stripping_
+
+$ De spellingsregels zijn ervoor bedoeld om zo snel mogelijk de stam van een 
+woord te bepalen. De vraag is hoe efficie@"nt deze regels kunnen werken door
+iedere keer als er een affix wordt afgehaald de rest een kategorie toe te 
+kennen. Bij prefixen zal dit niet zo goed gaan, omdat deze eigenlijk geen 
+restrikties opleggen aan de kategorie van het basiswoord. Suffixen, 
+daarentegen, selekteren wel de kategorie van het basiswoord. Door vanaf de
+andere kant met strippen te beginnen kunnen de spellingsregels misschien
+efficie@"nter werken.$
+
+_Context-conditie_
+
+$ Van Dale bevat informatie over de uitspraak van de opgenomen woorden. De
+vraag is of er morfologische processen zijn die afhankelijk zijn van 
+uitspraakinformatie die niet uit de string kan worden afgeleid. Dit is o.a.
+het geval bij de keuze van de vorm van het Engelse onbepaalde lidwoord.$
+
+_Klemtoonstreepje Spaans_
+
+$ Morfologische regels kunnen verplaatsing of gelijkblijven van de klemtoon in
+het basiswoord tot gevolg hebben. Het Spaans plaatst in het geval de klemtoon
+van de normale regels afwijkt een streepje. Dit zal ook door de morfologische
+regels geregeld moeten worden.$
+B.v. joven     - jo@'venes
+     caracter  - caracteres
+
+_Overzichten affixen_
+
+$ Een aantal affixen zijn nog niet in de overzichten opgenomen. B.v. _mega-_,
+_mili-_, etc. Er wordt een afspraak gemaakt om 29-11 te beginnen met de
+bespreking van de overzichten. Op 6-12 om 9.15u. wordt doc. nr. 8 (The 
+morphological
+components of Rosetta2) besproken, Joep kan eventuele vragen beantwoorden.
+Op 3-12 om 9.15u. zullen we samen met Jan Landsbergen naar de Nederlandse
+morfologische regels van Rosetta2 gaan kijken.$

@@ -1,0 +1,1393 @@
+R0136.tex
+\documentstyle{Rosetta}
+\begin{document}
+\newcommand{\RBS}{{\bf RBS}}
+
+\RosTitle{\RBS, a RoBuSt and flexible software management system}
+\RosAuthor{Fellinger, Rous}
+\RosDate{\today}
+\RosTopic{general}
+\RosDocNr{136}
+\RosStatus{concept}
+\RosSupersedes{136:November 17,1986}
+\RosDistribution{project}
+\RosClearance{project}
+\RosKeywords{\RBS, software management}
+\MakeRosTitle
+
+\renewcommand{\[}{\verb/[/}
+\renewcommand{\]}{\verb/]/}
+
+\section{Introduction}
+This document describes an environment for the development and maintenance of
+complex software systems. Because complex software systems are mostly
+developed by a team of software engineers and possibly other specialists,
+the environment must offer each user a maximum of flexibility while
+protecting the work of others. Moreover a good environment must guarantee the
+integrity of the archived software and maintain a history of the development
+process. Finally it must be simple, easy to 
+understand and adaptable to the specific needs of an application.
+It is our opinion that the environment described in this document
+meets all these requirements.
+
+The system creating this environment has been developed in the Rosetta
+project at Philips Research Laboratories on a VAX running under the VMS
+operating system. In the
+implementation the DEC products CMS and MMS are heavily used which makes the
+system less portable to other operating systems.
+The name of the system, \RBS, used to be a
+abbreviation for {\em Rosetta Beheers Systeem}, which is Dutch for
+{\em Rosetta Management System}.
+
+In section 2 the philosophy behind the \RBS\ system will be explained.
+In section 3 the infra structure of the environment will be described.
+The commands that are provided by the \RBS\
+system are introduced in section 4. Some desirable future extensions are
+discussed in section 5.
+And finally, the usage of \RBS\ within the Rosetta project is presented in
+appendix A as an interesting example.
+
+\section{The philosophy behind \RBS}
+
+\begin{itemize}
+\item
+A complex software system consists of several releases.
+Each release can be subdivided into components.
+Each component contains related software that may use software from other
+components. The basic units into which the software can be divided are files.
+
+Some files are automatically constructed out of other files. We will call
+such an automatically constructed file a {\em target}. The files out of which
+a {\em target} is constructed will be called its {\em source\/}s. A {\em target}
+may act as a {\em source} to other {\em target\/}s.
+A {\em target} \underline{depends} on its {\em source\/}s.
+
+It is necessary to explicitly state the dependencies between the files of a
+complex software system. These dependencies determine the order in which all
+the  {\em target\/}s, and thereby the system, must be constructed. A software
+management system should provide for an operation that will take care of the
+proper construction of {\em target\/}s given a dependency description of the
+software system. We will call this operation the {\bf build} operation. 
+
+\item
+During the development of a complex software system several specialists
+will work simultaneously on the software of the same release and 
+possibly even the same component. 
+
+\item
+A developer should not depend on software which is currently being created 
+or modified by
+others. Therefore it is necessary to distinguish between approved and
+non-approved software. Approved software should be available to all the
+developers, whereas non-approved software should only be available to its
+creator. 
+
+\item
+The approved software is kept in the so called archive. Each developer has
+his own local area ( environment ) in which his non-approved software is
+kept. Only after non-approved software is formally approved it can be made 
+available to others by transferring it to the archive. Because the archive
+will be changed during this process, utmost care must be taken
+to assure the consistency and correctness of the archived software.
+
+The software may only be transferred when the archive is not being used, in
+particular it can not be started when a build operation is in progress.
+Moreover between approving and transferring the software to the archive, the
+archive may not change. And finally during the transfer of the software to the
+archive, the archive is temporarily inconsistent and should therefore not be
+accessible. 
+
+The approval process of software consists of two phases. In the first phase the
+software is compiled and linked together. This must be done in a well-defined
+environment to assure that the approved software contains no user environment
+dependencies. In the second phase the software is tested with a testbench which
+has been defined for the application under consideration. 
+
+
+\item
+For software management reasons it is desirable to keep track of  
+modifications and expansions of the approved-software. Furthermore, it is
+desirable to prevent that two developers create or modify the same piece 
+of software at the same time.
+
+\item
+A software management system should distinguish between several kind of users, 
+each having its own set of privileges.
+
+\item
+A software management system should be adaptable to the specific needs of an 
+application.
+
+\end{itemize}
+
+
+\section{The \RBS\ design}
+
+\subsection{The infra structure}
+
+In the previous section we pointed out that the pivot of the \RBS\ system is
+the {\em archive}. We also stated that the \RBS\ system offers the
+possibility to distinguishes
+software {\em release}s. Furthermore, it was mentioned that each {\em release} 
+consists of a number of {\em component}s. And finally, each component
+contains files that eventually make up the software system.
+
+This division into 
+releases and components is reflected in the directory structure of the 
+{\em archive} as it is created by \RBS (see figure 3.1.a).
+The archive directory structure, which starts at the archive root contains
+a subdirectory for each release, which contains on its turn subdirectories
+for all its components.
+\RBS\ will create for each \RBS-user a directory structure
+similar to the archive on request of the user.
+
+Each component directory in the archive has three subdirectories, namely
+the VMS, CMS and CREATE directory. The VMS directory contains the most
+recent (archived) version of each file, whereas the CMS directory contains 
+(in coded form) the complete history of each {\bf genuine source}
+ file (that is,
+a file that
+can not be generated out of other files). The CREATE directory is 
+used by \RBS\ to guarantee that a filename is unique within a component.
+
+A user component directory has three subdirectories, namely WORK, SAVE and
+TEMP. A WORK or SAVE directory can only contain genuine sources . The files in 
+the WORK directory are actually used to build the system, whereas the files in 
+the SAVE directory are temporarily not in use. All
+files which are generated by means of {\bf build} operations end up in the TEMP
+directory. 
+
+The archive directory structure can be tailored to the specific needs of the
+application. That is releases may be created at will, and within each release
+components may be created at will. The ACTIONS component, however, is
+mandatory. It is automatically created by the \RBS\ system during the creation
+of a new release. 
+
+\begin{verbatim}
+
+              archiveroot                          userroot
+
+
+     ...      releasename     ...           ...   releasename   ...
+
+
+     ...     componentname    ...           ...   componentname  ...
+
+
+           CMS    VMS   CREATE                  SAVE   WORK  TEMP
+
+                                 fig. 3.1.a
+\end{verbatim}
+
+\subsection{Adapting \RBS\ to the application}
+
+The ACTIONS component contains the files initialize.com and finalize.com; these
+files are executed selecting a release. Every component contains the files
+enter.com and leave.com; these files are executed selecting a component. In
+this way it is made possible to alter some \RBS\ parameters and to add
+application dependent commands etc., thereby adjusting the environment to
+the specific needs of the application. 
+
+The \RBS\ parameters which can be set any time after \RBS\ has been setup are:
+\begin{description}
+\item[\RBS\_verify]
+This parameter defines whether the \RBS\ command files are executed in verify 
+mode (0) or not (1). Its use is to assist in the debugging of the \RBS\ system.
+\item[\RBS\_upgrade]
+This parameter defines whether the WORK directories are upgraded ("TRUE")
+or not ("FALSE") by the {\bf build} operations.
+Upgrading of the WORK directories is necessary to guarantee the correctness
+of {\bf build} operations if in between the {\bf build} operations
+of one user an {\bf integrate} action of another user has
+occured.
+\end{description}
+
+The \RBS\ parameters which can be set in the initialize.com file are:
+\begin{description}
+\item[\RBS\_short\_batch]
+This parameter defines which batch queue is to be used for {\bf sbuild}
+operations.
+\item[\RBS\_long\_batch]
+This parameter defines which batch queue is to be used for {\bf lbuild}
+operations.
+\item[\RBS\_integrate\_batch]
+This parameter defines which batch queue is to be used for {\bf integrate}
+operations.
+\item[\RBS\_long\_batch\_priority]
+This parameter defines the base priority of the batch queue used for
+{\bf lbuild} operations.
+\item[\RBS\_short\_batch\_priority]
+This parameter defines the base priority of the batch queue used for
+{\bf sbuild} operations.
+\item[\RBS\_integrate\_batch\_priority]
+This parameter defines the base priority of the batch queue used for
+{\bf integrate} operations. The base priority may be raised temporarily during
+the consolidation fase to speed up this fase and thereby deminishing the time that
+the archive is not accessable.
+\item[\RBS\_consolidate\_priority]
+This parameter defines the base priority of the batch queue used for
+{\bf integrate} operations during the consolidation fase.
+\item[\RBS\_lock\_interval]
+This parameter defines the interval between successive trials to lock the 
+archive and the user area for read or read/write access. The value should be in 
+VMS delta time format (see the VMS manuals for the details of this format). A 
+busy form of waiting is used and therefor it is advised not to choose a very 
+short lock\_interval.
+\item[\RBS\_MMS\_qualifiers]
+This parameter is used to adjust the {\bf build} and the {\bf sbuild}
+ operation to the application.
+The {\bf lbuild} and the {\bf sbuild}
+ operation are implemented using the VMS/MMS package, this 
+parameter is passed to MMS. See the appropriate VMS manual for more information.
+\end{description}
+
+The \RBS\ parameter which has to be set in the enter.com file is:
+\begin{description}
+\item[\RBS\_source\_extensions]
+This parameter is used by many commands to determine whether the user is 
+allowed to process the file upon which the command is ment to work. This is 
+done by checking that the actual file extension is specified in
+\RBS\_source\_extensions.
+\end{description}
+
+The ACTIONS 
+component should contain for each type of target file a .COM command file that 
+can be used to generate targets of the particular type from one or more 
+sources. Typical command files are: a file for compiling PASCAL ( any 
+other programming language can be substituted here) sources, a file for
+linking an executable from a number of object files, but also files that
+make use of compilers which are developed for the application under
+consideration. 
+
+The ACTIONS component may contain .EDT and .HLP files. These files will be used
+to adapt the VMS/EDT editor to the specific needs of editing different kinds of
+files. The .EDT and .HLP files, that have as name the file extension of the
+file to be edited, will be used to adapt the editor, if they exist. If the
+ACTIONS component contains the files EDTINI.EDT and EDTINI.HLP and not the file
+extension specific .EDT and .HLP files then the EDTINI.EDT and EDTINI.HLP files
+will be used to adapt the editor. This allows for the definition of a default
+adaption of the VMS/EDT editor. Pressing the {\bf Gold} and {\bf  Help} keys
+during an edit session should give extra information on the particular
+adaptation. 
+
+\section{The \RBS\ commands}
+In this section we will describe the commands that \RBS\ offers to its
+users. In the description of the commands the terms {\em source} and
+{\em target}
+will be used with the following meaning:
+\begin {description}
+\item[source] A string of the form 
+[{\em componentname\/}:]{\em filename\/}.{\em file-extension}
+\item[target] Any string, but mostly it will be of the form
+[{\em componentname\/}:]{\em filename\/}.{\em file-extension}
+\end {description}  
+If the {\em componentname} is omitted then the name of the currently selected 
+component is used. If no component is currently selected then an appropiate 
+error message will be generated and the command will be terminated.
+
+\subsection{Commands for {\em Unknown User\/}s}
+\begin{quote}
+{\bf @rbs\_dir:setuprbs} {\em archiveroot} {\em userroot}
+\end{quote}
+The {\bf @rbs\_dir:setuprbs} command initializes the \RBS\ environment.
+For {\em archiveroot} and {\em userroot} a full VMS directory name has to be
+specified. Non existing roots will result in an error message and in the
+cancelation of the setup.
+
+A proper setup is prerequired for all other \RBS\ commands!
+
+\begin{quote}
+{\bf @rbs\_dir:rbscomms}
+\end{quote}
+The {\bf @rbs\_dir:rbscomms} command makes all \RBS\ commands available without
+the prefix {\bf rbs\_}.
+
+\begin{quote}
+{\bf rbs\_selrelease} {\em releasename}
+\end{quote}
+The {\bf rbs\_selrelease} command selects the specified release, t.i.
+the specified
+release becomes the current release. If the specified
+release is not present in the archive then an error message is generated and
+nothing is done. In case the specified release is present in the archive but
+not yet in the user library structure the {\bf rbs\_selrelease} command asks
+whether
+it should create the relevant library structure or not and behaves accordingly.
+The {\bf rbs\_selrelease} command will ask for the {\em releasename} if it is
+omitted. Specifying a question mark instead of {\em releasename} will result
+in a listing of all the releases that are available.
+
+\begin{quote}
+{\bf rbs\_selcomponent} {\em componentname}
+\end{quote}
+The {\bf rbs\_selcomponent} command selects the specified component of the
+current
+release. If no release has been selected yet, then an error message is
+generated and nothing is done. If the specified component is not present in
+the archive then an error message is generated and
+nothing is done. In case the specified component is present in the archive but
+not yet in the user library structure the {\bf rbs\_selcomponent} command asks
+whether it should create the relevant library structure or not and behaves
+accordingly.
+The {\bf rbs\_selcomponent} command will ask for the {\em componentname} if it
+is
+omitted. Specifying a question mark instead of {\em componentname} will result
+in a listing of all the components that are available.
+
+
+\begin{quote}
+{\bf rbs\_select} \[{\em releasename\/}\] {\em componentname}
+\end{quote}
+If a releasename is specified or no release has been selected yet
+then the {\bf rbs\_select} command is an abbreviation
+for {\bf rbs\_selrelease}
+ {\em releasename\/} followed by
+{\bf rbs\_selcomponent} {\em componentname}, otherwise it behaves as
+the {\bf rbs\_selcomponent} component command.
+
+\begin{quote}
+{\bf rbs\_inspect} {\em source}
+\end{quote}
+The {\bf rbs\_inspect} command provides access to files that are in the
+archive of the current release and the specified component.
+If no release has been selected yet, or no component is specified and no
+component has been selected either then an error message is generated and
+nothing is done.
+The specified file is accessed by means of the VMS/EDT editor in a so called
+{\em read only} mode, so it is not possible to change the archive file.
+The {\bf rbs\_inspect} command will ask for the {\em source} if it is
+omitted. Specifying a question mark instead of {\em source} will result
+in a listing of all the files that are available in the current component.
+
+The {\bf rbs\_inspect} command tries to adapt the editor to the file type being
+edited (pressing the keys {\bf Gold} and {\bf Help} should give extra
+information on the particular adaptation).
+
+\begin{quote}
+{\bf rbs\_test} {\em target}
+\end{quote}
+The {\bf rbs\_test} command is to be used to run the target with the specified
+name
+of the current release.
+Unfortunately the syntax given here is provisional. The command has not been
+implemented yet and may change because of implementation conciderations.
+
+\begin{quote}
+{\bf rbs\_edt} {\em any valid VMS file name}
+\end{quote}
+The {\bf rbs\_edt} command provides a way to edit files that do not reside
+under the \RBS\ system in much the same way as the {\bf rbs\_inspect} and the
+{\bf rbs\_modify} commands. Prerequired is that \RBS\ has been properly setup
+and a release has been selected. This command does not allow to edit files that
+do reside under the \RBS\ system. 
+
+The {\bf rbs\_edt} command tries to adapt the editor to the file type being
+edited (pressing the keys {\bf Gold} and {\bf Help} should give extra
+information on the particular adaptation), and automatically restarts a
+previously aborted edit session! 
+
+\subsection{Commands for {\em Guest}\/s}
+Apart from the commands that are available to {\em Unknown User\/}s the
+following commands are available to {\em Guest\/}s.
+
+\begin{quote}
+{\bf rbs\_modify} {\em source}\[;-1\]
+\end{quote}
+The {\bf rbs\_modify} command enables to modify a source file in the specified 
+or current
+component of the current release. If no release or no component has been
+selected yet then an error message is generated and nothing is done. 
+If the file didn't exist in the archive
+yet then the {\bf rbs\_modify} command
+asks whether the file must be created or not and behaves accordingly. If the
+file exists in the archive but 
+is not present in the user library then an error message is generated
+and nothing is done.
+
+If ;-1 is appended to {\em source} then the previous version of the file is 
+used, otherwise the latest version is used.
+
+If an invalid file extension is specified, t.i. an file extension not belonging
+to the set of file extensions of the current component of the current release,
+then an error message is generated and the user is asked for a new file name.
+The {\bf rbs\_modify} command will also ask for the {\em source} if it is
+omitted. Specifying a question mark instead of {\em source} will result
+in a listing of all the files that are available in the current component.
+
+The {\bf rbs\_modify} command tries to adapt the editor to the file type being
+edited (pressing the keys {\bf Gold} and {\bf Help} should give extra
+information on the particular adaptation), and automatically restarts a
+previously aborted edit session! 
+
+\begin{quote}
+{\bf rbs\_lbuild} {\em target\/} \[{\em after}\]\\
+{\bf rbs\_sbuild} {\em target\/} \[{\em after}\]
+\end{quote}
+The {\bf rbs\_lbuild} and {\bf rbs\_sbuild} commands both
+update the specified target of the current release.
+If no release has been selected yet then an error message is generated and
+nothing is done.
+
+The {\bf rbs\_lbuild} and {\bf rbs\_sbuild} commands are equivalent, but for
+the fact that the {\bf rbs\_lbuild} uses the \RBS\_long\_batch and has no
+cpu-time limit where as the {\bf rbs\_sbuild} will use the \RBS\_short\_batch
+which ought to have a cpu-time limit and is only meant for small build jobs. 
+
+The user has no access to his files once a build command has
+started. It is possible, however, to postpone the build command
+using the {\em after} parameter. Its value should be in VAX/VMS delta or
+absolute value, and is for small values of the form {\em hh:mm:ss} (see the
+VAX/VMS manuals for more details). 
+
+The user has no access to his files once a build command has
+started. It is possible, however, to postpone the build command
+using the {\em after} parameter. Its value should be in VAX/VMS delta or
+absolute value, and is for small values of the form {\em hh:mm:ss} (see the
+VAX/VMS manuals for more details). 
+
+A target may be, among other things, an executable, an object or in some cases
+a Pascal source file. Updating a target implies updating all the files that are 
+needed to generate the target. This means that for an executable all the 
+objects that it consists of will be updated, for an object its source file will 
+be updated. However updating is only done when a target is older than the files 
+it is generated from.
+
+The \RBS\ system guarantees that the archive does not change during a build
+operation to assure the correctness of the build operation.  Therefore if
+someone is upgrading the archive (see the  {\em integrate} command) the build
+operation is postponed until the archive is available again. Whenever the
+archive changes after a build it is necessary to upgrade the WORK directories
+to assure correctness of subsequent builds. Whether this is done depends on the
+value of the \RBS\_upgrade parameter. 
+
+The \RBS\ system allows the user to start an other build action and even
+to change its own files during a build
+operation although this might invalidate the build. This is allowed to
+improve the flexibility and the accessibility of the system
+for the user. The users should be aware of the fact
+that the use of this feature might interfere with any build operations in
+progress.
+
+The build commands
+will ask for a targetname if it is
+omitted. Specifying a question mark instead of a targetname is allowed but
+will not give any usefull information.
+
+\begin{quote}
+{\bf rbs\_sholog} \[$*$\]
+\end{quote}
+The {\bf rbs\_sholog} command types the content of the logfile of the
+build or integrate
+operation on your terminal. If you specify $*$ then all logfiles are
+displayed otherwise only the latest logfile is displayed. If no release has
+been selected yet then an error message is generated and nothing is done.
+
+\begin{quote}
+{\bf rbs\_clear}
+\end{quote}
+The {\bf rbs\_clear} command removes all intermediate results of previous build
+operations in the current release. If no release has been selected yet then
+ an error message is generated and nothing is done.
+
+\begin{quote}
+{\bf rbs\_grab} {\em source}
+\end{quote}
+The {\bf rbs\_grab} command copies the specified source from the specified or
+the current
+component
+of the current release of the archive to the user. Furthermore, the file in
+the archive is reserved exclusively for the user, in order to prevent other
+users from changing the same file. In case the file was grabbed already or in
+case the file did not exist or no release or no component has been selected
+yet, an appropiate error message is generated and nothing is done.
+
+If an invalid file extension is specified, t.i. an file extension not belonging
+to the set of file extensions of the specified component of the current release,
+then an error message is generated and the user is asked for a new file name.
+The {\bf rbs\_grab} command will also ask for the {\em source} if it is
+omitted. Specifying a question mark instead of {\em source} will result
+in a listing of all the files of the current component.
+For grabbed files the name of the user that
+grabbed the files are listed too.
+
+\begin{quote}
+{\bf rbs\_free} {\em source}
+\end{quote}
+The {\bf rbs\_free} command makes a previously reserved file of the specified
+or the current
+component of the current release accessible to other
+users again
+and removes the file from the user library. If the file is not present in the
+work library of the current component  of the current release of the user,
+or no component or release has been selected yet then the
+appropiate error message is generated and nothing is done.
+
+If an invalid file extension is specified, t.i. an file extension not belonging
+to the set of file extensions of the current component of the current release,
+then an error message is generated and the user is asked for a new file name.
+The {\bf rbs\_free} command will also ask for the {\em source} if it is
+omitted. Specifying a question mark instead of {\em source} will result
+in a listing of all the files of the current component.
+For grabbed files the name of the user that
+grabbed the file is listed too.
+
+To guarantee the correctness of subsequent {\bf rbs\_build} commands it is
+necessary to use the {\bf rbs\_clear} command first.
+
+\begin{quote}
+{\bf rbs\_save} {\em source}
+\end{quote}
+The {\bf rbs\_save} command moves the specified file from the work library of
+the specified component of the current release of the user to the save library.
+ If the file is not present in the
+work library of the current component  of the current release of the user,
+or no component or release has been selected yet then the
+appropiate error messages is generated and nothing is done.
+In the specification of the source wildcards are allowed.
+
+If an invalid file extension is specified, t.i. an file extension not belonging
+to the set of file extensions of the current component of the current release,
+then an error message is generated and the user is asked for a new file name.
+The {\bf rbs\_save} command will also ask for the {\em source} if it is
+omitted. Specifying a question mark instead of {\em source} will result
+in a listing of all the files that are in the work area of the specified
+component.
+
+To guarantee the correctness of subsequent {\bf rbs\_build} commands it is
+necessary to use the {\bf rbs\_clear} command first.
+
+\begin{quote}
+{\bf rbs\_work} {\em source}
+\end{quote}
+The {\bf rbs\_work} command moves the specified file from the save library of
+the specified component of the current release of the user to the work library.
+ If the file is not present in the
+save library of the current component  of the current release of the user,
+or no component or release has been selected yet then the
+appropiate error messages is generated and nothing is done.
+In the specification of the source wildcards are allowed.
+
+If an invalid file extension is specified, t.i. an file extension not belonging
+to the set of file extensions of the current component of the current release,
+then an error message is generated and the user is asked for a new file name.
+The {\bf rbs\_work} command will also ask for the {\em source} if it is
+omitted. Specifying a question mark instead of {\em source} will result
+in a listing of all the files that are in the save area of the specified
+component.
+
+To guarantee the correctness of subsequent {\bf rbs\_build} commands it is
+necessary to use the {\bf rbs\_clear} command first.
+
+\subsection{Commands for {\em User\/}s}
+Apart from the commands that are available to {\em Guest\/}s the
+following commands are available to {\em User\/}s.
+
+\begin{quote}
+{\bf rbs\_integrate} \[{\em after}\]
+\end{quote}
+The {\bf rbs\_integrate} command is to be used to transfer the files from the
+user
+into the archive. Before this is done the complete system will be build and
+tested. If no release has been selected yet then an error message is
+generated and nothing is done. If an error occurs during the build operation
+or the test then an appropiate error message is generated and the integration
+is not completed.
+
+The user has no access to his files once the {\bf rbs\_integrate} command has
+started. It is possible, however, to postpone the {\bf rbs\_integrate} command
+using the {\em after} parameter. Its value should be in VAX/VMS delta or
+absolute value, and is for small values of the form {\em hh:mm:ss} (see the
+VAX/VMS manuals for more details). 
+
+To guarantee that the built system is made from user and archive
+files of the current release only, all logical names and symbols are removed
+and all the intermediate results of previous build operations of the user are
+removed before building the complete system. It is also (partly) checked that
+no foreign files are in the user library.
+
+The newly built and tested system is consolidated, t.i. all the grabbed and all
+the new source files of the user that contributed to the new system are
+returned to or entered into the archive and made available to other users
+(again). The intermediate results are transported to the archive too. 
+
+An integration consists of three phases. In the first phase a new system is
+build, in the second phase the system is tested and in the last phase the system
+is consolidated, t.i. the archive is upgraded. The last phase may not coincide
+with a build operation. Therefore if a build is in progress then the
+consolidation is postponed until the build has finished and all future builds
+are postponed until the consolidation has finished.
+
+To assure that a consolidated system has been build using the current
+archive and the user files, the \RBS\ system allows only one integration
+action at a time. Therefore if an integration is in progress then each
+new integration is postponed.
+
+\subsection{Commands for {\em SuperUser\/}s}
+The commands that are available to {\em User\/}s are also
+available to {\em SuperUser\/}s. The only difference is that
+ {\em SuperUser\/}s are always allowed access to {\bf .COM} and {\bf .MMS}
+files.
+
+\subsection{Commands only for {\em Archive}}
+The only commands that are available to {\em Archive\/} are the
+following commands.
+
+\begin{quote}
+{\bf rbs\_selrelease} {\em releasename}
+\end{quote}
+The {\bf rbs\_selrelease} command selects the specified release, t.i. the
+specified release becomes the current release. If the specified
+release is not yet
+present in the archive then the {\bf rbs\_selrelease} command asks whether
+it should create the release and the
+relevant library structure or not and behaves accordingly.
+The {\bf rbs\_selrelease} command will ask for the {\em releasename} if it is
+omitted. Specifying a question mark instead of {\em releasename} will result
+in a listing of all the releases that are available.
+
+\begin{quote}
+{\bf rbs\_selcomponent} {\em componentname}
+\end{quote}
+The {\bf rbs\_selcomponent} command selects the specified component of the
+current
+release. If no release has been selected yet, then an error message is
+generated and nothing is done. If the specified component is not yet present in
+the archive then the {\bf rbs\_selcomponent} command asks
+whether it should create component and the
+the relevant library structure or not and behaves
+accordingly.
+The {\bf rbs\_selcomponent} command will ask for the {\em componentname} if it
+is omitted. Specifying a question mark instead of {\em componentname} will
+result in a listing of all the components that are available.
+
+
+\begin{quote}
+{\bf rbs\_select} \[{\em releasename\/}\] {\em componentname}
+\end{quote}
+If a releasename is specified or no release has been selected yet
+then the {\bf rbs\_select} command is an abbreviation
+for {\bf rbs\_selrelease}
+ {\em releasename\/} followed by
+{\bf rbs\_selcomponent} {\em componentname}, otherwise it behaves as
+the {\bf rbs\_selcomponent} component command.
+
+\begin{quote}
+{\bf rbs\_addguest}
+\end{quote}
+The {\bf rbs\_addguest} command lists the current {\em Guest\/}s and asks for
+the name of a new guest to add.
+
+\begin{quote}
+{\bf rbs\_adduser}
+\end{quote}
+The {\bf rbs\_adduser} command lists the current {\em User\/}s and asks for the
+name of a new user to add.
+
+\begin{quote}
+{\bf rbs\_addsuperuser}
+\end{quote}
+The {\bf rbs\_addsuperuser} command lists the current {\em SuperUser\/}s and
+asks for the name of a new superuser to add.
+
+\begin{quote}
+{\bf rbs\_delguest}
+\end{quote}
+The {\bf rbs\_delguest} command lists the current {\em Guest\/}s and asks for
+the name of the guest to remove.
+
+\begin{quote}
+{\bf rbs\_deluser}
+\end{quote}
+The {\bf rbs\_deluser} command lists the current {\em User\/}s and asks for the
+name of the user to remove.
+
+\begin{quote}
+{\bf rbs\_delsuperuser}
+\end{quote}
+The {\bf rbs\_delsuperuser} command lists the current {\em SuperUser\/}s and
+asks for the name of the superuser to remove.
+
+\section{Desirable future extensions}
+Using the \RBS-system we found that some minor improvements can be made.
+The following list is not exhaustive, but it may
+serve as a reminder:
+\begin{itemize}
+\item The \RBS-system was implemented in VMS-DCL, a Fortran like command
+interpreter. The system would become more efficient and it would probably
+contain less errors if it were implemented in some high level language, e.g.,
+Pascal. 
+
+\item Make user-directories sub-directories of the archive so that it becomes 
+less easy for users to access the user-directories without using \RBS-commands.
+
+\item Sub-releases still have to be implemented.
+\end{itemize}
+
+
+\appendix
+\section{An interesting example}
+In this appendix we will show how the \RBS\ system is used to assist
+in the development of the Rosetta3 system.
+
+
+\subsection{The infra structure}
+In figure A.1.a is displayed which components are used in the Rosetta3 release.
+\begin{verbatim}
+
+                         archiveroot
+
+
+        Rosetta2          Rosetta3          Rosetta4
+
+
+     General  VMS  Lexicon  Tools  Dutch  English  Spanish
+
+
+                      CMS    VMS   CREATE
+
+                                 fig. A.1.a
+\end{verbatim}
+
+
+\subsection{Adapting \RBS\ to the Rosetta application}
+To start with we will list the actual values of the \RBS-parameters.
+\begin{description}
+\item[\RBS\_long\_batch]   Ros\$L\_Batch
+\item[\RBS\_short\_batch]  ROS\$S\_Batch
+\item[\RBS\_integrate\_batch]  ROS\$I\_Batch
+\item[\RBS\_long\_batch\_priority]       3
+\item[\RBS\_short\_batch\_priority]      3
+\item[\RBS\_integrate\_batch\_priority]  3
+\item[\RBS\_consolidate\_priority]       5
+\item[\RBS\_lock\_interval]              00:00:30
+\item[\RBS\_MMS\_qualifiers]  
+\item[\RBS\_source\_extensions]  The value of this parameter is component 
+specific. It contains, among others,  .PAS and .TEX.
+\end{description}
+
+\subsection{The commands}
+All \RBS\ commands are available; the prefix {\bf rbs\_} may be omitted.
+
+Some extra commands are available that make it possible to process .TEX files.
+These commands are {\bf dbuild}, {\bf dintegrate}, {\bf dshobuild}, {\bf 
+dsholog} and {\bf dclear}.
+For a full description of these commands see Rosetta document 129.
+
+A number of so called rule-compilers are available that generate Pascal files,
+e.g., the lextreerule-compiler.
+
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.2 - released  SEP-1986}
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1986 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

@@ -1,0 +1,121 @@
+h64508
+s 00002/00002/00084
+d D 1.3 95/12/04 10:44:09 rous 3 2
+c 
+e
+s 00086/00001/00000
+d D 1.2 95/10/17 11:07:15 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 95/10/17 08:59:21 rous 1 0
+c date and time created 95/10/17 08:59:21 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+#! /bin/sh -e
+case $# in
+0) ;;
+*) echo "Usage: dcatchup"; exit 1;;
+esac
+#
+#set -x
+#set -v
+#
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+rm -f RBS_logicals
+cp $RBS_ARCHIVE$RBS_RELEASE/RBS_logicals RBS_logicals
+#
+#
+# cleanup target directory
+#
+rm -f  $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/doc/target/*
+#
+# create expanded makefile
+#
+intmake=`$RBS_DIR/get_fname RBS_logicals doc dintegrate.make`
+if test -z "$intmake"
+then echo "DINTEGRATE: cannot find dintegrate.make"
+     exit 2
+fi
+#
+rm -f doc/target/doc.make.rbs
+$RBS_DIR/genmake RBS_logicals doc dintegrate.make > doc/target/dintegrate.make.rbs
+#
+#
+set -e
+rm -f dactions_.rbs
+echo "#! /bin/sh -e" > dactions_.rbs
+#
+echo "#dintegrate: $1" >> dactions_.rbs
+make -n -f doc/target/dintegrate.make.rbs integrate  >> dactions_.rbs
+#
+chmod u+x dactions_.rbs
+dactions_.rbs
+#
+#
+set -e
+#
+trap 'echo "DINTEGRATE: Error during consolidate"; exit 2' 0
+#
+# consolidating source directory
+#
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/doc/source
+for j in `ls`; do
+   k=`basename $j`
+   if ( test -s $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/s.$k.ascii )
+   then
+      echo "DCONSOLID: consolidating document file $j"
+      rm -f $RBS_ARCHIVE$RBS_RELEASE/doc/$k
+      rm -f $k.ascii
+      uuencode $k $k > $k.ascii
+      chmod ug+rwx $k
+      chmod ug+rwx $k.ascii
+      $RBS_ARCHIVE/fuid "cp -p $k $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+D 3
+      $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+E 3
+I 3
+      $RBS_ARCHIVE/fuid "chmod ug=rx $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+E 3
+      rm -f $k
+      sccs -d$RBS_ARCHIVE$RBS_RELEASE/doc -psccs delta -s -y $k.ascii
+      chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/doc/sccs/s.$k.ascii
+#      users=`cat $RBS_ARCHIVE$RBS_RELEASE/RBS_users`
+#      echo "user $USER integrated document $k" | mail $users 
+   fi
+done
+#
+# consolidating target directory
+#
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/doc/target
+for j in `ls`; do
+   k=`basename $j`
+   echo "DCONSOLID: consolidating generated file $j"
+   rm -f $RBS_ARCHIVE$RBS_RELEASE/doc/$k
+   chmod ug+rwx $k
+   $RBS_ARCHIVE/fuid "cp -p $k $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+D 3
+   $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+E 3
+I 3
+   $RBS_ARCHIVE/fuid "chmod ug=rx $RBS_ARCHIVE$RBS_RELEASE/doc/$k" || exit
+E 3
+   rm -f $k
+done
+#
+#
+#
+cd $savedir
+trap 0
+E 2
+E 1

@@ -1,0 +1,129 @@
+#! /bin/sh -e
+set -e
+#set -v
+#set -x
+umask 002
+trap 'umask 022 ; echo "INSTALL: Error during installation; Remove installed directories; warn the RBS system manager!!"; exit 2' 0
+#
+echo "INSTALL: What is the full path to the archive directory? (e.g. /home/user/archive)"
+read ARCH_DIR
+#
+echo "INSTALL: Creating archive directory...."
+mkdir $ARCH_DIR
+rm -f tempuid
+$RBS_DIR/getuid > tempuid
+cat $RBS_DIR/fuid.c | sed -f tempuid > $ARCH_DIR/fuid.c
+rm -f tempuid
+cc -o $ARCH_DIR/fuid $ARCH_DIR/fuid.c
+chmod ug+rwxs $ARCH_DIR/fuid
+rm -f $ARCH_DIR/fuid.c
+#
+echo "INSTALL: What is the name of the release directory? (e.g. release3)"
+read RELEASE_DIR
+#
+echo "INSTALL: Creating release directory...."
+mkdir $ARCH_DIR/$RELEASE_DIR
+cd $ARCH_DIR/$RELEASE_DIR
+#
+echo "INSTALL: Creating actions component in the release directory...."
+mkdir actions
+chmod g+rwx actions
+mkdir actions/sccs
+chmod g+rwx actions/sccs
+echo "actions       actions/ +" > RBS_logicals
+echo '              $(RBS_ARCHIVE)$(RBS_RELEASE)/actions/' >> RBS_logicals
+#
+#
+echo "INSTALL: Creating doc component in the release directory...."
+mkdir doc
+chmod g+rwx doc
+mkdir doc/sccs
+chmod g+rwx doc/sccs
+echo "doc    doc/source/ +" >> RBS_logicals
+echo "       doc/target/ +" >> RBS_logicals
+echo '       $(RBS_ARCHIVE)$(RBS_RELEASE)/doc/' >> RBS_logicals
+echo "======================================" > doc/doc_survey.rbs
+chmod ug+rwx doc/doc_survey.rbs
+#
+#
+#  Install doc.make file and the manual.fm file
+#
+   cd doc
+#
+   cp $RBS_DIR/doc.make doc.make
+   chmod ug=rx doc.make
+   uuencode doc.make doc.make > doc.make.ascii
+   sccs -d$ARCH_DIR/$RELEASE_DIR/doc -psccs enter doc.make.ascii
+   chmod ug=rwx sccs/s.doc.make.ascii
+   rm -f ,doc.make.ascii doc.make.ascii
+#
+   cp $RBS_DIR/manual.fm manual.fm
+   chmod ug=rx manual.fm
+   uuencode manual.fm manual.fm > manual.fm.ascii
+   sccs -d$ARCH_DIR/$RELEASE_DIR/doc -psccs enter manual.fm.ascii
+   chmod ug=rwx sccs/s.manual.fm.ascii
+   rm -f ,manual.fm.ascii manual.fm.ascii
+#
+   cd $ARCH_DIR/$RELEASE_DIR
+#
+#
+#
+echo 'cd $RBS_USER_ROOT$RBS_USER' > RBS_install
+echo "mkdir $RELEASE_DIR" >> RBS_install
+echo "cd $RELEASE_DIR" >> RBS_install
+echo 'cp $RBS_ARCHIVE$RBS_RELEASE/RBS_logicals RBS_logicals' >> RBS_install
+echo 'echo "INSTALL: creating component directory actions"' >> RBS_install
+echo "mkdir actions" >> RBS_install
+echo 'echo "INSTALL: creating component directory doc"' >> RBS_install
+echo "mkdir doc" >> RBS_install
+echo "mkdir doc/source" >> RBS_install
+echo "mkdir doc/target" >> RBS_install
+echo "mkdir doc/save" >> RBS_install
+#
+#
+#
+echo "  "
+echo "INSTALL: Give a list of components (separated by spaces)."
+echo "         Don't use the name <doc> or <actions>!"
+read COMPONENTS
+echo "  "
+for component in $COMPONENTS
+do 
+   echo "INSTALL: Creating component $component in the current release...."
+   mkdir $component
+   chmod g+rwx $component
+   mkdir $component/sccs
+   chmod g+rwx $component
+   echo "$component    $component/source/ +" >> RBS_logicals
+   echo "              $component/target/ +" >> RBS_logicals
+   echo -n '              $(RBS_ARCHIVE)$(RBS_RELEASE)/' >> RBS_logicals
+   echo "$component/" >> RBS_logicals
+#
+   echo "echo 'INSTALL: creating component directory $component'" >> RBS_install
+   echo "mkdir $component" >> RBS_install
+   echo "mkdir $component/source" >> RBS_install
+   echo "mkdir $component/target" >> RBS_install
+   echo "mkdir $component/save" >> RBS_install
+#
+done
+#
+echo "chmod -R u+rwx *" >> RBS_install
+echo "chmod -R g+rx *" >> RBS_install
+#
+#
+echo "========INTEGRATION HISTORY===========" > history.rbs
+chmod ug+rwx history.rbs
+echo "  "
+#
+echo -n "" > RBS_users
+#
+#
+#
+chmod ug+rwx RBS_users
+chmod ug+rwx RBS_logicals
+chmod ug+rwx RBS_install
+#
+#
+umask 022
+echo "Done"
+trap 0

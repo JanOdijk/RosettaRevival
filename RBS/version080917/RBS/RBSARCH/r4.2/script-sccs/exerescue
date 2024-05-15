@@ -1,0 +1,78 @@
+#! /bin/sh -e
+case $# in
+0) ;;
+*) echo "Usage: integrate"; exit 1;;
+esac
+# set -v
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+d2=`date`
+trap 'echo "RESCUE: error during consolidate!!"; cd $savedir; exit 1' 0
+#
+echo "RESCUE: consolidation actions started at $d2!"
+directs=`ls -d *`
+for i in $directs; do
+   if ( test -d $i ) 
+   then 
+       if ( test "$i" = "actions" )
+        then echo "CONSOLID: consolidating component $i"
+             cd $i
+             for j in `ls`; do
+                echo "CONSOLID: consolidating $j"
+                k=`basename $j`
+                $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                rm -f $RBS_ARCHIVE$RBS_RELEASE/$i/$k
+                $RBS_ARCHIVE/fuid "cp -p $k $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                $RBS_ARCHIVE/fuid "chmod ug=rx $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                sccs -d$RBS_ARCHIVE$RBS_RELEASE/$i -psccs delta -s -y $k
+                chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$i/sccs/s.$k
+             done
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+        elif ( test "$i" = "doc" )
+        then echo "CONSOLID: skipping component $i"
+        else echo "CONSOLID: consolidating component $i"
+             cd $i/source
+             for j in `ls`; do
+                echo "CONSOLID: consolidating $j"
+                k=`basename $j`
+                $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                rm -f $RBS_ARCHIVE$RBS_RELEASE/$i/$k
+                $RBS_ARCHIVE/fuid "cp -p $k $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                $RBS_ARCHIVE/fuid "chmod ug=rx $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                sccs -d$RBS_ARCHIVE$RBS_RELEASE/$i -psccs delta -s -y $k
+                chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$i/sccs/s.$k
+             done
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/$i/target
+             for j in `ls`; do
+                echo "CONSOLID: consolidating $j"
+                k=`basename $j`
+                if ( test -f $RBS_ARCHIVE$RBS_RELEASE/$i/$k )
+                then $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                     rm -f $RBS_ARCHIVE$RBS_RELEASE/$i/$k
+                fi
+                $RBS_ARCHIVE/fuid "cp -p $k $RBS_ARCHIVE$RBS_RELEASE/$i" || exit
+                $RBS_ARCHIVE/fuid "chmod ug=rx $RBS_ARCHIVE$RBS_RELEASE/$i/$k" || exit
+                rm -f $k
+             done
+             cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+        fi
+   fi
+done
+#
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+d1=`date`
+echo "RESCUE: consolidation actions completed at $d1!"
+#
+echo "$USER: $d" >> $RBS_ARCHIVE$RBS_RELEASE/history.rbs
+#
+cat $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/inteffect.rbs >> $RBS_ARCHIVE$RBS_RELEASE/history.rbs
+effect=`cat $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/inteffect.rbs`
+#
+for u in `cat intusers.rbs`; do
+      echo "user $USER rescued the integration. Intended effect: $effect" | mail $u@prle
+done
+#rm -f $RBS_ARCHIVE$RBS_RELEASE/cons.rbs
+rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs 
+cd $savedir
+trap 0

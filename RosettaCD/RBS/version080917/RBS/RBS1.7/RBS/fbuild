@@ -1,0 +1,67 @@
+#! /bin/sh -e
+#
+case $# in
+0) echo "Usage: fbuild componentname filename"; exit 1;;
+1) echo "Usage: fbuild componentname filename"; exit 1;;
+2) ;;
+*) echo "Usage: fbuild componentname filename"; exit 1;;
+esac
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+trap '' 1 2 3
+#
+trap 'echo "BUILD: No build allowed during your other builds"; umask 22; cd $savedir; exit' 0
+umask 222
+( echo "  " > $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/build.rbs ) 2> /dev/null
+umask 22
+#
+#
+set -e
+trap 'echo "BUILD: No build allowed during your integrate"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/build.rbs ; cd $savedir; exit' 0
+if ( test -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs )
+then exit 0
+fi
+#
+trap 0
+echo "  " > $RBS_ARCHIVE$RBS_RELEASE/build$$.rbs
+#
+set -e
+trap 'echo "BUILD: No build allowed during other users consolidate"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/build.rbs ;  rm -f $RBS_ARCHIVE$RBS_RELEASE/build$$.rbs ;  cd $savedir; exit' 0
+if ( test -f $RBS_ARCHIVE$RBS_RELEASE/cons.rbs )
+then exit 0
+fi
+#
+#
+#
+cp $RBS_ARCHIVE$RBS_RELEASE/RBS_logicals RBS_logicals
+#
+d1=`date`
+echo "BUILD: build started at $d1" > buildlog$$.rbs
+#
+set -e 
+trap 'echo "BUILD: Error during make" >> buildlog$$.rbs; echo "BUILD: Error during build"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/build.rbs ; rm -f $RBS_ARCHIVE$RBS_RELEASE/build$$.rbs; cd $savedir ; exit' 0
+#
+makeactions $1 $2 - nodebug $3 1>> buildlog$$.rbs 2>&1
+#
+echo "==============================================================================" >> $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/warnings
+echo "BUILD: build started at $d1" >> $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/warnings
+#
+set -e 
+trap 'echo "BUILD: Error during build, use <showa> to inspect the error messages !!" >> buildlog$$.rbs; echo "BUILD: Error during build"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/build.rbs ; rm -f $RBS_ARCHIVE$RBS_RELEASE/build$$.rbs; cd $savedir ; exit' 0
+exeactions 1>> buildlog$$.rbs 2>&1
+#
+d2=`date`
+echo "BUILD: build completed at $d2" >> buildlog$$.rbs
+echo " " >> buildlog$$.rbs
+echo "BUILD: build completed at $d2"
+#
+wc -l $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/warnings | awk '$1 > 100 {printf "!!! REMINDER: The <newa> command cleans up your %s lines warning file !!!!!\n", $1}'
+rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/build.rbs >> buildlog$$.rbs
+rm -f $RBS_ARCHIVE$RBS_RELEASE/build$$.rbs
+if ( test -f newcontents.rbs )
+then mv newcontents.rbs contents.rbs 
+fi
+#
+cd $savedir
+trap 0

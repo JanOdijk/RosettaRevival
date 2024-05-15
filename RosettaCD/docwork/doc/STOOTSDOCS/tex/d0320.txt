@@ -1,0 +1,1463 @@
+R320.tex
+
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.linguistics}
+   \RosTitle{Superdeixis in Rosetta3}
+   \RosAuthor{Lisette Appelo}
+   \RosDocNr{R320}
+   \RosDate{August, 3, 1990}
+   \RosStatus{approved}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Superdeixis, deixis, supertiempo, tiempo}
+   \MakeRosTitle
+%
+%
+\setlength{\parindent}{0 in}
+\setlength{\unitlength} {1 em}
+\input{definitions}
+
+\section{Introduction}
+\label{1}
+This document discusses the complicated
+treatment of {\em superdeixis} in Rosetta3. \\
+A motivation for the solution that was chosen in Rosetta3 can be found in doc.\
+R263.
+This document only gives an explanation of the actual implementation.\\
+It presupposes some knowledge of the organisation of the Rosetta grammars into 
+rule classes and subgrammars and the implications with respect to their 
+isomorphy. It also presupposes some knowledge of the treatment of temporal 
+expressions in Rosetta3 as proposed in doc.\ R53 and documented in doc.\ 
+R263.\\
+
+{\bf SUPERDEIXIS}\\
+
+{\em Superdeixis} is an attribute of almost all syntactic
+categories and serves as a 
+percolation attribute. It percolates and distributes information about the 
+scope of the {\em deixis} value of a sentence to be able to spell out {\em 
+tense} values in the right places.\\
+The {\em superdeixis} attribute ( {\em supertiempo} in Spanish) has three 
+possible values : {\em omegadeixis, presentdeixis, pastdeixis} ({\em 
+omegatiempo, presente, pasado} in Spanish).
+\begin{description}
+\item [presentdeixis (presente)]: This value indicates that the 
+expression is in the scope of or is temporally dependent on the {\em present}
+ (super)deixis value of the higher expression.
+\item [pastdeixis (pasado)]: This value indicates that the 
+expression is in the scope of  or is temporally dependent on the {\em past} 
+(super)deixis value of the higher expression.
+\item [omegadeixis (omegatiempo)]: This value has two possible meanings:
+\begin{enumerate}
+\item the expression is not in the scope of  or is temporally
+independent of the 
+(super)deixis value of the higher expression.
+\item the default value, i.e. it has not been `specified' yet or it has been 
+`despecified'.
+\end{enumerate}
+\end{description}
+
+{\bf DEIXIS}\\
+
+Some of the categories also have an attribute {\em deixis} (in Spanish: {\em 
+tiempo}). It has the same possible values as {\em superdeixis} + the value
+{\em futuredeixis} ({\em futuro} in Spanish). It is used in two ways\footnote{
+Note that this holds for the {\em deixis} and not for the {\em superdeixis} 
+attribute}:
+\begin{enumerate}
+\item In {\em propositions}, i.e.\ sentences and XPPROP-categories, to indicate 
+that the expression contains an explicit referential time adverbial 
+(XP-categories, adverbial sentences), which 
+means that it is temporally {\em independent} of higher expressions.
+\item In `{\em referential entities}', i.e.\ X- and XP-categories, but also adverbial
+sentences, to indicate that they express inherently (or inherited in case of a 
+XP-category or adverbial sentence) a deixis meaning.
+\end{enumerate}
+\begin{description}
+\item [presentdeixis (presente)]: This value indicates a) that a propositional
+expression contains an explicit expression of present time, i.e.\  a
+{\em present} deictic adverbial which  means that it is temporally {\em 
+independent} of higher expressions or b) that the expression is a {\em present}
+deictic adverbial.
+\item [pastdeixis (pasado)]: This value indicates a) that a propositional
+expression contains an explicit expression of past time, i.e.\  a
+{\em past} deictic adverbial which  means that it is temporally {\em 
+independent} of higher expressions or b) that the expression is a {\em past}
+deictic adverbial.
+\item [futuredeixis (futuro)]: This value indicates that the expression is a
+{\em future} deictic adverbial. It cannot be used for propositions as
+future is always relative to a present or past point of view. What is felt as
+`the future' is future from a present point of view.
+\item [omegadeixis (omegatiempo)]: This value has two possible meanings:
+\begin{enumerate}
+\item a) in case of a propositional expression: it is in the scope of or is 
+{\em dependent} on the (super)deixis value of the higher expression 
+or b) in case of a non-propositional expression: it is not a deictic time 
+adverbial.
+\item the default value, i.e. it has not been `specified' yet or it has been
+`despecified' for non-basic expressions or it has not been filled yet for
+basic expressions.
+\end{enumerate}
+\end{description}
+
+The attributes {\em deixis} and {\em superdeixis} are `complementary' for
+propositions in principle:\\
+
+If {\em deixis} has a not-{\em omega} value, {\em superdeixis} must have
+{\em omegadeixis}.\\
+If {\em superdeixis} has a not-{\em omega} value, {\em deixis} must have 
+{\em omegadeixis}.\\
+
+Of course, both can have {\em omegadeixis} at some point in the derivation 
+because of the default value status of {\em omegadeixis}: it has not been 
+specified yet or it has been despecified! Despecification takes place for 
+surface parser efficiency reasons (otherwise the surface parser should deliver 
+S-trees
+with the correct values for deixis and superdeixis or deliver all possible
+combinations) at those points where the specification is not relevant anymore:
+the  attributes {\em deixis} and {\em superdeixis}
+ of every node under the topnode of the 
+actual S-tree will have the value {\em omegadeixis} except for the {\em deixis}
+ value of temporal adverbials, the deixis and superdeixis value of 
+syntactically dependent propositional arguments
+ and the {\em superdeixis} value of XP-modifiers under ADJP 
+as these last two
+ are introduced to early for this treatment (see also section \ref{3.4}, 4 and 
+5).\\
+
+The assignment of values to the {\em deixis} and {\em superdeixis} attributes 
+is done by {\em rules}: the {\em deixis} and {\em superdeixis rules}. 
+But that is only one part; the other, complicated part is formed by the 
+percolation and the adaptation on behalf of the surface parser which are done 
+at the same moment, i.e.\ in the substitution and insertion rules.\\
+I will first
+discuss the rules for superdeixis and deixis in the various subgrammars
+(section \ref{2} and \ref{3}). 
+After that, the checking of the superdeixis value with the value of the 
+higher expression and the adaptation in substitution and insertion rules will 
+be discussed in section \ref{4}. Because of a complication with this 
+checking caused by the place of some rules in the control expression, 
+superdeixis adaptation transformations are needed. They will be discussed in 
+section \ref{adap}. Finally, the treatment of {\em superdeixis} in the surface 
+parser (section \ref{6}) and the interlingua expressions are indicated (section
+\ref{7}).
+ 
+\section{Superdeixis: Temporal Dependency}
+\label{2}
+\subsection{Introduction}
+\label{2.1}
+Expressions that get the values {\em presentdeixis} or {\em pastdeixis} for the 
+attribute {\em superdeixis} are temporally dependent on the
+expressions they are 
+inserted or substituted in.\\
+They never contain {\em deictic} temporal adverbials such as e.g.\ {\em 
+gisteren, morgen, eergisteren, verleden week, komende week}, but they may 
+contain non-deictic adverbials such as e.g.\ {\em om drie uur, op maandag, drie 
+uur lang, in een uurtje}.\\ 
+The superdeixis value for isolated main sentences is always {\em omegadeixis}, 
+because it is assumed that these sentences are temporally independent. (See for 
+discussion doc.\ R263.)\\
+I will discuss below the rules for three kinds of syntactically dependent 
+clauses, the XPPROPs and the XPs. Finally, there is a special note on the 
+English gerunds, that sometimes
+are analyzed as NPs dominating a SENTENCE in Rosetta3.
+
+\subsection{Dependent Clauses}
+\label{2.2.}
+Three kinds of syntactically dependent clauses are distinguished: complement, 
+adverbial and relative clauses. If they are temporally dependent on the 
+constituent they will be substituted in, they will get a non-{\em omega} value 
+for the attribute {\em superdeixis} and the value  for the 
+attribute {\em deixis} will remain {\em omegadeixis}.\\
+Complement clauses are substituted for an argument variable .\\
+Adverbial clauses are substituted for a non-argument variable or inserted.\\
+Relative clauses contain a variable for which a CN or NP is substituted; 
+syntactically the clause is inserted into the CN or NP resp.\\
+There are rules for presentdeixis and pastdeixis and each of them  for finite 
+and infinite clauses. Infinite forms are:\\
+Dutch: infinitief, tegenwoordig deelwoord, voltooid deelwoord\\
+English: infinitive, ing-form, past participle\\
+Spanish: infinitivo, gerundio, participio pasado\\
+It should be noted that it is often necessary to translate an infinite clause 
+into o finite one in which case it has to be decided whether it will get a 
+present or a past tense.\\
+
+Examples:\\
+
+Complement clause:\\
+\begin{lxam}
+&&& Hij zei, dat hij ziek {\em was}\\
+&&& He said that he {\em was} ill\\
+&&& Dijo que {\em estaba} enfermo
+\end{lxam}
+
+\begin{lxam}
+&&& Hij dacht ziek te {\em zijn}\\
+&&& He thought that he {\em was} ill\\
+&&& Cre\'{\i}a que {\em estaba} enfermo
+\end{lxam}
+
+Adverbial clause:\\
+\begin{lxam}
+&&& Omdat hij ziek {\em was}, at hij niet\\
+&&& Since he {\em was} ill, he did not eat\\
+&&& Como {\em estaba} enfermo, no comi\'{o}
+\end{lxam}
+
+Relative clause:\\
+\begin{lxam}
+&&& Hij zag de man die ziek {\em was}\\
+&&& He saw the man that {\em was} ill\\
+&&& Vi\'{o} al hombre que {\em estaba} enfermo
+\end{lxam}
+
+\begin{lxam}
+&&& Hij zag de appels {\em etende} ezel\\
+&&& He saw the donkey that {\em was eating} apples\\
+&&& Vi\'{o} al burro que {\em com\'{\i}a} manzanas
+\end{lxam}
+
+\begin{lxam}
+&&& Hij keek naar het {\em verkochte} huis\\
+&&& He looked at the house that {\em had been sold}\\
+&&& Mir\'{o} la casa que se {\em hab\'{\i}a vendido } 
+\end{lxam}
+
+The rules for finite clauses spell out the {\em tense} 
+(in Spanish: {\em tiempo}) of the 
+verb. The tense for infinite clauses is always {\em omegatense} (in Spanish: 
+{\em omegatiempo}). Infinite 
+clauses without {\em hebben/zijn, have or haber} are assumed to be temporally 
+dependent always.\\
+The following rules exist in all three languages: 
+RfinPresentSuperdeixis, RfinPastSuperdeixis, 
+RinfinPresentSuperdeixis, RinfinPastSuperdeixis and RinfinPastSuperdeixisSpec.
+This last rule is meant for the special past meaning of infinitive {\em hebben/
+zijn, have, haber}. (\ref{exam4}) is an example of that special past
+meaning for Dutch with its finite 
+translations in English and Spanish\footnote{Note that this is only one of the 
+possible translations of this Dutch sentence; of course, it will also be 
+translated into {\em He thought that he had come at three o'clock} and {\em 
+Crey\'{o} que hab\'{\i}a venido a las tres}}:\\
+
+\begin{lxam}
+\label{exam4}
+&&& Hij dacht om drie uur te {\em zijn gekomen}\\
+&&& He thought that he {\em came} at three o'clock\\
+&&& Crey\'{o} que {\em vino} a las tres
+\end{lxam}
+
+In Dutch also exists a finite version of this rule:
+ RfinPastSuperdeixisSpec. Maybe this rule should also be 
+added to English and Spanish.\\
+English and Spanish have RfinPresfutSuperdeixis and RfinPastfutSuperdeixis
+for the agreement with future time adverbials as in (\ref{exam5}):\\
+
+\begin{lxam}
+\label{exam5}
+&&& Hij zegt dat hij {\em morgen} kom{\em t}\\
+&&& He says that he {\em will} come {\em tomorrow}\\
+&&& Dice que ven{\em dr\'{a} ma\~{n}ana}
+\end{lxam}
+
+Spanish has extra rules, RfinFutPresSuperdeixis and RfinFutPastSuperdeixis, to 
+spell out the abstract future verb as a tense form of the main verb.\\
+Finally, in all three grammars exist RfinIrrModalSuperdeixis to account for the 
+temporally dependent irrealis of modals as in (\ref{exam6}):\\
+
+\begin{lxam}
+\label{exam6}
+&&& Hij zei dat hij {\em zou kunnen} komen\\
+&&& Hij zei dat he {\em could} come\\
+&&& Dijo que {\em podr\'{\i}a} venir
+\end{lxam}
+
+\subsection{XPPROPs}
+\label{2.3}
+It is assumed that XPPROPS are always temporally dependent, except for the 
+Dutch ADJPPROP and temporal adjectives such as {\em verleden, last, next}
+(see below)\footnote{By the time this document was approved, this had been 
+changed: Dutch ADJPPROP also is always temporally dependent. The cases the 
+independent ADJPPROP was meant for are now treated in the CLAUSE-grammar.}. 
+Therefore, they never contain a deictic referential 
+adverbial. They do not contain verbs that should receive a tense value, but 
+they can contain temporally dependent clauses (see above) and have the function 
+of a `serving hatch'. They should also be isomorphic with (finite) clauses 
+because of translation problems.
+All XPPROPtoXPFORMULA subgrammars contain superdeixis 
+rules. The NPPROP-subgrammar forms an exception because an NPPROP is derived 
+from an NP. It is not isomorphic with the other XPPROP projection subgrammars!
+\subsubsection{ADJPPROP}
+There is a rule for presentdeixis and a rule for pastdeixis, 
+RadjPresentSuperdeixis and RadjPastSuperdeixis.\\
+
+examples:\\
+
+\begin{lxam}
+&&& Ik zie de {\em zieke} man\\
+&&& I see the man {\em who is ill}\\
+&&& Veo al hombre {\em enfermo}
+\end{lxam}
+
+\begin{lxam}
+&&& Ik zag de {\em zieke} man\\
+&&& I saw the man {\em who was ill}\\
+&&& Vi al hombre {\em enfermo}
+\end{lxam}
+\subsubsection{ADVPPROP}
+There is a rule with parameter values for presentdeixis and pastdeixis, 
+RadvppSuperdeixis.\\
+
+Examples:\\
+
+\begin{lxam}
+&&& Hij zal het {\em mogelijkerwijs} doen\\
+&&& {\em It is possible that} he will do it\\
+&&& {\em Es posible que} lo haga
+\end{lxam}
+
+
+\subsubsection{PREPPROP}
+There is a rule with parameter values for presentdeixis and pastdeixis, 
+RpppSuperdeixis.\\
+
+Examples:
+
+\begin{lxam}
+&&&Hij liep {\em naar de door hem gekochte schuur}\\
+&&&He walked {\em to the barn that had been bought by him}\\
+&&&Camin\'{o} {\em al cobertizo que hab\'{\i}a comprado}
+\end{lxam}
+
+\subsubsection{NPPROP}
+Because an NPPROP is derived from an NP, the superdeixis value of this NP is 
+copied to the superdeixis attribute of the NPPROP in RNPPROPformation.\\
+
+Examples:\\
+
+\begin{lxam}
+&&&Ik vind {\em hem de juiste man}\\
+&&&I think {\em that he is the right man}\\
+&&&{\em Le} considero {\em al hombre justo a \'{e}l}
+\end{lxam}
+
+\subsection{XPs}
+\label{2.4}
+Just as XPPROPs, XPs can have temporally dependent
+(finite) sentential arguments or modifiers. 
+Therefore, the XP-nodes serve as a `serving hatch'. XPs are never isomorphic 
+with clauses, but only with other XPs. The CN- and NP-subgrammar are not 
+intended to be isomorphic with other XP-subgrammars.
+It is assumed that XPs, except for 
+temporal XPs, are always temporally dependent.
+\subsubsection{NP}
+There are four rules. Two for presentdeixis and two for pastdeixis: 
+RNPpresentSuperdeixis1, RNPpresentSuperdeixis2, RNPpastSuperdeixis1, 
+RNPpastSuperdeixis2. The superdeixis1 rules are
+for an NP derived from a CN, in which case the superdeixis of 
+the CN is passed through and the superdeixis value of CN is made {\em 
+omegadeixis}, the superdeixis2 rules are for an NP derived from other categories 
+than CN, i.e.\ PERSPRO, WHPRO, DEMPRO , INDEFPRO, PROPERNOUN, RECIPRO, BIGPRO, 
+in which case a superdeixis value 
+has to be assigned to the superdeixis attribute of the NP.\\
+The superdeixis attribute is needed, because an NP can contain relative 
+clauses.\\
+
+examples:\\
+
+\begin{lxam}
+&&& {\em Degene die ziek is} mag dit niet doen\\
+&&& {\em The one who is ill} is not allowed to do this\\
+&&& {\em El que est\'{e} enfermo} no puede hacer esto
+\end{lxam}
+\subsubsection{CN}
+There are two rules, one for presentdeixis and one for pastdeixis, 
+RCNpresentSuperdeixis and RCNpastSuperdeixis.\\
+CNs must have a superdeixis attribute because they can contain relative 
+clauses.\\
+
+examples:\\
+
+\begin{lxam}
+&&&{\em Een man die ziek is} hoeft dit niet te doen\\
+&&&{\em A man who is ill} does not have to do this\\
+&&&{\em Un hombre que est\'{e} enfermo} no debe hacer esto
+\end{lxam}
+\subsubsection{DETP}
+There is a rule with parameter values presentdeixis and pastdeixis, 
+RdetpSuperdeixis. The reason that DETPs also 
+have superdeixis is that some DETPs are derived from QPs that must have 
+superdeixis.\\
+
+Examples:\\
+
+\begin{lxam}
+&&&{\em Veel} mensen kwamen niet\\
+&&&{\em A lot of} people did not come\\
+&&&{\em Mucha} gente no vino
+\end{lxam}
+\subsubsection{QP}
+There is a rule with parameter values  presentdeixis and pastdeixis, 
+RqpSuperdeixis. Because QPs can have 
+sentential modifiers or arguments they need superdeixis to be able to serve as 
+`serving hatch'.\\
+
+examples:\\
+
+\begin{lxam}
+&&&Hij kreeg {\em meer dan hij had verwacht}\\
+&&&He got {\em  more than he had expected}\\
+&&&Recibi\'{o} {\em m\'{a}s de lo que hab\'{\i}a esperado}
+\end{lxam}
+
+\subsubsection{PREPP}
+There is a rule with parameter values presentdeixis and pastdeixis, 
+RppSuperdeixis. Prepositions take NPs, ADVPs 
+and sentences as arguments. Superdeixis is needed for the `serving hatch' 
+function.\\
+
+Examples:\\
+
+\begin{lxam}
+&&& Hij kwam {\em in de tijd dat Piet ziek was}\\
+&&& He came {\em in the period Piet was ill}\\
+&&& Vino {\em en el per\'{\i}odo en  que Piet estaba enfermo}
+\end{lxam}
+
+\subsubsection{ADVP}
+There is a rule with parameter values presentdeixis and pastdeixis, 
+RadvpSuperdeixis. Superdeixis functions as
+`serving hatch'.\\
+
+\begin{lxam}
+&&&Piet kwam {\em later dan Jan dacht}\\
+&&&Piet came {\em later than Jan thought}\\
+&&&Piet vino {\em m\'{a}s tarde de Jan pens\'{o}}
+\end{lxam}
+
+\subsection{The gerund NPs in English}
+\label{2.5}
+Gerunds are derived as clauses but get a dominating NP-node in the mood 
+rules in case they are in subject position. The mood rules are (generatively) 
+ordered after the deixis, superdeixis, substitution and insertion rules.
+This means that the superdeixis rules for all gerunds are the superdeixis 
+rules for clauses.\\
+
+\begin{lxam}
+&&& {\em Eating people} is wrong\\
+&&&{\em Mensen eten} is verkeerd\\
+&&&{\em Comer a la gente} es malo
+\end{lxam}
+
+
+\section{Deixis: Temporal Independency}
+\label{3}
+\subsection{Introduction}
+\label{3.1}
+Expressions that get the value {\em presentdeixis} or {\em pastdeixis} for the 
+attribute {\em deixis} are temporally independent. There are two classes of 
+expressions that can get these values corresponding to the two ways of use 
+mentioned in section \ref{1}:
+\begin{enumerate}
+\item propositional categories, such as CLAUSE, SENTENCE and sometimes XPPROPs.
+\item temporal deictic adverbials of category ADVP, PREPP and SENTENCE.
+\end{enumerate}
+For the first class holds that in case {\em deixis} has a non-{\em omega} 
+value, {\em superdeixis} must have the value {\em omegadeixis} (although this 
+does not hold throughout the derivation for infinite expressions, 
+see remarks in section \ref{1}, 4 and \ref{adap}).
+
+\subsection{Clauses}
+\label{3.2}
+Clauses can get the value {\em presentdeixis} or {\em pastdeixis} by the {\em 
+deixis} rules if they contain a {\em presentdeixis} or {\em pastdeixis}
+ deictic referential adverbial respectively.\\
+
+examples:\\
+
+\begin{lxam}
+&&&Jan zegt dat Piet {\em gisteren werkte}\\
+&&&Jan says that Piet {\em was working yesterday}\\
+&&&Jan dice que Piet {\em trabajaba ayer}
+\end{lxam}
+
+If a clause does not contain a deictic adverbial, it is temporally dependent 
+on a higher or previous sentence. In a system that translates isolated 
+sentences such as Rosetta3, 
+this is a problem for simple main sentences without a 
+temporal adverbial as in (\ref{exam}) or for dependent sentences without a 
+temporal adverbial that refer to previous sentences of a context as in 
+(\ref{exam3}).\\
+
+\begin{lxam}
+\label{exam}
+&&& Hij zong\\
+&&& He was singing\\
+&&& Cantaba
+\end{lxam}
+
+\begin{lxam}
+\label{exam3}
+&&& Hij zegt dat Piet zong\\
+&&& He says that Piet was singing\\
+&&& Dice que Piet cantaba
+\end{lxam}
+
+Therefore, in these cases abstract deictic adverbials are introduced and 
+deleted later. See for discussion also doc.\ R263.\\
+The deixis rules RfinPresentDeixis and RfinPastDeixis spell out the 
+{\em tense} of the verb in finite clauses:\\ 
+All languages have a special pastdeixis rule for infinite clauses with {\em 
+hebben/zijn, have, haber} in combination with a pastdeixis adverbial, 
+RinfinPastDeixisSpec, cf.\  (\ref{exam9}),(\ref{exam10}) and (\ref{exam11})
+(they are not considered to be translations of each other!):\\
+
+\begin{lxam}
+\label{exam9}
+&&&Hij beweert {\em het gisteren te hebben gedaan}
+\end{lxam}
+
+\begin{lxam}
+\label{exam10}
+&&&He believes {\em Bill to have done it yesterday}
+\end{lxam}
+
+\begin{lxam}
+\label{exam11}
+&&&Lamenta {\em haberlo hecho ayer}
+\end{lxam}
+
+In Dutch this rule also exists for finite clauses, RfinPastDeixisSpec:\\
+
+\begin{lxam}
+&&&Hij denkt  dat hij het {\em gisteren gedaan heeft}.\\
+&&&He thinks that he {\em did} it {\em yesterday}\\
+&&&Cree que lo {\em hiz\'{o} ayer}
+\end{lxam}
+
+In English and Spanish exist special rules for the agreement with future 
+adverbials, RfinPresFutDeixis:\\
+
+\begin{lxam}
+&&&Hij kom{\em t morgen}\\
+&&&He {\em will} come {\em tomorrow}\\
+&&&Ven{\em dr\'{a} ma\~{n}ana}
+\end{lxam}
+
+In Spanish also exist RfinFutPresdeixis and RfinfutPastdeixis to spell out the 
+abstract future verb as a tense form of the main verb.\\
+Finally, we have RfinIrrModaldeixis for the irrealis construction with modal 
+verbs as in (\ref{exam7}):\\
+
+\begin{lxam}
+\label{exam7}
+&&&Hij {\em zou moeten} werken\\
+&&&He {\em should} work\\
+&&&{\em Deber\'{\i}a} trabajar
+\end{lxam}
+
+\subsection{ADJPPROPs in Dutch}\footnote{By the time this document was approved
+the approach had been changed: the solution suggested at the end of this 
+section has been adopted now. The reason was that because of the double 
+function of the deixis attribute we had trouble with deictic adjectives that
+lead to deictic adverbials such as e.g.\ {\em verleden week}. This problem is 
+mentioned in section \ref{3.4}.}
+\label{3.3}
+In Dutch, adjectival expressions of the type in (\ref{exam2}) are derived in de 
+ADJP projection subgrammar:\\
+
+\begin{lxam}
+\label{exam2}
+&&&De {\em gisteren nog zieke} man kwam binnen
+\end{lxam}
+
+In English and Spanish, these expressions have to be translated with a finite 
+relative clause:\\
+
+\begin{lxam}
+&&& The man {\em that was still ill yesterday} came in\\
+&&& El hombre {\em que todav\'{\i}a estaba enfermo ayer} entr\'{o}
+\end{lxam}
+
+The consequence is that the ADJPPROPtoADJPFORMULA-subgrammar has to contain 
+{\em deixis} rules just as the XPPROPtoCLAUSE-subgrammar. The difference is 
+that those for ADJPPROP do not spell out tense forms.\\
+Because in English and Spanish this kind of constructions is not allowed, the 
+deixis rules do not exist in the English and Spanish ADJPPROP-subgrammars.
+The Dutch ADJPPROP projection subgrammar is not completely isomorphic with the 
+corresponding ones in English and Spanish because of these rules!\\
+Another solution would have been to derive {\em gisteren nog zieke} from the 
+clause {\em gisteren nog ziek zijnde} in which case {\em zijnde} has to be 
+deleted analogous to the treatment of {\em gekochte} in {\em het gekochte huis} 
+that is derived from {\em het gekocht geworden zijnde huis}.
+
+\subsection{Temporal Adverbials}
+\label{3.4}
+Temporal adverbials are just treated like other adverbials by the 
+superdeixis rules of the subgrammars that build them
+and in case of non-deictic adverbials they
+have the value {\em omegadeixis} for the attribute {\em 
+deixis}. Deictic adverbials have the value {\em presentdeixis, pastdeixis or 
+futuredeixis} for the attribute {\em deixis}. This value has always been 
+percolated from a deixis value of a basic expression.\\
+
+Examples:\\
+
+\begin{lxam}
+&&& {\em gisteren}: pastdeixis\\
+&&& {\em tomorrow}: futuredeixis\\
+&&& {\em verleden}: pastdeixis\\
+&&& {\em toen}: pastdeixis
+\end{lxam}
+
+There should have been a special rule for these adverbials or the superdeixis 
+rules should have been optional, but this not the case. They get a superdeixis 
+value just like other adverbials. In the deixis rules of other 
+expressions is tested for the presence of the (variables of)
+these adverbials with conditions on 
+their attribute {\em deixis}, but in the substitution rules the normal 
+superdeixis check is performed.\\
+In the superdeixis rules for ADVP and PREPP it is not required that the value 
+of {\em deixis} is {\em omegadeixis}, but in the rules for ADJPPROP it is. This 
+means that expressions such as {\em verleden, last and next} cannot be derived 
+in this version of Rosetta3. This omission has to be repaired, although the 
+whole solution is not the most elegant one.\\
+Temporal adverbial sentences are derived from clauses with a non-{\em omega} 
+value for deixis and a temporal conjunction in the mood rules. 
+
+\section{(Super)deixis Check and Superdeixis Adaptation
+in Substitution and Insertion Rules}
+\label{4}
+\subsection{(Super)deixis check}
+In all substitution and insertion rules that follow the deixis and superdeixis 
+rules in the control expression (generatively!), a (super)deixis check is 
+performed. \\
+
+{\bf Temporally dependent}:\\
+The superdeixis of the expression that is substituted 
+for a variable or is inserted (the substituent)
+must have a {\bf superdeixis} value that agrees 
+with the superdeixis or deixis value of the expression it is substituted or 
+inserted in (the substituee).\\
+
+{\bf Temporally independent}:\\
+The superdeixis of the substituent is 
+{\em omegadeixis}, it is considered to be {\bf independent} and {\em no check} 
+is needed\footnote{For the treatment of idioms see the document on idioms by 
+Andr\'{e} Schenk}. \\
+
+\subsection{Superdeixis adaptation}
+{\bf Temporally dependent}:\\
+After the check the superdeixis value of the substituent is 
+set to {\em omegadeixis} in generation. In case of {\em finite} sentences
+the superdeixis value is also set to {\em omegadeixis}, but the {\em deixis} 
+attribute gets the value of the superdeixis value.\\
+ In analysis, the substituent, that now 
+is `desubstituted' and that
+has the value {\em omegadeixis} for the attribute {\em 
+superdeixis}, gets the superdeixis or deixis value from the substituee for its 
+attribute {\em superdeixis}. In case of finite substituent sentences
+the superdeixis attribute  also
+gets the value of deixis or superdeixis value of
+the substituee, that is the same as the 
+deixis value of this substituent. The deixis value of the substituent is set to 
+{\em omegadeixis}.
+This is necessary, because the surface parser assigns to 
+every finite clause a deixis value, independent or not.\\
+
+{\bf Temporally independent}:\\
+The superdeixis of the substituent is {\em omegadeixis} and no adaptation is 
+needed.\\
+
+\subsection{Examples}
+{\bf Example1}: temporally {\bf dependent, non-finite} expression\\
+
+X = substituent, Y = substituee.\\
+
+m1: Y\{superdeixis = presentdeixis\}[.....]\\
+m2: X\{superdeixis = presentdeixis\}[.....]\\
+
+m: Y\{superdeixis = presentdeixis\}[....X\{superdeixis = omegadeixis\}[...]...]\\
+
+{\bf Example2}: temporally {\bf dependent finite} expression\\
+
+X = subsituent, Y = substituee.\\
+
+m1: Y\{deixis = presentdeixis\}[.....]\\
+m2: X\{superdeixis = presentdeixis, deixis = omegadeixis\}[.....]\\
+
+m: Y\{deixis = presentdeixis\}
+[....X\{superdeixis = omegadeixis, deixis = presentdeixis\}[...]...]\\
+
+
+{\bf Example3}: temporally {\bf independent} expression\\
+
+X = subsituent, Y = substituee.\\
+
+m1: Y\{deixis = presentdeixis\}[.....]\\
+m2: X\{deixis = pastdeixis, superdeixis = omegadeixis\}[.....]\\
+
+m: Y\{deixis = presentdeixis\}
+[....X\{deixis = pastdeixis, superdeixis = omegadeixis\}[...]...]
+
+\subsection{Remarks}
+In the substitution and insertion rules after the deixis and/or superdeixis 
+rules, most of the time {\em temporally dependent} expressions are substituted or 
+inserted.\\
+This superdeixis adaptation is necessary to relieve the 
+surface parser.\\
+
+{\bf This check and adaptation has to be done in all 2- or more-ary rules after 
+the deixis and/or superdeixis rules in all projection subgrammars!!!}\\
+
+For efficiency reasons some extra conditions have been added in case the 
+substituent is a SENTENCE, but see section \ref{adap}.\\
+Jan Odijk wrote some auxiliary QUOTE-functions to relieve M-rule-writing:
+QUOTE\_deixismax and QUOTE\_asdeixismax. For documentation, see documentation 
+on QUOTE-functions.
+
+\section{Superdeixis Adaptation Transformations}
+\label{adap}
+These transformations have the same task as the (super)deixis check and 
+adaptation in the substitution and insertion rules as described above, 
+but they do this 
+for the expressions that have been substituted or inserted {\bf before} the 
+deixis and superdeixis rules (generatively!). In the control expression they 
+follow the deixis and superdeixis rules inmediately to perform the check and 
+adaptation which could not have been done earlier, 
+because the information needed is 
+not present yet until after the deixis and/or superdeixis rules.\\
+The expressions that are substituted or inserted before the deixis and 
+superdeixis rules are all {\em propositional} arguments, the 
+propositional modifiers in the clause subgrammar and all 
+degree modifiers in the XPPROP-subgrammars.\\
+Note that as a consequence thereof the case of superdeixis adaptation with 
+dependent finite sentences that has the extra adaptation for deixis
+on behalf of the 
+surface parser as described in section 4.2, will also turn up in these 
+transformations.\\
+
+It should be stressed that {\bf substitution or insertion rules, i.e.\ 2- or 
+more-ary rules, before the deixis and/or superdeixis rules always cause 
+superdeixis adaptation transformations!!}\\
+
+The check and adaptation are
+performed just as described in the previous section.
+As most of the sentential complements and modifiers
+can be dependent or independent in principle,
+this leads to a (temporary) ambiguity between dependent and 
+independent clause in analysis, 
+that is often solved in the next cycle by the 
+deixis and superdeixis rules. XPPROP- and XP-complements and modifiers (except 
+for temporal adverbials) are considered to be temporally dependent.\\
+
+{\bf Efficiency and plausibility conditions}:\\
+For efficiency reasons, this ambiguity in analysis is 
+decreased by adding extra conditions on the presence of adverbials in the 
+(de)substituent, 
+anticipating the conditions in the deixis and superdeixis rules.\\
+This same efficiency wish has lead to the ({\em plausibility}) conditions on 
+combinations of a  matrix clause and a dependent sentence. Some combinations 
+are ruled out for temporal independency here. These seem to be the most 
+frequent cases that are not plausible in isolated sentences. As a consequence,
+the abstract 
+referential adverbial is not needed anymore in those cases.
+In texts the situation would be different: 
+in that case a dependent sentence could be temporally dependent of a previous 
+sentence in the text. These cases are ruled out now.\\
+
+\begin{tabular}{|l|l|c|l|}
+\hline
+matrix clause & dependent         & referential adverbial & independency \\
+              & sentence          & in sentence           & sentence\\
+\hline
+past          & past               &   -               & no\\
+past          & past               &   +               & yes\\
+present       & present            &   -               & no\\
+present       & present            &   +               & yes\\
+past          & present            &   -               & yes\\
+past          & present            &   +               & yes\\
+present       & past               &   -               & yes\\
+present       & past               &   +               & yes\\
+\hline
+\end{tabular}
+ \\
+
+Infinite sentences are considered to be dependent except for the ones that 
+contain the auxiliary {\em hebben/zijn, have} or {\em haber}.\\
+An efficiency condition is added to check for the presence of a referential 
+adverbial. Only in those cases there is a possible
+independent {\em past} reading. In other 
+cases they will always have
+the {\em retrospective} (deictic depending) reading.\\
+For this condition the relevant transformations and rules
+are split up into two subrules.\\
+
+{\bf The transformations}:\\
+The superdeixis adaptation transformations can be divided into two kinds:
+\begin{enumerate}
+\item non-iterative
+\item iterative
+\end{enumerate}
+The non-iterative kind forms an obligatory transformation
+class that contains a default 
+transformation that is the negation of all other rules in in the class: 
+Tnosuperdeixisadaptation. Note that changing or adding a 
+transformation to this class 
+causes an update of this 
+transformation too! This transformation is also meant to let pass the 
+structures that are handled by the iterative classes. The other transformations 
+are for all kinds of propositional complements in different configurations 
+(next to VERBP, as daughter of VERBP, as object of PREP, as daughter of ADJP 
+that is a daughter of a VERBP, as gerund daughter of NP etc.) and 
+of different syntactic categories (SENTENCE, CLOSEDADJPPROP, OPENADJPPROP etc.)
+of which it is assumed that they will only 
+appear once in some structure. They all contain a temporally dependent part.
+Those for SENTENCE also have a temporally independent part and are split up 
+into two subrules for the presence  or absence of
+{\em hebben/zijn, have, haber}.\\
+The iterative kind exist of several iterative transformations
+each followed by a filter 
+because they are obligatory if they can apply. They are for modifiers that can occur 
+more than once. No default transformation is needed because iterative rules are 
+optional. These rules only deal with temporally dependent cases. In case of 
+temporally independent expressions they are simply not applied. To express the 
+plausibility and efficiency conditions mentioned above special filters are
+added: Ftempindep1 and Ftempindep2.\\
+For more details, see the documentation on the transformation class and the 
+transformations and filters themselves.
+\section{Surface Parser}
+\label{6}
+The surface parser does nothing with the attribute {\em superdeixis}. After the 
+surface parser it has the default value {\em omegadeixis}. The surface parser 
+assigns the value {\em presentdeixis} to the attribute {\em deixis} in case of 
+a present tense of the verb and {\em pastdeixis} in case of a past tense 
+whether the clause is independent or not. This latter
+distinction is dealt with in M-parser. 
+\section{Interlingua}
+\label{7}
+The following IL-expressions for superdeixis exist: 
+\begin{enumerate}
+\item Lpresentsuperdeixis 
+\item Lpastsuperdeixis.
+\item Lirrmodalsuperdeixis
+\end{enumerate}
+
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1 (RWR-102-RO-90#1-RO)}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

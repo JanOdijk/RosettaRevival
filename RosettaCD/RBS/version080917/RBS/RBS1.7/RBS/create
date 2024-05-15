@@ -1,0 +1,47 @@
+#! /bin/sh -e
+#
+case $# in
+0) echo "Usage: create componentname filename"; exit 1;;
+1) echo "Usage: create componentname filename"; exit 1;;
+2) ;;
+3) echo "Usage: create componentname filename"; exit 1;;
+esac
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+trap 'echo "CREATE: Could not create file $2"; cd $savedir; exit 2' 0
+#
+if ( test "$1" = "actions" )
+then if ( test -s $1/$2 )
+     then echo "CREATE: File already exists in your working directory"
+          exit
+     elif ( test -s $RBS_ARCHIVE$RBS_RELEASE/$1/sccs/s.$2 )
+     then echo "CREATE: File already exists in the archive"
+          exit
+     else cd $1
+          echo " " > $2
+          chmod ug+rwx $2
+          $RBS_ARCHIVE/fuid "cp -p $2 $RBS_ARCHIVE$RBS_RELEASE/$1/$2" || exit
+          $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$1/$2" || exit
+          sccs -d$RBS_ARCHIVE$RBS_RELEASE/$1 -psccs enter $2
+          chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$1/sccs/s.$2
+          rm -f ,$2
+     fi
+elif ( test -s  $1/source/$2 )
+then echo "CREATE: File already exists in your working directory"
+     exit
+elif ( test -s $RBS_ARCHIVE$RBS_RELEASE/$1/sccs/s.$2 )
+then echo "CREATE: File already exists in the archive"
+     exit  
+else cd $1/source 
+     echo " " > $2
+     chmod ug+rwx $2    
+     $RBS_ARCHIVE/fuid "cp -p $2 $RBS_ARCHIVE$RBS_RELEASE/$1/$2" || exit
+     $RBS_ARCHIVE/fuid "chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$1/$2" || exit
+     sccs -d$RBS_ARCHIVE$RBS_RELEASE/$1 -psccs enter $2
+     chmod ug+rwx $RBS_ARCHIVE$RBS_RELEASE/$1/sccs/s.$2
+     rm -f ,$2
+fi
+#
+trap 0
+cd $savedir

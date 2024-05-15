@@ -1,0 +1,695 @@
+h10149
+s 00674/00001/00000
+d D 1.2 92/02/21 15:47:56 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 92/02/11 11:49:36 rous 1 0
+c date and time created 92/02/11 11:49:36 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+DUTCH 90
+&
+The following rules are planned (* means written)
+
+\begin{description}
+\item[Radjunctvar1*] for ResAP, ResNP, ResPP, Locadjunct, Diradjunct
+\item[Radjunctvar2*] for BenfactNP
+\item[Radjunctvar3*] for BenfactPP
+\item[Radjunctvar4] for SubjComit, ObjComit
+\end{description}
+
+\newpage
+\begin{verbatim}
+%
+% RULE Radjunctvar1
+< m1:VERBPPROP{VERBPPROPrec1}
+       [ mu1,
+         predrel/VERBP{VERBPrec1}
+           [ I1:mu2,
+             head/VERB{VERBrec1}[mu3],
+             mu4 
+           ],
+         mu5
+       ] 
+m2: T1
+>
+
+< m :VERBPPROP{VERBPPROPrec2}
+       [ mu1,
+         predrel/VERBP{VERBPrec1}
+           [ I1:mu2,
+             rel1/T1,
+             head/VERB{VERBrec1}[mu3],
+             mu4 
+           ],
+         mu5
+       ] 
+
+>
+
+   MATCHCONDITIONS
+      <
+       I1: NOT EXIST(mu2,[I11:rel2/..])
+           I11: rel2 IN [complrel, locargrel, dirargrel]
+       I2: T1.CAT IN [ADJPPROPVAR, NPPROPVAR, PREPPPROPVAR, ADVPPROPVAR]
+             WITH T1.REC.PROsubject =true  
+      >
+
+   PARAMETERS
+      <
+       adjunctpar:adjuncttype
+      >
+
+      COMP
+         <
+          C1: true
+              C11: resAP IN VERBrec1.adjuncts               AND
+                   [resAP] * VERBPPROPrec1.adjuncts = []    AND
+                   T1.CAT = ADJPPROPVAR                     AND
+                   adjunctpar = resAP
+              A11: VERBPPROPrec2 := VERBPPROPrec1;
+                   VERBPPROPrec2.adjuncts := VERBPPROPrec1.adjuncts + [resAP];
+                   rel1 := complrel;
+              C12: resNP IN VERBrec1.adjuncts               AND
+                   [resNP] * VERBPPROPrec1.adjuncts = []    AND
+                   T1.CAT = NPPROPVAR                       AND
+                   adjunctpar = resNP      
+              A12: VERBPPROPrec2 := VERBPPROPrec1;
+                   VERBPPROPrec2.adjuncts := VERBPPROPrec1.adjuncts + [resNP];
+                   rel1 := complrel;
+              C13: resPP IN VERBrec1.adjuncts               AND
+                   [resPP] * VERBPPROPrec1.adjuncts = []    AND
+                   (T1.CAT IN [PREPPPROPVAR] 
+                       WITH other IN T1.REC.actsubcefs)     AND
+                   adjunctpar = resPP      
+              A13: VERBPPROPrec2 := VERBPPROPrec1;
+                   VERBPPROPrec2.adjuncts := VERBPPROPrec1.adjuncts + [resPP];
+                   rel1 := complrel;
+              C14: diradjunct IN VERBrec1.adjuncts               AND
+                   [diradjunct] * VERBPPROPrec1.adjuncts = []    AND
+                   ((T1.CAT IN [PREPPPROPVAR] 
+                       WITH dir IN T1.REC.actsubcefs) OR
+                    (T1.CAT IN [ADVPPROPVAR]
+                       WITH diradv IN T1.REC.actsubcefs)
+                   )                                      AND
+                   adjunctpar = diradjunct
+              A14: VERBPPROPrec2 := VERBPPROPrec1;
+                   VERBPPROPrec2.adjuncts := 
+                         VERBPPROPrec1.adjuncts + [diradjunct];
+                   rel1 := dirargrel;
+              C15: locadjunct IN VERBrec1.adjuncts               AND
+                   [locadjunct] * VERBPPROPrec1.adjuncts = []    AND
+                   ((T1.CAT IN [PREPPPROPVAR] 
+                       WITH loc IN T1.REC.actsubcefs) OR
+                    (T1.CAT IN [ADVPPROPVAR]
+                       WITH locadv IN T1.REC.actsubcefs)
+                   )                                      AND
+                   adjunctpar = locadjunct
+              A15: VERBPPROPrec2 := VERBPPROPrec1;
+                   VERBPPROPrec2.adjuncts := 
+                       VERBPPROPrec1.adjuncts + [locadjunct];
+                   rel1 := locargrel;
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+              C11: resAP IN VERBrec1.adjuncts      AND
+                   T1.CAT = ADJPPROPVAR            AND
+                   rel1 = complrel                  AND 
+                   resAP IN VERBPPROPrec2.adjuncts
+              A11: adjunctpar := resAP;
+                   VERBPPROPrec1 := VERBPPROPrec2;
+                   VERBPPROPrec1.adjuncts := VERBPPROPrec2.adjuncts - [resAP];
+              C12: resNP IN VERBrec1.adjuncts      AND
+                   T1.CAT = NPPROPVAR              AND
+                   rel1 = complrel                  AND 
+                   resNP IN VERBPPROPrec2.adjuncts
+              A12: adjunctpar := resNP;
+                   VERBPPROPrec1 := VERBPPROPrec2;
+                   VERBPPROPrec1.adjuncts := VERBPPROPrec2.adjuncts - [resNP];
+              C13: resPP IN VERBrec1.adjuncts      AND
+                   (T1.CAT IN [PREPPPROPVAR] 
+                       WITH other IN T1.REC.actsubcefs)     AND
+                   rel1 = complrel                  AND 
+                   resPP IN VERBPPROPrec2.adjuncts
+              A13: adjunctpar := resPP;      
+                   VERBPPROPrec1 := VERBPPROPrec2;
+                   VERBPPROPrec1.adjuncts := VERBPPROPrec2.adjuncts - [resPP];
+              C14: diradjunct IN VERBrec1.adjuncts      AND
+                   ((T1.CAT IN [PREPPPROPVAR] 
+                       WITH dir IN T1.REC.actsubcefs) OR
+                    (T1.CAT IN [ADVPPROPVAR]
+                       WITH diradv IN T1.REC.actsubcefs)
+                   )                                      AND
+                   rel1 = dirargrel                       AND 
+                   diradjunct IN VERBPPROPrec2.adjuncts
+              A14: adjunctpar := diradjunct;      
+                   VERBPPROPrec1 := VERBPPROPrec2;
+                   VERBPPROPrec1.adjuncts := 
+                         VERBPPROPrec2.adjuncts - [diradjunct];
+              C15: locadjunct IN VERBrec1.adjuncts        AND
+                   ((T1.CAT IN [PREPPPROPVAR] 
+                       WITH loc IN T1.REC.actsubcefs) OR
+                    (T1.CAT IN [ADVPPROPVAR]
+                       WITH locadv IN T1.REC.actsubcefs)
+                   )                                      AND
+                   rel1 = locargrel                       AND 
+                   locadjunct IN VERBPPROPrec2.adjuncts
+              A15: adjunctpar := locadjunct;      
+                   VERBPPROPrec1 := VERBPPROPrec2;
+                   VERBPPROPrec1.adjuncts := 
+                      VERBPPROPrec2.adjuncts - [locadjunct];
+          A1: @
+         >
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Radjunctvar1
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 16-MAR-1990 21:24:41  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% RULE Radjunctvar2
+< m1:VERBPPROP{VERBPPROPrec1}
+       [ mu1,
+         predrel/VERBP{VERBPrec1}
+           [ I2:mu2,
+             I6:mu6,
+             head/VERB{VERBrec1}[mu3],
+             mu4 
+           ],
+         mu5
+       ] 
+m2: T1
+>
+
+< m :VERBPPROP{VERBPPROPrec2}
+       [ mu1,
+         predrel/VERBP{VERBPrec1}
+           [ I2:mu2,
+             rel1/T1,
+             I6:mu6,
+             head/VERB{VERBrec1}[mu3],
+             mu4 
+           ],
+         mu5
+       ] 
+
+>
+
+   MATCHCONDITIONS
+      <
+       I2: ALL(mu2,I21:rel2/..)
+           I21: QUOTE_VPrelprec(rel2,indobjrel) AND 
+                [rel2] * [indobjrel,aanobjrel, voorobjrel] = []
+       I6: ALL(mu6,I61:rel6/..)
+           I61: QUOTE_VPrelprec(indobjrel,rel6) AND 
+                [rel6] * [indobjrel,aanobjrel, voorobjrel] = []
+      >
+
+   PARAMETERS
+      <
+       adjunctpar:adjuncttype
+      >
+
+      COMP
+         <
+          C1: benfactNP IN VERBrec1.adjuncts            AND
+              [benfactNP] * VERBPPROPrec1.adjuncts = [] AND
+              T1.CAT IN [NPVAR,CNVAR]                   AND
+              adjunctpar = benfactNP
+          A1: VERBPPROPrec2 := VERBPPROPrec1;
+              VERBPPROPrec2.adjuncts := VERBPPROPrec1.adjuncts + [benfactNP];
+              rel1 := indobjrel;
+         >
+      DECOMP
+         <
+          C1: benfactNP IN VERBrec1.adjuncts      AND
+              benfactNP IN VERBPPROPrec2.adjuncts AND
+              T1.CAT IN [NPVAR,CNVAR]             AND
+              rel1 = indobjrel
+          A1: adjunctpar := benfactNP;
+              VERBPPROPrec1 := VERBPPROPrec2;
+              VERBPPROPrec1.adjuncts := VERBPPROPrec2.adjuncts - [benfactNP];
+         >
+
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Radjunctvar2
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 16-MAR-1990 21:44:35  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% RULE Radjunctvar3
+< m1:VERBPPROP{VERBPPROPrec1}
+       [ mu1,
+         predrel/VERBP{VERBPrec1}[mu7],
+         mu5
+       ] 
+m2: T1
+>
+
+< m :VERBPPROP{VERBPPROPrec2}
+       [ mu1,
+         predrel/VERBP{VERBPrec1}[mu8],
+         mu5
+       ] 
+
+>
+
+
+
+<
+   SUBRULE (* aanobjrel*)
+      <mu7: [I2:mu2,
+             I6:mu6,
+             head/VERB{VERBrec1}[mu3],
+             mu4
+            ] 
+      >
+      <mu8: [I2:mu2,
+             voorobjrel/VARPREPP{VARPREPPrec1}
+		[ head/PREP(KEY_voorioprepkey){PREPrec1},
+                  objrel/T1
+		],
+             I6:mu6,
+             head/VERB{VERBrec1}[mu3],
+             mu4 
+            ]
+      >
+
+   MATCHCONDITIONS
+      <
+       I2: ALL(mu2,I21:rel2/..)
+           I21: QUOTE_VPrelprec(rel2,indobjrel) AND 
+                [rel2] * [indobjrel,aanobjrel, voorobjrel] = []
+       I6: ALL(mu6,I61:rel6/..)
+           I61: QUOTE_VPrelprec(indobjrel,rel6) AND 
+                [rel6] * [indobjrel,aanobjrel, voorobjrel] = []
+      >
+
+<
+   SUBRULE  (*aanobjrel, NPVAR*)
+      <T1:NPVAR{NPVARrec1} >
+      <T1:NPVAR{NPVARrec1} >
+
+      COMP
+         <
+          C1: benfactPP IN VERBrec1.adjuncts             AND
+              [benfactPP] * VERBPPROPrec1.adjuncts = []
+          A1: VERBPPROPrec2 := VERBPPROPrec1;
+              VERBPPROPrec2.adjuncts := VERBPPROPrec1.adjuncts + [benfactPP];
+              VARPREPPrec1 := PREPPrecdef;
+              VARPREPPrec1 :=
+                 {
+                  headkey    : KEY_voorioprepkey
+                  synppefs   : [synNP]
+                  thetapp    : pp120
+                  retro      : PREPrec1.retro
+                  aspect     : PREPrec1.aspect
+                  deixis     : PREPrec1.deixis
+                  class      : PREPrec1.class
+                  actsubcefs : PREPrec1.subcs
+                  specq      : NPVARrec1.specq
+                  mood       : NPVARrec1.mood
+                 };
+         >
+      DECOMP
+         <
+          C1: benfactPP IN VERBrec1.adjuncts AND
+              benfactPP IN VERBPPROPrec2.adjuncts AND
+              VARPREPPrec1 =
+                 {
+                  req        : [omegapol, pospol, negpol]
+                  env        : [omegapol, pospol, negpol]
+                  superdeixis: omegadeixis
+                  radvkey    : 0
+                  stranded   : false
+                  headkey    : KEY_voorioprepkey
+                  synppefs   NI synNP
+                  thetapp    : pp120
+                  retro      : PREPrec1.retro
+                  aspect     : PREPrec1.aspect
+                  deixis     : PREPrec1.deixis
+                  class      : PREPrec1.class
+                  specq      : NPVARrec1.specq
+                  mood       : NPVARrec1.mood
+                 } AND
+              VARPREPPrec1.actsubcefs * PREPrec1.subcs <> [] 
+          A1: VERBPPROPrec1 := VERBPPROPrec2;
+              VERBPPROPrec1.adjuncts := VERBPPROPrec2.adjuncts - [benfactPP];
+         >
+
+   SUBRULE (* aanobjrel, CNVAR *)
+      <T1:CNVAR{CNVARrec1} >
+      <T1:CNVAR{CNVARrec1} >
+
+      COMP
+         <
+          C1: benfactPP IN VERBrec1.adjuncts             AND
+              [benfactPP] * VERBPPROPrec1.adjuncts = []
+          A1: VERBPPROPrec2 := VERBPPROPrec1;
+              VERBPPROPrec2.adjuncts := VERBPPROPrec1.adjuncts + [benfactPP];
+              VARPREPPrec1 := PREPPrecdef;
+              VARPREPPrec1 :=
+                 {
+                  headkey    : KEY_voorioprepkey
+                  synppefs   : [synNP]
+                  thetapp    : pp120
+                  retro      : PREPrec1.retro
+                  aspect     : PREPrec1.aspect
+                  deixis     : PREPrec1.deixis
+                  class      : PREPrec1.class
+                  actsubcefs : PREPrec1.subcs
+                  specq      : yesspec
+                  mood       : declxpmood
+                 };
+         >
+      DECOMP
+         <
+          C1: benfactPP IN VERBrec1.adjuncts AND
+              benfactPP IN VERBPPROPrec2.adjuncts AND
+              VARPREPPrec1 =
+                 {
+                  req        : [omegapol, pospol, negpol]
+                  env        : [omegapol, pospol, negpol]
+                  superdeixis: omegadeixis
+                  radvkey    : 0
+                  stranded   : false
+                  headkey    : KEY_voorioprepkey
+                  synppefs   NI synNP
+                  thetapp    : pp120
+                  retro      : PREPrec1.retro
+                  aspect     : PREPrec1.aspect
+                  deixis     : PREPrec1.deixis
+                  class      : PREPrec1.class
+                  specq      : yesspec
+                  mood       : declxpmood
+                 } AND
+              VARPREPPrec1.actsubcefs * PREPrec1.subcs <> [] 
+          A1: VERBPPROPrec1 := VERBPPROPrec2;
+              VERBPPROPrec1.adjuncts := VERBPPROPrec2.adjuncts - [benfactPP];
+         >
+
+
+>
+
+   SUBRULE (* prepobjrel*)
+      <mu7: [I2:mu2,
+             I6:mu6,
+             head/VERB{VERBrec1}[mu3],
+             mu4
+            ] 
+      >
+      <mu8: [I2:mu2,
+             prepobjrel/VARPREPP{VARPREPPrec1}
+		[ head/PREP(KEY_voorioprepkey){PREPrec1},
+                  objrel/T1
+		],
+             I6:mu6,
+             head/VERB{VERBrec1}[mu3],
+             mu4 
+            ]
+      >
+
+   MATCHCONDITIONS
+      <
+       I2: ALL(mu2,I21:rel2/..)
+           I21: QUOTE_VPrelprec(rel2,prepobjrel) AND 
+                [rel2] * [prepobjrel, predrel, locargrel, dirargrel] = []
+       I6: ALL(mu6,I61:rel6/..)
+           I61: QUOTE_VPrelprec(prepobjrel,rel6) AND 
+                [rel6] * [prepobjrel, predrel, locargrel, dirargrel] = []
+      >
+
+<
+   SUBRULE
+      <T1:NPVAR{NPVARrec1} >
+      <T1:NPVAR{NPVARrec1} >
+
+      COMP
+         <
+          C1: benfactPP IN VERBrec1.adjuncts             AND
+              [benfactPP] * VERBPPROPrec1.adjuncts = []
+          A1: VERBPPROPrec2 := VERBPPROPrec1;
+              VERBPPROPrec2.adjuncts := VERBPPROPrec1.adjuncts + [benfactPP];
+              VARPREPPrec1 := PREPPrecdef;
+              VARPREPPrec1 :=
+                 {
+                  headkey    : KEY_voorioprepkey
+                  synppefs   : [synNP]
+                  thetapp    : pp120
+                  retro      : PREPrec1.retro
+                  aspect     : PREPrec1.aspect
+                  deixis     : PREPrec1.deixis
+                  class      : PREPrec1.class
+                  actsubcefs : PREPrec1.subcs
+                  specq      : NPVARrec1.specq
+                  mood       : NPVARrec1.mood
+                 };
+         >
+      DECOMP
+         <
+          C1: benfactPP IN VERBrec1.adjuncts AND
+              benfactPP IN VERBPPROPrec2.adjuncts AND
+              VARPREPPrec1 =
+                 {
+                  req        : [omegapol, pospol, negpol]
+                  env        : [omegapol, pospol, negpol]
+                  superdeixis: omegadeixis
+                  radvkey    : 0
+                  stranded   : false
+                  headkey    : KEY_voorioprepkey
+                  synppefs   NI synNP
+                  thetapp    : pp120
+                  retro      : PREPrec1.retro
+                  aspect     : PREPrec1.aspect
+                  deixis     : PREPrec1.deixis
+                  class      : PREPrec1.class
+                  specq      : NPVARrec1.specq
+                  mood       : NPVARrec1.mood
+                 } AND
+              VARPREPPrec1.actsubcefs * PREPrec1.subcs <> [] 
+          A1: VERBPPROPrec1 := VERBPPROPrec2;
+              VERBPPROPrec1.adjuncts := VERBPPROPrec2.adjuncts - [benfactPP];
+         >
+
+   SUBRULE
+      <T1:CNVAR{CNVARrec1} >
+      <T1:CNVAR{CNVARrec1} >
+
+      COMP
+         <
+          C1: benfactPP IN VERBrec1.adjuncts             AND
+              [benfactPP] * VERBPPROPrec1.adjuncts = []
+          A1: VERBPPROPrec2 := VERBPPROPrec1;
+              VERBPPROPrec2.adjuncts := VERBPPROPrec1.adjuncts + [benfactPP];
+              VARPREPPrec1 := PREPPrecdef;
+              VARPREPPrec1 :=
+                 {
+                  headkey    : KEY_voorioprepkey
+                  synppefs   : [synNP]
+                  thetapp    : pp120
+                  retro      : PREPrec1.retro
+                  aspect     : PREPrec1.aspect
+                  deixis     : PREPrec1.deixis
+                  class      : PREPrec1.class
+                  actsubcefs : PREPrec1.subcs
+                  specq      : yesspec
+                  mood       : declxpmood
+                 };
+         >
+      DECOMP
+         <
+          C1: benfactPP IN VERBrec1.adjuncts AND
+              benfactPP IN VERBPPROPrec2.adjuncts AND
+              VARPREPPrec1 =
+                 {
+                  req        : [omegapol, pospol, negpol]
+                  env        : [omegapol, pospol, negpol]
+                  superdeixis: omegadeixis
+                  radvkey    : 0
+                  stranded   : false
+                  headkey    : KEY_voorioprepkey
+                  synppefs   NI synNP
+                  thetapp    : pp120
+                  retro      : PREPrec1.retro
+                  aspect     : PREPrec1.aspect
+                  deixis     : PREPrec1.deixis
+                  class      : PREPrec1.class
+                  specq      : yesspec
+                  mood       : declxpmood
+                 } AND
+              VARPREPPrec1.actsubcefs * PREPrec1.subcs <> [] 
+          A1: VERBPPROPrec1 := VERBPPROPrec2;
+              VERBPPROPrec1.adjuncts := VERBPPROPrec2.adjuncts - [benfactPP];
+         >
+
+
+>
+
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Radjunctvar3
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 16-MAR-1990 23:08:18  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+%%
+
+
+E 2
+E 1

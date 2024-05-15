@@ -1,0 +1,44 @@
+#! /bin/sh -e
+#
+# install_component <component>
+#
+case $# in
+0) echo "Usage: install_component component"; exit 1;;
+1) component=$1;;
+*) echo "Usage: install_component component"; exit 1;;
+esac
+#
+set -e
+#set -v
+#set -x
+umask 002
+trap 'umask 022 ; echo "INSTALL: Error during installation; Remove installed directories; warn the RBS system manager!!"; exit 2' 0
+#
+echo "INSTALL: What is the full path to the archive directory? (e.g. /home/user/archive)"
+read ARCH_DIR
+#
+#
+echo "INSTALL: What is the name of the release directory? (e.g. release3)"
+read RELEASE_DIR
+#
+cd $ARCH_DIR/$RELEASE_DIR
+#
+   echo "INSTALL: Creating component $component in the current release...."
+   mkdir $component
+   chmod g+rwx $component
+   mkdir $component/sccs
+   chmod g+rwx $component
+   echo "$component    $component/source/ +" >> RBS_logicals
+   echo "              $component/target/ +" >> RBS_logicals
+   echo -n '              $(RBS_ARCHIVE)$(RBS_RELEASE)/' >> RBS_logicals
+   echo "$component/" >> RBS_logicals
+#
+   echo "echo 'INSTALL: creating component directory $component'" >> RBS_install
+   echo "mkdir $component" >> RBS_install
+   echo "mkdir $component/source" >> RBS_install
+   echo "mkdir $component/target" >> RBS_install
+   echo "mkdir $component/save" >> RBS_install
+#
+trap 0
+# 
+exit 

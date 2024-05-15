@@ -1,0 +1,3625 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta2
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  The division of Rosetta2.
+
+         Author       :  Carel Fellinger
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  18
+
+         Date         :  20/08/85
+
+         Status       :  concept
+
+         Supersedes   :  
+
+         Distribution :  software-group
+
+         Clearance    :  project
+
+         Keywords     :  software
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 18                      date:20/08/85
+$Np 1
+$C1 Introduction
+_Status of this document_
+$ This document is the first of a series of documents describing the
+implementation of Rosetta2. It serves as a basis from which the other documents
+emerge. It may also serve as a reference guide for the purpose and use of a
+specific module, include file or logical name.$
+
+_Content of this document_
+$ This document provides a global explanation of the implementation of Rosetta2
+Also how and why Rosetta2 was split up into subparts is discussed here. It
+gives an informal definition of some of the terms used in this sery of
+documents, and also defines the meaning of most of the logical names associated
+with modules and include files.$
+
+_Summary of this document_
+$ In describing the implementation of Rosetta2 it is useful to realize that
+Rosetta2 consist of 4 translators (D->D, D->E, E->E, E->D); every translator is
+implemented by a Pascal program and consists of an analytic and generative part
+and several dictionaries. Those programs as a whole as well as the analytic and
+generative parts of one program have, although a lot in common, also a lot  of
+differences.$
+$ In order to simplify the development and maintenance of these huge programs
+we decided to extract the common parts as much as possible from the rest, so
+that information although used at several places in Rosetta2 is kept at one
+place only. This can be done be means of so called modules and include files.
+Lacking the differentiation between definition and implementation modules
+however, caused that some source parts contributed to more than one object
+file!$ 
+$ The fact that more than one person was involved in the development
+of Rosetta2 and the fact that a demonstration version had to be available gave
+rise to the necessity of keeping track of development history and version
+differences, complicating it all a little more.$
+$ In order to facilitate the development of Rosetta2 some utilities were made
+to assist in the editing, compiling and linking of the software, and in
+the updating of the dictionaries, without the user having to worry about where
+files are kept ore what versions of modules belong together.$
+
+_Structure of this document_
+$ I will first give a definition of some terms (I also borrow terms from the
+theory as defined in the documents R.... to R....). Then I will explain how and
+why Rosetta2 was and is split into modules and include files, and how these
+parts relate to the theory. This will be done in a global manner, a more
+explicit story on this splitting process is to be expected in "Implementation
+problems" (R...., forthcoming). Finally I will tell where the parts are kept on
+disk. In the appendices all the files and modules used in Rosetta2 are listed
+and a  short explanation of each one is given. The dictionaries and their
+utilities are described in a separate document called "On dictionaries in
+Rosetta2" (R20), and the environment is described in the document
+called "Utilities for Rosetta2" (R19).$ 
+
+$C1 Definition of terms
+_A description of the terms_
+$ Rosetta2 defines 4 translators, the implementation of each is called a
+program, and defines several dictionaries. In order to maintain these
+dictionaries the necessary utilities have been developed in the form of some
+more programs.$ 
+$ We maintain a demonstration and a work version of each program and each
+dictionary. The demonstration version consists of the latest approved versions 
+of each part of Rosetta2, the work version is the version in which changes are
+to be tried out.$ 
+$ The parts that are different for every language are called language
+specific (LS), the rest is called common. The common part can be subdivided
+into a part that uses, but doesn't contain language specific things and a part
+that doesn't use nor contain language dependent features. These parts are
+called language dependent (LD) and language independent (LI) respectively.$
+$ For example the surface rules are language specific, but the source defining
+the surface parser is language dependent because it uses the surface rules, and
+the definition of the interlingua is called language independent.$
+$ A dictionary (WB, short for the dutch "woordenboek") consists of a textfile
+and a Pascal record structured file, both containing the same information.
+The software associated with these dictionaries we call lexical (LEX).$
+$ For example AMDICT is a dictionary, and the source manipulating AMDICT is
+called lexical source.$
+$ A program can be split up into modules and include files. Modules are parts
+of a program that can be compiled separately, they also serve as a fench around
+the declarations in that module. By means of the import/export facility this
+fench can be passed. Include files are files included somewhere in a program,
+with the effect of expanding the program source with their content. For more
+information on modules and include files see "Implementation problems" (R....
+forthcoming).$ 
+$ Intensive use will be made of VAX/VMS specific terms like logicals and file
+names. For a explanation of these terms see the VAX/VMS documentation.$
+
+_The terms listed_
+$HL 10,Rosetta2
+$ : The 4 translators and the dictionary utilities; in work and demo
+version.$
+$HL 10,LS
+$ : Stands for language specific; parts are called LS when information specific
+for either Dutch or English (but not both) is contained in it.$
+$HL 10,common
+$ : Parts are called common when they don't contain any language specific
+information. General is probably a better
+name. Common can be subdiveded into LD and LI.$
+$HL 10,LD
+$ : Stands for language dependent; parts are called LD when language specific
+information is 'included' from LS parts, but it does not contain any
+LS-information. So only source files can be LD.$
+$HL 10,LI
+$ : Stands for language independent; parts are called LI when in no way
+language specific information is used in it.$
+$HL 10,IL
+$ : Stands for interlingua; parts are called IL when they are specific for
+the interlingua. Caused by the way the interlingua is defined in Rosetta2 it
+depends on both the Dutch and the English transfer components, so it is neither
+LS not common.$
+$HL 10,an
+$ : Stands for analysis; parts are called an when they are only used in the
+analysis phase.$
+$HL 10,gen
+$ : Stands for generation; parts are called gen when they are only used in the
+generation phase.$
+$HL 10,LEX
+$ : Stands for parts associated with lexical functions.$
+$HL 10,WB
+$ : Stands for dictionary.$
+$HL 10,program
+$ : Implementation of translator or dictionary utility, consists of
+several modules.$
+$HL 10,module
+$ : Compilation unit, fench around declarations.$
+$HL 10,IMPORT
+$ : Inheriting declarations exported by some other module.$
+$HL 10,EXPORT
+$ : Making local declarations accessible to other modules, in VAX/VMS
+Pascal done by means of so called environment files.$
+$HL 10,INCLUDE
+$ : Expanding the source with the source found in the included file.$
+$HL 10,demo
+$ : (Parts related to) the demonstration version of Rosetta2.$
+$HL 10,work
+$ : (Parts related to) the work version of Rosetta2.$
+$UM
+
+$C1 Splitting Rosetta2
+$C2 History and global division
+_The first division_
+$ As told before Rosetta2 consists of 4 translators. Each translator has got
+ten dictionaries associated with it. Each dictionary has got his own utility.
+These dictionaries and utilities are described in "On dictionaries in Rosetta2"
+(R20).$ 
+$ Each translator consists of an analysis and a generation component and these
+components are split into four subcomponents corresponding to the eight steps
+A-MORPH, S-PARSER, M-PARSER, A-TRANSFER, G-TRANSFER, M-GENERATOR, LINEARIZER
+and G-MORPH. (In the theory LINEARIZER is sometimes called LEAVES.)$
+$ This division is almost forced upon by the definitions as given in the
+documents describing the theory of Rosetta2. We started in the VAX/Unix
+implementation with modules corresponding to all these eleven parts (the main
+part, analysis and generation parts and the eight steps) plus one extra
+containing some operating system dependent functions (like clock and screen
+manipulating routines), mainly to save compiler time.$
+The eight subparts mentioned above all contain language specific information.
+We were able to split of this information from the more general parsing
+algoritms by means of include files. To make for instance the Dutch version of
+say A-MORPH we only had to use the Dutch include files, containing only
+information specific for Dutch, and the general part of A-MORPH. Most of these
+include files were used in more then one module.$
+
+
+_Disadvantage of this division_
+$ The import/export facility provided by the Unix Pascal compiler does no
+checking across module bounds. Besides all the dependencies between the modules
+had to be taken care of by means of include files, diminishing even further the
+possibility of compiler checks. Therefore we took the chance of improving this
+when we moved to VAX/VMS. This improving had become more urgent because we were
+going to work on Rosetta with a larger team.$ 
+
+_Criteria for a futher division_
+$ Of course we still wanted a division that reflected the mathematical
+definitions of Rosetta2, but we also wanted the compiler and linker to check as
+much as possible. This meant that the same file should not be included in more
+than one module, and therefore we needed extra modules in which the
+declarations used in several modules had to be put. We did this in such a way
+that what seemed to belong together was put together. The saving of compiler
+time and thereby a quick turnaround time for small changes was still one of our
+aimes.$
+
+_Disapointment_
+$ However, we didn't succeed in adhering to all these criteria equally well,
+and what is even worse the profit of having small compilation units sometimes
+disappeared totally. Besides we had to use several tricks. All these things are
+caused by the fact that the VAX/VMS Pascal compiler doesn't differentiate
+between implementation and definition modules nor allows opaque export of
+types. For a more elaborated explanation see "Implementation problems" (R...., 
+forthcoming).$ 
+
+_The result_
+$ After the move to VAX/VMS we ended up with a total of fourty-eight modules
+(all described in  appendix A), and some 122 include files (discribed in
+ appendices B, C and D).$ 
+$ In this VAX/VMS implementation all the parts of Rosetta2 have a work and a
+demonstration version. The work version is used to implement new parts and try
+out modifications, the demonstration version is a copy of the latest approved
+work version. We won't elaborate this distinction, but just say that the
+problems connected to this distinction are solved by using separate directories
+and some utilities. These utilities are described in a Rosetta document called
+"Utilities for Rosetta2" (R19). The directory structure is
+described in 4.$ 
+
+
+$C2 The division more explicitly
+_Splitting off the lexical parts_
+$ One of the not yet solved problems in Rosetta2 is the consistency of the
+dictionaries. This concistency has got two facets. One will be called
+internal consistency, which implies that they are 'closed', that is that every
+entry in a dictionary has corresponding entries in all the other dictionaries.
+The other facet will be called external consistency, which implies that the
+program and the dictionaries fit together. The dictionaries are Pascal files of
+a certain record type. This record type is also used in the program for the
+dictionary access. It is obvious that any change in this record type will have
+the effect that dictionaries and program won't fit together any more.$
+$ By splitting off the so called lexical source we isolated the software that
+is responsible for the dictionary access and definition. Any change in this
+source may have the effect that the dictionaries and the program don't fit
+together, which means that dictionaries become unreadable, so care has to
+be taken in doing so.$
+$ This seperation was achieved by means of the following module pairs :
+anlexdecl and anlexica, genlexdecl and genlexica and,
+globlexdecl and globlexica. The first of each pair defining the structure of
+dictionaries, the second defining some dictionary access routines.
+Unfortunately this wasn't done strict anough to make a real abstract data type
+out of the dictionaries.$
+$ In the current implementation of Rosetta2, all the dictionaries are
+represented by huge arrays, speeding up the looking up process, but introducing
+an initialisation overhead. This overhead is reduced to reading in the
+dictionary files once at the start of the program. The use of the modules
+initanlexica, initanlexicaprocs, initgenlexica, initgenlexicaprocs,
+initgloblexicaprocs and initILlexica made this very easy.$
+
+_Splitting off the language independent parts_
+$ To begin with we created the module stringman, providing the abstract data
+type string, for strings are used at many places in Rosetta2. We already
+mentioned the module systfunc, containing some operating dependent stuff. We
+also separated the software connected to the different modes in which Rosetta2
+can be used, like interaction mode and Ugly mode, and put these parts in the
+module InfoHandler.$
+$ Now we tried to extract some declarations that were independent of the
+languages, this didn't go as wel as we would have liked. For instance for all
+languages the structure of an S-tree is the same, yet the range of categories
+and their attributes differ, turning an S-tree into a language specific object.
+It would be nice if it was possible to define the structure of an S-tree
+without having to define the range of categories and their attributes at the
+same time. This would make the seperation between language specific and general
+software more clear. Alas the VAX/VMS Pascal compiler doesn't allow
+'opaque' export, so we were able to extract a few things only. These parts were
+put in the module LIdecl.$
+$ Finally we created our one version of MARK and RELEASE with the modules
+MEMORY and MEMSPECS, these procedures are necessary
+because the VAX has got a finite memory, and the tree-structures
+in use are not easily removed with the aid of DISPOSE.$
+$ By the way there is no reason for the use of include files in LI-parts.$
+
+_Splitting off the language dependent parts_
+$ We had already split off ANALYSIS, GENERATION and their subparts, but had to
+get rid of include files used in more than one of these modules. We did this
+in the following way.$
+$ All the subparts of one language use the same definition of T (the domain of
+S-trees), so this is a good candidate for a seperate module. In the theory
+D-trees and LD-trees are seperately defined entities, but in the implementation
+all the tree-structures are combined, to make it possible to remember partial
+results and by doing so to make it possible to use a back-tracking mechanisme
+without having to do things twice. Unfortunately the Pascal compiler in use
+doesn't allow opaque export, nor does it offer the facility to make the
+distiction between implementation and definition module, so all these
+tree-structures have to be put into one module. This leaves us with the nasty
+fact that a change in the definition of a D-tree or of the values of say a VERB
+attribute causes most of Rosetta2 needing recompilation.$
+$ The lexical part of the definition of S-trees, that is the definition of the
+categories and their associated attributes, was put into the module
+globdecl, the rest was put into the module globtreedecl. Some tree manipulating
+routines used in analysis as wel as in generation were put into the module
+globtree.$
+$ The definition of the interface between the analytic ,resp. generative
+subparts was put into the module anifdecl, resp. genifdecl.$
+$ For the debuging of Rosetta2 it was necessary to be able to print the
+interfaces between the subparts, the routines doing this in analysis
+resp. generation were put into the module aprhandler resp. gprhandler.
+We wanted to print trees in the subparts as wel and the routines doing this
+were put into the modules aprprocs, gprprocs and prprocs.$
+$ We also tried to seperate the things in use in the corresponding analytic
+and generative component of the same language and put these parts in the
+modules globmorph, globsurf, globM and globtransfer.$
+$ All these modules have in common that parts of it are COMMON and parts are
+LS. The COMMON parts we called LD, to make it clear that the include statements
+in these parts incorporate LS parts in these modules, so that
+once compiled these modules become LS. This means that at the object level for
+every language a distinct version exists, so the linker will get confused
+when linking Rosetta2 for to different languages. By giving these distinct
+versions a distinct name this problem was solved. In appendix D is explained
+how this is done.$
+
+_Splitting off the interlingua parts_
+$ Ofcourse the interlingua parts were seperated. The definition of the IL-trees
+and some IL routines were put into the module IL, the definition of the
+interface between ANALYSIS and GENERATION were put into the module ILifdecl.$
+
+_Splitting off the language specific parts_
+$ All the language specific parts are included into LD modules, so by creating
+these modules it became clear what kind of LS included files were needed.$
+$ By changing the logicals refering to those include files it is very easy to
+create the LS object files corresponding to the LD modules.
+
+
+$C1 The directory structure
+_The main directories_
+$ The directory structure resembles very much the distinctions made in 2. The
+demonstration version of Rosetta2 is kept in the main directory "[ROSETTA]".
+The work version is spread over three main directories in the following way :
+the language specific parts are kept in the main directories "[DUTCH]" and
+"[ENGLISH]", the common parts in the main directory "[COMMON]".$
+
+_The first level of subdirectories_
+$ All four main directories have the same three subdirectories. The
+dictionaries are to be found in the subdirectory called "[.WB2]", the lexical
+parts are hidden in the subdirectory called "[.LEXICON2]", and the other parts
+are put in the subdirectory with the name "[.ROSETTA2]".$ 
+
+_The second level of subdirectories_
+$ All these subdirectories are subdivided in a similar way. The main directory
+"[COMMON]" is also used to test and integrate the complete work version before
+approving it to become the new demonstration version. That is why this main
+directory resembles the "[ROSETTA]" main directory completely, the other main
+directories only contain what is relevant for them.$ 
+$ The common parts except for things related to the interlingua are put in the
+subdirectory "[.COMMON]", this subdirectory is futher subdivided into the
+subdirectory "[.LD]" for the language dependent parts, and the subdirectory
+"[.LI]" for the language independent parts (without the interlingua related
+parts). The language specific parts are put in subdirectories with names
+corresponding to the particular language ( "[.DUTCH]" for Dutch, and
+"[.ENGLISH]" for English).$ 
+$ The subdirectories "[.ROSETTA2.DUTCH]" and "[.ROSETTA2.ENGLISH]" consist of
+amongst others the subdirectories "[.AMRULES]" and "[.GMRULES]" comprised of
+the Pascal implementations of respectively the analytic and generative
+M-rules.$ 
+
+_The interlingua subdirectory_
+$ Although the interlingual parts seem to belong to the language independent
+parts,
+they have received their own subdirectory on the same level as the common and
+the language specific subdirectories. This subdirectory is called "[.IL]". The
+reason behind this is that, because the interlingua is the union of what is
+used in the the transfer components of all the languages, it is not really
+LI and also not really LS.
+This interlingua is likely
+to change in the development period whenever some transfer component is
+enhanced or modified, and therefore it is quite possible that in the work
+version there is
+a need for more than one version of the interlingua. So the choice is made that
+the source language of a translator determines which interlingua is used, and
+in the work version two independent versions of the interlingual parts are kept
+(one for Dutch and one for English).$ 
+$ Ofcourse before the work version can be promoted to a demonstration version
+those versions of the interlingua should be merged.$ 
+
+_The counterparts_
+$ The directories mentioned up till now only contain sources and dictionaries.
+The object, listing and environment counter parts are put in the
+subdirectory called "[.OBJ]" of the subdirectories "[.IL]", "[.LI]", "[.DUTCH]"
+and "[.ENGLISH]".$
+$ The executable counter parts of Rosetta2 are put in the subdirectories called
+"[.EXE.<taal>]" of the subdirectories "[ROSETTA2.DUTCH]" and
+"[ROSETTA2.ENGLISH]", where <taal>
+stands for any of the following strings "DUTCH", "WORKDUTCH", "ENGLISH" and
+"WORKENGLI". This is done in such a way that the name of the subdirectory of
+which the 'exe' directory is a subdirectory corresponds with the source
+language , and the for <taal> substituted
+string corresponds with the target language of the translator.$
+
+_Some remarks_
+$ Mind you that the object associated with language dependent
+source becomes language specific, because language specific source is included.
+Therefore these counterparts are put in the "[.OBJ]" subdirectories of
+"[.DUTCH]" and "[.ENGLISH]".$ 
+$ See also the appendices on directories and disks for a list of logical
+directory names and an overview in picture form (appendices E and F).$ 
+
+
+$A1 THE MODULES
+$ Below an alphabetic listing of all the modules used in Rosetta2 is given,
+together with some minor bits of information. More information is
+not available yet.$
+$ The compiler creates for every compiled module an object, a listing and an
+environment file.  They all receive the same name as the object file except for
+their extension, which becomes resp. OBJ, LST and PEN. The object file contains
+the machine code, the listing file a complete listing of the compiled module
+together witch the included files, and the environment file contains the global
+declarations of the module in a compiler readable form. The listing file will
+prove very handy during debugging, for the linenumber mentioned in the error
+messages printed when a run-time error occurres, corresponds to the
+linenumbers in the listing file.$ 
+$ For more information on modules look for "Implementation problems"
+(R...., forthcoming).$
+
+$ For each module the following information is supplied.$
+$ In the heading the module name, and wat it stands for, is given.$
+$ _SOURCE_ gives the name of the source file. The utilities described in
+"Utilities for Rosetta2" (R19) construct this name out of the
+logical name for the object-counter part and the module name.$
+$ _OBJECT_ gives the name of the object file, and therefore also the names of
+the listing and environment files.$ 
+$ _IMPORT FROM_ gives a list of logical names of modules of which the
+environment files are imported into this module.$
+$ _EXPORT TO_ gives a list of logical names of modules importing the
+environment file associated with this module.$ 
+$ _INCLUDING_ gives a list of logical file names included into this module.
+These files are described in appendices B, C and D.$
+$ _TASK_ gives a short definition of the task of this module, and its
+relation to the theory.$
+$ _CONTENT_ gives a short describtion of the content of this module.$ 
+$ In export lists some names are between braces, these names refer to parts
+that update dictionaries, they are described in "On dictionaries in Rosetta2"
+(R20).$
+$ For the correct interpretation of the file names given below please use the
+appendices on dictionaries and disks.$
+$A2 amorph                  analytic morphology
+SOURCE      : LDdir:AMORPH.PAS
+OBJECT      : anobjdir:AMORPH.OBJ
+IMPORT FROM : stringman systfunc InfoHandler globdecl globlexdecl globlexica
+              globtreedecl globtree anifdecl anlexdecl anlexica globmorph
+              prprocs
+EXPORT TO   : analysis
+INCLUDING   : initamorph aprefprocs apostfprocs afreefprocs asplprocs
+              alayoutprocs alextreeprocs
+TASK        : implementing the analytic part of the morphology called A-MORPH
+              as described in R8, enhanced with efficienty and robustness
+              measures as described in "Extensions" (R14, forthcoming).
+CONTENT     : procedure amorph(var if1 : pconnectionnode);
+                 (* read from standard input file, and returns the resulting
+                  * set of list of lexical S-trees.
+                  * for efficienty reasons the result doesn't contain
+                  * verbs that need a particle when that particle is not in
+                  * the sentence.
+                  * In the interactive mode for every word not in the
+                  * dictionary a possibility to refrase that word is given.
+                  * The LS morfological rules are included into this module,
+                  * All the parts also used in G-MORPH of the same language
+                  * are imported from the module globmorph.
+                  * In contrast to the theory, A-MORPH is implemented with a
+                  * breath-first algoritme.
+                  *)
+$A2 analysis                analysis
+SOURCE      : LDdir:ANALYSIS.PAS
+OBJECT      : anobjdir:ANALYSIS.OBJ
+IMPORT FROM : Ilifdecl anifdecl amorph surfparser mparser antransfer
+              aprhandler InfoHandler shortcircuit
+EXPORT TO   : rosetta2
+TASK        : implementing the analytic part of Rosetta2 called analysis as
+              defined in R11.
+CONTENT     : procedure analysis(var if4: if4type; var stop: boolean);
+                 (* activates all the analytic sub-components in the right
+                  * order until shortcircuit has been activated or
+                  * stoplevel has been reached.
+                  * activates aprhandler after every
+                  * finished component and activates 'shortcircuit'
+                  * when this mode is selected.
+                  * analysis is breath-first.
+                  *)
+$A2 anifdecl                analytic interface declaration
+SOURCE      : LDdir:ANIFDECL.PAS
+OBJECT      : anobjdir:ANIFDECL.OBJ
+IMPORT FROM : globdecl globtreedecl
+EXPORT TO   : analysis aprhandler aprprocs shortcircuit surfparser amorph
+TASK        : defining the interfaces between the analytic subparts
+CONTENT     : var if1 : pconnectionnode;
+                  if2 : plostree;
+                  if3 : pdnode;
+$A2 anlexdecl               analytic lexical declaration
+SOURCE      : LDLEXdir:ANLEXDECL.PAS
+OBJECT      : anLEXobjdir:ANLEXDECL.OBJ
+IMPORT FROM : globdecl stringman globlexdecl IL
+EXPORT TO   : initanlexicaprocs initanlexica amorph antransfer anlexica
+              (update atleesbaar atonleesbaar)
+TASK        : defining the structure of the dictionary files, and the structure
+              of the attributes of categories in dictionaries, insofar as
+              specific for the analysis.
+CONTENT     : {AMDICT}
+              var  maxamdictindex     : 0..maxword;
+                   AINDEX     : mdictarray;
+                   fastAINDEX : array[char] of record ... end;
+
+              {AIDIOM} 
+              aidruletable :idruletabletype;
+              aidlist      :idlisttype;
+
+              {BLEX, AIRBLEX}
+              var ABLEX               :BLEXtype;
+                  AIRBLEX             :IRBLEXtype;
+                  activecats,
+                  iractivecats        :syntcatset;
+
+              {ATDICT}
+              type atdictrec   = record ... end;
+                   atdictarray = array[1..maxatdictword] of atdictrec;
+
+              var  maxatdictindex     : 1..maxatdictword;
+                   ATDICT     : atdictarray;
+                   fastATDICT : array[1..100] of record ... end;
+$A2 anlexica                analytic lexica
+SOURCE      : LDdir:ANLEXICA.PAS
+OBJECT      : anobjdir:ANLEXICA.OBJ
+IMPORT FROM : globdecl globlexdecl InfoHandler globtreedecl globtree
+              globlexica anlexdecl
+EXPORT TO   : amorph mparser
+INCLUDING   : alexicons
+TASK        : defining an interface between dictionaries and lexical S-trees,
+              insofar as specific for the analysis.
+CONTENT     : function numberlex(key: baskeytype): psnode;
+                 (* numberlex:=mkkeyrec(NUMERAL,key)
+                  *)
+              function basiclex(key: baskeytype): psnode;
+                 (* basiclex:=makesnode(0,nil,<cat>,nil)
+                  * basiclex^.<cat>field:=ABLEX.<cat>wb[key]
+                  * in debug mode a message is printed
+                  *)
+              function irreglex(key: baskeytype): psnode;
+                 (* irreglex:=basiclex(AIRBLEX.<cat>wb[key].key)
+                  * irreglex^.cat:='corresponding non basic cat'
+                  * irreglex^.cat.'some fields':=
+                  *    AIRBLEX.<cat>wb[key].'same some fields'
+                  *)
+              function supplex(key: baskeytype): psnode;
+                 (* supplex:=nil
+                  *)
+              function markerlex(key: markeytype): psnode;
+                 (* markerlex:=mkmarkerrec(key)
+                  *)
+              function postfixlex(key: poskeytype): psnode;
+                 (* postfixlex:=makesnode(0,nil,<postfixcat>,nil)
+                  *)
+              function prefixlex(key: prekeytype): psnode;
+                 (* prefixlex:=makesnode(0,nil,<prefixcat>,nil)
+                  *)
+              function freefixlex(key: frekeytype): psnode;
+                 (* freefixlex:=makesnode(0,nil,<freefixcat>,nil)
+                  *)
+$A2 antransfer              analytic transfer
+SOURCE      : LDdir:ANTRANSFE.PAS
+OBJECT      : anobjdir:ANTRANSFE.OBJ
+IMPORT FROM : InfoHandler systfunc stringman globdecl globtreedecl
+              globtree globtransfer LIdecl IL ILifdecl anlexdecl prprocs
+EXPORT TO   : analysis
+TASK        : implementing the analytic part of the transfer component as
+              described in R28, enhanced with some interaction as described
+              in "Extensions" (R14).
+CONTENT     : procedure antransfer(if3 : pdnode; var if4 : if4type);
+                 (* if4:=A-TRANSFER(if3)
+                  * explicite type test is not correctly implemented,
+                  * In case of ambiguity of basicexpressions the possibility is
+                  * offered in the interaction mode to desambiguate.
+                  * The LS transfer rules are included into this module,
+                  * All the parts also used in G-TRANSFER of the same language
+                  * are imported from the module globtransfer.
+                  *)
+$A2 aprhandler              analytic print handler
+SOURCE      : LDdir:APRHANDLE.PAS
+OBJECT      : anobjdir:APRHANDLE.OBJ
+IMPORT FROM : InfoHandler systfunc aprprocs anifdecl ILifdecl
+EXPORT TO   : analysis
+TASK        : taking care of the printing of the intermediate results in the
+              analysis, when wanted.
+CONTENT     : procedure aprhandler(comp : inforange);
+                 (* iff wanted prints "tussen resultaten surface parser",
+                  *     does a readln (to syncronise between user and program).
+                  * iff wanted prints result last activated analytic subpart,
+                  *     does a readln (to syncronise between user and program).
+                  *)
+$A2 aprprocs                analytic print procedures
+SOURCE      : LDdir:APRPROCS.PAS
+OBJECT      : anobjdir:APRPROCS.OBJ
+IMPORT FROM : InfoHandler anifdecl globtreedecl ILifdecl IL prprocs
+EXPORT TO   : aprhandler
+TASK        : defining routines for printing intermediate results, insofar as
+              specific for analysis.
+CONTENT     : procedure pinterf1(a: pconnectionnode);
+                 (* iff a=nil then writes nil
+                  * else print the whole list of trees
+                  *)
+              procedure pinterf2(a: plostree);
+                 (* iff a=nil then writes nil
+                  * else print the whole list of trees
+                  *)
+              procedure pinterf3(a: pdnode);
+                 (* iff a=nil then writes nil
+                  * else print the whole list of trees
+                  *)
+              procedure pinterf4(a: if4type);
+                 (* iff a=nil then writes nil
+                  * else print first a list of tree-numbers and their
+                  *      corresponding bonus, then print the whole
+                  *      list of trees ordered according to their bonus
+                  *)
+$A2 genctrl                 generative controller
+SOURCE      : LDdir:GENCTRL.PAS
+              LDdir:DUMMYGENC.PAS
+OBJECT      : genobjdir:GENCTRL.OBJ
+              genobjdir:DUMMYGENC.PAS
+IMPORT FROM : InfoHandler gmorph linearizer mgenerator gentransfer
+              gprhandler
+EXPORT TO   : generation gentransfer linearizer mgenerator shortcircuit
+TASK        : taking care of the correct activation of the generative subparts.
+CONTENT     : procedure generationcontroller(comp: inforange);
+                 (* the dummy version is an empty body, the real version
+                  * does the following :
+                  * activates gprhandler, calls clearerror in order to be
+                  * able to keep track of the error rate in the generation
+                  * and calls the next component (with number comp).
+                  *
+                  * The dummy version is used to fool the linker and the
+                  * compiler.
+                  * This is necessary because of mutual dependencies and the
+                  * lack of differentation between definition and
+                  * implementation modules.
+                  * dummygenctrl imports only from InfoHandler.
+                  * gentransfer, linearizer, mgenerator and generation imports
+                  * dummygenctrl. shortcircuit imports from genctrl, but could
+                  * as well import from dummygenctrl.
+                  *)
+$A2 generation              generation
+SOURCE      : LDdir:GENERATIO.PAS
+OBJECT      : genobjdir:GENERATIO.OBJ
+IMPORT FROM : dummygenctrl ILifdecl
+EXPORT TO   : rosetta2
+TASK        : implementing the generative part of Rosetta2
+CONTENT     : procedure generation(if4 : if4type);
+                 (* activates generationcontroller(5)
+                  * generation is depth-first, but still between two successive
+                  * generative sub-parts the intermediate result is to be
+                  * printed (atleast when this mode is selected). This is done
+                  * in a universal way by generationcontroller, and that is why
+                  * the recursive depth-first path is taken via that procedure.
+                  *)
+$A2 genifdecl               generative interface declaration
+SOURCE      : LDdir:GENIFDECL.PAS
+OBJECT      : genobjdir:GENIFDECL.OBJ
+IMPORT FROM : globdecl globtreedecl
+EXPORT TO   : gentransfer gmorph gprhandler gprprocs linearizer mgenerator
+              shortcircuit
+TASK        : defining the interfaces between the generative subparts.
+CONTENT     : var if5 : pdnode;
+                  if6 : psnode;
+                  if7 : pconnectionnode;
+$A2 genlexdecl              generative lexical declaration
+SOURCE      : LDLEXdir:GENLEXDEC.PAS
+OBJECT      : genLEXobjdir:GENLEXDEC.OBJ
+IMPORT FROM : globdecl stringman globlexdecl IL
+EXPORT TO   : initgenlexica initgenlexicaprocs genlexica gmorph gentransfer
+              (gtleesbaar gtonleesbaar)
+TASK        : defining the structure of the dictionary files, and the structure
+              of the attributes of categories in dictionaries, insofar as
+              specific for the generation.
+CONTENT     : {AMDICT}
+              var  maxgmdictindex     : 0..maxword;
+                   GINDEX     : mdictarray;
+                   fastGINDEX : array[keyfamily] of
+                                record ... end;
+            
+              {GIDIOM} 
+                  gidruletable :idruletabletype;
+                  gidlist      :idlisttype;
+            
+              {BLEX, GIRBLEX}
+              var GBLEX               :BLEXtype;
+                  GIRBLEX             :IRBLEXtype;
+                  activecats,
+                  iractivecats        :syntcatset;
+            
+              {GTDICT}
+              type gtdictrec   = record ... end;
+                   gtdictarray = array[1..maxgtdictword] of gtdictrec;
+             
+              var  maxgtdictindex : 1..maxgtdictword;
+                   GTDICT         : gtdictarray;
+                   fastGTDICT     : array[1..100] of record ... end;
+$A2 genlexica               generative lexica
+SOURCE      : LDdir:GENLEXICA.PAS
+OBJECT      : genobjdir:GENLEXICA.OBJ
+IMPORT FROM : globlexdecl globdecl InfoHandler globtreedecl globtree
+              globlexica genlexdecl
+EXPORT TO   : gentransfer gmorph mgenerator
+INCLUDING   : glexicons
+TASK        : defining an interface between dictionaries and lexical S-trees
+              insofar as specific for the generation.
+CONTENT     : function numberlex(key: baskeytype): psnode;
+                 (* numberlex:=mkkeyrec(NUMERAL,key)
+                  *)
+              function basiclex(key: baskeytype): psnode;
+                 (* basiclex:=makesnode(0,nil,<cat>,nil)
+                  * basiclex^.<cat>field:=GBLEX.<cat>wb[key]
+                  * in debug mode a message is printed
+                  *)
+              function irreglex(key: baskeytype): psnode;
+                 (* irreglex:=basiclex(GIRBLEX.<cat>wb[key].key)
+                  * irreglex^.cat:='corresponding non basic cat'
+                  * irreglex^.cat.'some fields':=
+                  *      GIRBLEX.<cat>wb[key].'same some fields'
+                  *)
+              function irregindication(t: psnode): boolean;
+                 (* irregindication iff 't is irregular'
+                  *)
+              function basiclexkey(s: psnode): baskeytype;
+                 (* basiclexkey:=whatiskey(s)
+                  *)
+              function supplexkey(p: psnode): baskeytype;
+                 (* supplexkey:=0
+                  *)
+              function markerlexkey(p: psnode): markeytype;
+                 (* markerlexkey:=p^.markerfield^.marker
+                  *)
+              function postfixlexkey(p: psnode): poskeytype;
+                 (* postfixlexkey:='with p^.cat corresponding key'
+                  *)
+              function prefixlexkey(p: psnode): prekeytype;
+                 (* prefixlexkey:='with p^.cat corresponding key'
+                  *)
+              function freefixlexkey(p: psnode): frekeytype;
+                 (* freefixlexkey:='with p^.cat corresponding key'
+                  *)
+              function irregsimplexkey(p: psnode; key: integer): baskeytype; 
+                 (* ???
+                  * contains some robustness measures
+                  *)
+$A2 gentransfer             generative transfer
+SOURCE      : LDdir:GENTRANSF.PAS
+OBJECT      : genobjdir:GENTRANSF.OBJ
+IMPORT FROM : InfoHandler stringman globdecl globtreedecl globtree
+              globM globtransfer genifdecl dummygenctrl IL ILifdecl LIdecl
+              genlexdecl genlexica prprocs
+EXPORT TO   : genctrl
+INCLUDING   : transgmakefunc specgentrfunc TgenR
+TASK        : implementing the generative part of the transfer component as
+              described in R28.
+CONTENT     : procedure gentransfer;
+                 (* if5:=G-TRANSFER(if4)
+                  * The LS transfer rules are included into this module,
+                  * All the parts also used in A-TRANSFER of the same language
+                  * are imported from the module globtransfer.
+                  *)
+$A2 globdecl                global declaration
+SOURCE      : LDdir:GLOBDECL.PAS
+OBJECT      : globobjdir:GLOBDECL.OBJ
+IMPORT FROM : stringman LIdecl
+EXPORT TO   : anlexdecl genlexdecl globlexdecl globlexica initanlexicaprocs
+              initanlexica initgenlexica initgloblexicaprocs initgenlexicaprocs
+              amorph anifdecl anlexica antransfer genifdecl genlexica
+              gentransfer globM globmorph globsurf globtree globtreedecl gmorph
+              linearizer mgenerator mparser prprocs surfparser
+              (update)
+INCLUDING   : globdeclname const globsurfconst decl vardecl
+TASK        : definition of types and constants,like the structure of the
+              attributes of categories not in dictionaries, insofar as
+              used in both analysis and generation of the same language.
+CONTENT     : const
+                 ...
+                 (* some language specific constants *)
+                   Hinit = ..
+                   Hdum = ..
+                   Hfinal = ..
+                 (* the LS values for Hinit, Hdum and Hfinal *)
+              type
+                   baskeytype = integer;
+                   keyfamily  =(markerkeys, gluekeys, freefixkeys, postfixkeys,
+                                prefixkeys, affixkeys, basickeys,
+                                supplkeys, irregkeys, idpartkeys,
+                                ugkeys);
+
+                   markeytype = ( ... );
+                   poskeytype = ( ... );
+                   prekeytype = ( ... );
+                   frekeytype = ( ... );
+                   gluekeytype = ( ... );
+                   syntcat = ( minbasicsyntcat ... (* the lexical cats *)
+                               maxbasicsyntcat ... (* the other cats *));
+                   basicsyntcat = minbasicsyntcat .. maxbasicsyntcat;
+                   ...
+                 (* the LS declaration of the categories (syntcat) and their
+                  * attributes
+                  *)
+                   pmarkerrecord=^markerrecord;
+                   markerrecord = record ... end;
+                   psyntcat    =^syntcat;
+                   syntcatset  =set of syntcat;
+                   pugrecord   =^ugrecord;
+                   ugrecord    =record str: syststr;
+                                       key: integer
+                                end;
+              var
+                 ...
+                 (* some LD variables of which the content is LS, like
+                  * firstcats and finalcats
+                  *)
+                   infile,
+                   outfile     : text;
+                   inputline   : packed array [0..160] of char;
+$A2 globlexdecl             global lexical declaration
+SOURCE      : LDLEXdir:GLOBLEXDE.PAS
+OBJECT      : globLEXobjdir:GLOBLEXDE.OBJ
+IMPORT FROM : globdecl stringman
+EXPORT TO   : anlexdecl genlexdecl globlexica initanlexicaprocs initanlexica
+              initgenlexica initgenlexicaprocs initgloblexicaprocs amorph
+              anlexica genlexica gmorph mgenerator mparser surfparser
+              (MDICTtoTEXT TEXTtoMDICT update)
+INCLUDING   : globlexdeclname lexconst activecats BLEXdecl IRBLEXdecl
+TASK        : defining the structure of the dictionary files, and the structure
+              of the attributes of categories in dictionaries, insofar as
+              equal for analysis and generation.
+CONTENT     : const
+                 maxword   =..
+                 maxidword =..
+                 maxidrule =..
+                 idrulelength=..
+                 maxatdictword=..
+                 maxgtdictword=..
+                 
+                 ...
+               (* some LS key constants, like tobeverbkey *)
+
+                 {MDICT}
+                 type mdictrec   = record ... end;
+                      mdictarray = array [1..maxword] of mdictrec;
+                 {IDIOM} 
+                     idruletabletype =array[0..maxidrule] record ... end;
+                     idlisttype      =array[0..maxidword] of record ... end;
+                 
+                 {BLEX en IRBLEX}
+                 wbsoorten = (AIRBLEXwb, BLEXwb, GIRBLEXwb);
+                 rangetype = record ... end;
+                 catgrensarray   = array [basicsyntcat] of rangetype;
+                 naam = record ... end;
+
+                 var  catgrens   :catgrensarray;
+                      ircatgrens :catgrensarray;
+
+                 procedure initactivecats( var activecats,
+                                               iractivecats : syntcatset );
+                    (* initialises activecats and iractivecats with the
+                     * categories that are in the dictionary.
+                     * LS
+                     *)
+                 const 
+                    (* lower and upper limit of keys belonging to a lexical
+                     * category, like BVERBog and BVERBbg.
+                     * lowest possible baskey>) !
+                     * LS
+                     *)
+                    <cat>og = ..
+                    <cat>bg = ..
+                    IR<cat>og = ..
+                    IR<cat>bg = ..
+                    
+                 type
+                    (* type definition for every category
+                     * for every <cat> there is a type called <cat>record
+                     * not all those names are established in globdecl,
+                     * so the rest is defined here.
+                     * LS
+                     *)
+                    <cat>record = ..
+                    IR<cat>record = ..
+
+                 basicsyntcatrecord =
+                    record case cat : basicsyntcat of
+                           <cat>    : (<cat>field       : <cat>record );
+                    end;
+                 irbasicsyntcatrecord =
+                        record
+                           irkey: baskeytype;
+                           case cat : basicsyntcat of
+                              IR<cat> : (IR<cat>field  : IR<cat>record )
+                        end;
+
+                 BLEXtype = record status : array [basicsyntcat] of
+                                            record aanwezig,
+                                                   gemodificeerd : boolean;
+                                            end;
+                                   padnaam : filenaam;
+                                   dfnaam  : array [basicsyntcat] of filenaam;
+                 
+                                   <cat>wb : ARRAY [<cat>og..<cat>bg]
+                                             OF <cat>record
+                             end;
+                 IRBLEXtype = record status : array [basicsyntcat] of
+                                              record aanwezig,
+                                                     gemodificeerd : boolean;
+                                              end;
+                                     padnaam : filenaam;
+                                     dfnaam  : array [basicsyntcat] of filenaam;
+                 
+                                     actIR<cat>bg   : baskeytype;
+                                     IR<cat>wb : ARRAY [IR<cat>og..<cat>bg]
+                                               OF IR<cat>record
+                               end;
+
+                 BLEXnamentype = record status : array [basicsyntcat] of
+                                                 record aanwezig,
+                                                        gemodificeerd : boolean
+                                                 end;
+                                        <cat>wb : ARRAY [<cat>og..<cat>bg]
+                                                  OF naam
+                                 end;
+                 IRBLEXnamentype = record status : array [basicsyntcat] of
+                                                   record aanwezig,
+                                                          gemodificeerd:boolean
+                                                   end;
+                                          IR<cat>wb: ARRAY [IR<cat>og..<cat>bg]
+                                                     OF naam
+                                   end;
+$A2 globlexica              global lexica
+SOURCE      : LDLEXdir:GLOBLEXIC.PAS
+OBJECT      : globLEXobjdir:GLOBLEXIC.OBJ
+IMPORT FROM : stringman globdecl globlexdecl
+EXPORT TO   : amorph anlexica genlexica gmorph
+              (update)
+INCLUDING   : globlexicaname BLEXproc IRBLEXproc
+TASK        : defining an interface between dictionaries and lexical S-trees,
+              insofar as equal for analysis and generation.
+CONTENT     : procedure bepaalcat( var range:rangetype; fam:keyfamily );
+                 (* R :: determines which category corresponds to
+                  *      range.og..range.bg
+                  * P :: range.og and range.bg have a value
+                  * Q :: range.og..range.bg is a subrange of the range
+                  *      corresponding with range.cat, if necessary range.og/bg
+                  *      received a new value
+                  *)
+              
+              function bkeytocat(key: baskeytype; fam: keyfamily): syntcat;
+                 (* determines to which category the S-tree with this key
+                  * belongs
+                  *)
+$A2 globM                   global M-(parser/generator)
+SOURCE      : LDdir:GLOBM.PAS
+OBJECT      : globobjdir:GLOBM.OBJ
+IMPORT FROM : stringman globdecl globtreedecl globtree
+EXPORT TO   : gentransfer mgenerator mparser
+INCLUDING   : globMname initmparser mgrammakefunc
+TASK        : implementing the M-grammar,
+              insofar as equal for analysis and generation.
+CONTENT     : var  BCATSandVAR: set of syntcat;
+                   firstcat,
+                   lastcat     :syntcat;
+                   PREACTIONRULES,
+                   SUBSTRULES  :set of mruletype;
+
+                   ...
+                 (* the declaration of the LS record vars used in the M-rules
+                  *)
+              procedure initmparser;
+                 (* initialises BASICCATS, BCATS andVAR, SUBSTRULES,
+                  * PREACTIONRULES, firstcat and lastcat
+                  *)
+              function haskey(t:psnode) : boolean;
+                 (* true iff t has a key
+                  *)
+              function maketostree(a: paramtype; b: integer; c: ptostree)
+                       : ptostree;
+                 (* returns a pointer to a new empty tuple of S-trees with
+                  * next=c and params=a
+                  *)
+              procedure inserttostree(s: psnode; r: ptostree);
+                 (* inserts s into tuple of S-trees r
+                  *)
+              function makebasicdnode(a: pdnode; b: integer; c: psnode)
+                       : pdnode;
+                 (* returns a pointer to a new d-tree node with
+                  * ambig=a, bonus=b and bexpr=c
+                  *)
+              function makednode(a: pdnode; b: integer; c: mruletype;
+                                 d: plostree; e: paramtype;
+                                 f: integer; g: dnsonstype; h: integer)
+                       : pdnode;
+                 (* returns a pointer to a new d-tree node with
+                  * ambig=a, bonus=b, ruleindex=c, S-tree=d, paramlist=e,
+                  * nr of sons=f, sons=g and level=h
+                  *)
+              function coppartstr(a,b,c: prsnode): prsnode;
+                 (* var d: prsnode;
+                  * begin if a<>b
+                  *       then begin d:=copyrsnode(a);
+                  *            if a^.brother=b
+                  *            then d^.brother:=c
+                  *            else d^.brother:=coppartstr(a^.brother,b,c);
+                  *            coppartstr:=d
+                  *       end
+                  *       else coppartstr:=c
+                  *)
+$A2 globmorph               global morphology
+SOURCE      : LDdir:GLOBMORPH.PAS
+OBJECT      : globobjdir:GLOBMORPH.OBJ
+IMPORT FROM : stringman globdecl globtreedecl
+EXPORT TO   : amorph gmorph
+INCLUDING   : globmorphname locmorfvars morfspecprocs morfmakefunc initmorph
+TASK        : implementing the morphology,
+              insofar as equal for analysis and generation.
+CONTENT     : var   
+                    ...
+                 (* some LS variables only used in the morphology *)
+              function contextcond(CC: integer; r: syststr): boolean;
+                 (* true iff context condition CC is valid for r as right
+                  *          context
+                  *)
+              function PW(a: syststr): boolean;
+                 (* true iff a is a possible word for this language
+                  *)
+              function makesegmrule(a: syststr; b: markeytype; c: psegmrule)
+                       : psegmrule;
+                 (* returns a pointer to a new segmrule node with values a,b
+                  * and c, c is the brother of this new node.
+                  *)
+              function makestrcontextnode(a: syststr; b: integer;
+                                          c: pstrcontextnode): pstrcontextnode;
+                 (* returns a pointer to a new Stree-context node with the
+                  * given values, c is the brother of this new node.
+                  *)
+              function mksegm(a: keyfamily; b: psinglesegmentlist;
+                 (* returns a pointer to a new single segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function copykeysegm(a: psinglesegmentlist): psinglesegmentlist;
+                 (* returns a pointer to a new single segment node with the
+                  * same values as a has.
+                  *)
+              function mkmarkeysegm(a: markeytype; b: psinglesegmentlist;
+                                    c: pconnectionnode): psinglesegmentlist;
+                 (* returns a pointer to a new marker segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function mkposkeysegm(a: poskeytype; b: psinglesegmentlist;
+                                    c: pconnectionnode): psinglesegmentlist;
+                 (* returns a pointer to a new post-key segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function mkprekeysegm(a: prekeytype; b: psinglesegmentlist;
+                                    c: pconnectionnode): psinglesegmentlist;
+                 (* returns a pointer to a new pre-key segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function mkfrekeysegm(a: frekeytype; b: psinglesegmentlist;
+                                    c: pconnectionnode): psinglesegmentlist;
+                 (* returns a pointer to a new free-key segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function mkgluekeysegm(a: gluekeytype; b: psinglesegmentlist;
+                                     c: pconnectionnode): psinglesegmentlist;
+                 (* returns a pointer to a new glue-key segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function mkugkeysegm(a: baskeytype; b: psinglesegmentlist;
+                                   c: pconnectionnode;
+                                   d: syststr): psinglesegmentlist;
+                 (* returns a pointer to a new ug-key segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function mkbaskeysegm(a: keyfamily; b: baskeytype;
+                                    c: psinglesegmentlist;
+                                    d: pconnectionnode): psinglesegmentlist;
+                 (* returns a pointer to a new basic-key segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              var COMPOSITA           :boolean;
+                 (* true iff this language has composita's *)
+                  firstcat,
+                  lastcat             :syntcat;
+                 (* the range of for morphology interesting categories *)
+              procedure initmorph;
+                 (* initialysis firstcats, lastcats, pre/post/freefixcats,
+                  * marker/suppl/ug/basic/finalcats, glues, COMPOSITA
+                  * and some LS variables like vowels and the marker-tables
+                  *)
+$A2 globsurf                global surfparser/linearizer
+SOURCE      : LDdir:GLOBSURF.PAS
+OBJECT      : globobjdir:GLOBSURF.OBJ
+IMPORT FROM : stringman globdecl globtreedecl
+EXPORT TO   : surfparser
+INCLUDING   : globsurfname globsurfpars surfmakefunc
+TASK        : implementing the S-grammar,
+              insofar as equal for analysis and generation.
+              It appeared that nothing was used in both S-PARSER and
+              LINEARIZER, yet some things had been put in this module already.
+              They are only used by the module surfparser.
+CONTENT     : var   
+                   ...
+                 (* some variables used in the surface rules *)
+              function makecat(a: syntcat): psyntcat;
+                 (* returns a pointer to a new syntcat-node of type a
+                  *)
+              function makesurfgraph(a,b: psurfgraphnode): psurfgraph;
+                 (* returns a pointer to a new surface graph with
+                  * first=a and last=b
+                  *)
+              function makesurfgraphnode(a: psyntcat; b,c: psurfgraphnode;
+                                         d: nodeid): psurfgraphnode;
+                 (* returns a pointer to a new surface graph node with
+                  * category=a, right=b, left=c and nodeid=d
+                  *)
+              function makelonodeid(a: nodeid; b: plonodeid): plonodeid;
+                 (* returns a pointer to a new list of nodeid with
+                  * next=b and nodeid=a
+                  *)
+$A2 globtransfer            global transfer
+SOURCE      : LDdir:GLOBTRANS.PAS
+OBJECT      : globobjdir:GLOBTRANS.OBJ
+IMPORT FROM : stringman InfoHandler IL LIdecl
+EXPORT TO   : antransfer gentransfer
+INCLUDING   : globtransfername transmakefunc
+TASK        : implementing the transfer as defined in R28,
+              insofar as equal for analysis and generation.
+CONTENT     : function maketype(a: integer; b: ptypelist): ptypelist;
+                 (* returns a pointer to a new typelist head with key=a and
+                  * next one in the list is b
+                  *)
+              function makebonus(a: integer; b: integer; c: pbonuslist)
+                      : pbonuslist;
+                 (* returns a pointer to a new bonuslist head, with bonus=a
+                  * b=nr of the corresponding tree, c is next one in the list
+                  *)
+              function makevarldnode(i: integer; amb: pldnode): pldnode;
+                 (* returns a pointer to logical d-tree, with
+                  * top is a var, index=i and ambig=amb
+                  *)
+              function makespecldnode(stem: syststr; amb: pldnode): pldnode;
+                 (* returns a pointer to logical d-tree, with
+                  * top is e specnode, str=stem, ambig=amb
+                  *)
+              function makebugldnode(stem: syststr; amb: pldnode): pldnode;
+                 (* returns a pointer to logical d-tree, with
+                  * top is a bug, str=stem, ambig=amb
+                  *)
+              function makeconstldnode(b: integer; c: pldnode; d: integer;
+                                       e:syststr; f: ldargindex; g: ldargtuple)
+                       : pldnode;
+                 (* returns a pointer to logical d-tree, with
+                  * top is a constant, str=stem, ambig=amb
+                  *)
+             function makeruleldnode(b: integer; c: ldparamtype; d: Lruletype;
+                                     e: pldnode): pldnode;
+                 (* returns a pointer to logical d-tree, with
+                  * top is a rule-node,str=stem, ambig=amb
+                  *)
+                 (* next are some functions in use for the type-system
+                  * one to make an implicite and one to make an explicite
+                  * type arg node.
+                  *)
+            function makeldimparg(s: strengthtype; t: implkeytype): pldargtype;
+            function makeldexparg(s: strengthtype; t: ptypelist): pldargtype;
+$A2 globtree                global tree
+SOURCE      : LDdir:GLOBTREE.PAS
+OBJECT      : globobjdir:GLOBTREE.OBJ
+IMPORT FROM : InfoHandler stringman globdecl LIdecl globtreedecl
+EXPORT TO   : anlexica antransfer genlexica gentransfer globM gmorph linearizer
+              mgenerator mparser prprocs surfparser amorph
+INCLUDING   : globtreename whatiskey sysmakefunc makefunc copyfunc
+TASK        : defining some tree manipulation routines,
+              insofar as equal for analysis and generation.
+CONTENT     : function whatiskey(s: psnode): integer;
+                 (* case s^.cat of
+                  *      <cat>   :  whatiskey:=s^.<cat>field^.key
+                  * end
+                  *)
+              function whatisparticle(p: psnode): baskeytype;
+                 (* whatisparticle:=p^.verbfield^.part
+                  *)
+              procedure makefinalcat(var s: psnode);
+                 (* IF s^.cat in basiccats THEN
+                  *    s^.cat:='corresponding non-basic cat'
+                  *)
+              function makesnode(a: integer; b:prsnode; c:syntcat; d: pdnode)
+                       : psnode;
+                 (* returns a pointer to a new S-tree node with
+                  * n=a, sonlist=b, cat=c and dtree=d
+                  *)
+              function copysnode(a: psnode): psnode;
+                 (* returns a pointer to a new S-tree node that is a
+                  * a copy of a
+                  *)
+              function copyrsnode(a: prsnode): prsnode;
+                 (* returns a pointer to a new relation node that is a
+                  * copy of a
+                  *)
+              function makersnode(a: prsnode; b: psnode; c: reltype): prsnode;
+                 (* returns a pointer to a new relation node with
+                  * brother=a, node=b and synrel=c
+                  *)
+              function makeconnectionnode(a: psinglesegmentlist;
+                                          b,c: pconnectionnode;
+                                          d: syststr; e: connectiontype)
+                       : pconnectionnode;
+                 (* returns a pointer to a new connection node with
+                  * list=a, next=b, prev=c, kind=e and in case e=worddel
+                  * then word=d
+                  *)
+              function makestreesegm(a: psinglesegmentlist;
+                                     b: pconnectionnode; c:psnode)
+                       : psinglesegmentlist;
+                 (* returns a pointer to a new S-tree segment node with
+                  * next=a, right neighbour=b ans S-tree=c
+                  *)
+              function makebugnode(s: syststr; key: integer): psnode;
+                 (* returns a pointer to a new S-tree node of type BUG
+                  * with s and key as values
+                  *)
+              function makeugnode(a: integer; b:prsnode;
+                                  c: pdnode): psnode;
+                 (* returns a pointer to a new S-tree node of type UG
+                  * with sonlist=b and dtree=c
+                  *)
+              function makelostree(a: psnode; b: plostree): plostree;
+                 (* returns a pointer to a new list of S-tree's
+                  * with tail=b and arg=a
+                  *)
+              function mk<cat>rec ('all the attributes associated with <cat>)
+                       : psnode;
+                 (* returns a pointer to a new S-tree node with category=<cat>
+                  * and the given attribute values
+                  *)   
+              function equalvarrecord(v1,v2:varrecord): boolean;
+                 (* true iff v1=v2
+                  *)
+              function coprec(a: psnode): psnode;
+                 (* returns a pointer to a new S-tree node with category=<cat>
+                  * and the same values (also for the attributes) as a
+                  *)   
+$A2 globtreedecl            global tree declaration
+SOURCE      : LDdir:GLOBTREED.PAS
+OBJECT      : globobjdir:GLOBTREED.OBJ
+IMPORT FROM : IL globdecl LIdecl stringman
+EXPORT TO   : amorph anifdecl anlexica antransfer aprprocs genifdecl genlexica
+              gentransfer globM globmorph globsurf globtree gmorph linearizer
+              mgenerator mparser prprocs surfparser gprprocs
+INCLUDING   : globtreedeclname mruletype treedecl parameterdecl
+TASK        : defining the S-tree, D-tree (derivation tree) and LD-tree
+              (logical derivation tree) structure,
+              insofar as equal for analysis and generation.
+CONTENT     : type  
+                   levelrange = 0..maxlevel;  { top of the tree is level 1 }
+                   mruletype           = ( ... );
+                   psnode              =^snode;
+                   prsnode             =^rsnode;
+                   pdnode              =^dnode;
+                   reltype             = ( ... )
+                   relsettype          = set of reltype;
+                   snode               = record ... end;
+                   rsnode              = record ... end;
+                   pconnectionnode     =^connectionnode;
+                   psinglesegmentlist  =^singlesegmentlist;
+                   psegmrule           =^segmrule;
+                   pstrcontextnode     =^strcontextnode;
+                   connectiontype      = (worddel,segdel);
+                   connectionnode      = record ... end
+                   segmenttype         = (keynode,streenode);
+                   singlesegmentlist   = record ... end
+                   nodeid              = Hinit..Hfinal;
+                   plonodeid           =^lonodeid;
+                   plostree            =^lostree;
+                   psurfgraphnode      =^surfgraphnode;
+                   psurfgraph          =^surfgraph;
+                   lonodeid            = record ... end;
+                   lostree             = record ... end;
+                   surfgraph           = record ... end
+                   surfgraphnode       = record ... end
+                   ...
+                   (* definition of some parameter types *)
+                   flagtype            = ( ... );
+                   parelttype          = record case flag:flagtype of
+                                                     <flag>         : ...
+                                         end;
+                   paramtype           = array[1..maxparams] of parelttype;
+                   ptostree            =^tostree;
+                   dnsonstype          = array[1..maxdnsons] of pdnode;
+                   dnode               = record ... end
+                   segmrule            = record ... end
+                   tostree             = record ... end
+                   strcontextnode      = record ... end
+                   pcldnode            = ^cldnode;
+                   cldnsonstype        = array[1..maxldnsons] of pcldnode;
+                   cldnode             = record ... end;
+              var  globconnr           : integer;
+$A2 gmorph                  generative morphology
+SOURCE      : LDdir:GMORPH.PAS
+OBJECT      : genobjdir:GMORPH.OBJ
+IMPORT FROM : stringman systfunc InfoHandler globdecl globlexdecl globlexica
+              globtreedecl globtree genifdecl genlexdecl genlexica prprocs
+              globmorph
+EXPORT TO   : genctrl
+INCLUDING   : gmorfspecprocs initgmorph gaffixprocs glayoutprocs glextreeprocs
+TASK        : implementing the generative part of the morphology as described
+              in R8.
+CONTENT     : procedure gmorph;
+                 (* to the standard output file the result of applaying
+                  * G-MORPH to if7 is written.
+                  * The LS morfological rules are included into this module,
+                  * All the parts also used in A-MORPH of the same language
+                  * are imported from the module globmorph.
+                  * G-MORPH is implemented using a breath-first algoritme.
+                  *)
+$A2 gprhandler              generative print handler
+SOURCE      : LDdir:GPRHANDLE.PAS
+OBJECT      : genobjdir:GPRHANDLE.OBJ
+IMPORT FROM : InfoHandler systfunc gprprocs genifdecl
+EXPORT TO   : genctrl
+TASK        : taking care of the printing of the intermediate results in the
+              generation, when wanted.
+CONTENT     : procedure gprhandler(comp : inforange);
+                 (* iff wanted the result of the generative component just
+                  *     finished is printed, then also a readln is done in
+                  *     order to syncronise with the user
+                  *)
+$A2 gprprocs                generative print procedures
+SOURCE      : LDdir:GPRPROCS.PAS
+OBJECT      : genobjdir:GPRPROCS.OBJ
+IMPORT FROM : InfoHandler genifdecl globtreedecl prprocs
+EXPORT TO   : gprhandler
+TASK        : defining routines for printing intermediate results, insofar as
+              specific for generation.
+CONTENT     : procedure pinterf7(a: pconnectionnode);
+                 (* iff a=nil then nil is writen
+                  * else the tree is writen to standard output file
+                  *)
+              procedure pinterf6(a: psnode);
+                 (* iff a=nil then nil is writen
+                  * else the tree is writen to standard output file
+                  *)
+              procedure pinterf5(a: pdnode);
+                 (* iff a=nil then nil is writen
+                  * else the tree is writen to standard output file
+                  *)
+$A2 IL                      interlingua
+SOURCE      : ILdir:IL.PAS
+OBJECT      : ILobjdir:IL.OBJ
+IMPORT FROM : stringman LIdecl
+EXPORT TO   : anlexdecl genlexdecl initILlexica antransfer aprprocs gentransfer
+              globtranser globtreedecl prprocs rosetta2 ILifdecl
+              (atleesbaar atonleesbaar gtleesbaar gtonlesbaar)
+INCLUDING   : Lruletype
+TASK        : defining the interlingua and some actions upon IL-expressions
+CONTENT     : type
+                     Lruletype = ( Lnul ... maxLrule) {included from Lruletype}
+                     ldkeytype      = -maxint..maxldkey;
+                     subldkeytype   = 1..maxldkey;
+                     ptypelist = ^typelist;
+                     typelist  = record key : ldkeytype;
+                                        next: ptypelist
+                                 end;
+                     expltypelist=array[1..maxexpltype] of ldkeytype;
+                     pbonuslist= ^bonuslist;
+                     bonuslist = record bonus: integer;
+                                        nr   : integer;
+                                        next : pbonuslist
+                                 end;
+                     pldnode     = ^ldnode;
+                     ldnodetype  = (variable, bugnode, specnode, constant,
+                                    rulenode);
+                     strengthtype= (weak, strong);
+                     argkeytype  = (impl, expl);
+                     ilpartype   = (...)
+                     ldparamtype   = array[1..maxparams] of ilpartype;
+                     pldargtype  = ^ldargtype;
+                     ldargtype   = record ... end
+                     ldargtuple  = array[1..maxarg] of ldargtype;
+                     ldargindex  = 0..maxarg;
+                     ldnsonstype  = array[1..maxldnsons] of pldnode;
+                     ldnode      = record ... end
+                     var   Heads           : array [Lnul..maxLrule] of
+                                             set of 1..maxldnsons;
+                           VARBINDINGRULES : set of Lruletype;
+                           typematrix      : array [implkeytype, subldkeytype]
+                                             of boolean;
+                     procedure initIL;
+                        (* initialises the varbinding-rules
+                         *)
+$A2 ilifdecl                interlingual interface declaration
+SOURCE      : ILdir:ILIFDECL.PAS
+OBJECT      : ILobjdir:ILIFDECL.OBJ
+IMPORT FROM : IL
+EXPORT TO   : antransfer aprhandler aprprocs generation gentransfer rosetta2
+TASK        : defining the interface between analysis and generation
+CONTENT     : type if4type   = record supertree: pldnode;
+                                      bonuslist: pbonuslist
+                               end;
+              var  if4 : if4type;
+$A2 InfoHandler             information handler
+SOURCE      : LIdir:INFOHANDL.PAS
+OBJECT      : LIobjdir:INFOHANDL.OBJ
+IMPORT FROM : systfunc stringman
+EXPORT TO   : resistor surfparser shortcircuit rosetta2 prprocs mparser
+              mgenerator linearizer gprprocs gprhandler gmorph globtree
+              globtransfer gentransfer genlexica genctrl dummygenctrl
+              dummyshortcircuit aprprocs aprhandler antransfer anlexica
+              analysis amorph 
+              (commentmaker)
+INCLUDING   : comment
+TASK        : providing the necessary procedures and definitions for the
+              interaction in amorph and antransfer, and providing some 
+              means of tuning Rosetta2 to a particular type of use.
+              It also provides some routines to switch back and from UGmode.
+CONTENT     : const maxerror = 4;
+              type  inforange  = 0..9;
+                    errorrange = 0..maxerror;
+                    ansysmodetype = ( nonint, int );
+                       (* iff int then analysis in interaction mode
+                        *)
+                    gensysmodetype = ( one, more, all, allandall );
+                       (* one then only 1 translation,
+                        * more then request after every translation
+                        * all then request after every translation of the
+                        *     same meaning
+                        * allandall the no requests, but all translations
+                        *)
+                    infotype   = record ... end;
+
+              var   info       : infotype;
+
+              const maxcommentnr  = 100;
+                    maxcommentstr = 80;
+
+              type  commentstrrange = 0..maxcommentstr;
+                    commentnrrange  = 0..maxcommentnr;
+                    commentstr      = varying [maxcommentstr] of char;
+                    commenttype     = array [commentnrrange] of commentstr;
+
+              var   comment  : commenttype;
+
+              procedure initcomment;
+                 (* reads the interaction sentences from the logical
+                  * file 'commentfile'
+                  *)
+              procedure newcomment;
+                 (* writes the interaction sentences to a new version of the
+                  * logical file 'commentfile'
+                  *)
+              procedure readcomment(var inf :text; nr :commentnrrange);
+                 (* read one interaction sentence from the input file inf, and
+                  * this becomes the new interaction sentence with number nr
+                  *)
+              procedure writecomment(var outf :text; nr :commentnrrange);
+                 (* writes one interaction sentence with the number nr to the
+                  * output file outf
+                  *)
+              function  debug : boolean;
+                 (* true if component in which this function is called is
+                  * to be debugged
+                  *)
+              function UGmode : boolean;
+                 (* true if component in which this function is called is
+                  * in the UG-mode
+                  *)
+              procedure setUGmode;
+                 (* sets component in which this procedure is called in the
+                  * UG-mode, increments the error-count,
+                  * and in debug-mode gives a messages of this action
+                  *)
+              procedure resetUGmode;
+                 (* switches component in which this procedure is called back
+                  * from UG-mode,
+                  * and in debug-mode gives a messages of this action
+                  *)
+              procedure initInfo;
+                 (* sets Rosetta2 in the default mode
+                  *)
+              procedure reinitInfo;
+                 (* clears the error-counts of all the components,
+                  * necessary at the start of a new translation
+                  *)
+              procedure specInfo;
+                 (* interactively adjust the mode in which Rosetta2 works
+                  *)
+              procedure clearerrors;
+                 (* resets the error-count of the components yet to come *)
+              procedure printInfo;
+                 (* gives the error rate of each component (amorph..gmorph)
+                  * when this error rate is higher than zero
+                  *)
+              procedure printstars;
+                 (* print the stars for every translation (the more the better)
+                  * and if wanted performs printInfo (see before)
+                  *)
+$A2 initanlexica            initialize analytic lexica
+SOURCE      : LDLEXdir:INITANLEX.PAS
+OBJECT      : anLEXobjdir:INITANLEX.OBJ
+IMPORT FROM : initanlexicaprocs stringman globdecl globlexdecl
+              anlexdecl initgloblexicaprocs
+EXPORT TO   : rosetta2
+TASK        : seperating the initialisation of the analytic libraries from
+              the analytic part.
+CONTENT     : procedure initanlexica;
+                 (* takes care of initialising the analytic dictionary tables
+                  * also initialises (ir)activecats and (ir)catgrens.
+                  *)
+$A2 initanlexicaprocs       initialize analytic lexica procedures
+SOURCE      : LDLEXdir:INITALPRO.PAS
+OBJECT      : anLEXobjdir:INITALPRO.OBJ
+IMPORT FROM : stringman globdecl globlexdecl initgloblexicaprocs
+              anlexdecl
+EXPORT TO   : initanlexica
+              (update)
+TASK        : defining the procedures to update the libraries, insofar as
+              specific for the analysis.
+CONTENT     : procedure initamdict;
+                 (* initialise table fastAINDEX
+                  *)
+              procedure getamdict;
+                 (* fill table AINDEX with the analytic morphological
+                  * dictionary (precondition is AMDICT is correctly sorted)
+                  * and fill table fastAINDEX for quick dictionary lookup
+                  *)
+              procedure initaidiom;
+                 (* initialise and fill table AIDIOM with the analytic
+                  * idiomatic word groups
+                  * (precondition AIDIOM dictionary is correctly sorted)
+                  *)
+              procedure initatdict;
+                 (* initialise table ATDICT
+                  *)
+              procedure getatdict;
+                 (* fill table ATDICT with the analytic transfer dictionary
+                  * (precondition ATDICT dictionary is correctly sorted)
+                  *)
+$A2 initgenlexica           initialize generative lexica
+SOURCE      : LDLEXdir:INITGENLE.PAS
+OBJECT      : genLEXobjdir:INITGENLE.OBJ
+IMPORT FROM : initgenlexicaprocs stringman globdecl globlexdecl
+              initgloblexicaprocs genlexdecl
+EXPORT TO   : rosetta2
+TASK        : seperating the initialisation of the generative libraries from
+              the generative part.
+CONTENT     : procedure initgenlexica;
+                 (* takes care of initialising the generative dictionary tables
+                  * also initialises (ir)activecats and (ir)catgrens.
+                  *)
+$A2 initgenlexicaprocs      initialize generative lexica procedures
+SOURCE      : LDLEXdir:INITGLPRO.PAS
+OBJECT      : genLEXobjdir:INITGLPRO.OBJ
+IMPORT FROM : stringman globdecl globlexdecl initgloblexicaprocs
+              genlexdecl
+EXPORT TO   : initgenlexica
+TASK        : defining the procedures to update the libraries, insofar as
+              specific for the generation.
+CONTENT     : procedure initgmdict;
+                 (* initialise table fastGINDEX
+                  *)
+              procedure getgmdict;
+                 (* fill table GINDEX with the generative morphological
+                  * dictionary (precondition is GMDICT is correctly sorted)
+                  * and fill table fastGINDEX for quick dictionary lookup
+                  *)
+              procedure initgidiom;
+                 (* initialise and fill table GIDIOM with the generative
+                  * idiomatic word groups (precondition GIDIOM dictionary
+                  * is correctly sorted)
+                  *)
+              procedure initgtdict;
+                 (* initialise table GTDICT
+                  *)
+              procedure getgtdict;
+                 (* fill table GTDICT with the generative transfer dictionary
+                  * (precondition GTDICT dictionary is correctly sorted)
+                  *)
+$A2 initgloblexicaprocs     initialize global lexica procedures
+SOURCE      : LDLEXdir:INITGLOBP.PAS
+OBJECT      : globLEXobjdir:INITGLOBP.OBJ
+IMPORT FROM : stringman globdecl globlexdecl
+EXPORT TO   : initanlexica initgenlexica initanlexicaprocs initgenlexicaprocs
+              (update)
+INCLUDING   : initgloblexicaprocsname initBLEX initIRBLEX
+TASK        : defining the procedures to update the libraries, insofar as
+              equal for analysis and generation.
+CONTENT     : function wrongversion( cat:basicsyntcat ) : boolean;
+                 (* ment to test the version of the dictionary with the version
+                  * of the program. Always false.
+                  *)
+              procedure initcatgrens;
+                 (* catgrens[<cat>].og:=<cat>og
+                  * catgrens[<cat>].bg:=<cat>bg
+                  *)
+              procedure initBLEX( var BLEX : BLEXtype );
+                 (* dfnaam[<cat>] := "<cat>"
+                  * status[<cat>].aanwezig:=false
+                  *)
+              procedure getBLEX( var BLEX:BLEXtype; cat:basicsyntcat);
+                 (* IF NOT status[<cat>].aanwezig THEN read <cat> dictionary
+                  *                                    into <cat> table.
+                  * check that every key in <cat> dictionary is unique.
+                  * status[<cat>].aanwezig:=true;
+                  * status[<cat>].gemodificeerd:=false;
+                  *)
+              procedure putBLEX( var BLEX:BLEXtype; cat:basicsyntcat);
+                 (* IF status[<cat>].gemodificeerd THEN write <cat> table
+                  *                                     into <cat> dictionary.
+                  * dictionary file name = padnaam + dfnaam + ".WB".
+                  * status[<cat>].gemodificeerd:=false;
+                  *)
+              procedure initBLEXnamen( var BLEXnamen:BLEXnamentype );
+                 (* status[<cat>].aanwezig:=false
+                  *)
+              procedure getBLEXnamen( var BLEX:BLEXtype; 
+                                      var BLEXnamen:BLEXnamentype;
+                                      cat:basicsyntcat);
+                 (* IF NOT aanwezig THEN read meaning strings corresponding to
+                  *                      basic keys from meaning strings file.
+                  * no test are done!
+                  * meaning strings file name = padnaam + dfnaam + ".NAM".
+                  * BLEXnamen.status[<cat>].aanwezig:=true;
+                  * BLEXnamen.status[<cat>].gemodificeerd:=false;
+                  *)
+              procedure putBLEXnamen( var BLEX:BLEXtype;
+                                var BLEXnamen:BLEXnamentype; cat:basicsyntcat);
+                 (* IF modified THEN write meaning strings corresponding to the
+                  *                  basic keys into meaning strings file.
+                  * no test are done!
+                  * meaning strings file name = padnaam + dfnaam + ".NAM".
+                  * BLEXnamen.status[<cat>].gemodificeerd:=true
+                  *)
+
+                 (* each of the following procedures correspond to one of
+                  * the above mentioned.
+                  * in addition getIRBLEX gives actir<cat>bg the highest key
+                  * that existed in the <cat> dictionary.
+                  *)
+              procedure initircatgrens;
+              procedure initIRBLEX( var IRBLEX : IRBLEXtype );
+              procedure getIRBLEX( var IRBLEX:IRBLEXtype; cat:basicsyntcat);
+              procedure putIRBLEX( var IRBLEX:IRBLEXtype; cat:basicsyntcat);
+              procedure initIRBLEXnamen( var IRBLEXnamen:IRBLEXnamentype );
+              procedure getIRBLEXnamen( var IRBLEX:IRBLEXtype;
+              procedure putIRBLEXnamen( var IRBLEX:IRBLEXtype;
+                                        var IRBLEXnamen:IRBLEXnamentype;
+                                        cat:basicsyntcat);
+$A2 initILlexica            initialize interlingual lexica
+SOURCE      : ILLEXdir:INITILLEX.PAS
+OBJECT      : ILLEXobjdir:INITILLEX.OBJ
+IMPORT FROM : stringman IL LIdecl
+EXPORT TO   : rosetta2
+INCLUDING   : typedef
+TASK        : defining the initialisation of the interlingua library,
+              that is the type definition of the IL-basic expressions.
+CONTENT     : procedure initILlexica;
+                 (* init IL type system and heads of the IL-rules
+                  *)
+$A2 LIdecl                  language independent declaration
+SOURCE      : LIdir:LIDECL.PAS
+OBJECT      : LIobjdir:LIDECL.OBJ
+EXPORT TO   : initILlexica antransfer gentransfer globtransfer globtree
+              globtreedecl mgenerator mparser prprocs surfparser IL globdecl
+              (update atonleesbaar gtonleesbaar)
+INCLUDING   : LIconst
+TASK        : some types and constants that are not depending upon the actual
+              language pair.
+CONTENT     : const
+                    maxldnsons   = 100;
+                    maxdnsons    = maxldnsons;
+                       (* maxdnsons must be equal to maxldsons
+                        * maximum breath of a tree
+                        * high for UG and Rnul
+                        *)
+                    maxparams    = 3;
+                    maxarg       = 3;
+                    maxldkey     = 6500;
+                    maxexpltype  = 1;
+                    maxlevel     = 100;
+                       (* maximum depth of a tree
+                        * necessary for var-trick in transfer
+                        *)
+
+              type argrange = 0..maxarg;
+$A2 linearizer              linearizer
+SOURCE      : LDdir:LINEARIZE.PAS
+OBJECT      : genobjdir:LINEARIZE.OBJ
+IMPORT FROM : InfoHandler stringman globdecl globtreedecl globtree
+              genifdecl dummygenctrl
+EXPORT TO   : genctrl
+INCLUDING   : initlinearizer
+TASK        : implementation of the generative part of the S-grammar
+CONTENT     : procedure linearizer;
+                 (* if7:=LINEARIZER(if6)
+                  * in the theory LINEARIZER is sometimes called LEAVES.
+                  * used is a special non recursive tree travers algoritme as
+                  * invented and proved by C. van Tright.
+                  *)
+$A2 memory                  memory
+SOURCE      : ROSDISK:[ROSETTA.SYSLIB.MEMORY]MEMORY.PAS
+OBJECT      : ROSDISK:[ROSETTA.SYSLIB.MEMORY.OBJ]MEMORY.OBJ
+IMPORT FROM : memspecs
+EXPORT TO   : rosetta2
+TASK        : providing the memory management procedures MARK and RELEASE,
+              used to release all the memory consumed in the analysis and
+              generation of one translation. These procedures are necessary
+              because the VAX has got a finite memory, and the tree-structures
+              in use are not easily removed with the aid of DISPOSE.
+CONTENT     :
+$A2 memspecs                memory special procedures
+SOURCE      : ROSDISK:[ROSETTA.SYSLIB.MEMORY]MEMSPECS.PAS
+OBJECT      : ROSDISK:[ROSETTA.SYSLIB.MEMORY.OBJ]MEMSPECS.OBJ
+EXPORT TO   : memory
+TASK        : making the implementation of MARK and RELEASE invisible for
+              the modules importing them.
+CONTENT     :
+$A2 mgenerator              M-generator
+SOURCE      : LDdir:MGENERATO.PAS
+OBJECT      : genobjdir:MGENERATO.OBJ
+IMPORT FROM : InfoHandler genifdecl LIdecl dummygenctrl globM globdecl
+              globtreedecl globtree globlexdecl genlexica prprocs
+EXPORT TO   : genctrl
+INCLUDING   : gmrules gmruleswitch shadowrules
+TASK        : implementing the generative part of the M-grammar as defined in
+              R16, R17 and "Tricks" (R24, forthcoming).
+CONTENT     : procedure mgenerator;
+                 (* if6:=M-GENERATOR(if5)
+                  * The parts also in use by M-PARSER of the same language are
+                  * imported from the module globM.
+                  * A depth first algoritme is used.
+                  *)
+$A2 mparser                 M-parser
+SOURCE      : LDdir:MPARSER.PAS
+OBJECT      : anobjdir:MPARSER.OBJ
+IMPORT FROM : InfoHandler globM LIdecl globdecl globtreedecl globtree
+              globlexdecl anlexica prprocs
+EXPORT TO   : analysis
+INCLUDING   : mrulecattable amrules amruleswitch
+TASK        : implementing the analytic part of the M-grammar as defined in
+              R16, R17 and "Tricks" (R24, forthcoming).
+CONTENT     : procedure mparser(if2,if3);
+                 (* if3:=M-PARSER(if2)
+                  * The parts also in use by M-GENERATOR of the same language
+                  * are imported from the module globM.
+                  * In contrast to the theory a breath first algoritme is used.
+                  *)
+$A2 prprocs                 print procedures
+SOURCE      : LDdir:PRPROCS.PAS
+OBJECT      : globobjdir:PRPROCS.OBJ
+IMPORT FROM : InfoHandler stringman IL LIdecl globdecl globtreedecl
+              globtree
+EXPORT TO   : amorph antransfer aprprocs gentransfer gmorph gprprocs
+              mgenerator mparser surfparser
+INCLUDING   : prprocsname
+TASK        : defining routines for printing intermediate results, that is
+              trees. no attributes are printed.
+CONTENT     : procedure pstree(a: psnode);
+              procedure segmpr(p: pconnectionnode);
+              procedure pdstree(a: psnode;linestart: integer);
+              procedure remark(d: pdnode);
+              procedure pdtree(a: pdnode);
+              procedure phypertree(a: pdnode);
+              procedure pcttree(a: pcldnode); 
+              procedure pttree(a: pldnode);
+                 (* all the above mentioned procedures print the full tree
+                  * sometimes a d-tree is used as a hyper-tree, sometimes as
+                  * a super-tree (these terms are undefined, but the trees
+                  * are not compatible!)
+                  *)
+$A2 resistor                resistor
+SOURCE      : LIdir:RESISTOR.PAS
+OBJECT      : LIobjdir:RESISTOR.OBJ
+IMPORT FROM : systfunc InfoHandler
+EXPORT TO   : analysis
+TASK        : to make "shortcircuit" impossible in case the source language
+              is not the same as the target language
+CONTENT     : procedure shortcircuit(comp : inforange);
+                 (* generates a messages that shortcircuit is not allowed when
+                  * the source- and targetlanguage differ
+                  * This is a trick to fool the linker, for a full explanation
+                  * see "Implementation problems" (R....).
+                  *)
+$A2 rosetta2                rosetta2
+SOURCE      : LDdir:ROSETTA2.PAS
+OBJECT      : exedir:ROSETTA2.OBJ
+IMPORT FROM : InfoHandler systfunc initanlexica initILlexica initgenlexica
+              IL ilifdecl analysis generation MEMORY
+TASK        : implementing the body of the four translators.
+CONTENT     : program rosetta2(input,output);
+                 (* takes care of initialisation of the dictionaries,
+                  * releases the in the translation consumed memory for
+                  * every translation of one input sentence,
+                  * and requests for continuation after every completely
+                  * translated input sentence (also gives then the
+                  * opportunity to adjust the mode in which Rosetta2 works)
+                  *)
+$A2 shortcircuit            shortcut circuit
+SOURCE      : LDdir:SHORTCIRC.PAS
+OBJECT      : anobjdir:SHORTCIRC.OBJ
+              anobjdir:DUMMYSHOR.PAS
+IMPORT FROM : InfoHandler anifdecl genifdecl genctrl
+EXPORT TO   : analysis
+TASK        : to make it possible to "shortcircuit" Rosetta2, that means
+              connect amorph to gmorph, or surfparser to linerizer or Mparser
+              to Mgenerator.
+CONTENT     : procedure shortcircuit(comp: inforange);
+                 (* the dummy version contains of an empty body, the real
+                  * version does the following :
+                  * calls the component of the generation that corresponds to
+                  * the component that is just finished, and takes care of
+                  * the correct 'translation' of the interface variables.
+                  * This translation is not implemented for
+                  * M-parser->M-generator!
+                  * A trick is involved to fool the linker, for a full
+                  * explanation see "Implementation problems" (R....).
+                  *)
+$A2 stringman               string manager
+SOURCE      : LIdir:STRINGMAN.PAS
+OBJECT      : LIobjdir:STRINGMAN.OBJ
+IMPORT FROM : SYS$LIBRARY:STARLET
+export to   : anlexdecl genlexdecl globlexdecl globlexica initanlexica
+              initanlexicaprocs initgenlexica initgloblexicaprocs
+              initILlexica amorph antransfer gentransfer globdecl globmorph
+              globsurf globtransfer globtree globtreedecl gmorph linearizer
+              prprocs InfoHandler systfunc IL globM
+              (MDICTtoTEXT update TEXTtoMDICT atleesbaar atonleesbaar
+               gtleesbaar gtonleesbaar commentmaker)
+TASK        : defining the abstract datatype "string", as well as some file
+              I/O routines
+CONTENT     : { this module uses Pascal extensions }
+              const maxsyststr = 25;
+                    NUL        = ''(0);
+                    STX        = ''(2);
+                    ETX        = ''(3);
+                    BELL       = ''(7);
+                    BS         = ''(8);
+                    HT         = ''(9);
+                    LF         = ''(10);
+                    FF         = ''(12);
+                    CR         = ''(13);
+                    DC1        = ''(17);
+                    DC3        = ''(19);
+                    Xon        = DC1;
+                    Xoff       = DC3;
+                    ESC        = ''(27);
+                    SP         = ''(32);
+                    DEL        = ''(127);
+                    spatie     = SP;
+                    endsymbol  = '|';
+
+              type  syststr      = varying [maxsyststr] of char;
+                    psyststr     = ^syststr;
+                    syststrindex = 0..maxsyststr;
+
+              function  emptystr : syststr;
+                 (* returs the empty string
+                  *)
+              function  blankstr : syststr;
+                 (* returs the blank string (a full-length string
+                  * consisting of only blanks)
+                  *)
+              function  lengthstr(ins : syststr) : syststrindex;
+                 (* returs the length of the string ins
+                  *)
+              function  kleinerstr(s1, s2 : syststr) : boolean;
+                 (* true iff s1 < s2 in the lexical grafical order
+                  *)
+              function  kleinerofgelijkstr(s1, s2 : syststr) : boolean;
+                 (* true iff s1 <= s2 in the lexical grafical order
+                  *)
+              function  gelijkstr(s1, s2 : syststr) : boolean;
+                 (* true iff s1 = s2 in the lexical grafical order
+                  *)
+              function  ongelijkstr(s1, s2 : syststr) : boolean;
+                 (* true iff s1 <> s2 in the lexical grafical order
+                  *)
+              function  groterofgelijkstr(s1, s2 : syststr) : boolean;
+                 (* true iff s1 >= s2 in the lexical grafical order
+                  *)
+              function  groterstr(s1, s2 : syststr) : boolean;
+                 (* true iff s1 > s2 in the lexical grafical order
+                  *)
+              function  padblanks(ins : syststr) : syststr;
+                 (* enlarges string ins with blanks to full-lengthed string
+                  *)
+              procedure unpadblanks(var ins : syststr);
+                 (* removes trailing blanks
+                  *)
+              function lastcharindex(h: syststr): syststrindex;
+                 (* returs the position of the last non-blank character in h
+                  *)
+              procedure concat(a1, a2: syststr; var a3: syststr);
+                 (* a3:=a1 concatenated with a2, when necessary truncated
+                  *)
+              function untail(a1, a2: syststr; var a3: syststr): boolean;
+                 (* iff a1 ends on a2 then a3:=a1-a2 and untail:=true
+                  *)
+              function unhead(a1, a2: syststr; var a3: syststr): boolean;
+                 (* iff a1 starts with a2 then a3:=a1-a2 and unhead:=true
+                  *)
+              function lastchar(h: syststr): char;
+                 (* returns last non blank of string h,
+                  * when h=emptystring or h=blankstring then returns blank
+                  *)
+              procedure reverstr(ain: syststr; var aout: syststr);
+                 (* string aout becomes the reverse of the string ain without
+                  * trailing blanks
+                  * aout becomes padded with blanks
+                  *)
+              procedure skipspace(var inf:text);
+                 (* skippes spaces but not eoln nor eof in input file inf
+                  *)
+              procedure skipspaceandeoln(var inf:text);
+                 (* skippes spaces and eoln but not eof in input file inf
+                  *)
+              procedure readfile(var f: text);
+                 (* copies one line from the standard input file to the file f
+                  * and removes spurious spaces, terminates f with an extra
+                  * space and an endsymbol, and finaly resets f
+                  * f^ points to the first non blank of f
+                  *)
+              procedure readstr(var inf:text; var s:syststr);
+                 (* reads a string from input file inf and returs this string
+                  * padded with blanks in string s
+                  * an input-string ends when a blank, eoln or eof is 
+                  * encountered,
+                  * it also ends when the maximum length is reached
+                  *)
+              procedure readstrmetspaties(var inf:text; var s:syststr);
+                 (* reads a string from input file inf and returs this string
+                  * padded with blanks in string s
+                  * an input-string ends when an eoln or eof is encountered,
+                  * it also ends when the maximum length is reached
+                  *)
+              procedure writestr(var outf:text; s:syststr);
+                 (* writes string s without trailing blanks to the file outf
+                  *)
+              procedure writestrmetspaties(var outf:text; s:syststr);
+                 (* writes string s padded with blanks to the output file outf
+                  *)
+              const maxfilenaam     = 256;
+                    maxlogischenaam = 63;
+
+              type  filenaam        = varying [maxfilenaam] of char;
+                    filenaamindex   = 0..maxfilenaam;
+                    devnaam         = packed array [1..maxfilenaam] of char;
+
+              function  padblanksfilenaam(s:filenaam) : filenaam;
+                 (* enlarges filename ins with blanks to full-lengthed filename
+                  *)
+              procedure unpadblanksfilenaam(var ins : filenaam);
+                 (* removes trailing blanks
+                  *)
+              procedure readfilenaam(var inf:text; var s:filenaam);
+                 (* reads a filename from input file inf and returs this
+                  * filename padded with blanks in filename s
+                  * an input-filename ends when a blank, eoln or eof
+                  * is encountered,
+                  * it also ends when the maximum length is reached
+                  *)
+              procedure writefilenaam(var outf:text; s:filenaam);
+                 (* writes string s without trailing blanks to the file outf
+                  *)
+              function logischenaam( ln:filenaam ) : filenaam;
+                 (* translates the logical name ln completely to a filename
+                  *)
+$A2 surfparser              surface parser
+SOURCE      : LDdir:SURFPARSE.PAS
+OBJECT      : anobjdir:SURFPARSE.OBJ
+IMPORT FROM : InfoHandler LIdecl globdecl globlexdecl globtreedecl
+              globtree anifdecl prprocs globsurf
+EXPORT TO   : analysis
+INCLUDING   : initsurfparser surfgraphs surfrules surfswitch
+TASK        : implementing the analytic part of the S-grammar.
+CONTENT     : procedure surfparser(if1 : pconnectionnode; var if2 : plostree);
+                 (* if2:=S-PARSER(if1)
+                  * some parts that seemed to be usefull for the LINEARIZER too
+                  * where put in the module globsurf, and are imported here.
+                  *)
+$A2 systfunc                system functions
+SOURCE      : LIdir:SYSTFUNC.PAS
+OBJECT      : LIobjdir:SYSTFUNC.OBJ
+IMPORT FROM : stringman
+EXPORT TO   : amorph antransfer aprhandler gmorph gprhandler rosetta2
+              InfoHandler resistor
+              (update commentmaker)
+TASK        : defining some special, operating system dependent functions
+CONTENT     : { this module uses Pascal extensions }
+              type terminaltype = (VT100, VT102, VT220, DM2S, unknownterminal);
+              var  timearray : array [1..10] of
+                               record wall,
+                                      cpu,
+                                      index : integer;
+                               end;
+              timep     : 1..10;
+
+              procedure inittime;
+                 (* initialises the time-stack
+                  *)
+              procedure starttime;
+                 (* puts the current time (cpu and wall) on the stack
+                  *)
+              procedure stoptime;
+                 (* pops the old time and puts the difference of the current
+                  * time and the old time on the top of the time-stack
+                  *)
+              procedure writetime;
+                 (* writes the top of stack time to the standard output file
+                  *)
+              procedure waittime(delay : integer);
+                 (* delays the colling process for 'delay' seconds
+                  *)
+              procedure wiper(t:terminaltype);
+                 (* clears the terminal screen
+                  *)
+              procedure revvideoon(t:terminaltype);
+                 (* puts the terminal screen in reverse video mode
+                  *)
+              procedure revvideoof(t:terminaltype);
+                 (* puts the terminal screen in the non reverse video mode
+                  *)
+
+$A1 THE INCLUDE FILES
+$ Below an alphabetic listing of the files included somewhere in Rosetta2 is
+given. The M-rule include files and the name include files are given in
+separate appendices (appendices C and D). Also some extra information is listed
+here, more detailed information is not available yet.$
+$ The files freefcats, prefcats and postfcats are included in more than one
+module. They are all included into the file initmorph and there by into the
+module globmorph, they are also included into the file rectypedecl, which is
+included into the file decl and there by into the module globdecl, and finaly
+are they all included into the file treedecl and there by into the module
+globtreedecl. This means that the compiler and the linker are not able to do
+all the checking! Whether this was really necessary I doubt, but I had no time
+to find a solution to it.$
+$ For each include file the following information is given :$
+$ _SOURCE_ gives the name of the source file. These logicals are
+created in the group logical name table at VAX/VMS system startup, for then
+the command file "ROSDISK:[ROSETTA]initroset.com" is automatically executed,
+and thereby the command file "ROSDISK:[ROSETTA]logicals.com" in which the
+necessary commands are put.$
+$ _INCLUDED BY_ gives a list of logical names of modules and/or files including
+this file.$
+$ _INCLUDING_ gives a list of logical file names included into this file.$
+$ _CONTENT_ gives a short describtion of the content of this file. Some of this
+information is also listed in the _CONTENT_ describtion of the module into
+which this file is included, but it is given here too to enhance the
+readability of this document.$
+$ In 'INCLUDED BY' lists some names are between braces, these names refer to
+parts that update dictionaries, they are described in "On dictionaries in
+Rosetta2" (R20).$
+$ For the correct interpretation of the file names given below please use the
+appendices on dictionaries and disks (appendices E and F).$
+
+$A2 activecats              active categories
+SOURCE      : globLEXdir:ACTIVECAT.INC
+INCLUDED BY : globlexdecl
+CONTENT     : procedure initactivecats( var activecats,
+					    iractivecats : syntcatset );
+		 (* initialises activecats and iractivecats with the
+		  * categories that are in the dictionary.
+		  * LS
+		  *)
+$A2 afreefprocs             analytic freefix procedures
+SOURCE      : andir:AFREEFPRO.INC
+INCLUDED BY : amorph
+CONTENT     : ...
+                 (* the implementation of some LS analytic freefix rules
+                  *)
+              procedure freerules(i: frekeytype; a: syststr);
+                 (* case i of
+                  *      <freefixkey> : 'corresponding rule'(a)
+                  * end
+                  *)
+$A2 alayoutprocs            analytic layoutprocedures
+SOURCE      : andir:ALAYOUTPR.INC
+INCLUDED BY : amorph
+CONTENT     : ...
+                 (* some LS layout rules
+                  *)
+              procedure layouttest(i: integer; a: syststr; var f: text);
+                 (* case i of
+                  *      i  : 'corresponding layout rule'(a,f)
+                  * end
+                  *)
+$A2 alexicons               analytic lexicons
+SOURCE      : andir:ALEXICONS.INC
+INCLUDED BY : anlexica
+CONTENT     : function numberlex(key: baskeytype): psnode;
+                 (* numberlex:=mkkeyrec(NUMERAL,key)
+                  *)
+              function basiclex(key: baskeytype): psnode;
+                 (* basiclex:=makesnode(0,nil,<cat>,nil)
+                  * basiclex^.<cat>field:=ABLEX.<cat>wb[key]
+                  * in debug mode a message is printed
+                  *)
+              function irreglex(key: baskeytype): psnode;
+                 (* irreglex:=basiclex(AIRBLEX.<cat>wb[key].key)
+                  * irreglex^.cat:='corresponding non basic cat'
+                  * irreglex^.cat.'some fields':=
+                  *    AIRBLEX.<cat>wb[key].'same some fields'
+                  *)
+              function supplex(key: baskeytype): psnode;
+                 (* supplex:=nil
+                  *)
+              function markerlex(key: markeytype): psnode;
+                 (* markerlex:=mkmarkerrec(key)
+                  *)
+              function postfixlex(key: poskeytype): psnode;
+                 (* postfixlex:=makesnode(0,nil,<postfixcat>,nil)
+                  *)
+              function prefixlex(key: prekeytype): psnode;
+                 (* prefixlex:=makesnode(0,nil,<prefixcat>,nil)
+                  *)
+              function freefixlex(key: frekeytype): psnode;
+                 (* freefixlex:=makesnode(0,nil,<freefixcat>,nil)
+                  *)
+$A2 alextreeprocs           analytic lextree procedures
+SOURCE      : andir:ALEXTREEP.INC
+INCLUDED BY : amorph
+CONTENT     : ...
+                 (* some LS analytic lextree rules
+                  * every lextree rule returns a pointer to a new S-tree node
+                  * atleast when the rule was applicable.
+                  *)
+              function lexrules(i: integer; m: lexruletuple): psnode;
+                 (* applies the lextree rule numbered i to the correct
+                  * number of arguments, all passed to the rule in m
+                  *)
+$A2 amrules                 analytic M-rules
+SOURCE      : andir:AMRULES.INC
+INCLUDING   : amRUTT amRFINALCL amRENDCL amRINV amRSHIFT amRNEGATIE amRADVSUBST
+              amRORDER amRTIJD amRARGSUBST amRVOICE amRVP amRVPID amREMPTYSUBST
+              amRSTARTCL amRPP amRADJP amRADVP amRNUMP amRNP amRBUG amRLOCAL
+INCLUDED BY : mparser
+CONTENT     : function <M-rule name>func(t: psnode): ptostree;
+                 (* iff the analytic M-rule is applicable then
+                  *     returns a pointer to a tuple of S-trees (the result of
+                  *     the rule).
+                  *)
+$A2 amruleswitch            analytic M-rule switch
+SOURCE      : andir:AMRULESWI.INC
+INCLUDED BY : mparser
+CONTENT     : function mruleswitch(t: psnode; rnr: mruletype): ptostree;
+                 (* case rnr of
+                  *      <M-rule name> : mruleswitch:=<same M-rule name>func(t)
+                  * end
+                  *)
+$A2 apostfprocs             analytic postfix procedures
+SOURCE      : andir:APOSTFPRO.INC
+INCLUDED BY : amorph
+CONTENT     : ...
+              procedure postrules(i: poskeytype; a: syststr);
+                 (* case i of
+                  *      <postfix key> : 'corresponding postfix rule'(a)
+                  * end
+                  *)
+$A2 aprefprocs              analytic prefix procedures
+SOURCE      : andir:APREFPROC.INC
+INCLUDED BY : amorph
+CONTENT     : ...
+                 (* The LS analytic prefix rules
+                  *)
+              procedure prerules(i: prekeytype; a: syststr);
+                 (* case i of
+                  *      <prefix key> : 'corresponding prefix rule'(a)
+                  * end
+                  *)
+$A2 asplprocs               analytic split procedures
+SOURCE      : andir:ASPLPROCS.INC
+INCLUDED BY : amorph
+CONTENT     : ...
+              procedure splitrules(i: integer; a1: syststr;
+                                   var a2, a3: syststr);
+                 (* case i of
+                  *      <split rule nr> : 'corresponding split rule'(a1,a2,a3)
+                  * end
+                  *)
+$A2 BLEXdecl                BLEX declaration
+SOURCE      : globlexdir:BLEXDECL.INC
+INCLUDED BY : globlexdecl
+CONTENT     : const
+                    <cat>og = ..
+                    <cat>bg = ..
+                    
+                 type
+                    (* type definition for every category
+                     * for every <cat> there is a type called <cat>record
+                     * not all those names are established in globdecl,
+                     * so the rest is defined here.
+                     * LS
+                     *)
+                    <cat>record = ..
+
+                 basicsyntcatrecord =
+                    record case cat : basicsyntcat of
+                           <cat>    : (<cat>field       : <cat>record );
+                    end;
+
+                 BLEXtype = record status : array [basicsyntcat] of
+                                            record aanwezig,
+                                                   gemodificeerd : boolean;
+                                            end;
+                                   padnaam : filenaam;
+                                   dfnaam  : array [basicsyntcat] of filenaam;
+                 
+                                   <cat>wb : ARRAY [<cat>og..<cat>bg]
+                                             OF <cat>record
+                             end;
+
+                 BLEXnamentype = record status : array [basicsyntcat] of
+                                                 record aanwezig,
+                                                        gemodificeerd : boolean
+                                                 end;
+                                        <cat>wb : ARRAY [<cat>og..<cat>bg]
+                                                  OF naam
+                                 end;
+$A2 BLEXproc                BLEX procedures
+SOURCE      : globlexdir:BLEXPROC.INC
+INCLUDED BY : globlexica
+CONTENT     : procedure bepaalcat( var range:rangetype; fam:keyfamily );
+                 (* R :: determines which category corresponds to
+                  *      range.og..range.bg
+                  * P :: range.og and range.bg have a value
+                  * Q :: range.og..range.bg is a subrange of the range
+                  *      corresponding with range.cat, if necessary range.og/bg
+                  *      received a new value
+                  *)
+              
+              function bkeytocat(key: baskeytype; fam: keyfamily): syntcat;
+                 (* determines to which category the S-tree with this key
+                  * belongs
+                  *)
+$A2 comment                 interaction
+SOURCE      : LIdir:COMMENT.INC
+INCLUDED BY : InfoHandler
+CONTENT     : const maxcommentnr  = 100;
+                    maxcommentstr = 80;
+
+              type  commentstrrange = 0..maxcommentstr;
+                    commentnrrange  = 0..maxcommentnr;
+                    commentstr      = varying [maxcommentstr] of char;
+                    commenttype     = array [commentnrrange] of commentstr;
+
+              var   comment  : commenttype;
+
+              procedure initcomment;
+                 (* reads the interaction sentences from the logical
+                  * file 'commentfile'
+                  *)
+              procedure newcomment;
+                 (* writes the interaction sentences to a new version of the
+                  * logical file 'commentfile'
+                  *)
+              procedure readcomment(var inf :text; nr :commentnrrange);
+                 (* read one interaction sentence from the input file inf, and
+                  * this becomes the new interaction sentence with number nr
+                  *)
+              procedure writecomment(var outf :text; nr :commentnrrange);
+                 (* writes one interaction sentence with the number nr to the
+                  * output file outf
+                  *)
+$A2 const                   constants
+SOURCE      : globdir:CONST.INC
+INCLUDED BY : globdecl
+CONTENT     : const
+                 ...
+                 (* some language specific constants *)
+$A2 copyfunc                copy functions
+SOURCE      : globdir:COPYFUNC.INC
+INCLUDED BY : globtree
+CONTENT     : function coprec(a: psnode): psnode;
+                 (* returns a pointer to a new S-tree node with category=<cat>
+                  * and the same values (also for the attributes) as a
+                  *)   
+$A2 decl                    declaration
+SOURCE      : globdir:DECL.INC
+INCLUDING   : spmarkers postfkeys prefkeys freefkeys rectypedecl
+INCLUDED BY : globdecl
+CONTENT     : type
+                   markeytype = ( ... );
+                   poskeytype = ( ... );
+                   prekeytype = ( ... );
+                   frekeytype = ( ... );
+                   gluekeytype = ( ... );
+                   ...
+                 (* the LS declaration of the categories (syntcat) and their
+                  * attributes
+                  *)
+                   pmarkerrecord=^markerrecord;
+                   markerrecord = record ... end;
+$A2 freefcats               freefix categories
+SOURCE      : globdir:FREEFCATS.INC
+INCLUDED BY : initmorph rectypedecl treedecl
+CONTENT     : (* the LS freefix cats *)
+$A2 freefkeys               freefix keys
+SOURCE      : globdir:FREEFKEYS.INC
+INCLUDED BY : decl
+CONTENT     : (* the LS freefix keys *)
+$A2 gaffixprocs             generative affix procedures
+SOURCE      : gendir:GAFFIXPRO.INC
+INCLUDING   : gpostfprocs gprefprocs gfreefprocs gsplprocs
+INCLUDED BY : gmorph
+CONTENT     : ...
+                 (* the implementation of some LS generative freefix rules
+                  *)
+              function freerules(i: frekeytype; a: syststr;
+                                 m: markeytype): pstrcontextnode;
+                 (* case i of
+                  *      <freefixkey> : 'corresponding rule'(a,m)
+                  * end
+                  *)
+              ...
+                 (* The LS generative postfix rules
+                  *)
+              function postrules(i: poskeytype; a: syststr;
+                                 m: markeytype): pstrcontextnode;
+                 (* case i of
+                  *      <postfix key> : 'corresponding postfix rule'(a,m)
+                  * end
+                  *)
+              ...
+                 (* The LS generative prefix rules
+                  *)
+              function prerules(i: prekeytype; a: syststr;
+                                 m: markeytype): pstrcontextnode;
+                 (* case i of
+                  *      <prefix key> : 'corresponding prefix rule'(a,m)
+                  * end
+                  *)
+              ...
+                 (* The LS generative splitsings rules
+                  *)
+              function splitrules(i: integer; a1,a2: syststr)
+                       : pstrcontextnode;
+                 (* case i of
+                  *      <split rule nr> : 'corresponding split rule'(a1,a2)
+                  * end
+                  *)
+$A2 gfreefprocs             generative freefix procedures
+SOURCE      : gendir:GFREEFPRO.INC
+INCLUDED BY : gaffixprocs
+CONTENT     : ...
+                 (* the implementation of some LS generative freefix rules
+                  *)
+              function freerules(i: frekeytype; a: syststr;
+                                 m: markeytype): pstrcontextnode;
+                 (* case i of
+                  *      <freefixkey> : 'corresponding rule'(a,m)
+                  * end
+                  *)
+$A2 glayoutprocs            generative layout procedures
+SOURCE      : gendir:GLAYOUTPR.INC
+INCLUDED BY : gmorph
+CONTENT     : procedure layouttest(k1,k2: integer; s: syststr;
+                                   var nk1,nk2: integer; wnr: integer);
+                 (* the generative version of the layout rules
+                  *)
+$A2 glexicons               generative lexicons
+SOURCE      : gendir:GLEXICONS.INC
+INCLUDED BY : genlexica
+CONTENT     : function numberlex(key: baskeytype): psnode;
+                 (* numberlex:=mkkeyrec(NUMERAL,key)
+                  *)
+              function basiclex(key: baskeytype): psnode;
+                 (* basiclex:=makesnode(0,nil,<cat>,nil)
+                  * basiclex^.<cat>field:=GBLEX.<cat>wb[key]
+                  * in debug mode a message is printed
+                  *)
+              function irreglex(key: baskeytype): psnode;
+                 (* irreglex:=basiclex(GIRBLEX.<cat>wb[key].key)
+                  * irreglex^.cat:='corresponding non basic cat'
+                  * irreglex^.cat.'some fields':=
+                  *      GIRBLEX.<cat>wb[key].'same some fields'
+                  *)
+              function irregindication(t: psnode): boolean;
+                 (* irregindication iff 't is irregular'
+                  *)
+              function basiclexkey(s: psnode): baskeytype;
+                 (* basiclexkey:=whatiskey(s)
+                  *)
+              function supplexkey(p: psnode): baskeytype;
+                 (* supplexkey:=0
+                  *)
+              function markerlexkey(p: psnode): markeytype;
+                 (* markerlexkey:=p^.markerfield^.marker
+                  *)
+              function postfixlexkey(p: psnode): poskeytype;
+                 (* postfixlexkey:='with p^.cat corresponding key'
+                  *)
+              function prefixlexkey(p: psnode): prekeytype;
+                 (* prefixlexkey:='with p^.cat corresponding key'
+                  *)
+              function freefixlexkey(p: psnode): frekeytype;
+                 (* freefixlexkey:='with p^.cat corresponding key'
+                  *)
+              function irregsimplexkey(p: psnode; key: integer): baskeytype; 
+                 (* ???
+                  * contains some robustness measures
+                  *)
+$A2 glextreeprocs           generative lextree procedures
+SOURCE      : gendir:GLEXTREEP.INC
+INCLUDED BY : gmorph
+CONTENT     : ...
+                 (* the LS generative lextree rules
+                  *)
+              function lextreerules(s:psnode; i:integer): pconnectionnode;
+                 (* case i of
+                  *      'lextree rule name' : 'corresponding lextree rule'
+                  * end
+                  * return the result being a tuple of atmost 3 S-trees
+                  *)
+$A2 globsurfconst           global surface constants
+SOURCE      : globdir:GLOBSURFC.INC
+INCLUDED BY : globdecl
+CONTENT     : const
+                   Hinit = ..
+                   Hdum = ..
+                   Hfinal = ..
+                 (* the LS values for Hinit, Hdum and Hfinal *)
+$A2 globsurfpars            global surface parameters
+SOURCE      : globdir:GLOBSURFP.INC
+INCLUDED BY : globsurf
+CONTENT     : var   
+                   ...
+                 (* some variables used in the surface rules *)
+$A2 gmorfspecprocs          generative morphologic special procedures
+SOURCE      : gendir:GMORFSPEC.INC
+INCLUDED BY : gmorph
+CONTENT     : procedure freefixlist(key: frekeytype; var CC: integer);
+                 (* CC:='value associated with this free fix key'
+                  *)
+              procedure prefixlist(key: prekeytype; var str: syststr);
+                 (* str:='string associated with this prefix key'
+                  *)
+              procedure postfixlist(key: poskeytype; var str: syststr;
+                                    var CC: integer);
+                 (* CC:=0
+                  * str:='string associated with this postfix key'
+                  *)
+$A2 gmrules                 generative M-rules
+SOURCE      : gendir:GMRULES.INC
+INCLUDING   : gmRUTT gmRFINALCL gmRENDCL gmRINV gmRSHIFT gmRNEGATIE gmRADVSUBST
+              gmRORDER gmRTIJD gmRARGSUBST gmRVOICE gmRVP gmRVPID gmREMPTYSUBST
+              gmRSTARTCL gmRPP gmRADJP gmRADVP gmRNUMP gmRNP gmRBUG gmRLOCAL
+INCLUDED BY : mgenerator
+CONTENT     : function <M-rule name>func(D:streesons; nr:integer;
+                                         params:paramtype)
+                       :plostree;
+                 (* iff the generative M-rule is applicable then
+                  *     returns a pointer to a new list of S-trees (the result
+                  *     of the rule).
+                  *)
+                       
+$A2 gmruleswitch            generative M-rule switch
+SOURCE      : gendir:GMRULESWI.INC
+INCLUDED BY : mgenerator
+CONTENT     : function mruleswitch(D: streesons; n : integer; rnr : mruletype;
+                                   params: paramtype)
+                       : plostree;
+                 (* in debug mode gives messages of entering and leaving this
+                  * procedure.
+                  * case rnr of
+                  *      <M-rule name> : mruleswitch:=
+                  *         <M-rule name>func(D,n,params)
+                  * end
+                  *)
+$A2 gpostfprocs             generative postfix procedures
+SOURCE      : gendir:GPOSTFPRO.INC
+INCLUDED BY : gaffixprocs
+CONTENT     : ...
+                 (* The LS generative postfix rules
+                  *)
+              function postrules(i: poskeytype; a: syststr;
+                                 m: markeytype): pstrcontextnode;
+                 (* case i of
+                  *      <postfix key> : 'corresponding postfix rule'(a,m)
+                  * end
+                  *)
+$A2 gprefprocs              generative prefix procedures
+SOURCE      : gendir:GPREFPROC.INC
+INCLUDED BY : gaffixprocs
+CONTENT     : ...
+                 (* The LS generative prefix rules
+                  *)
+              function prerules(i: prekeytype; a: syststr;
+                                 m: markeytype): pstrcontextnode;
+                 (* case i of
+                  *      <prefix key> : 'corresponding prefix rule'(a,m)
+                  * end
+                  *)
+$A2 gsplprocs               generative split procedures
+SOURCE      : gendir:GSPLPROCS.INC
+INCLUDED BY : gaffixprocs
+CONTENT     : ...
+                 (* The LS generative splitsings rules
+                  *)
+              function splitrules(i: integer; a1,a2: syststr)
+                       : pstrcontextnode;
+                 (* case i of
+                  *      <split rule nr> : 'corresponding split rule'(a1,a2)
+                  * end
+                  *)
+$A2 initamorph              initialize analytic morphology
+SOURCE      : andir:INITAMORP.INC
+INCLUDED BY : amorph
+CONTENT     : procedure initamorph;
+                 (* fills free/post/prefix and analytic lextree-rule tables
+                  *)
+$A2 initantransfer          initialize analytic transfer
+SOURCE      : andir:INITANTRA.INC
+INCLUDED BY : antransfer
+CONTENT     : procedure inittransfer;
+                 (* initialises spectreatcats
+                  *)
+$A2 initBLEX                initialize BLEX
+SOURCE      : globlexdir:INITBLEX.INC
+INCLUDED BY : initgloblexicaprocs
+CONTENT     : function wrongversion( cat:basicsyntcat ) : boolean;
+                 (* ment to test the version of the dictionary with the version
+                  * of the program. Always false.
+                  *)
+              procedure initcatgrens;
+                 (* catgrens[<cat>].og:=<cat>og
+                  * catgrens[<cat>].bg:=<cat>bg
+                  *)
+              procedure initBLEX( var BLEX : BLEXtype );
+                 (* dfnaam[<cat>] := "<cat>"
+                  * status[<cat>].aanwezig:=false
+                  *)
+              procedure getBLEX( var BLEX:BLEXtype; cat:basicsyntcat);
+                 (* IF NOT status[<cat>].aanwezig THEN read <cat> dictionary
+                  *                                    into <cat> table.
+                  * check that every key in <cat> dictionary is unique.
+                  * status[<cat>].aanwezig:=true;
+                  * status[<cat>].gemodificeerd:=false;
+                  *)
+              procedure putBLEX( var BLEX:BLEXtype; cat:basicsyntcat);
+                 (* IF status[<cat>].gemodificeerd THEN write <cat> table
+                  *                                     into <cat> dictionary.
+                  * dictionary file name = padnaam + dfnaam + ".WB".
+                  * status[<cat>].gemodificeerd:=false;
+                  *)
+              procedure initBLEXnamen( var BLEXnamen:BLEXnamentype );
+                 (* status[<cat>].aanwezig:=false
+                  *)
+              procedure getBLEXnamen( var BLEX:BLEXtype; 
+                                      var BLEXnamen:BLEXnamentype;
+                                      cat:basicsyntcat);
+                 (* IF NOT aanwezig THEN read meaning strings corresponding to
+                  *                      basic keys from meaning strings file.
+                  * no test are done!
+                  * meaning strings file name = padnaam + dfnaam + ".NAM".
+                  * BLEXnamen.status[<cat>].aanwezig:=true;
+                  * BLEXnamen.status[<cat>].gemodificeerd:=false;
+                  *)
+              procedure putBLEXnamen( var BLEX:BLEXtype;
+                                var BLEXnamen:BLEXnamentype; cat:basicsyntcat);
+                 (* IF modified THEN write meaning strings corresponding to the
+                  *                  basic keys into meaning strings file.
+                  * no test are done!
+                  * meaning strings file name = padnaam + dfnaam + ".NAM".
+                  * BLEXnamen.status[<cat>].gemodificeerd:=true
+                  *)
+$A2 initgmorph              initialize generative morphology
+SOURCE      : gendir:INITGMORP.INC
+INCLUDED BY : gmorph
+CONTENT     : procedure initgmorph;
+                 (* fills generative lexrule table
+                  *)
+$A2 initIRBLEX              initialize IRBLEX
+SOURCE      : globlexdir:INITIRBLE.INC
+INCLUDED BY : initgloblexicaprocs
+CONTENT     :    (* each of the following procedures correspond to one of
+                  * the before mentioned initBLEX procedures.
+                  * in addition getIRBLEX gives actir<cat>bg the highest key
+                  * that existed in the <cat> dictionary.
+                  *)
+              procedure initircatgrens;
+              procedure initIRBLEX( var IRBLEX : IRBLEXtype );
+              procedure getIRBLEX( var IRBLEX:IRBLEXtype; cat:basicsyntcat);
+              procedure putIRBLEX( var IRBLEX:IRBLEXtype; cat:basicsyntcat);
+              procedure initIRBLEXnamen( var IRBLEXnamen:IRBLEXnamentype );
+              procedure getIRBLEXnamen( var IRBLEX:IRBLEXtype;
+              procedure putIRBLEXnamen( var IRBLEX:IRBLEXtype;
+                                        var IRBLEXnamen:IRBLEXnamentype;
+                                        cat:basicsyntcat);
+$A2 initlinearizer          initialize linearizer
+SOURCE      : gendir:INITLINEA.INC
+INCLUDED BY : linearizer
+CONTENT     : procedure initlin;
+                 (* initialises lincats
+                  *)
+$A2 initmorph               initialize morphology
+SOURCE      : globdir:INITMORPH.INC
+INCLUDING   : prefcats postfcats freefcats markertables
+INCLUDED BY : globmorph
+CONTENT     : var COMPOSITA           :boolean;
+                 (* true iff this language has composita's *)
+                  firstcat,
+                  lastcat             :syntcat;
+                 (* the range of for morphology interesting categories *)
+              procedure initmorph;
+                 (* initialysis firstcats, lastcats, pre/post/freefixcats,
+                  * marker/suppl/ug/basic/finalcats, glues, COMPOSITA
+                  * and some LS variables like vowels and the marker-tables
+                  *)
+$A2 initmparser             initialize M-parser
+SOURCE      : andir:INITMPARS.INC
+INCLUDED BY : globM
+CONTENT     : var
+                   ...
+                 (* the declaration of the LS record vars used in the M-rules
+                  *)
+              procedure initmparser;
+                 (* initialises BASICCATS, BCATS andVAR, SUBSTRULES,
+                  * PREACTIONRULES, firstcat and lastcat
+                  *)
+              function haskey(t:psnode) : boolean;
+                 (* true iff t has a key
+                  *)
+$A2 initsurfparser          initialize surface parser
+SOURCE      : andir:INITSURFP.INC
+INCLUDED BY : surfparser
+CONTENT     : procedure initsurfparser;
+                 (* fills firstcats table with the first cats of the surface
+                  * graphs.
+                  * initialises prefcats (used te select the top nodes in case
+                  * of troubles), nonterminallexcats and some LS tables like
+                  * the time tables.
+                  *)
+$A2 IRBLEXdecl              IRBLEX declaration
+SOURCE      : globlexdir:IRBLEXDEC.INC
+INCLUDED BY : globlexdecl
+CONTENT     : const
+                    IR<cat>bg = ..
+                    
+                 type
+                    (* type definition for every category
+                     * for every <cat> there is a type called <cat>record
+                     * not all those names are established in globdecl,
+                     * so the rest is defined here.
+                     * LS
+                     *)
+                    IR<cat>record = ..
+
+                 irbasicsyntcatrecord =
+                        record
+                           irkey: baskeytype;
+                           case cat : basicsyntcat of
+                              IR<cat> : (IR<cat>field  : IR<cat>record )
+                        end;
+
+                 IRBLEXtype = record status : array [basicsyntcat] of
+                                              record aanwezig,
+                                                     gemodificeerd : boolean;
+                                              end;
+                                     padnaam : filenaam;
+                                     dfnaam  : array [basicsyntcat]
+                                               of filenaam;
+                                     actIR<cat>bg   : baskeytype;
+                                     IR<cat>wb : ARRAY [IR<cat>og..<cat>bg]
+                                               OF IR<cat>record
+                               end;
+
+                 IRBLEXnamentype = record status : array [basicsyntcat] of
+                                                   record aanwezig,
+                                                          gemodificeerd:boolean
+                                                   end;
+                                          IR<cat>wb: ARRAY [IR<cat>og..<cat>bg]
+                                                     OF naam
+                                   end;
+$A2 IRBLEXproc              IRBLEX procedures
+SOURCE      : globlexdir:IRBLEXPRO.INC
+INCLUDED BY : globlexica
+CONTENT     : (* no special IRBLEX procedures exist, as far as necessary
+               * the BLEX procedures handel it
+               *)
+$A2 lexconst                lexical constants
+SOURCE      : globlexdir:LEXCONST.INC
+INCLUDED BY : globlexdecl
+CONTENT     : const
+                 maxword   =..
+                 maxidword =..
+                 maxidrule =..
+                 idrulelength=..
+                 maxatdictword=..
+                 maxgtdictword=..
+                 
+                 ...
+               (* some LS key constants, like tobeverbkey *)
+$A2 LIconst                 language independent constants
+SOURCE      : LIdir:LIconst
+INCLUDED BY : LIdecl
+CONTENT     : const
+                    maxldnsons   = 100;
+                    maxdnsons    = maxldnsons;
+                       (* maxdnsons must be equal to maxldsons
+                        * maximum breath of a tree
+                        * high for UG and Rnul
+                        *)
+                    maxparams    = 3;
+                    maxarg       = 3;
+                    maxldkey     = 6500;
+                    maxexpltype  = 1;
+                    maxlevel     = 100;
+                       (* maximum depth of a tree
+                        * necessary for var-trick in transfer
+                        *)
+$A2 locmorfvars             local morphologic variables
+SOURCE      : andir:LOCMORFVA.INC
+INCLUDED BY : globmorph
+CONTENT     : (* some LS variables only in use in the morphological component
+               *)
+$A2 Lruletype               L-rule type
+SOURCE      : ILdir:LRULETYPE.INC
+INCLUDED BY : IL
+CONTENT     : type Lruletype = ( Lnul ... maxLrule );
+$A2 makefunc                make functions
+SOURCE      : globdir:MAKEFUNC.INC
+INCLUDED BY : globtree
+CONTENT     : function mk<cat>rec ('all the attributes associated with <cat>)
+                       : psnode;
+                 (* returns a pointer to a new S-tree node with category=<cat>
+                  * and the given attribute values
+                  *)   
+              function equalvarrecord(v1,v2:varrecord): boolean;
+                 (* true iff v1=v2
+                  *)
+$A2 markertables            marker tables
+SOURCE      : globdir:MARKERTAB.INC
+INCLUDED BY : initmorph
+CONTENT     : (* the LS calls of procedures to fill some LS morphological
+               * tables like the marker tables
+               *)
+$A2 mgrammakefunc           M-grammer make functions
+SOURCE      : LDdir:MGRAMMAKE.INC
+INCLUDED BY : globM
+CONTENT     : function maketostree(a: paramtype; b: integer; c: ptostree)
+                       : ptostree;
+                 (* returns a pointer to a new empty tuple of S-trees with
+                  * next=c and params=a
+                  *)
+              procedure inserttostree(s: psnode; r: ptostree);
+                 (* inserts s into tuple of S-trees r
+                  *)
+              function makebasicdnode(a: pdnode; b: integer; c: psnode)
+                       : pdnode;
+                 (* returns a pointer to a new d-tree node with
+                  * ambig=a, bonus=b and bexpr=c
+                  *)
+              function makednode(a: pdnode; b: integer; c: mruletype;
+                                 d: plostree; e: paramtype;
+                                 f: integer; g: dnsonstype; h: integer)
+                       : pdnode;
+                 (* returns a pointer to a new d-tree node with
+                  * ambig=a, bonus=b, ruleindex=c, S-tree=d, paramlist=e,
+                  * nr of sons=f, sons=g and level=h
+                  *)
+$A2 morfmakefunc            morphologic make functions
+SOURCE      : LDdir:MORFMAKEF.INC
+INCLUDED BY : globmorph
+CONTENT     : function makesegmrule(a: syststr; b: markeytype; c: psegmrule)
+                       : psegmrule;
+                 (* returns a pointer to a new segmrule node with values a,b
+                  * and c, c is the brother of this new node.
+                  *)
+              function makestrcontextnode(a: syststr; b: integer;
+                                          c: pstrcontextnode): pstrcontextnode;
+                 (* returns a pointer to a new Stree-context node with the
+                  * given values, c is the brother of this new node.
+                  *)
+              function mksegm(a: keyfamily; b: psinglesegmentlist;
+                 (* returns a pointer to a new single segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function copykeysegm(a: psinglesegmentlist): psinglesegmentlist;
+                 (* returns a pointer to a new single segment node with the
+                  * same values as a has.
+                  *)
+              function mkmarkeysegm(a: markeytype; b: psinglesegmentlist;
+                                    c: pconnectionnode): psinglesegmentlist;
+                 (* returns a pointer to a new marker segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function mkposkeysegm(a: poskeytype; b: psinglesegmentlist;
+                                    c: pconnectionnode): psinglesegmentlist;
+                 (* returns a pointer to a new post-key segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function mkprekeysegm(a: prekeytype; b: psinglesegmentlist;
+                                    c: pconnectionnode): psinglesegmentlist;
+                 (* returns a pointer to a new pre-key segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function mkfrekeysegm(a: frekeytype; b: psinglesegmentlist;
+                                    c: pconnectionnode): psinglesegmentlist;
+                 (* returns a pointer to a new free-key segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function mkgluekeysegm(a: gluekeytype; b: psinglesegmentlist;
+                                     c: pconnectionnode): psinglesegmentlist;
+                 (* returns a pointer to a new glue-key segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function mkugkeysegm(a: baskeytype; b: psinglesegmentlist;
+                                   c: pconnectionnode;
+                                   d: syststr): psinglesegmentlist;
+                 (* returns a pointer to a new ug-key segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+              function mkbaskeysegm(a: keyfamily; b: baskeytype;
+                                    c: psinglesegmentlist;
+                                    d: pconnectionnode): psinglesegmentlist;
+                 (* returns a pointer to a new basic-key segment node with the
+                  * given values, b is the brother and c is the right neighbour
+                  * of this new node.
+                  *)
+$A2 morfspecprocs           morphologic special procedures
+SOURCE      : globdir:MORFSPECP.INC
+INCLUDED BY : globmorph
+CONTENT     : function contextcond(CC: integer; r: syststr): boolean;
+                 (* true iff context condition CC is valid for r as right
+                  *          context
+                  *)
+              function PW(a: syststr): boolean;
+                 (* true iff a is a possible word for this language
+                  *)
+$A2 mrulecattable           M-rule category table
+SOURCE      : globdir:MRULECATT.INC
+INCLUDED BY : mparser
+CONTENT     : (* the LS calls of fillcattable to initialise the table cattable
+               *)
+$A2 mruletype               M-rule type
+SOURCE      : globdir:MRULETYPE.INC
+INCLUDED BY : globtreedecl
+CONTENT     : type Mrule = ( Rnul ... Rlast );
+$A2 parameterdecl           parameter declaration
+SOURCE      : globdir:PARSDECL.INC
+INCLUDED BY : globtreedecl
+CONTENT     : type
+                   ...
+                   (* definition of some parameter types *)
+                   flagtype            = ( ... );
+                   parelttype          = record case flag:flagtype of
+                                                     <flag>         : ...
+                                         end;
+$A2 postfcats               postfix categories
+SOURCE      : globdir:POSTFCATS.INC
+INCLUDED BY : initmorph rectypedecl treedecl
+CONTENT     : (* the LS postfix cats *)
+$A2 postfkeys               postfix keys
+SOURCE      : globdir:POSTFKEYS.INC
+INCLUDED BY : decl
+CONTENT     : (* the LS postfix keys *)
+$A2 prefcats                prefix categeories
+SOURCE      : globdir:PREFCATS.INC
+INCLUDED BY : initmorph rectypedecl treedecl
+CONTENT     : (* the LS prefix cats *)
+$A2 prefkeys                prefix keys
+SOURCE      : globdir:PREFKEYS.INC
+INCLUDED BY : decl
+CONTENT     : (* the LS prefix keys *)
+$A2 rectypedecl             record type declarations
+SOURCE      : globdir:RECTYPEDE.INC
+INCLUDING   : postfcats prefcats freefcats
+INCLUDED BY : decl
+CONTENT     : ...
+                 (* the LS declaration of the categories (syntcat) and their
+                  * attributes
+                  *)
+$A2 shadowrules             shadow rules
+SOURCE      : globdir:SHADOWR.INC
+INCLUDED BY : mgenerator
+CONTENT     : procedure shadowrules(top:psnode; rnr: mruletype; lev: integer);
+                 (* The LS shadow rules as described in "Extensions" R14
+                  * are implemented here.
+                  * they are used to evaluate the variable in advance!
+                  *)
+$A2 specantrfunc            special analytic transfer functions
+SOURCE      : andir:SPECANTRF.INC
+INCLUDED BY : antransfer
+CONTENT     : function isvariable(s: psnode): integer;
+                 (* if s^.cat = VAR then
+                  *    returns s^.varfield^.index
+                  * else returns 0
+                  *)
+              function isnumber(s: psnode): integer;
+                 (* if s^.cat = NUMERAL then
+                  *    returns s^.keyfield^.key
+                  * else returns 0
+                  *)
+              function Typetest(rnr: Lruletype; top: pldnode;
+                                var bonus: integer): boolean;
+                 (* applies weak type test (TypeIncl) and gives a bonus
+                  * returns true because strong type test is not implemented
+                  *)
+$A2 specgentrfunc           special generative transfer functions
+SOURCE      : gendir:SPECGENTR.INC
+INCLUDED BY : gentransfer
+CONTENT     : function isvariable(s: psnode): integer;
+                 (* if s^.cat = VAR then
+                  *    returns s^.varfield^.index
+                  * else returns -1
+                  *)
+              function makevariable(i: integer): psnode;
+                 (* makes a VAR record
+                  *)
+              function Typetest(rnr: Lruletype; top: pcldnode;
+                                var bonus: integer): boolean;
+                 (* applies weak type test (TypeIncl) and gives a bonus
+                  * returns true because strong type test is not implemented
+                  *)
+$A2 spmarkers               split markers
+SOURCE      : globdir:SPMARKERS.INC
+INCLUDED BY : decl
+CONTENT     : (* the LS splitsing marker names *)
+$A2 surfgraphs              surface graphs
+SOURCE      : globdir:SURFGRAPH.INC
+INCLUDED BY : surfparser
+CONTENT     : procedure SFG( i : integer);
+                 (* creates the surface graph associated with surface rule
+                  * numbered i.
+                  *)
+$A2 surfmakefunc            surface make functions
+SOURCE      : LDdir:SURFMAKEF.INC
+INCLUDED BY : globsurf
+CONTENT     : function makecat(a: syntcat): psyntcat;
+                 (* returns a pointer to a new syntcat-node of type a
+                  *)
+              function makesurfgraph(a,b: psurfgraphnode): psurfgraph;
+                 (* returns a pointer to a new surface graph with
+                  * first=a and last=b
+                  *)
+              function makesurfgraphnode(a: psyntcat; b,c: psurfgraphnode;
+                                         d: nodeid): psurfgraphnode;
+                 (* returns a pointer to a new surface graph node with
+                  * category=a, right=b, left=c and nodeid=d
+                  *)
+              function makelonodeid(a: nodeid; b: plonodeid): plonodeid;
+                 (* returns a pointer to a new list of nodeid with
+                  * next=b and nodeid=a
+                  *)
+$A2 surfrules               surface rules
+SOURCE      : globdir:SURFRULES.INC
+INCLUDED BY : surfparser
+CONTENT     : (* the LS surface rules are implemented here
+               *)
+$A2 surfswitch              surface switch
+SOURCE      : globdir:SURFSWITC.INC
+INCLUDED BY : surfparser
+CONTENT     : <surface rule nr> : caf:=matchgraph(v,k,<surface rule>,effset)
+$A2 sysmakefunc             system make functions
+SOURCE      : LDdir:SYSMAKEFU.INC
+INCLUDED BY : globtree
+CONTENT     : function makesnode(a: integer; b:prsnode; c:syntcat; d: pdnode)
+                       : psnode;
+                 (* returns a pointer to a new S-tree node with
+                  * n=a, sonlist=b, cat=c and dtree=d
+                  *)
+              function copysnode(a: psnode): psnode;
+                 (* returns a pointer to a new S-tree node that is a
+                  * a copy of a
+                  *)
+              function copyrsnode(a: prsnode): prsnode;
+                 (* returns a pointer to a new relation node that is a
+                  * copy of a
+                  *)
+              function makersnode(a: prsnode; b: psnode; c: reltype): prsnode;
+                 (* returns a pointer to a new relation node with
+                  * brother=a, node=b and synrel=c
+                  *)
+              function makeconnectionnode(a: psinglesegmentlist;
+                                          b,c: pconnectionnode;
+                                          d: syststr; e: connectiontype)
+                       : pconnectionnode;
+                 (* returns a pointer to a new connection node with
+                  * list=a, next=b, prev=c, kind=e and in case e=worddel
+                  * then word=d
+                  *)
+              function makestreesegm(a: psinglesegmentlist;
+                                     b: pconnectionnode; c:psnode)
+                       : psinglesegmentlist;
+                 (* returns a pointer to a new S-tree segment node with
+                  * next=a, right neighbour=b ans S-tree=c
+                  *)
+              function makebugnode(s: syststr; key: integer): psnode;
+                 (* returns a pointer to a new S-tree node of type BUG
+                  * with s and key as values
+                  *)
+              function makeugnode(a: integer; b:prsnode;
+                                  c: pdnode): psnode;
+                 (* returns a pointer to a new S-tree node of type UG
+                  * with sonlist=b and dtree=c
+                  *)
+              function makelostree(a: psnode; b: plostree): plostree;
+                 (* returns a pointer to a new list of S-tree's
+                  * with tail=b and arg=a
+                  *)
+$A2 TanR                    transfer analytic rules
+SOURCE      : globdir:TANR.INC
+INCLUDED BY : antransfer
+CONTENT     : function TanR(rnr: mruletype; p: paramtype): pldnode;
+                 (* returns the result of applying rnr, contains
+                  * the implementation of ATRP and of all the analytic
+                  * transfer rules
+                  *)
+$A2 TgenR                   transfer generative rules
+SOURCE      : globdir:TGENR.INC
+INCLUDED BY : gentransfer
+CONTENT     : function TgenR(rnr: Lruletype; p: ldparamtype): pdnode;
+                 (* returns the result of applying rnr, contains
+                  * the implementation of GTRP and of all the generative
+                  * transfer rules
+                  *)
+$A2 transgmakefunc          transfer generative make functions
+SOURCE      : gendir:TRANSGMAK.INC
+INCLUDED BY : gentransfer
+CONTENT     : (* some functions corresponding to the make d-node functions
+               * described in globtree
+               *)
+              function makeconstcldnode(b: integer; c: pcldnode; d: integer;
+                                        e: syststr; f: ldargindex;
+                                        g: ldargtuple)
+                       : pcldnode;
+              function makerulecldnode(b: integer; c: ldparamtype;
+                                       d: Lruletype; e: pcldnode): pcldnode;
+              function makevarcldnode(i: integer; amb: pcldnode): pcldnode;
+              function makespeccldnode(stem: syststr; amb: pcldnode): pcldnode;
+              function makebugcldnode(stem: syststr; amb: pcldnode): pcldnode;
+              function makebhlprec(dtrees: pdnode; cldtrees: pcldnode):
+$A2 transmakefunc           transfer make functions
+SOURCE      : LDdir:TRANSMAKE.INC
+INCLUDED BY : globtransfer
+CONTENT     : function maketype(a: integer; b: ptypelist): ptypelist;
+                 (* returns a pointer to a new typelist head with key=a and
+                  * next one in the list is b
+                  *)
+              function makebonus(a: integer; b: integer; c: pbonuslist)
+                      : pbonuslist;
+                 (* returns a pointer to a new bonuslist head, with bonus=a
+                  * b=nr of the corresponding tree, c is next one in the list
+                  *)
+              function makevarldnode(i: integer; amb: pldnode): pldnode;
+                 (* returns a pointer to logical d-tree, with
+                  * top is a var, index=i and ambig=amb
+                  *)
+              function makespecldnode(stem: syststr; amb: pldnode): pldnode;
+                 (* returns a pointer to logical d-tree, with
+                  * top is e specnode, str=stem, ambig=amb
+                  *)
+              function makebugldnode(stem: syststr; amb: pldnode): pldnode;
+                 (* returns a pointer to logical d-tree, with
+                  * top is a bug, str=stem, ambig=amb
+                  *)
+              function makeconstldnode(b: integer; c: pldnode; d: integer;
+                                       e:syststr; f: ldargindex; g: ldargtuple)
+                       : pldnode;
+                 (* returns a pointer to logical d-tree, with
+                  * top is a constant, str=stem, ambig=amb
+                  *)
+             function makeruleldnode(b: integer; c: ldparamtype; d: Lruletype;
+                                     e: pldnode): pldnode;
+                 (* returns a pointer to logical d-tree, with
+                  * top is a rule-node,str=stem, ambig=amb
+                  *)
+                 (* next are some functions in use for the type-system
+                  * one to make an implicite and one to make an explicite
+                  * type arg node.
+                  *)
+            function makeldimparg(s: strengthtype; t: implkeytype): pldargtype;
+            function makeldexparg(s: strengthtype; t: ptypelist): pldargtype;
+$A2 treedecl                tree declaration
+SOURCE      : globdir:TREEDECL.INC
+INCLUDING   : postfcats prefcats freefcats
+INCLUDED BY : globtreedecl
+CONTENT     : type
+                   reltype             = ( ... )
+                   relsettype          = set of reltype;
+                   snode               = record ... end;
+$A2 typedef                 type definition
+SOURCE      : ILWBdir:TYPEDEF.INC
+INCLUDED BY : initILlex
+CONTENT     : (* for some basic IL-expressions the type is different from
+               * omegatype, those IL-expressions receive here their correct
+               * type by means of a call to the function
+               * T(<IL-key>,set of types)
+               *)
+$A2 vardecl                 variable declaration
+SOURCE      : LDdir:VARDECL.INC
+INCLUDED BY : globdecl
+CONTENT     : var
+                 ...
+                 (* some LD variables of which the content is LS, like
+                  * firstcats and finalcats
+                  *)
+$A2 whatiskey               what is key
+SOURCE      : globdir:WHATISKEY.INC
+INCLUDED BY : globtree
+CONTENT     : function whatiskey(s: psnode): integer;
+                 (* case s^.cat of
+                  *      <cat>   :  whatiskey:=s^.<cat>field^.key
+                  * end
+                  *)
+              function whatisparticle(p: psnode): baskeytype;
+                 (* whatisparticle:=p^.verbfield^.part
+                  *)
+              procedure makefinalcat(var s: psnode);
+                 (* IF s^.cat in basiccats THEN
+                  *    s^.cat:='corresponding non-basic cat'
+                  *)
+
+$A1 THE "Mrule" INCLUDE FILES
+$ Below a alphabetic listing of all the names of files containing the Pascal
+version of the M-rules is given.$
+$ These files contain the Pascal version of the corresponding M-rules as
+defined in "M-syntax for dutch in Rosetta2. M-rules" (R16 and R17).$
+
+$ For each file the following information is given :$
+$ _SOURCE_ gives the name of the source file. These logicals are
+created in the group logical name table at VAX/VMS system startup, for then
+the command file "ROSDISK:[ROSETTA]initroset.com" is automatically executed,
+and thereby the command file "ROSDISK:[ROSETTA]logicals.com" in which the
+necessary commands are put.$
+$ First the name of the file containing the analytic version of the rules is
+given, this file is only included in the file amrules. Next the name of the
+file containing the generative version of the rules is given, this one is only
+included in the file gmrules.$ 
+
+$ For the correct interpretation of the file names given below please use the
+appendices on dictionaries and disks.$
+
+$A2 amRADJP en gmRADJP
+SOURCE      : amRulesdir:RADJP.INC
+              gmRulesdir:RADJP.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRADVP en gmRADVP
+SOURCE      : amRulesdir:RADVP.INC
+              gmRulesdir:RADVP.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRADVSUBST en gmRADVSUBST
+SOURCE      : amRulesdir:RADVSUBST.INC
+              gmRulesdir:RADVSUBST.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRARGSUBST en gmRARGSUBST
+SOURCE      : amRulesdir:RARGSUBST.INC
+              gmRulesdir:RARGSUBST.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRBUG en gmRBUG
+SOURCE      : amRulesdir:RBUG.INC
+              gmRulesdir:RBUG.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amREMPTYSUBST en gmREMPTYSUBST
+SOURCE      : amRulesdir:REMPTYSUB.INC
+              gmRulesdir:REMPTYSUB.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRENDCL en gmRENDCL
+SOURCE      : amRulesdir:RENDCL.INC
+              gmRulesdir:RENDCL.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRFINALCL en gmRFINALCL
+SOURCE      : amRulesdir:RFINALCL.INC
+              gmRulesdir:RFINALCL.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRINV en gmRINV
+SOURCE      : amRulesdir:RINV.INC
+              gmRulesdir:RINV.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRLOCAL en gmRLOCAL
+SOURCE      : amRulesdir:RLOCAL.INC
+              gmRulesdir:RLOCAL.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRNEGATIE en gmRNEGATIE
+SOURCE      : amRulesdir:RNEGATIE.INC
+              gmRulesdir:RNEGATIE.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRNP en gmRNP
+SOURCE      : amRulesdir:RNP.INC
+              gmRulesdir:RNP.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRNUMP en gmRNUMP
+SOURCE      : amRulesdir:RNUMP.INC
+              gmRulesdir:RNUMP.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRORDER en gmRORDER
+SOURCE      : amRulesdir:RORDER.INC
+              gmRulesdir:RORDER.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRPP en gmRPP
+SOURCE      : amRulesdir:RPP.INC
+              gmRulesdir:RPP.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRSHIFT en gmRSHIFT
+SOURCE      : amRulesdir:RSHIFT.INC
+              gmRulesdir:RSHIFT.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRSTARTCL en gmRSTARTCL
+SOURCE      : amRulesdir:RSTARTCL.INC
+              gmRulesdir:RSTARTCL.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRTIJD en gmRTIJD
+SOURCE      : amRulesdir:RTIJD.INC
+              gmRulesdir:RTIJD.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRUTT en gmRUTT
+SOURCE      : amRulesdir:RUTT.INC
+              gmRulesdir:RUTT.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRVOICE en gmRVOICE
+SOURCE      : amRulesdir:RVOICE.INC
+              gmRulesdir:RVOICE.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRVP en gmRVP
+SOURCE      : amRulesdir:RVP.INC
+              gmRulesdir:RVP.INC
+INCLUDED BY : amrules
+              gmrules
+$A2 amRVPID en gmRVPID
+SOURCE      : amRulesdir:RVPID.INC
+              gmRulesdir:RVPID.INC
+INCLUDED BY : amrules
+              gmrules
+
+$A1 THE "name" INCLUDE FILES
+$UC ?
+$ The "name" include files all contain the name of the module in which they are
+included extended with the language name. These files are used to give the
+module for all languages a unique name. For instance the Dutch work version
+off the module globdecl
+receives the name "globdecl_workdutch", this name is the sole content of the
+file called globdeclname. This has to be done because the 'same'
+modules are used in analysis and generation. For more information on this trick
+see "Implementation problems" (R...., forthcoming).$ 
+$UC _
+
+$ These name include files are listed below in alphabetic order.
+For each file the following information is given :$
+$ _SOURCE_ gives the name of the source file. These logicals are
+created in the group logical name table at VAX/VMS system startup, for then
+the command file "ROSDISK:[ROSETTA]initroset.com" is automatically executed,
+and thereby the command file "ROSDISK:[ROSETTA]logicals.com" in which the
+necessary commands are put.$
+$ _INCLUDED BY_ gives the logical name of the file into whitch this file is
+included.$
+
+$ For the correct interpretation of the file names given below please use the
+appendices on dictionaries and disks (appendices E and F).$
+
+$A2 globdeclname            global declaration name
+SOURCE      : namesdir:GLOBDECL.NAM
+INCLUDED BY : globdecl
+$A2 globlexdeclname
+SOURCE      : lexnamesdir:GLOBLEXDE.NAM
+INCLUDED BY : globlexdecl   global lexica declaration name
+$A2 globlexicaname
+SOURCE      : lexnamesdir:GLOBLEXIC.NAM
+INCLUDED BY : globlexica
+$A2 globMname               global M-(parser/generator) name
+SOURCE      : namesdir:GLOBM.NAM
+INCLUDED BY : globM
+$A2 globmorphname           global morphology name
+SOURCE      : namesdir:GLOBMORPH.NAM
+INCLUDED BY : globmorph
+$A2 globsurfname            global surfparser/linearizer name
+SOURCE      : namesdir:GLOBSURF.NAM
+INCLUDED BY : globsurf
+$A2 globtransfername        global transfer name
+SOURCE      : namesdir:GLOBTRANS.NAM
+INCLUDED BY : globtransfer
+$A2 globtreedeclname        global tree declaration name
+SOURCE      : namesdir:GLOBTREED.NAM
+INCLUDED BY : globtreedecl
+$A2 globtreename            global tree name
+SOURCE      : namesdir:GLOBTREE.NAM
+INCLUDED BY : globtree
+$A2 initgloblexicaprocsname initialize global lexica procedures name
+SOURCE      : lexnamesdir:INITGLOBP.NAM
+INCLUDED BY : initgloblexicaprocs
+$A2 prprocsname             print procedures name
+SOURCE      : namesdir:PRPROCS.NAM
+INCLUDED BY : prprocs
+
+$A1 THE DIRECTORIES
+$A2 THE LOGICAL DIRECTORY NAMES
+$ Here all the logical names for directories are listed in alphabetic order.
+The following information is given for each logical directory name :$
+$ _DIRECTORY_ gives the translation of the logical directory name. First the
+names used for the demonstration version are given, then the names used in the
+work version. The utilities used in developing Rosetta2 took care off
+assigning the correct translation to the logical directory name. For
+information concerning these utilities see "Utilities for Rosetta2"
+(R19).$
+$ _USE_ gives a short description of the kind of files contained in the
+directory.$
+
+$A3 amRulesdir              analytic M-rules directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.DUTCH.AMRULES]
+              ROSDISK:[ROSETTA.ROSETTA2.ENGLISH.AMRULES]
+              ROSDISK:[DUTCH.ROSETTA2.DUTCH.AMRULES]
+              ROSDISK:[ENGLISH.ROSETTA2.ENGLISH.AMRULES]
+USE         : Contains the analytic version of the M-rules of the
+              source-language.
+$A3 andir                   analytic directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.DUTCH]
+              ROSDISK:[ROSETTA.ROSETTA2.ENGLISH]
+              ROSDISK:[DUTCH.ROSETTA2.DUTCH]
+              ROSDISK:[ENGLISH.ROSETTA2.ENGLISH]
+USE         : Contains the language specific sources except for the lexical
+              ones of the source-language.
+$A3 anlexdir                analytic lexical directory
+DIRECTORY   : LEXDISK:[ROSETTA.LEXICON2.DUTCH]
+              LEXDISK:[ROSETTA.LEXICON2.ENGLISH]
+              LEXDISK:[DUTCH.LEXICON2.DUTCH]
+              LEXDISK:[ENGLISH.LEXICON2.ENGLISH]
+USE         : Contains the language specific lexical sources of the
+              source-language.
+$A3 anlexobjdir             analytic lexical object directory
+DIRECTORY   : LEXDISK:[ROSETTA.LEXICON2.DUTCH.OBJ]
+              LEXDISK:[ROSETTA.LEXICON2.ENGLISH.OBJ]
+              LEXDISK:[DUTCH.LEXICON2.DUTCH.OBJ]
+              LEXDISK:[ENGLISH.LEXICON2.ENGLISH.OBJ]
+USE         : Contains the language dependent lexical object, listing and
+              environment files of the source-language.
+$A3 anobjdir                analytic object directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.DUTCH.OBJ]
+              ROSDISK:[ROSETTA.ROSETTA2.ENGLISH.OBJ]
+              ROSDISK:[DUTCH.ROSETTA2.DUTCH.OBJ]
+              ROSDISK:[ENGLISH.ROSETTA2.ENGLISH.OBJ]
+USE         : Contains the language specific object, listing and environment
+              files not associated with the dictionaries of the
+              source-language (currently empty).
+$A3 anWBdir                 analytic dictionary directory
+DIRECTORY   : WBDISK:[ROSETTA.WB2.DUTCH]
+              WBDISK:[ROSETTA.WB2.ENGLISH]
+              WBDISK:[DUTCH.WB2.DUTCH]
+              WBDISK:[ENGLISH.WB2.ENGLISH]
+USE         : Contains the language specific wordlists of the source-language.
+$A3 commentdir              interaction directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.COMMON.LI]
+              ROSDISK:[COMMON.ROSETTA2.COMMON.LI]
+USE         : Contains the definition of the interaction sentence-list.
+$A3 exedir                  executable directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.DUTCH.EXE.DUTCH]
+              ROSDISK:[ROSETTA.ROSETTA2.DUTCH.EXE.ENGLISH]
+              ROSDISK:[ROSETTA.ROSETTA2.ENGLISH.EXE.DUTCH]
+              ROSDISK:[ROSETTA.ROSETTA2.ENGLISH.EXE.ENGLISH]
+              ROSDISK:[DUTCH.ROSETTA2.DUTCH.EXE.DUTCH]
+              ROSDISK:[DUTCH.ROSETTA2.DUTCH.EXE.WORKDUTCH]
+              ROSDISK:[DUTCH.ROSETTA2.DUTCH.EXE.ENGLISH]
+              ROSDISK:[DUTCH.ROSETTA2.DUTCH.EXE.WORKENGLI]
+              ROSDISK:[ENGLISH.ROSETTA2.ENGLISH.EXE.DUTCH]
+              ROSDISK:[ENGLISH.ROSETTA2.ENGLISH.EXE.WORKDUTCH]
+              ROSDISK:[ENGLISH.ROSETTA2.ENGLISH.EXE.ENGLISH]
+              ROSDISK:[ENGLISH.ROSETTA2.ENGLISH.EXE.WORKENGLI]
+USE         : Contains the object, listing, environment and executable files
+              for Rosetta2 as a whole for the source and target language as
+              the language names appear in the directory name.
+              For instance the demo version of the Dutch->English translator
+              is put in the directory called
+              "ROSDISK:[ROSETTA.ROSETTA2.DUTCH.EXE.ENGLISH]".
+$A3 gendir                  generative directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.DUTCH]
+              ROSDISK:[ROSETTA.ROSETTA2.ENGLISH]
+              ROSDISK:[DUTCH.ROSETTA2.DUTCH]
+              ROSDISK:[ENGLISH.ROSETTA2.ENGLISH]
+USE         : Contains the language specific sources except for the lexical
+              ones of the target-language.
+$A3 genlexdir               generative lexical directory
+DIRECTORY   : LEXDISK:[ROSETTA.LEXICON2.DUTCH]
+              LEXDISK:[ROSETTA.LEXICON2.ENGLISH]
+              LEXDISK:[DUTCH.LEXICON2.DUTCH]
+              LEXDISK:[ENGLISH.LEXICON2.ENGLISH]
+USE         : Contains the language specific lexical sources of the
+              target-language.
+$A3 genlexobjdir            generative lexical object directory
+DIRECTORY   : LEXDISK:[ROSETTA.LEXICON2.DUTCH.OBJ]
+              LEXDISK:[ROSETTA.LEXICON2.ENGLISH.OBJ]
+              LEXDISK:[DUTCH.LEXICON2.DUTCH.OBJ]
+              LEXDISK:[ENGLISH.LEXICON2.ENGLISH.OBJ]
+USE         : Contains the language dependent lexical object, listing and
+              environment files of the target-language.
+$A3 genobjdir               generative object directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.DUTCH.OBJ]
+              ROSDISK:[ROSETTA.ROSETTA2.ENGLISH.OBJ]
+              ROSDISK:[DUTCH.ROSETTA2.DUTCH.OBJ]
+              ROSDISK:[ENGLISH.ROSETTA2.ENGLISH.OBJ]
+USE         : Contains the language specific object, listing and environment
+              files not associated with the dictionaries of the
+              target-language (currently empty).
+$A3 gmRulesdir              generative M-rules directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.DUTCH.GMRULES]
+              ROSDISK:[ROSETTA.ROSETTA2.ENGLISH.GMRULES]
+              ROSDISK:[DUTCH.ROSETTA2.DUTCH.GMRULES]
+              ROSDISK:[ENGLISH.ROSETTA2.ENGLISH.GMRULES]
+USE         : Contains the generative version of the M-rules of the
+              target-language.
+$A3 ILdir                   interlingua directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.IL]
+              ROSDISK:[COMMON.ROSETTA2.IL]
+USE         : Contains the IL related files except for the lexical ones.
+$A3 ILlexdir                interlingua lexical directory
+DIRECTORY   : LEXDISK:[ROSETTA.LEXICON2.IL]
+              LEXDISK:[COMMON.LEXICON2.IL]
+USE         : Contains the IL related lexical files.
+$A3 ILlexobjdir             interlingua lexical object directory
+DIRECTORY   : LEXDISK:[ROSETTA.LEXICON2.IL.OBJ]
+              LEXDISK:[COMMON.LEXICON2.IL.OBJ]
+USE         : Contains the IL related lexical object, listing and
+              environment files of the interlingua.
+$A3 ILobjdir                interlingua lexical directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.IL.OBJ]
+              ROSDISK:[COMMON.ROSETTA2.IL.OBJ]
+USE         : Contains the IL related object, listing and environment
+              files not associated with the dictionaries of the interlingua.
+$A3 LDdir                   language dependent directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.COMMON.LD]
+              ROSDISK:[COMMON.ROSETTA2.COMMON.LD]
+USE         : Contains the language dependent source files, except for the
+              lexical ones.
+              only relevant when source and target language is the same.
+$A3 LDlexdir                language dependent lexical directory
+DIRECTORY   : LEXDISK:[ROSETTA.LEXICON2.COMMON.LD]
+              LEXDISK:[COMMON.LEXICON2.COMMON.LD]
+USE         : Contains the language dependent lexical source files.
+              only relevant when source and target language is the same.
+$A3 lexnamesdir             lexical names directory
+DIRECTORY   : LEXDISK:[ROSETTA.LEXICON2.DUTCH.NAMES]
+              LEXDISK:[ROSETTA.LEXICON2.ENGLISH.NAMES]
+              LEXDISK:[DUTCH.LEXICON2.DUTCH.NAMES]
+              LEXDISK:[ENGLISH.LEXICON2.ENGLISH.NAMES]
+USE         : Contains the name-include files used in the language dependent
+              lexical modules.
+              only relevant when source and target language is the same.
+$A3 LIdir                   language independent directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.COMMON.LI]
+              ROSDISK:[COMMON.ROSETTA2.COMMON.LI]
+USE         : Contains the language independent source files, except for
+              the lexical ones.
+$A3 LIlexdir                language independent lexical directory
+DIRECTORY   : LEXDISK:[ROSETTA.LEXICON2.COMMON.LI]
+              LEXDISK:[COMMON.LEXICON2.COMMON.LI]
+USE         : Contains the language independent lexical source files.
+$A3 LIlexobjdir             language independent lexical object directory
+DIRECTORY   : LEXDISK:[ROSETTA.LEXICON2.COMMON.LI.OBJ]
+              LEXDISK:[COMMON.LEXICON2.COMMON.LI.OBJ]
+USE         : Contains the language independent lexical object, listing and
+              environment files.
+$A3 LIobjdir                language independent object directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.COMMON.LI.OBJ]
+              ROSDISK:[COMMON.ROSETTA2.COMMON.LI.OBJ]
+USE         : Contains the language independent object, listing and environment
+              files not associated with dictionaries.
+$A3 namesdir                names directory
+DIRECTORY   : ROSDISK:[ROSETTA.ROSETTA2.DUTCH.NAMES]
+              ROSDISK:[ROSETTA.ROSETTA2.ENGLISH.NAMES]
+              ROSDISK:[DUTCH.ROSETTA2.DUTCH.NAMES]
+              ROSDISK:[ENGLISH.ROSETTA2.ENGLISH.NAMES]
+USE         : Contains the name-include files used in the language dependent
+              modules.
+              only relevant when source and target language is the same.
+$A2 THE DIRECTORY TREE
+$ The directory structure for the four main directories is in picture form like
+this :$
+
+$RL 10
+_demo version_
+$UC ?
+         ____________________[ROSETTA]______________________
+        /                        |                          \
+   [.WB2]                   [.ROSETTA2]                    [.LEXICON2]
+     /\                      /   |   \                      /   |   \
+[.IL]  [.<taal>]    [.COMMON]  [.IL]  [.<taal>]    [.COMMON]  [.IL]  [.<taal>]
+                        /\       |      |              /\       |      |
+                   [.LI]  [.LD]  |      |         [.LI]  [.LD]  |      |
+                     |           |      |           |           |      |
+                   [.OBJ]      [.OBJ] [.OBJ]      [.OBJ]      [.OBJ] [.OBJ]
+
+
+
+$RL 10
+$UC _
+_work version_
+$UC ?
+         ____________________[COMMON]______________________
+        /                        |                         \
+   [.WB2]                   [.ROSETTA2]                    [.LEXICON2]
+     /\                      /   |   \                      /   |   \
+[.IL]  [.<taal>]    [.COMMON]  [.IL]  [.<taal>]    [.COMMON]  [.IL]  [.<taal>]
+                        /\       |      |              /\       |      |
+                   [.LI]  [.LD]  |      |         [.LI]  [.LD]  |      |
+                     |           |      |           |           |      |
+                   [.OBJ]      [.OBJ] [.OBJ]      [.OBJ]      [.OBJ] [.OBJ]
+
+
+
+$RL 9
+        ______________________[DUTCH]______________________
+       /                         |                         \
+  [.WB2]                   [.ROSETTA2]                     [.LEXICON2]
+     /\                          |   \                          |   \
+[.IL]  [.<taal>]               [.IL]  [.DUTCH ]               [.IL]  [.DUTCH]
+                                 |      |                       |      |
+                               [.OBJ] [.OBJ]                  [.OBJ] [.OBJ]
+
+
+
+$RL 9
+         _____________________[ENGLISH]____________________
+        /                        |                         \
+   [.WB2]                   [.ROSETTA2]                    [.LEXICON2]
+     /\                          |   \                          |   \
+[.IL]  [.<taal>]               [.IL]  [.ENGLISH ]             [.IL]  [.ENGLISH]
+                                 |      |                       |      |
+                               [.OBJ] [.OBJ]                  [.OBJ] [.OBJ]
+$UC _
+
+
+"[.<taal>]" stands for "[.DUTCH]  [.ENGLISH]".
+$ The "[.EXE]" and the "[.AMRULES]" and "[.GMRULES]" subdirectories are not in
+this picture.$
+
+$A1 THE DISKS
+$ In this implementation of Rosetta2 three logical disks are used, but only one
+physical disk. It is possible however to use a special disk on which all the
+dictionary files are put without having to redesign all of Rosetta2. A simple
+redefinition of the logical WBDISK will suffice.$
+
+$ The logical names of the three logical disks are given below.$
+$ _DISK_ gives the translation of the logical disk name. These logicals are
+created in the group logical name table at VAX/VMS system startup, for then
+the command file "ROSDISK:[ROSETTA]initroset.com" is automatically executed.$
+$ _USE_ gives a short
+discribtion of the kind of things to be found on the disk.$
+
+$A2 LEXDISK                 lexical disk
+Disk        : __DRB0:
+USE         : On this disk all the software (source, environment, object and
+              listing files) that are related with the dictionaries is kept.
+              So all the things kept in the subdirectory called "[.LEXICON2]"
+              belong on this disk.
+$A2 ROSDISK                 general disk
+Disk        : __DRB0:
+USE         : All the Rosetta2 software not related to dictionaries is kept
+              on this disk.
+              So all the things kept in the subdirectory called "[.ROSETTA2]"
+              belong on this disk.
+$A2 WBDISK                  dictionary disk
+Disk        : __DRB0:
+USE         : On this disk all the dictionary files are kept, the Pascal
+              readable file as well as the corresponding text files.
+              So all the things kept in the subdirectory called "[.WB2]"
+              belong on this disk.

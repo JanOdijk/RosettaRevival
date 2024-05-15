@@ -1,0 +1,2891 @@
+h56943
+s 02879/00000/00000
+d D 1.1 91/05/23 13:14:03 leermake 1 0
+c date and time created 91/05/23 13:14:03 by leermake
+e
+u
+U
+f e 0
+t
+T
+I 1
+
+DUTCH 2
+
+&
+
+The following substitutionrules are planned.
+If they exist, between brackets the relevant rule name has been mentioned
+
+ 1. NP in VP, nongeneric (Rsubstitution1) ( dirargrel, objrel, indobjrel)
+ 2. NP in S , nongeneric + generic zegen, jegen (Rsubstitution2) 
+            (subjrel, preadvrel, postsubjrel,shiftrel)
+ 3. NP in VARPREPP in VP, nongeneric (Rsubstitution3)
+            (prepobjrel, locargrel, dirargrel, vpadvrel, postvPorel, 
+              postVerbrel, byobjrel, aanobjrel, voorobjrel, predrel)
+ 3a. NP in VARPREPP in ADJP in VP, nongeneric (Rsubstitution3a)
+             (prepobjrel, aanobjrel, voorobjrel, locargrel, postadjrel)
+ 4. (VAR)PREPP for  PREPPVAR in S , nongeneric (Rsubstitution4)
+            ( locadvrel, sentadvrel, causadvrel, ), in front of VP
+ 4a. (VAR)PREPP for  PREPPVAR in S , nongeneric (Rsubstitution4a)
+            ( Spostverbrel), to the right of VP
+ 4b.(VAR)PREPP for  PREPPVAR in VP , nongeneric (Rsubstitution4b)
+            ( vpadvrel, postverbrel)
+ 5. ER as a locative adverbial (Rsubstitution5)
+ 6. DAAR,HIER, waar as locative adverbials (Rsubstitution6)
+ 7. Indefinite RADVs (ergens, overal etc.)  (does not exist yet)
+ 8. ADVP under S (Rsubstitution8), not containing an RADV (locadvrel, shiftrel)
+ 9. sentadvrel/.. (Rsubstitution9)
+10. PROSENT (Rsubstitution10)
+11. POS (Rsubstitution11)
+12. NEG, no melting (Rsubstitution12)
+13. NEG, melting, in VP (Rsubstitution13)
+14. NEG, melting, in S (Rsubstitution14)
+15. CONJSENT  (does not exist yet)
+
+\newpage
+\begin{verbatim}
+%
+% RULE RIdSubstitution2                  (* NP in subjNP in S *)
+< m1: CLAUSE{CLAUSErec1}
+            [ mu1,
+              I2:rel1/NP{NPrec3}
+                      [ detrel/I1::NPVAR{NPVARrec1},
+                            head/CN{CNrec1}[mu7]
+                      ],
+              mu2,
+              predrel/VERBP{VERBPrec1}[mu3],
+              mu4
+            ] 
+SUBST:
+  m2: T1
+>
+
+< m :    CLAUSE{CLAUSErec2}
+            [ mu1,
+              I2:rel1/NP{NPrec3}
+                      [ I8:detrel/T2,
+                          head/CN{CNrec1}[mu7]
+                      ],
+              mu2,
+              predrel/VERBP{VERBPrec1}[mu3],
+              mu4
+            ] 
+>
+
+
+   MATCHCONDITIONS
+      <
+       m1: (rel1 IN [subjrel, postsubjrel] -> CLAUSErec1.PROsubject = false)
+       m : QUOTE_substordercondition(mu2, mu3, mu4) AND 
+           (rel1 IN [subjrel, postsubjrel] -> CLAUSErec2.PROsubject = false)
+                                                    AND
+           ((CLAUSErec2.synvpefs * [vpid10] <> [])                OR
+            EXIST(mu4, [extraposrel/I91::SENTENCE{SENTENCErec1}[mu9]]) OR
+            (CLAUSErec2.synvpefs * AUX_vrvps <> [])
+           )
+       m2 : NOT QUOTE_Negphrase(T1) AND
+           QUOTE_Gsubstordercondition(mu2, mu3, mu4,T1)
+       I1: NPVARrec1.index = LEVEL AND NPVARrec1.mood <> relativexpmood 
+       I2: rel1 IN [subjrel, preadvrel, postsubjrel, shiftrel]
+       I91: SENTENCErec1.mood = declarative
+       I8: NOT QUOTE_Negphrase(T2)
+      >
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+<
+   SUBRULE (* 1 *) (* Jans *)
+      <T1: I3::NP{NPrec1}[head/PROPERNOUN{PROPERNOUNrec1}[mu8]] >
+      <T2: I4::NP{NPrec2}[head/PROPERNOUN{PROPERNOUNrec2}[mu8]] >
+
+   MATCHCONDITIONS
+      <
+       I3: [NPrec1.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec1.NPhead <> enNP  OR mass IN NPrec1.actcomas)
+       I4: [NPrec2.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec2.NPhead <> enNP  OR mass IN NPrec2.actcomas)
+      >
+      COMP
+         <
+          C1: NPVARrec1 = COPYT_nptovar(NPrec1) EXCEPT FOR [cases] AND
+              NPrec1.cases = [Nominative]   AND
+              NPrec1.generic = nogeneric    AND
+              QUOTE_deixismax(CLAUSErec1.deixis, CLAUSErec1.superdeixis,
+                              NPrec1.superdeixis)
+          A1: NPrec2 := NPrec1;
+              NPrec2.cases := NPVARrec1.cases;
+              PROPERNOUNrec2 := PROPERNOUNrec1;
+              PROPERNOUNrec2.geni := true;
+              NPrec2.superdeixis := omegadeixis;
+              NPrec2.generic := omegageneric;
+              CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: NPrec2.generic = omegageneric 
+              C11: CLAUSErec2.synvpefs * [vpid10] <> []
+              A11: CLAUSErec1 := CLAUSErec2;
+                   CLAUSErec1.synvpefs := [vpid10];
+              C12: CLAUSErec2.synvpefs * [vpid10] = []
+              A12: CLAUSErec1 := CLAUSErec2;
+          A1: NPrec1 := NPrec2;
+              NPrec1.cases := [nominative];
+              PROPERNOUNrec1 := PROPERNOUNrec2;
+              PROPERNOUNrec1.geni := false;
+              QUOTE_assdeixismax(CLAUSErec2.deixis, CLAUSErec2.superdeixis,
+                                 NPrec1.superdeixis);
+              NPVARrec1 := COPYT_nptovar(NPrec2);
+              NPVARrec1.cases := NPrec2.cases;
+              NPVARrec1.index := LEVEL;
+              NPrec1.generic := nogeneric;
+              NPVARrec1.generic := nogeneric;
+         >
+
+   SUBRULE (* 2 *) (* mijn *)
+      <T1: I3::NP{NPrec1}[head/PERSPRO{PERSPROrec1}
+                               [head/BPERSPRO{BPERSPROREC1}]
+                         ] >
+      <T2: POSSADJ{POSSADJrec1}[head/BPERSPRO{BPERSPROREC1}] >
+
+   MATCHCONDITIONS
+      <
+       I3: [NPrec1.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec1.NPhead <> enNP  OR mass IN NPrec1.actcomas)
+      >
+
+      COMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersprotoperspro(BPERSPROrec1)  AND
+              NPVARrec1 = COPYT_nptovar(NPrec1) EXCEPT FOR [cases] AND
+              genitive IN NPVARrec1.cases                          AND
+              (
+               (BPERSPROrec1.animate = yesanimate    AND
+                BPERSPROrec1.person IN [1,2,4,5]     AND
+                NPrec1.human = omegahuman
+               )                                              OR
+               (BPERSPROrec1.animate <> yesanimate   AND
+                BPERSPROrec1.person IN [3]           AND
+                NPrec1.human = omegahuman
+               )
+              )                                                    AND
+	      NPrec1 = 
+		  {
+		   req            : [pospol,negpol,omegapol]
+		   env            : [pospol,negpol,omegapol]
+		   class          : omegaTimeAdvClass
+		   deixis         : omegadeixis
+		   aspect         : omegaAspect
+		   retro          : false
+		   definite       : def
+		   person         : BPERSPROrec1.person
+		   number         : BPERSProrec1.number
+		   cases          : [Nominative]
+		   genders        : [BPERSPROrec1.gender]
+		   sexes          : []
+		   actsubcs       : [othernoun]
+		   temporal       : false
+		   possgeni       : false
+                   animate        : BPERSPROrec1.animate
+		   actcomas       : [count]
+		   thetanp        : omegathetanp
+		   nounpatternefs : []
+		   posspred       : true
+		   possnietnp     : false
+		   mood           : declxpmood
+		   generic        : nogeneric
+		   possRform      : false
+		   syntquant      : omegaquant
+                   NPhead         : BPERSPROrec1.NPhead
+		   specQ          : yesspec
+                  }                                    AND
+              QUOTE_deixismax(CLAUSErec1.deixis, CLAUSErec1.superdeixis,
+                              NPrec1.superdeixis)
+          A1: CLAUSErec2 := CLAUSErec1;
+         >
+               (* Possadjrec happens to be default *)
+      DECOMP
+         <
+          C1: TRUE
+              C11: CLAUSErec2.synvpefs * [vpid10] <> []
+                   C111: BPERSPROrec1.animate = yesanimate AND
+                          BPERSPROrec1.person IN [1,2,4,5]
+                   A111: NPrec1.human := omegahuman
+                   C112: BPERSPROrec1.animate <> yesanimate AND
+                          BPERSPROrec1.person IN [3]
+                   A112: NPrec1.human := omegahuman
+              A11: CLAUSErec1 := CLAUSErec2;
+                   CLAUSErec1.synvpefs := [vpid10];
+              C12: CLAUSErec2.synvpefs * [vpid10] = []
+                   C121: BPERSPROrec1.animate = yesanimate AND
+                          BPERSPROrec1.person IN [1,2,4,5]
+                   A121: NPrec1.human := omegahuman
+                   C122: BPERSPROrec1.animate <> yesanimate AND
+                          BPERSPROrec1.person IN [3]
+                   A122: NPrec1.human := omegahuman
+              A12: CLAUSErec1 := CLAUSErec2;
+          A1: QUOTE_assdeixismax(CLAUSErec2.deixis, CLAUSErec2.superdeixis,
+                                 NPrec1.superdeixis);
+              PERSPROrec1 := COPYT_bpersprotoperspro(BPERSPROrec1);
+              NPVARrec1 := 
+		  {
+                   index          : LEVEL
+		   req            : [pospol,negpol,omegapol]
+		   env            : [pospol,negpol,omegapol]
+		   class          : omegaTimeAdvClass
+		   deixis         : omegadeixis
+		   aspect         : omegaAspect
+		   retro          : false
+		   definite       : def
+		   person         : BPERSPROrec1.person
+		   number         : BPERSProrec1.number
+		   cases          : [genitive]
+		   genders        : [BPERSPROrec1.gender]
+		   sexes          : []
+		   actsubcs       : [othernoun]
+		   temporal       : false
+		   possgeni       : false
+		   actcomas       : [count]
+		   thetanp        : omegathetanp
+		   nounpatternefs : []
+		   posspred       : true
+		   possnietnp     : false
+		   mood           : declxpmood
+		   generic        : nogeneric
+		   possRform      : false
+		   syntquant      : omegaquant
+		   specQ          : yesspec
+                  }                                      ;
+	      NPrec1 := 
+		  {
+		   req            : [pospol,negpol,omegapol]
+		   env            : [pospol,negpol,omegapol]
+		   class          : omegaTimeAdvClass
+		   deixis         : omegadeixis
+		   aspect         : omegaAspect
+		   retro          : false
+		   definite       : def
+		   person         : BPERSPROrec1.person
+		   number         : BPERSProrec1.number
+		   cases          : [Nominative]
+		   genders        : [BPERSPROrec1.gender]
+		   sexes          : []
+		   actsubcs       : [othernoun]
+		   temporal       : false
+		   possgeni       : false
+                   animate        : BPERSPROrec1.animate
+		   actcomas       : [count]
+		   thetanp        : omegathetanp
+		   nounpatternefs : []
+		   posspred       : true
+		   possnietnp     : false
+		   mood           : declxpmood
+		   generic        : nogeneric
+		   possRform      : false
+		   syntquant      : omegaquant
+                   NPhead         : BPERSPROrec1.NPhead
+		   specQ          : yesspec
+                  }                                      ;
+         >
+
+   SUBRULE (* 3 *) (* mijn vaders *)
+      <T1: NP{NPrec1}[mu11, 
+                      head/CN{CNREC2}[mu12, 
+                                      head/NOUN{NOUNREC1}[mu8]]]>
+      <T2: NP{NPrec2}[mu11,
+                      head/CN{CNREC3}[mu12,
+                                      head/NOUN{NOUNREC2}[mu8]]]>
+
+   MATCHCONDITIONS
+      <
+       I3: [NPrec1.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec1.NPhead <> enNP  OR mass IN NPrec1.actcomas)
+       I4: [NPrec2.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec2.NPhead <> enNP  OR mass IN NPrec2.actcomas)
+      >
+
+      COMP
+         <
+          C1: NPVARrec1 = COPYT_nptovar(NPrec1) EXCEPT FOR [cases] AND
+              NPrec1.cases = [Nominative]   AND
+              NPrec1.generic = nogeneric    AND
+              CNREC2.possgeni = true        AND
+              QUOTE_deixismax(CLAUSErec1.deixis, CLAUSErec1.superdeixis,
+                              NPrec1.superdeixis)
+          A1: NPrec2.generic := omegageneric;
+              NPrec2.cases := [genitive];
+              CNrec3 := CNrec2;
+              CNrec3.cases := [genitive];
+              NOUNrec2 := NOUNrec1;
+              NOUNrec2.geni := true;
+              CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: NPrec2.generic = omegageneric           AND
+              CNrec3.possgeni = true                  AND
+              NOUNrec2.geni = true                    AND
+              NPrec2.cases= [genitive]
+              C11: CLAUSErec2.synvpefs * [vpid10] <> []
+              A11: CLAUSErec1 := CLAUSErec2;
+                   CLAUSErec1.synvpefs := [vpid10];
+              C12: CLAUSErec2.synvpefs * [vpid10] = []
+              A12: CLAUSErec1 := CLAUSErec2;
+          A1: NPrec1 := NPrec2;
+              NPrec1.cases := [nominative];
+              QUOTE_assdeixismax(CLAUSErec2.deixis, CLAUSErec2.superdeixis,
+                                 NPrec1.superdeixis);
+              CNrec2 := CNrec3;
+              CNrec2.cases := [nominative];
+              NOUNrec1 := NOUNrec2;
+              NOUNrec1.geni := false;
+              NPVARrec1 := COPYT_nptovar(NPrec2);
+              NPVARrec1.cases := NPrec2.cases;
+              NPVARrec1.index := LEVEL;
+              NPrec1.generic := nogeneric;
+              NPVARrec1.generic := nogeneric;
+         >
+
+   SUBRULE (* 4 *) (* wiens *)
+      <T1: I3::NP{NPrec1}[head/WHPRO{WHPROrec1}
+                               [head/BWHPRO{BWHPROREC1}]
+                         ] >
+      <T2: POSSADJ{POSSADJrec1}[head/BWHPRO{BWHPROREC1}] >
+
+   MATCHCONDITIONS
+      <
+       I3: [NPrec1.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec1.NPhead <> enNP  OR mass IN NPrec1.actcomas)
+      >
+
+      COMP
+         <
+          C1: WHPROrec1 = COPYT_bwhprotowhpro(BWHPROrec1)          AND
+              NPVARrec1 = COPYT_nptovar(NPrec1) EXCEPT FOR [cases] AND
+              genitive IN NPVARrec1.cases                          AND
+              NPVARrec1.generic = nogeneric                        AND
+              NPVARrec1.index = LEVEL                              AND
+              NPrec1.generic = nogeneric                           AND
+              NPrec1.definite = NPrec3.definite                    AND
+              NPrec1.mood = NPrec3.mood                            AND
+              NPrec1.animate = WHPROrec1.animate                   AND
+              NPrec1.possRform = WHPROrec1.possRform               AND
+              NPrec1.sexes = WHPROrec1.sexes                       AND
+              NPrec1.number = WHPROrec1.number                     AND
+              NPrec1.specq = yesspec                               AND
+              NPrec1.syntquant = Equant                            AND
+              NPrec1.posspred = TRUE                               AND
+              NPrec1.human = yeshuman                              AND
+              QUOTE_deixismax(CLAUSErec1.deixis, CLAUSErec1.superdeixis,
+                              NPrec1.superdeixis)
+          A1: POSSADJrec1.geni := false;
+              POSSADJrec1.mood := wh;
+              CLAUSErec2 := CLAUSErec1;
+         >
+
+      DECOMP
+         <
+          C1: POSSADJrec1.geni = false                  AND
+              POSSADJrec1.mood = wh
+              C11: CLAUSErec2.synvpefs * [vpid10] <> []
+              A11: CLAUSErec1 := CLAUSErec2;
+                   CLAUSErec1.synvpefs := [vpid10];
+              C12: CLAUSErec2.synvpefs * [vpid10] = []
+              A12: CLAUSErec1 := CLAUSErec2;
+          A1: WHPROrec1 := COPYT_bwhprotowhpro(BWHPROrec1);
+              QUOTE_assdeixismax(CLAUSErec2.deixis, CLAUSErec2.superdeixis,
+                                 NPrec1.superdeixis);
+              NPrec1.generic := nogeneric;
+              NPrec1.definite := NPrec3.definite;
+              NPrec1.mood := NPrec3.mood;
+              NPrec1.animate := WHPROrec1.animate;
+              NPrec1.possRform := WHPROrec1.possRform;
+              NPrec1.sexes := WHPROrec1.sexes;
+              NPrec1.number := WHPROrec1.number;
+              NPrec1.specq := yesspec;
+              NPrec1.syntquant := Equant;
+              NPrec1.posspred := TRUE;
+              NPrec1.human := yeshuman;
+              NPVARrec1 := COPYT_nptovar(NPrec1);
+              NPVARrec1.cases := [genitive];
+              NPVARrec1.index := LEVEL;
+         >
+
+>
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] RIdSubstitution2
+\item[* relevant examples:] x1 hart word gebroken, Jans/mijn/mijn vaders/wiens 
+hart word gebroken door haar
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) RC:Substitution
+\item[* date of creation:] 19-JAN-1989 10:33:40  
+\item[* author:] Andr\'{e} Schenk
+\item[* copied from:]--
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] It substitutes (*POSSADJs and *) NPs for variables under NP
+under S, in particular, for variables bearing relation subjrel. 
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] none
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+The function assigncase must assign a set of cases !!
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+The substitution order condition must be added. This is not simple !!
+Also to be added: polarity requirements, superdeixis
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+% RULE RSubstitution1                  (* NP in VP *)
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu2,
+                      I2:rel1/I1::NPVAR{NPVARrec1},
+                      mu3
+                    ],
+             mu4 
+           ] 
+SUBST:
+  m2: T3=I3::NP{NPrec1}[I9:mu5]
+>
+
+< m :CLAUSE{CLAUSErec2}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu2,
+                      I5:rel1/T4=I4::NP{NPrec2}[I10:mu6],
+                      mu3
+                    ],
+             mu4 
+           ] 
+>
+
+   MATCHCONDITIONS
+      <
+       m : ALL
+           QUOTE_substordercondition2(mu3, mu4) 
+       m2: NOT EXIST(mu5,[head/BIGPRO{}[mu10]]) AND
+           NOT QUOTE_Negphrase(T3) AND
+           QUOTE_Gsubstordercondition2(mu3,mu4,T3) 
+       I9 :NOT EXIST(mu5, [head/BIGPRO{}[mu10]])
+       I10:NOT EXIST(mu6, [head/BIGPRO{}[mu10]])
+       I1: NPVARrec1.index = LEVEL
+       I2: rel1 IN [ objrel, indobjrel, dirargrel, predrel, argrel] 
+       I5: rel1 IN [ objrel, indobjrel, dirargrel, predrel, argrel] AND
+           NOT QUOTE_Negphrase(T4)
+       I3: [NPrec1.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec1.NPhead <> enNP  OR mass IN NPrec1.actcomas)
+       I4: [NPrec2.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec2.NPhead <> enNP  OR mass IN NPrec2.actcomas)
+      >
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+
+      COMP
+         <
+          C1: NPVARrec1 = COPYT_nptovar(NPrec1) EXCEPT FOR [cases] AND
+              NPrec1.cases = [Nominative]   AND
+              NPrec1.generic = nogeneric    AND
+              QUOTE_deixismax(CLAUSErec1.deixis, 
+                               CLAUSErec1.superdeixis, NPrec1.superdeixis)
+          A1: QUOTE_assigncase(NPrec1,mu5,NPrec2,mu6,NPVARrec1.cases); 
+              NPrec2.superdeixis := omegadeixis;
+              NPrec2.generic := omegageneric;
+              CLAUSErec2 := CLAUSErec1;
+         >
+      DECOMP
+         <
+          C1: NPrec2.generic = omegageneric 
+              C11: rel1 = argrel AND
+                   CLAUSErec2.synvpefs * AUX_argidvps <> []
+              A11: CLAUSErec1 := CLAUSErec2;
+                   CLAUSErec1.synvpefs := CLAUSErec1.synvpefs * AUX_argidvps;
+              C12: rel1 <> argrel
+              A12: CLAUSErec1 := CLAUSErec2;
+          A1: NPVARrec1 := COPYT_nptovar(NPrec2);
+              NPVARrec1.cases := NPrec2.cases;
+              NPVARrec1.index := LEVEL;
+              QUOTE_assigncase(NPrec2,mu6,NPrec1,mu5,[Nominative]); 
+              QUOTE_assdeixismax(CLAUSErec1.deixis, 
+                               CLAUSErec1.superdeixis, NPrec1.superdeixis);
+              NPrec1.generic := nogeneric;
+              NPVARrec1.generic := nogeneric;
+         >
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] RSubstitution1
+\item[* relevant examples:]
+x1 x2 verkoop- $\rightarrow$
+x1 de boeken verkoop-
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) RC:Substitution
+\item[* date of creation:] 19-MAY-1987 10:33:40  
+\item[* author:] Jan Odijk
+\item[* copied from:]--
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] It substitutes nongeneric NPs for variables under VP, in 
+particular, for variables bearing relation objrel or indobjrel.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] In analysis an
+an extra set of CA-pairs restricts application to argrel to idioms of the
+relevant type. 
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+The function assigncase must assign a set of cases !!
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+The substitution order condition must be added. This is not simple !!
+Also to be added: polarity requirements, superdeixis
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE Rsubstitution2                       (* NP in S *)
+< m1: CLAUSE{CLAUSErec1}
+            [ mu1,
+              I2:rel1/I1::NPVAR{NPVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}[mu3],
+              mu4
+            ] 
+SUBST:
+  m2: T3=I3::NP{NPrec1}[I9:mu5]
+>
+
+< m : CLAUSE{CLAUSErec1}
+            [ mu1,
+              I5:rel1/T4=I4::NP{NPrec2}[I10:mu6],
+              mu2,
+              predrel/VERBP{VERBPrec1}[mu3],
+              mu4
+            ] 
+>
+
+   MATCHCONDITIONS
+      <
+       m1: ALL
+           (rel1 IN [subjrel, postsubjrel] -> CLAUSErec1.PROsubject = false) AND
+           ((rel1 = subjrel) -> 
+                 (([CLAUSErec1.thetavp] * [vp010, vp012] = [] OR
+                   CLAUSErec1.synvpefs * AUX_Raisingvps = []
+                  )                                                  AND
+                  NOT EXIST(mu2,[I21:rel2/ADVP{ADVPrec1}[mu7]])
+                 )
+           )
+       m : ALL
+           QUOTE_substordercondition(mu2, mu3, mu4)  AND 
+           (rel1 IN [subjrel, postsubjrel] -> CLAUSErec1.PROsubject = false) AND
+           ((rel1 = subjrel) -> 
+                 (([CLAUSErec1.thetavp] * [vp010, vp012] = [] OR
+                   CLAUSErec1.synvpefs * AUX_Raisingvps = []
+                  )                                                  AND
+                  NOT EXIST(mu2,[I21:rel2/ADVP{ADVPrec1}[mu7]])
+                 )
+           )
+           I21: rel2 IN [subjvpadvrel, sentadvrel] AND 
+                synCLOSEDINFSENT IN ADVPrec1.advpatternefs
+       m2 : ALL (* added provisionally JO *)
+           NOT QUOTE_Negphrase(T3) AND
+           QUOTE_Gsubstordercondition(mu2, mu3, mu4,T3) 
+       I9 :NOT EXIST(mu5, [head/BIGPRO{}[mu10]])
+       I10:NOT EXIST(mu6, [head/BIGPRO{}[mu10]])
+       I1: NPVARrec1.index = LEVEL AND NPVARrec1.mood <> relativexpmood 
+       I2: rel1 IN [subjrel, preadvrel, postsubjrel, shiftrel] 
+       I5: rel1 IN [subjrel, preadvrel, postsubjrel, shiftrel] AND
+           NOT QUOTE_Negphrase(T4)
+       I3: [NPrec1.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec1.NPhead <> enNP  OR mass IN NPrec1.actcomas) AND
+           NPrec1.class <> frequential
+       I4: [NPrec2.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec2.NPhead <> enNP  OR mass IN NPrec2.actcomas) AND
+           NPrec2.class <> frequential
+      >
+
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+
+      COMP
+         <
+          C1: 
+              NPrec1.cases = [Nominative]   AND
+              QUOTE_deixismax(CLAUSErec1.deixis, CLAUSErec1.superdeixis,
+                              NPrec1.superdeixis)
+              C11: NPVARrec1 = COPYT_nptovar(NPrec1) EXCEPT FOR [cases, mood] AND
+                   (rel1 = shiftrel AND 
+                    NPVARrec1.mood = topicxpmood AND
+                    NPrec1.mood = declxpmood
+                   )
+              A11: QUOTE_assigncase(NPrec1,mu5,NPrec2,mu6,NPVARrec1.cases); 
+              C12: NPVARrec1 = COPYT_nptovar(NPrec1) EXCEPT FOR [cases] AND
+                   NPrec1.mood = declxpmood AND
+                   rel1 <> shiftrel
+              A12: QUOTE_assigncase(NPrec1,mu5,NPrec2,mu6,NPVARrec1.cases); 
+              C13: NPVARrec1 = COPYT_nptovar(NPrec1) EXCEPT FOR [cases] AND
+                   NPrec1.mood = wh 
+              A13: QUOTE_assigncase(NPrec1,mu5,NPrec2,mu6,NPVARrec1.cases); 
+          A1: NPrec2.superdeixis := omegadeixis;
+              NPrec2.generic := omegageneric
+         >
+      DECOMP
+         <
+          C1: NPrec2.generic = omegageneric  AND
+              NPrec2.superdeixis = omegadeixis
+              C11: rel1 = shiftrel AND NPrec2.mood = declxpmood
+              A11: QUOTE_assigncase(NPrec2,mu6,NPrec1,mu5,[Nominative]);
+                   NPVARrec1 := COPYT_nptovar(NPrec2);
+                   NPVARrec1.mood := topicxpmood;
+                   NPrec1.generic := nogeneric;
+                   NPVARrec1.generic := nogeneric;
+              C12: NPrec2.mood = declxpmood AND
+                   rel1 <> shiftrel
+                   C121: [NPrec2.NPhead] * [zegenNP, jegenNP] = []
+                   A121: QUOTE_assigncase(NPrec2,mu6,NPrec1,mu5,[Nominative]); 
+                         NPVARrec1 := COPYT_nptovar(NPrec2);
+                         NPrec1.generic := nogeneric;
+                         NPVARrec1.generic := nogeneric;
+                   C122: [NPrec2.NPhead] * [zegenNP, jegenNP] <> []
+                   A122: QUOTE_assigncase(NPrec2,mu6,NPrec1,mu5,[Nominative]); 
+                         NPVARrec1 := COPYT_nptovar(NPrec2);
+                         NPrec1.generic := yesgeneric;
+                         NPVARrec1.generic := yesgeneric;
+              A12: @
+              C13: NPrec2.mood = wh
+              A13: QUOTE_assigncase(NPrec2,mu6,NPrec1,mu5,[Nominative]); 
+                   NPVARrec1 := COPYT_nptovar(NPrec2);
+                   NPrec1.generic := nogeneric;
+                   NPVARrec1.generic := nogeneric;
+          A1: QUOTE_assdeixismax(CLAUSErec1.deixis, CLAUSErec1.superdeixis,
+                              NPrec1.superdeixis);
+              NPVARrec1.cases := NPrec2.cases;
+              NPVARrec1.index := LEVEL;
+         >
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] Rsubstitution2
+\item[* relevant examples:]
+x1 de boeken koop $\rightarrow$\\
+Jan de boeken koop
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) RC:Substitution
+\item[* date of creation:] 21-MAY-1987 13:34:05  
+\item[* author:] Jan Odijk
+\item[* copied from:]--
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 17/10/89\ \ \ \ \ author: Lisette Appelo\\
+Extended the rule for generic jegen and zegen. Note that this rule was not 
+strict reversible and still is not!
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To substitute NPs for variables under S, in particular for
+variables bearing relation subjrel, preadvrel or postsubjrel
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] none
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+The substitution order condition must be added
+Also to be added: polarity requirements, superdeixis
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE Rsubstitution3               (* NP in VARPREPP in VP *)
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu2,
+                      I2:rel1/VARPREPP{VARPREPPrec1}
+                                   [ mu3,
+                                     rel2/I1::NPVAR{NPVARrec1},
+                                     mu4
+                                   ],
+                      mu5  
+                    ],
+              mu6 
+           ] 
+SUBST:
+  m2: T3=I3::NP{NPrec1}[I9:mu7]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu2,
+                      I2:rel1/PREPP{PREPPrec1}
+                                   [ mu3,
+                                     I8:rel2/T4=I4::NP{NPrec2}[I10:mu8],
+                                     mu4
+                                   ],
+                      mu5  
+                    ],
+              mu6 
+           ] 
+>
+
+   MATCHCONDITIONS
+      <
+       m : QUOTE_substordercondition2(mu5,mu6)
+       m2 : NOT QUOTE_Negphrase(T3) AND
+           QUOTE_Gsubstordercondition2(mu5,mu6,T3)
+       I9 :NOT EXIST(mu7, [head/BIGPRO{}[mu10]])
+       I10:NOT EXIST(mu8, [head/BIGPRO{}[mu10]])
+       I1: NPVARrec1.index = LEVEL 
+       I2: rel1 IN [prepobjrel, locargrel, dirargrel, instradvrel, vpadvrel,
+              postVporel, byobjrel, aanobjrel, voorobjrel, postverbrel, 
+             predrel ]
+       I3: [NPrec1.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec1.NPhead <> enNP  OR mass IN NPrec1.actcomas)
+       I4: [NPrec2.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec2.NPhead <> enNP  OR mass IN NPrec2.actcomas)
+       I8: NOT QUOTE_Negphrase(T4)
+      >
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+
+      COMP
+         <
+          C1: NPVARrec1 = COPYT_nptovar(NPrec1) EXCEPT FOR [cases] AND
+              NPrec1.cases = [Nominative]   AND
+              NPrec1.generic = nogeneric
+              C11: CLAUSErec1.deixis = omegadeixis              AND
+                   NPrec1.superdeixis = CLAUSErec1.superdeixis
+              A11: QUOTE_assigncase(NPrec1,mu7,NPrec2,mu8,NPVARrec1.cases); 
+                   NPrec2.superdeixis := omegadeixis
+              C12: CLAUSErec1.deixis <> omegadeixis             AND
+                   NPrec1.superdeixis = CLAUSErec1.deixis
+              A12: QUOTE_assigncase(NPrec1,mu7,NPrec2,mu8,NPVARrec1.cases); 
+                   NPrec2.superdeixis := omegadeixis  
+          A1: NPrec2.generic := omegageneric;
+              PREPPrec1 := VARPREPPrec1
+         >
+      DECOMP
+         <
+          C1: NPrec2.generic = omegageneric 
+              C11: CLAUSErec1.deixis = omegadeixis AND
+                   NPrec2.superdeixis = omegadeixis
+              A11: QUOTE_assigncase(NPrec2,mu8,NPrec1,mu7,[Nominative]); 
+                   NPrec1.superdeixis := CLAUSErec1.superdeixis;
+              C12: CLAUSErec1.deixis <> omegadeixis AND
+                   NPrec2.superdeixis = omegadeixis  
+              A12: QUOTE_assigncase(NPrec2,mu8,NPrec1,mu7,[Nominative]); 
+                   NPrec1.superdeixis := CLAUSErec1.deixis;
+          A1: NPVARrec1 := COPYT_nptovar(NPrec2);
+              NPVARrec1.cases := NPrec2.cases;
+              NPVARrec1.index := LEVEL;
+              NPrec1.generic := nogeneric;
+              NPVARrec1.generic := nogeneric;
+              VARPREPPrec1 := PREPPrec1
+         >
+
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] Rsubstitution3
+\item[* relevant examples:]
+x1 [naar x2] keek $\rightarrow$\\
+x1 naar de TV keek\\
+x1 [in x2] woont $\rightarrow$\\
+x1 in Amsterdam woont\\
+x1 [naar x2] toe gaat $\rightarrow$\\
+x1 naar de kermis toe gaat\\
+x1 [met x2 ] geslagen wordt $\rightarrow$\\
+x1 [met een hamer] geslagen wordt\\
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) RC: 
+Substitutution
+\item[* date of creation:] 21-MAY-1987 15:02:44  
+\item[* author:] Jan Odijk
+\item[* copied from:] --
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To substitute NP's for variables inside VARPREPPs, changing 
+these VARPREPPs into PREPPs. The VARPREPPS can bear one of the following 
+relations: prepobjrel, locargrel, dirargrel, instradvrel
+The relation postVporel is for prepobjrels after the verb
+The TC:PPoverV must be changed accordingly 
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] none
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+To be added: substitution order conditions, polarity requirements, superdeixis
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% RULE Rsubstitution3a
+< m1:I5::CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu2,
+                      rel3/ADJP{ADJPrec1}
+                         [mu9,
+                          I2:rel1/VARPREPP{VARPREPPrec1}
+                                      [ mu3,
+                                        rel2/I1::NPVAR{NPVARrec1},
+                                        mu4
+                                      ],
+                          mu11
+                         ],
+                      mu5  
+                    ],
+              mu6 
+           ] 
+SUBST:
+  m2: T3=I3::NP{NPrec1}[I9:mu7]
+>
+
+< m :I5::CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu2,
+                      rel3/ADJP{ADJPrec1}
+                         [mu9,
+			  I2:rel1/PREPP{PREPPrec1}
+				       [ mu3,
+					 I8:rel2/T4=I4::NP{NPrec2}[I10:mu8],
+					 mu4
+				       ],
+                          mu11
+                         ],
+                      mu5  
+                    ],
+              mu6 
+           ] 
+>
+
+   MATCHCONDITIONS
+      <
+       m : QUOTE_substordercondition(mu11,mu5,mu6)
+       m2 : NOT QUOTE_Negphrase(T3) AND
+           QUOTE_Gsubstordercondition(mu11,mu5,mu6,T3)
+       I8: NOT QUOTE_Negphrase(T4)
+       I9 :NOT EXIST(mu7, [head/BIGPRO{}[mu10]])
+       I10:NOT EXIST(mu8, [head/BIGPRO{}[mu10]])
+       I1: NPVARrec1.index = LEVEL 
+       I2: rel1 IN [prepobjrel, aanobjrel, voorobjrel, locargrel, postadjrel]
+       I3: [NPrec1.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec1.NPhead <> enNP  OR mass IN NPrec1.actcomas)
+       I4: [NPrec2.NPhead] * [zichzelfNP, elkaarNP] = [] AND
+           (NPrec2.NPhead <> enNP  OR mass IN NPrec2.actcomas)
+       I5: synzijn IN CLAUSErec1.synvpefs 
+      >
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+
+      COMP
+         <
+          C1: NPVARrec1 = COPYT_nptovar(NPrec1) EXCEPT FOR [cases] AND
+              NPrec1.cases = [Nominative]   AND
+              NPrec1.generic = nogeneric
+              C11: CLAUSErec1.deixis = omegadeixis              AND
+                   NPrec1.superdeixis = CLAUSErec1.superdeixis
+              A11: QUOTE_assigncase(NPrec1,mu7,NPrec2,mu8,NPVARrec1.cases); 
+                   NPrec2.superdeixis := omegadeixis
+              C12: CLAUSErec1.deixis <> omegadeixis             AND
+                   NPrec1.superdeixis = CLAUSErec1.deixis
+              A12: QUOTE_assigncase(NPrec1,mu7,NPrec2,mu8,NPVARrec1.cases); 
+                   NPrec2.superdeixis := omegadeixis  
+          A1: NPrec2.generic := omegageneric;
+              PREPPrec1 := VARPREPPrec1
+         >
+      DECOMP
+         <
+          C1: NPrec2.generic = omegageneric 
+              C11: CLAUSErec1.deixis = omegadeixis AND
+                   NPrec2.superdeixis = omegadeixis
+              A11: QUOTE_assigncase(NPrec2,mu8,NPrec1,mu7,[Nominative]); 
+                   NPrec1.superdeixis := CLAUSErec1.superdeixis;
+              C12: CLAUSErec1.deixis <> omegadeixis AND
+                   NPrec2.superdeixis = omegadeixis  
+              A12: QUOTE_assigncase(NPrec2,mu8,NPrec1,mu7,[Nominative]); 
+                   NPrec1.superdeixis := CLAUSErec1.deixis;
+          A1: NPVARrec1 := COPYT_nptovar(NPrec2);
+              NPVARrec1.cases := NPrec2.cases;
+              NPVARrec1.index := LEVEL;
+              NPrec1.generic := nogeneric;
+              NPVARrec1.generic := nogeneric;
+              VARPREPPrec1 := PREPPrec1
+         >
+
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Rsubstitution3a
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 18-FEB-1989 13:21:51  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE Rsubstitution4            (* (VAR)PREPP for PREPPVAR in S in front of VP*)
+< m1: CLAUSE{CLAUSErec1}
+           [ mu1,
+             I2:rel1/PREPPVAR{PREPPVARrec1},
+             mu2,
+             predrel/VERBP{VERBPrec1}[ mu5],
+             mu6 
+           ] 
+SUBST:
+  m2: T1
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             I3:rel1/T2,
+             mu2,
+             predrel/VERBP{VERBPrec1}[ mu5],
+             mu6 
+           ] 
+>
+
+
+   MATCHCONDITIONS
+      <
+       m : QUOTE_substordercondition(mu2, mu5, mu6)
+       m2: T1.CAT IN [PREPP, VARPREPP] AND 
+           QUOTE_Gsubstordercondition(mu2, mu5,mu6,T1) AND
+           NOT QUOTE_Negphrase(T1)
+       I1: PREPPVARrec1.index = LEVEL 
+       I2: rel1 IN [locadvrel, sentadvrel, causadvrel (*, tempadvrel*), shiftrel] 
+       I3: rel1 IN [locadvrel, sentadvrel, causadvrel (*, tempadvrel*), shiftrel] AND
+           T2.CAT IN [PREPP, VARPREPP] AND
+           NOT QUOTE_Negphrase(T2)
+           
+
+      >
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+<
+
+   SUBRULE
+      <T1: PREPP{PREPPrec1}[mu7] >
+      <T2: PREPP{PREPPrec2}[mu7] >
+
+
+      COMP
+         <
+          C1: PREPPrec1.actsubcefs * [loc, caus] <> []             AND
+              QUOTE_deixismax(CLAUSErec1.deixis, 
+                   CLAUSErec1.superdeixis, PREPPrec1.superdeixis)
+              C11: rel1 = shiftrel AND
+                   PREPPVARrec1 = COPYT_prepptovar(PREPPrec1) 
+                            EXCEPT FOR [mood]          AND
+                   PREPPVARrec1.mood = topicxpmood     AND
+                   PREPPrec1.mood = declxpmood
+              A11: PREPPrec2 := PREPPrec1;
+              C12: rel1 <> shiftrel AND
+                   PREPPVARrec1 = COPYT_prepptovar(PREPPrec1) AND
+                   PREPPrec1.mood = declxpmood
+              A12: PREPPrec2 := PREPPrec1;
+              C13: PREPPVARrec1 = COPYT_prepptovar(PREPPrec1) AND
+                   PREPPrec1.mood = wh
+              A13: PREPPrec2 := PREPPrec1;
+          A1: PREPPrec2.superdeixis := omegadeixis; 
+
+         >
+      DECOMP
+         <
+          C1: PREPPrec2.actsubcefs * [loc, caus] <> []   AND
+              PREPPrec2.superdeixis = omegadeixis
+              C11: rel1 = shiftrel AND
+                   PREPPrec2.mood = declxpmood
+              A11: PREPPrec1 := PREPPrec2;
+                   PREPPVARrec1 := COPYT_prepptovar(PREPPrec2);
+                   PREPPVARrec1.mood := topicxpmood;
+              C12: rel1 <> shiftrel AND
+                   PREPPrec2.mood =declxpmood
+              A12: PREPPrec1 := PREPPrec2;
+                   PREPPVARrec1 := COPYT_prepptovar(PREPPrec2);
+              C13: PREPPrec2.mood = wh
+              A13: PREPPrec1 := PREPPrec2;
+                   PREPPVARrec1 := COPYT_prepptovar(PREPPrec2);
+          A1: QUOTE_assdeixismax(CLAUSErec1.deixis, 
+                         CLAUSErec1.superdeixis, PREPPrec1.superdeixis);
+              PREPPVARrec1.index := LEVEL;
+         >
+
+
+   SUBRULE
+      <T1: VARPREPP{VARPREPPrec1}[mu7] >
+      <T2: VARPREPP{VARPREPPrec2}[mu7] >
+
+      COMP
+         <
+          C1: VARPREPPrec1.actsubcefs * [loc, caus] <> []             AND
+              QUOTE_deixismax(CLAUSErec1.deixis, 
+                   CLAUSErec1.superdeixis, VARPREPPrec1.superdeixis)
+              C11: rel1 = shiftrel AND
+                   PREPPVARrec1 = COPYT_prepptovar(VARPREPPrec1) 
+                            EXCEPT FOR [mood]          AND
+                   PREPPVARrec1.mood = topicxpmood     AND
+                   VARPREPPrec1.mood = declxpmood
+              A11: VARPREPPrec2 := VARPREPPrec1;
+              C14: rel1 = shiftrel AND
+                   PREPPVARrec1 = COPYT_prepptovar(VARPREPPrec1) 
+                            EXCEPT FOR [mood]          AND
+                   PREPPVARrec1.mood = relativexpmood     AND
+                   VARPREPPrec1.mood = declxpmood
+              A14: VARPREPPrec2 := VARPREPPrec1;
+                   VARPREPPrec2.mood := relativexpmood;
+              C12: rel1 <> shiftrel AND
+                   PREPPVARrec1 = COPYT_prepptovar(VARPREPPrec1) AND
+                   VARPREPPrec1.mood = declxpmood
+              A12: VARPREPPrec2 := VARPREPPrec1;
+              C13: PREPPVARrec1 = COPYT_prepptovar(VARPREPPrec1) AND
+                   VARPREPPrec1.mood = wh
+              A13: VARPREPPrec2 := VARPREPPrec1;
+          A1: VARPREPPrec2.superdeixis := omegadeixis; 
+
+         >
+      DECOMP
+         <
+          C1: VARPREPPrec2.actsubcefs * [loc, caus] <> []   AND
+              VARPREPPrec2.superdeixis = omegadeixis
+              C11: rel1 = shiftrel AND
+                   VARPREPPrec2.mood = declxpmood
+              A11: VARPREPPrec1 := VARPREPPrec2;
+                   PREPPVARrec1 := COPYT_prepptovar(VARPREPPrec2);
+                   PREPPVARrec1.mood := topicxpmood;
+              C14: rel1 = shiftrel AND
+                   VARPREPPrec2.mood = relativexpmood
+              A14: VARPREPPrec1 := VARPREPPrec2;
+                   VARPREPPrec1.mood := declxpmood;
+                   PREPPVARrec1 := COPYT_prepptovar(VARPREPPrec2);
+                   PREPPVARrec1.mood := relativexpmood;
+              C12: rel1 <> shiftrel AND
+                   VARPREPPrec2.mood =declxpmood
+              A12: VARPREPPrec1 := VARPREPPrec2;
+                   PREPPVARrec1 := COPYT_prepptovar(VARPREPPrec2);
+              C13: VARPREPPrec2.mood = wh
+              A13: VARPREPPrec1 := VARPREPPrec2;
+                   PREPPVARrec1 := COPYT_prepptovar(VARPREPPrec2);
+          A1: QUOTE_assdeixismax(CLAUSErec1.deixis, 
+                         CLAUSErec1.superdeixis, VARPREPPrec1.superdeixis);
+              PREPPVARrec1.index := LEVEL;
+         >
+
+>
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] Rsubstitution4
+\item[* relevant examples:]
+x1 locadvrel/x3 danste $\rightarrow$\\
+x1 [in de tuin ] danste\\
+x1 x3 niet werkte $\rightarrow$\\
+x1 [ om die reden] niet werkte\\
+x1 locadvrel/x3 danste $\rightarrow$\\
+x1 [in  x2 ] danste\\
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-MAY-1987 16:24:27  
+\item[* author:] Jan Odijk
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+ 26-APR-1988 12:54:12 Jan O: substitution of PREPP and VARPREPP instead of NP
+\end{enumerate}
+\end{description}
+
+
+
+\newpage
+\begin{verbatim}
+% RULE Rsubstitution4a            (* (VAR)PREPP for PREPPVAR in S behind VP*)
+< m1: CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}[ mu5],
+             mu2,
+             I2:rel1/PREPPVAR{PREPPVARrec1},
+             mu6 
+           ] 
+SUBST:
+  m2: T1
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}[ mu5],
+             mu2,
+             I3:rel1/T2,
+             mu6 
+           ] 
+>
+
+
+   MATCHCONDITIONS
+      <
+       m : QUOTE_substordercondition1(mu6)
+       m2: T1.CAT IN [PREPP, VARPREPP] AND
+           NOT QUOTE_Negphrase(T1) AND
+           QUOTE_Gsubstordercondition1(mu6,T1)
+       I1: PREPPVARrec1.index = LEVEL 
+       I2: rel1 IN [Spostverbrel ] 
+       I3: rel1 IN [Spostverbrel] AND
+           T2.CAT IN [PREPP, VARPREPP] AND
+           NOT QUOTE_Negphrase(T2)
+
+      >
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+<
+
+   SUBRULE
+      <T1: PREPP{PREPPrec1}[mu7] >
+      <T2: PREPP{PREPPrec2}[mu7] >
+
+
+      COMP
+         <
+          C1: PREPPrec1.actsubcefs * [loc, caus] <> []             AND
+              PREPPVARrec1 = COPYT_prepptovar(PREPPrec1)           
+              C11: CLAUSErec1.deixis = omegadeixis              AND
+                   PREPPrec1.superdeixis = CLAUSErec1.superdeixis
+              A11: PREPPrec2 := PREPPrec1;
+                   PREPPrec2.superdeixis := omegadeixis
+              C12: CLAUSErec1.deixis <> omegadeixis             AND
+                   PREPPrec1.superdeixis = CLAUSErec1.deixis
+              A12: PREPPrec2 := PREPPrec1;
+                   PREPPrec2.superdeixis := omegadeixis  
+          A1: @
+         >
+      DECOMP
+         <
+          C1: PREPPrec2.actsubcefs * [loc, caus] <> []             
+              C11: CLAUSErec1.deixis = omegadeixis              AND
+                   PREPPrec2.superdeixis = omegadeixis
+              A11: PREPPrec1 := PREPPrec2;
+                   PREPPrec1.superdeixis := CLAUSErec1.superdeixis;
+              C12: CLAUSErec1.deixis <> omegadeixis             AND
+                   PREPPrec2.superdeixis = omegadeixis
+              A12: PREPPrec1 := PREPPrec2;
+                   PREPPrec1.superdeixis := CLAUSErec1.deixis;
+          A1: PREPPVARrec1 := COPYT_prepptovar(PREPPrec1);
+              PREPPVARrec1.index := LEVEL;
+         >
+
+
+   SUBRULE
+      <T1: VARPREPP{VARPREPPrec1}[mu7] >
+      <T2: VARPREPP{VARPREPPrec2}[mu7] >
+
+
+      COMP
+         <
+          C1: VARPREPPrec1.actsubcefs * [loc, caus] <> []             AND
+              PREPPVARrec1 = COPYT_prepptovar(VARPREPPrec1)
+              C11: CLAUSErec1.deixis = omegadeixis              AND
+                   VARPREPPrec1.superdeixis = CLAUSErec1.superdeixis
+              A11: VARPREPPrec2 := VARPREPPrec1;
+                   VARPREPPrec2.superdeixis := omegadeixis
+              C12: CLAUSErec1.deixis <> omegadeixis             AND
+                   VARPREPPrec1.superdeixis = CLAUSErec1.deixis
+              A12: VARPREPPrec2 := VARPREPPrec1;
+                   VARPREPPrec2.superdeixis := omegadeixis  
+
+          A1: @
+         >
+      DECOMP
+         <
+          C1: VARPREPPrec2.actsubcefs * [loc, caus] <> []             
+              C11: CLAUSErec1.deixis = omegadeixis              AND
+                   VARPREPPrec2.superdeixis = omegadeixis
+              A11: VARPREPPrec1 := VARPREPPrec2;
+                   VARPREPPrec1.superdeixis := CLAUSErec1.superdeixis;
+              C12: CLAUSErec1.deixis <> omegadeixis             AND
+                   VARPREPPrec2.superdeixis = omegadeixis
+              A12: VARPREPPrec1 := VARPREPPrec2;
+                   VARPREPPrec1.superdeixis := CLAUSErec1.deixis;
+          A1: PREPPVARrec1 := COPYT_prepptovar(VARPREPPrec1);
+              PREPPVARrec1.index := LEVEL;
+         >
+>
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] Rsubstitution4a
+\item[* relevant examples:]
+x1 locadvrel/x3 danste $\rightarrow$\\
+x1 [in de tuin ] danste\\
+x1 x3 niet werkte $\rightarrow$\\
+x1 [ om die reden] niet werkte\\
+x1 locadvrel/x3 danste $\rightarrow$\\
+x1 [in  x2 ] danste\\
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-MAY-1987 16:24:27  
+\item[* author:] Jan Odijk
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+ 26-APR-1988 12:54:12 Jan O: substitution of PREPP and VARPREPP instead of NP
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% RULE Rsubstitution4b
+< m1: CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                  [ mu2,
+                    I2:rel1/PREPPVAR{PREPPVARrec1},
+                    mu5
+                  ],
+             mu6 
+           ] 
+SUBST:
+  m2: T1
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                 [ mu2,
+                   I3:rel1/T2,
+                   mu5
+                 ],
+             mu6 
+           ] 
+>
+
+
+   MATCHCONDITIONS
+      <
+       m : QUOTE_substordercondition2(mu5, mu6)
+       m2: T1.CAT IN [PREPP, VARPREPP] AND
+           NOT QUOTE_Negphrase(T1) AND
+           QUOTE_Gsubstordercondition2(mu5,mu6,T1)
+       I1: PREPPVARrec1.index = LEVEL 
+       I2: rel1 IN [vpadvrel, instradvrel, postverbrel] 
+       I3: rel1 IN [vpadvrel, instradvrel, postverbrel] AND
+           T2.CAT IN [(*PREPP ,*)VARPREPP] AND
+           NOT QUOTE_Negphrase(T2)
+
+      >
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+<
+
+   SUBRULE
+      <T1: PREPP{PREPPrec1}[mu7] >
+      <T2: PREPP{PREPPrec2}[mu7] >
+
+
+      COMP
+         <
+          C1: PREPPrec1.actsubcefs * [comitative, instrum] <> []             AND
+              PREPPVARrec1 = COPYT_prepptovar(PREPPrec1)           
+              C11: CLAUSErec1.deixis = omegadeixis              AND
+                   PREPPrec1.superdeixis = CLAUSErec1.superdeixis
+              A11: PREPPrec2 := PREPPrec1;
+                   PREPPrec2.superdeixis := omegadeixis
+              C12: CLAUSErec1.deixis <> omegadeixis             AND
+                   PREPPrec1.superdeixis = CLAUSErec1.deixis
+              A12: PREPPrec2 := PREPPrec1;
+                   PREPPrec2.superdeixis := omegadeixis  
+          A1: @
+         >
+      DECOMP
+         <
+          C1: PREPPrec2.actsubcefs * [comitative, instrum] <> []             
+              C11: CLAUSErec1.deixis = omegadeixis              AND
+                   PREPPrec2.superdeixis = omegadeixis
+              A11: PREPPrec1 := PREPPrec2;
+                   PREPPrec1.superdeixis := CLAUSErec1.superdeixis;
+              C12: CLAUSErec1.deixis <> omegadeixis             AND
+                   PREPPrec2.superdeixis = omegadeixis
+              A12: PREPPrec1 := PREPPrec2;
+                   PREPPrec1.superdeixis := CLAUSErec1.deixis;
+          A1: PREPPVARrec1 := COPYT_prepptovar(PREPPrec1);
+              PREPPVARrec1.index := LEVEL;
+         >
+
+
+   SUBRULE
+      <T1: VARPREPP{VARPREPPrec1}[mu7] >
+      <T2: VARPREPP{VARPREPPrec2}[mu7] >
+
+
+      COMP
+         <
+          C1: VARPREPPrec1.actsubcefs * [comitative, instrum] <> []             AND
+              PREPPVARrec1 = COPYT_prepptovar(VARPREPPrec1)
+              C11: CLAUSErec1.deixis = omegadeixis              AND
+                   VARPREPPrec1.superdeixis = CLAUSErec1.superdeixis
+              A11: VARPREPPrec2 := VARPREPPrec1;
+                   VARPREPPrec2.superdeixis := omegadeixis
+              C12: CLAUSErec1.deixis <> omegadeixis             AND
+                   VARPREPPrec1.superdeixis = CLAUSErec1.deixis
+              A12: VARPREPPrec2 := VARPREPPrec1;
+                   VARPREPPrec2.superdeixis := omegadeixis  
+
+          A1: @
+         >
+      DECOMP
+         <
+          C1: VARPREPPrec2.actsubcefs * [comitative, instrum] <> []             
+              C11: CLAUSErec1.deixis = omegadeixis              AND
+                   VARPREPPrec2.superdeixis = omegadeixis
+              A11: VARPREPPrec1 := VARPREPPrec2;
+                   VARPREPPrec1.superdeixis := CLAUSErec1.superdeixis;
+              C12: CLAUSErec1.deixis <> omegadeixis             AND
+                   VARPREPPrec2.superdeixis = omegadeixis
+              A12: VARPREPPrec1 := VARPREPPrec2;
+                   VARPREPPrec1.superdeixis := CLAUSErec1.deixis;
+          A1: PREPPVARrec1 := COPYT_prepptovar(VARPREPPrec1);
+              PREPPVARrec1.index := LEVEL;
+         >
+>
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Rsubstitution4b
+\item[* relevant examples:]
+met een hamer; met de man 
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 16-DEC-1988 14:13:08  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+
+\newpage
+\begin{verbatim}
+% RULE RSubstitution5                         (* er *)
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             erposrel/RADVP{RADVPrec1}[head/I1::ADVPVAR{ADVPVARrec1}],
+             mu2,
+             predrel/VERBP{VERBPrec1}[mu4],
+             mu5 
+           ] 
+SUBST:
+  m2: T3=ADVP{ADVPrec1}[head/ADV{ADVrec1}
+                         [head/SUBADV{SUBADVrec1}
+                              [head/I5::RADV{RADVrec1}]
+                         ]
+                    ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+           [ mu1,
+             I8:erposrel/T4=RADVP{RADVPrec2}[head/I5::RADV{RADVrec1}],
+             mu2,
+             predrel/VERBP{VERBPrec1}[mu4],
+             mu5 
+           ] 
+>
+
+   MATCHCONDITIONS
+      <
+       m  : QUOTE_substordercondition(mu2,mu4,mu5)
+       m2 : NOT QUOTE_Negphrase(T3) AND
+            QUOTE_Gsubstordercondition(mu2, mu4, mu5,T3)
+       I1 : ADVPVARrec1.index = LEVEL
+       I5 : RADVrec1.key = KEY_erRADVkey
+       I8: NOT QUOTE_Negphrase(T4)
+      >
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+      COMP
+         <
+          C1: ADVPVARrec1 = COPYT_ADVPtoVAR (ADVPrec1) AND
+              ADVPrec1 = AUX_ADVPrecONR EXCEPT FOR [superdeixis] AND
+              QUOTE_deixismax(CLAUSErec1.deixis, 
+                      CLAUSErec1.superdeixis, ADVPrec1.superdeixis) AND
+              ADVrec1 = AUX_ADVrecONR                 AND
+              SUBADVrec1 = AUX_SUBADVreconR           
+              C11: RADVPrec1.kindefs = [Lk] AND
+                   RADVPrec1.radvkey = 0
+              A11: RADVPrec2 := RADVPrec1;
+                   RADVPrec2.radvkey := KEY_erRADVkey;
+              C12: RADVPrec1.kindefs = [XLk] AND
+                   RADVPrec1.radvkey = 0 AND
+                   NOT EXIST(mu1, [subjrel/..])
+              A12: RADVPrec2 := RADVPrec1;
+                   RADVPrec2.radvkey := KEY_erRADVkey;
+          A1: @
+         >
+      DECOMP
+         <
+          C1: RADVPrec2 =
+               {
+                req     : [pospol,negpol,omegapol]
+                env     : [pospol,negpol,omegapol]
+                mood    : declxpmood
+                radvkey : KEY_erRADVkey
+               }
+              C11: Lk IN RADVPrec2.kindefs
+              A11: RADVPrec1 := RADVPREC2;
+                   RADVPREC1.radvKEY := 0;
+                   RADVPrec1.kindefs := [Lk];
+              C12: XLk IN RADVPrec2.kindefs AND
+                   NOT EXIST(mu1, [subjrel/..])
+              A12: RADVPrec1 := RADVPREC2;
+                   RADVPREC1.radvKEY := 0;
+                   RADVPrec1.kindefs := [XLk];
+          A1: ADVPrec1 := AUX_ADVPrecONR;
+              QUOTE_assdeixismax(CLAUSErec1.deixis, 
+                      CLAUSErec1.superdeixis, ADVPrec1.superdeixis);
+              ADVPVARrec1 := COPYT_ADVPtoVAR(ADVPrec1);  (*!!!*)
+              ADVPVARrec1.index := LEVEL;
+              ADVrec1 := AUX_ADVreconR;
+              SUBADVrec1 := AUX_SUBADVreconR;
+         >
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] RSubstitution5
+\item[* relevant examples:]
+hij x [danst] + er $\rightarrow$\\
+hij er danst\\
+hij de man x [ gezien had ] $\rightarrow$\\
+hij de man er [gezien had ]\\
+hij x1 gisteren  [ iemand gezien had] $\rightarrow$\\
+hij er gisteren [iemand gezien had 
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLausetoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) RC: Substitution
+\item[* date of creation:] 22-MAY-1987 14:26:35  
+\item[* author:] Jan Odijk
+\item[* copied from:]--
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date:  7-SEP-1988 14:44:16 \ \ \ \ \ author:JO
+completely changed, cf. tadvrtorpos1,2,0
+Reason: displacing elements in the subst rule caused mutual blocking:
+In the configuration [..er postsubjrel(ps)..]: 
+first desubstitution of ps, then desubstitution of er is blocked (substorder);
+first desubstitutioin of er yields [..ps ADVVAR..], so that ps desubstitution
+is blocked by substorder
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To insert the locative adverbial ER in the erposrel. 
+It is presupposed that there is an erposrel already. 
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+A crucial reference to the key attribute is being made. If this is undesirable,
+then an attribute must be added to RADVrecord distinguishing at least 
+er from hier,daar from the rest.
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE Rsubstitution6         (* daar, hier, waar *)
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             I2:rel1/RADVP{RADVPrec1}[head/I1::ADVPVAR{ADVPVARrec1}],
+             mu2,
+             predrel/VERBP{VERBPrec1}[mu3],
+             mu4 
+           ] 
+SUBST:
+  m2: T3=ADVP{ADVPrec1}[head/ADV{ADVrec1}
+                         [head/SUBADV{SUBADVrec1}
+                             [ head/I5::RADV{RADVrec1}]
+                         ]
+                     ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+           [ mu1,
+             I8:rel1/T4=RADVP{RADVPrec2}[ head/I5::RADV{RADVrec1}],
+             mu2,
+             predrel/VERBP{VERBPrec1}[mu3],
+             mu4 
+           ] 
+>
+
+   MATCHCONDITIONS
+      <
+       m  : QUOTE_substordercondition(mu2,mu3,mu4)
+       m2 : NOT QUOTE_Negphrase(T3) AND
+            QUOTE_Gsubstordercondition(mu2,mu3,mu4,T3)
+       I1 : ADVPVARrec1.index = LEVEL
+       I2 : rel1 IN [defRadvrel, shiftrel]
+       I5 : (RADVrec1.key = KEY_daarRADVkey) OR
+            (RADVrec1.key = KEY_hierRADVkey) OR
+            (RADVrec1.key = KEY_waarRADVkey)
+       I8: NOT QUOTE_Negphrase(T4) AND 
+           rel1 IN [defRadvrel, shiftrel]
+      >
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+
+
+      COMP
+         <
+          C1: RADVPrec1.kindefs = [Lk] AND
+              RADVPrec1.radvkey = 0 AND
+              ADVPrec1 = AUX_ADVPrecONR EXCEPT FOR [superdeixis, mood]  AND
+              QUOTE_deixismax(CLAUSErec1.deixis, 
+                      CLAUSErec1.superdeixis, ADVPrec1.superdeixis) AND
+              ADVrec1 = AUX_ADVreconR  EXCEPT FOR [mood]   AND
+              SUBADVrec1 = AUX_SUBADVreconR EXCEPT FOR [mood] AND
+              ADVrec1.mood = RADVrec1.mood AND
+              SUBADVrec1.mood =  RADVrec1.mood
+              C11: rel1 = shiftrel AND
+                   ADVPVARrec1 = COPYT_ADVPtoVAR (ADVPrec1)  
+                          EXCEPT FOR [mood] AND
+                   ADVPrec1.mood = declxpmood AND
+                   ADVPVARrec1.mood = topicxpmood AND
+                   RADVPrec1.mood = topicxpmood
+              A11: RADVPrec2 := RADVPrec1;
+                   RADVPrec2.radvkey := RADVrec1.key; 
+                   RADVPrec2.mood := declxpmood;
+              C12: rel1 <> shiftrel AND
+                   ADVPVARrec1 = COPYT_ADVPtoVAR (ADVPrec1)  AND
+                   ADVPrec1.mood = declxpmood 
+              A12: RADVPrec2 := RADVPrec1;
+                   RADVPrec2.radvkey := RADVrec1.key; 
+              C13: ADVPrec1.mood = wh AND
+                   ADVPVARrec1 = COPYT_ADVPtoVAR (ADVPrec1)  
+              A13: RADVPrec2 := RADVPrec1;
+          A1: @
+         >
+      DECOMP
+         <
+          C1: Lk IN RADVPrec2.kindefs AND
+              RADVPrec2.radvkey = RADVrec1.key
+              C11: rel1 = shiftrel AND
+                   RADVPrec2.mood = declxpmood AND
+                   RADVPrec2.radvkey = RADVrec1.key 
+              A11: RADVPrec1 := RADVPrec2;
+                   ADVPrec1   := AUX_ADVPrecONR;
+                   ADVPVARrec1 := COPYT_ADVPtoVAR (ADVPrec1);
+                   ADVPVARrec1.mood := topicxpmood;
+                   RADVPrec1.mood := topicxpmood;
+              C12: rel1 <> shiftrel AND
+                   RADVPrec2.mood = declxpmood AND
+                   RADVPrec2.radvkey = RADVrec1.key 
+              A12: RADVPrec1 := RADVPrec2;
+                   ADVPrec1   := AUX_ADVPrecONR;
+                   ADVPVARrec1 := COPYT_ADVPtoVAR (ADVPrec1);
+              C13: RADVPrec2.mood = wh 
+              A13: RADVPrec1 := RADVPrec2;
+                   ADVPrec1   := AUX_ADVPrecONR;
+                   ADVPrec1.mood := wh;
+                   ADVPVARrec1 := COPYT_ADVPtoVAR (ADVPrec1)  
+          A1: QUOTE_assdeixismax(CLAUSErec1.deixis, 
+                      CLAUSErec1.superdeixis, ADVPrec1.superdeixis) ;
+              ADVrec1    := AUX_ADVreconR;     
+              ADVrec1.mood := RADVrec1.mood;
+              SUBADVrec1 := AUX_SUBADVreconR;
+              SUBADVrec1.mood := RADVrec1.mood;
+              ADVPVARrec1.index := LEVEL;
+              RADVPrec1.kindefs := [Lk];
+              RADVPrec1.radvkey := 0;
+         >
+
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] Rsubstitution6
+\item[* relevant examples:]
+hij x [danst] + daar$\rightarrow$\\
+hij er danst\\
+hij de man x [ gezien had ] + hier $\rightarrow$\\
+hij de man hier [gezien had ]\\
+hij gisteren x1 [ iemand gezien had] + daar$\rightarrow$\\
+hij daar gisteren [iemand gezien had 
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLausetoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) RC: Substitution
+\item[* date of creation:]  25-MAY-1987 12:45:11 
+\item[* author:] Jan Odijk
+\item[* copied from:] RSubstitution5                         
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date:  7-SEP-1988 14:43:33 \ \ \ \ \ author:JO
+completely changed, cf addition of tadvrtorpos1,2,0
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To insert the locative adverbials DAAR and HIER, and to put it
+in a position immediately following erposrel. It is presupposed that there is
+no erposrel yet.   This is wrong, and it is not presupposed anymore.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+A crucial reference to the key attribute is being made. If this is undesirable,
+then an attribute must be added to RADVrecord distinguishing at least 
+er from hier,daar from the rest.
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+
+
+\newpage
+\begin{verbatim}
+% RULE Rsubstitution8           (* ADVP under S *)
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             I3:rel1/I1::ADVPVAR{ADVPVARrec1},
+             mu2,
+             predrel/VERBP{VERBPrec1}[mu3],
+             mu4
+           ] 
+SUBST:
+  m2:T3=I2::ADVP{ADVPrec1}[mu5]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             I5:rel1/T4=I4::ADVP{ADVPrec2}[mu5],
+             mu2,
+             predrel/VERBP{VERBPrec1}[mu3],
+             mu4
+           ] 
+>
+
+   MATCHCONDITIONS
+      <
+       m  : QUOTE_substordercondition(mu2, mu3, mu4)
+       m2 : NOT QUOTE_Negphrase(T3) AND
+            QUOTE_Gsubstordercondition(mu2, mu3, mu4,T3)
+       I1 : ADVPVARrec1.index = LEVEL
+       I2 : ADVPrec1.Radvb = false
+       I3 : rel1 IN [shiftrel, locadvrel] 
+       I4 : ADVPrec2.Radvb = false
+       I5 : rel1 IN [shiftrel, locadvrel] AND
+            NOT QUOTE_Negphrase(T4)
+      >
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+
+
+      COMP
+         <
+          C1: locadv IN ADVPrec1.actsubcefs AND
+              QUOTE_deixismax(CLAUSErec1.deixis, 
+                      CLAUSErec1.superdeixis, ADVPrec1.superdeixis) 
+              C11: rel1 = shiftrel AND
+                   ADVPVARrec1 = COPYT_advptovar(ADVPrec1) 
+                                  EXCEPT FOR [mood] AND
+                   ADVPrec1.mood = declxpmood AND
+                   ADVPVARrec1.mood = topicxpmood
+              A11: @
+              C12: rel1 <> shiftrel AND
+                   ADVPVARrec1 = COPYT_advptovar(ADVPrec1) AND
+                   ADVPrec1.mood = declxpmood
+              A12: @
+              C13: ADVPrec1.mood = wh AND
+                   ADVPVARrec1 = COPYT_advptovar(ADVPrec1) 
+              A13: @       
+          A1: ADVPrec2 := ADVPrec1;
+              ADVPrec2.superdeixis := omegadeixis;
+         >
+      DECOMP
+         <
+          C1: locadv IN ADVPrec2.actsubcefs AND
+              ADVPrec2.superdeixis = omegadeixis
+              C11: rel1 = shiftrel AND
+                   ADVPrec2.mood = declxpmood
+              A11: ADVPVARrec1 := COPYT_advptovar(ADVPrec2);
+                   ADVPVARrec1.mood := topicxpmood; 
+              C12: rel1 <> shiftrel AND
+                   ADVPrec2.mood = declxpmood
+              A12: ADVPVARrec1 := COPYT_advptovar(ADVPrec2);
+              C13: ADVPrec2.mood = wh
+              A13: ADVPVARrec1 := COPYT_advptovar(ADVPrec2);
+          A1: ADVPVARrec1.index := LEVEL;
+              ADVPrec1 := ADVPrec2;
+              QUOTE_assdeixismax(CLAUSErec1.deixis, 
+                      CLAUSErec1.superdeixis, ADVPrec1.superdeixis) ;
+
+         >
+
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] Rsubstitution8
+\item[* relevant examples:]
+hij x1 danst $\rightarrow$\\
+hij thuis/daarginter/boven/onder/beneden  danst
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLausetoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) RC:Substitution
+\item[* date of creation:] 22-MAY-1987 14:59:41  
+\item[* author:] Jan Odijk
+\item[* copied from:]--
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To insert locative adverbial phrases that do not contain a
+RADV 
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+Polarity, superdeixis, substorder conditions still to be added
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE Rsubstitution9        (* sentadv *)
+< m1:CLAUSE{CLAUSErec1}
+           [ I4:mu1,
+             I9:rel1/I3::ADVPVAR{ADVPVARrec1},
+             mu2,
+             predrel/VERBP{VERBPrec1}[mu3],
+             mu4 
+           ] 
+
+SUBST:
+  m2: T3=I1::ADVP{ADVPrec1}[mu5]
+>
+
+< m : CLAUSE{CLAUSErec1}
+           [ I4:mu1,
+             I8:rel1/T4=I2::ADVP{ADVPrec2}[mu5],
+             mu2,
+             predrel/VERBP{VERBPrec1}[mu3],
+             mu4 
+           ] 
+
+>
+
+   MATCHCONDITIONS
+      <
+       m : QUOTE_substordercondition(mu2, mu3,mu4)
+       m2 : NOT QUOTE_Negphrase(T3) AND
+           QUOTE_Gsubstordercondition(mu2, mu3,mu4,T3)
+       I1: ADVPrec1.actsubcefs * [sentadv, causadv]  <> []
+       I2: ADVPrec2.actsubcefs * [sentadv, causadv]  <> []
+       I3: ADVPVARrec1.index = LEVEL
+       I4: NOT EXIST(mu1, [I41:../T1])
+           I41: T1.CAT IN [POSVAR, NEGVAR]
+       I8: NOT QUOTE_Negphrase(T4) AND rel1 IN [sentadvrel, shiftrel]
+       I9: rel1 IN [sentadvrel, shiftrel]
+      >
+
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+
+      COMP
+         <
+          C1: QUOTE_deixismax(CLAUSErec1.deixis, 
+                      CLAUSErec1.superdeixis, ADVPrec1.superdeixis) 
+              C11: rel1 = shiftrel AND
+                   ADVPVARrec1 =  COPYT_advptovar(ADVPrec1) 
+                                    EXCEPT FOR [mood] AND
+                   ADVPVARrec1.mood = topicxpmood AND
+                   ADVPrec1.mood = declxpmood
+              A11: @
+              C12: rel1 <> shiftrel AND
+                   ADVPVARrec1 =  COPYT_advptovar(ADVPrec1) AND
+                   ADVPrec1.mood = declxpmood
+              A12: @
+              C13: ADVPVARrec1 =  COPYT_advptovar(ADVPrec1) AND
+                   ADVPrec1.mood = wh
+              A13: @
+          A1: ADVPrec2 := ADVPrec1;
+              ADVPrec2.superdeixis := omegadeixis;
+             
+
+         >
+      DECOMP
+         <
+          C1: ADVPrec2.superdeixis = omegadeixis
+              C11: rel1 = shiftrel AND
+                   ADVPrec2.mood = declxpmood
+              A11: ADVPVARrec1 :=  COPYT_advptovar(ADVPrec2);
+                   ADVPVARrec1.mood := topicxpmood;
+              C12: rel1 <> shiftrel AND
+                   ADVPrec2.mood = declxpmood
+              A12: ADVPVARrec1 :=  COPYT_advptovar(ADVPrec2);
+              C13: ADVPrec2.mood = wh
+              A13: ADVPVARrec1 :=  COPYT_advptovar(ADVPrec2);
+          A1: ADVPrec1 := ADVPrec2;
+              QUOTE_assdeixismax(CLAUSErec1.deixis, 
+                      CLAUSErec1.superdeixis, ADVPrec1.superdeixis);
+              ADVPVARrec1.index := LEVEL;
+         >
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Rsentadvsubst
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 20-OCT-1988 16:22:08  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE RSubstitution10          (* hetPROSENT *) 
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ I1:mu2,
+                      complrel/I3::PROSENTVAR{PROSENTVARrec1},
+                      I2:mu3
+                    ],
+             mu4 
+           ] 
+SUBST:
+  m2: T3=PROSENT(KEY_hetPROSENTkey){PROSENTrec1}
+>
+
+< m :CLAUSE{CLAUSErec2}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ I1:mu2,
+                      objrel/NP{NPrec1}
+                          [head/PERSPRO{PERSPROrec1}
+                             [head/BPERSPRO(KEY_hetBPERSPROkey){BPERSPROrec1}] 
+                          ],
+                      I2:mu3
+                    ],
+             mu4 
+           ] 
+>
+
+   MATCHCONDITIONS
+      <
+       m2: QUOTE_Gsubstordercondition2(mu3,mu4,T3)  
+       m : QUOTE_substordercondition2(mu3,mu4)
+       I1: NOT EXIST(mu2,[objrel/..])
+       I2: NOT EXIST(mu3,[objrel/..])
+       I3: PROSENTVARrec1.index = LEVEL
+      >
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+
+      COMP
+         <
+          C1: PROSENTVARrec1.so =  PROSENTrec1.so AND
+              CLAUSErec1.synvpefs * AUX_prosentvps <> []
+          A1: PERSPROrec1 := AUX_PERSPROrecONhet;
+              NPrec1      := AUX_NPonHETBPRSPR;
+              NPrec1.cases := [Accusative];
+              PERSPROrec1.persprocases := [Accusative]; 
+              CLAUSErec2 := CLAUSErec1;
+              CLAUSErec2.synvpefs := CLAUSErec1.synvpefs * AUX_prosentvps;
+         >
+      DECOMP
+         <
+          C1: PERSPROrec1 = AUX_PERSPROrecONhet 
+                              EXCEPT FOR [reduced, persprocases] AND
+              NPrec1      = AUX_NPonHETBPRSPR EXCEPT FOR [cases] AND
+              Accusative IN NPrec1.cases AND
+              Accusative IN PERSPROrec1.persprocases AND
+              CLAUSErec2.synvpefs * AUX_prosentvps <> []
+          A1: PROSENTVARrec1.so := PROSENTrec1.so;  
+              PROSENTVARrec1.index := LEVEL;
+              CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.synvpefs := CLAUSErec2.synvpefs * AUX_prosentvps;
+         >
+
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] RSubstitution10
+\item[* relevant examples:]
+x1 weet x2 + PROSENT $\rightarrow$\\
+x1 weet het\\
+x1 zich x2 afvraagt $\rightarrow$\\
+x1 zich het afvraagt\\ 
+(Cf. English: I know, I wonder)
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) RC:Substitution
+\item[* date of creation:] 25-MAY-1987 12:57:26  
+\item[* author:] Jan Odijk
+\item[* copied from:]--
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To substitute PROSENTs for PROSENTVARs
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]none
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE RSUBSTITUTION11            (* wel *)
+< m1: CLAUSE{CLAUSErec1}
+            [ mu1,
+              posrel/POSVAR{POSVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}[mu3],
+              mu4  
+            ]
+  m2: T3=POS{POSrec1}
+>
+
+< m :CLAUSE{CLAUSErec1}
+            [ mu1,
+              posrel/POS{POSrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}[mu3],
+              mu4  
+            ]
+>
+
+   MATCHCONDITIONS
+      <
+       m  : QUOTE_substordercondition(mu2, mu3, mu4)
+      >
+
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] RSUBSTITUTION11
+\item[* relevant examples:]
+hij kwam $\rightarrow$
+hij w\'{e}l kwam \\
+wanneer hij 't die man waarschijnlijk gegeven  heeft $\rightarrow$\\
+wanneer hij 't die man waarschijnlijk w\'{e}l gegeven heeft 
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 1-JUN-1987 16:47:15  
+\item[* author:] Jan Odijk
+\item[* copied from:]--
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To substitute the element {\em w\'{e}l} into the sentence.
+It is introduced basically to allow for an adequate translation of English
+emphatic do-constructions. These can be handled very simply.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+In analysis the requirements on the posistioning of the element POS are not as 
+stringent as in generation. In generation it is positioned as far to the left 
+as possible, but in analysis more possibilities are allowed.
+There is a substorder condition in analysis to avoid superfluous ambiguities.
+In generation there is no substorder condition.
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE RSubstitution12        (* NEG *)
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             negrel/NEGVAR{NEGVARrec1},
+             mu2,
+             predrel/VERBP{VERBPrec1}[mu3],
+             mu4  
+           ] 
+  m2:T3=NEG{NEGrec1}
+>
+
+< m :CLAUSE{CLAUSErec2}
+           [ mu1,
+             negrel/T4=NEG{NEGrec1},
+             mu2,
+             predrel/VERBP{VERBPrec1}[mu3],
+             mu4  
+           ] 
+>
+
+   MATCHCONDITIONS
+      <
+       m2 : QUOTE_Gsubstordercondition(mu2,mu3,mu4,T3) 
+       m1 : mu2 <> []  OR NOT QUOTE_firstisapossnietNP(mu3) 
+       m  : QUOTE_substordercondition(mu2, mu3, mu4)  AND
+            (mu2 <> []  OR NOT QUOTE_firstisapossnietNP(mu3)  )
+      >
+
+
+
+      COMP
+         <
+          C1: CLAUSErec1.aktionsarts * 
+                  [activity, accomplishment, stative, achievement] <> []
+          A1: CLAUSErec2 := CLAUSErec1;
+              CLAUSErec2.aktionsarts := [stative];
+         >
+      DECOMP
+         <
+          C1: stative IN CLAUSErec2.aktionsarts
+          A1: CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.aktionsarts := 
+                  [activity, accomplishment, stative, achievement];
+         >
+
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] RSubstitution12
+\item[* relevant examples:]
+x1 kwam $\rightarrow$\\
+x1 niet kwam\\
+x1 x2 kocht $\rightarrow$\\
+x1 x2 niet kocht\\
+x1 x2 er (waarschijnlijk) trof $\rightarrow$\\
+x1 x2 er (waarschijnlijk) niet trof\\
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) RC:Substitution
+\item[* date of creation:] 2-JUN-1987 10:37:07  
+\item[* author:] Jan Odijk
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To insert the element NEG under the CLAUSEnode. The element 
+NEG introduced by this rule is never going to melt together with some other
+constituent. For this, see rules Rsubstitution13,14
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+The following conditions must be satisfied:
+- There maybe no variables to the right of the place of NEG-insertion
+  (substordercondition, m1, m)
+- No NP, PREPP, or ADVP maybe to the left of the the place of insertion
+  (mc: I1, second part)
+- No sentential adverb maybe to the right of NEG (MC:I2, second part)
+- No negrel/.. or posrel/.. , meltnegrel/..maybe present in the structure
+already.   (Mc: I2, I4, I5, I14) 
+- The NEG is inserted as far to the right as possible in generation (I3, I1)
+- Immediately following NEG inside VERBP there must not be a possnietNP. This 
+  is expressed in the function firstisapossnietNP(mu3). It is defined in
+  AUXFUNCTIONS.mrule 
+-
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+In generation NEG is inserted as far to the right as possible. In analysis the
+positioning of NEG is slightly more flexible.
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE RSubstitution13
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                 I1:[ mu2,
+                      meltnegrel/NEGVAR{NEGVARrec1},
+                      mu4 
+                    ],
+             mu5 
+           ] 
+  m2: T3=NEG{NEGrec1}
+>
+
+< m :CLAUSE{CLAUSErec2}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                 I1:[ mu2,
+                      meltnegrel/T4=NEG{NEGrec1},
+                      mu4 
+                    ],
+             mu5 
+           ] 
+>
+
+   MATCHCONDITIONS
+      <
+       m2 : QUOTE_Gsubstordercondition2(mu4, mu5,T3)  
+       m  : QUOTE_substordercondition2(mu4, mu5)
+       I1 : RIGHTTOLEFT
+      >
+
+
+
+      COMP
+         <
+          C1: CLAUSErec1.aktionsarts * 
+                  [activity, accomplishment, stative, achievement] <> []
+          A1: CLAUSErec2 := CLAUSErec1;
+              CLAUSErec2.aktionsarts := [stative];
+         >
+      DECOMP
+         <
+          C1: stative IN CLAUSErec2.aktionsarts
+          A1: CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.aktionsarts := 
+                  [activity, accomplishment, stative, achievement];
+         >
+
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] RSubstitution13
+\item[* relevant examples:]
+iemand Jan tegen kwam $\rightarrow$\\
+niet iemand Jan tegenkwam\\
+( $\rightarrow$ niemand Jan tegenkwam$)
+x1 naar iemand keek$\rightarrow$\\
+x1 niet naar iemand keek\\
+($\rightarrow$
+
+($\rightarrow$ niemand )\\
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 3-JUN-1987 14:18:08  
+\item[* author:] Jan Odijk
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To insert NEGs before constituents that can melt together with
+this NEG element. 
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+There is acondition that no negrel/.. is present anywhere, but meltnegrel/..
+is allowed. This implied that e.g. {\em niemand zag niemand}, and e.g.
+{\em niemand kwam nooit} can be derived. If this is undesirable, then adding
+the condition that no meltnegrel can be present anywhere will exclude these 
+cases. 
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+
+\newpage
+\begin{verbatim}
+% RULE Rsubstitution14   (* meltnegrel under S *)
+< m1:CLAUSE{CLAUSErec1}
+        I1:[ mu1,
+             meltnegrel/NEGVAR{NEGVARrec1},
+             mu2,
+             predrel/VERBP{VERBPrec1}[mu4],
+             mu5 
+           ] 
+  m2: T3=NEG{NEGrec1}
+>
+
+< m :CLAUSE{CLAUSErec2}
+        I1:[ mu1,
+             meltnegrel/T4=NEG{NEGrec1},
+             mu2,
+             predrel/VERBP{VERBPrec1}[mu4],
+             mu5 
+           ] 
+>
+
+   MATCHCONDITIONS
+      <
+       m2 : QUOTE_Gsubstordercondition(mu2, mu4, mu5,T3)
+       I1 : RIGHTTOLEFT
+       m  : QUOTE_substordercondition(mu2, mu4, mu5)
+      >
+
+
+      COMP
+         <
+          C1: CLAUSErec1.aktionsarts * 
+                  [activity, accomplishment, stative, achievement] <> []
+          A1: CLAUSErec2 := CLAUSErec1;
+              CLAUSErec2.aktionsarts := [stative];
+         >
+      DECOMP
+         <
+          C1: stative IN CLAUSErec2.aktionsarts
+          A1: CLAUSErec1 := CLAUSErec2;
+              CLAUSErec1.aktionsarts := 
+                  [activity, accomplishment, stative, achievement];
+         >
+
+
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] Rsubstitution14
+\item[* relevant examples:]
+x1 iemand tegen kwam $\rightarrow$\\
+x1 niet iemand gisteren tegenkwam\\
+($\rightarrow$ x1 niemand gisteren tegenkwam )\\
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:]  4-JUN-1987 09:30:59 
+\item[* author:] Jan Odijk
+\item[* copied from:] RSubstitution13
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To insert NEGs before constituents that can melt together with
+this NEG element. 
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+%%
+
+E 1

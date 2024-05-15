@@ -1,0 +1,223 @@
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.Mrules.English}
+   \RosTitle{Rosetta3 English M-rules: ADVPformation}
+   \RosAuthor{Margreet Sanders}
+   \RosDocNr{391}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{English, documentation, Mrules, ADVPformation}
+   \MakeRosTitle
+%
+%
+
+\section{ADVPFormation}
+PREPPs and ADVPs are used in Rosetta3 as non-argument locatives and temporals.
+Contrary to what was assumed in the definition phase of Rosetta3 (see e.g.\ 
+doc.\ 150, {\em Subgrammars of English\/}), it is no longer considered 
+necessary to introduce these categories as full PREPPPROPs or ADVPPROPs that 
+have to be pruned. For a full discussion of this subject, see the document on 
+the Treatment of Adverbs by Jan Odijk (to appear).
+
+Since the ADVPformation subgrammar need NOT be isomorphic with other XPPROP or 
+sentence grammars
+(because it is impossible anyway in Rosetta3 to translate a simple 
+phrase (PREPP or ADVP) into something with a propositional structure),
+the exact contents of the ADVPFormation subgrammar are mainly determined 
+by the requirements posed by the sentence the ADVP is 
+substituted in. Note that the 
+subgrammar is isomorphic with the PREPPformation subgrammar, since PREPs and 
+ADVs may have to translate into each other. The current documentation is in 
+fact an adapted copy of the documentation on the PREPPformation subgrammar. 
+
+Input to the grammar is a SUBADV, 
+coming from the AdvDerivation subgrammar (see doc.\ 316, {\em Rosetta3 English 
+M-rules: Derivation Subgrammars\/}). For testing purposes, the ADVP formed in 
+the current subgrammar can also be given a top node UTT in the Utterance 
+grammar, to allow translation of bare ADVPs. 
+In doc.\ 150, {\em Subgrammars of English\/}, where the plans for the general 
+lay-out of the translation system were presented, the ADVPformation grammar was 
+not explained in any detail. Instead, reference was made to an earlier 
+proposal, in doc.\ 103 by Franciska de Jong, {\em The organisation of the 
+ADVP subgrammar\/}. Since in that document no clear distinction is made between 
+the ADVP subgrammar and the ADVPPROP formation subgrammar, I will not compare 
+the original plans and the current implementation. Instead, similarities and 
+discrepancies between the current subgrammar and the ADVPPROP subgrammars or 
+the PREPPformation grammar have been indicated. 
+
+As all subgrammars, the ADVPformation subgrammar consists of 
+a number of rule classes and transformation classes. A rule class in its turn
+consists of a number of rules and a transformation class of a number of 
+transformations. The relative ordering of the rules and transformations in the
+(sub)grammar is indicated by a {\em control expression}. A summary of this
+control expression (i.e.\ a listing of the ordering of the rule classes, 
+without explicit mentioning of the rules themselves) is also included here, 
+and the initial (= head), import and export categories are given. 
+
+In the section on the rules and transformations, only the rule names are given, 
+but not the exact rule formulation. Most rules are an adapted copy of the rules 
+in the three ADVPPROP subgrammars.
+For every rule, an example is given. If it is uncertain whether the example is 
+correct (either 
+because it may not be an example of the phenomenon in question, or because it 
+may not be correct English), it is preceded by a question mark. Note that all 
+explanation of rules and transformations is given from a generative viewpoint
+only, unless explicitly stated otherwise. The semantics of the rules 
+has been left unspecified in the current documentation, since it is not at all 
+clear.
+
+Finally note that the rules described in this document have NOT been tested 
+properly. English analysis is not possible yet (there is no Surface Parser), and 
+English generation has only been tested in as far as the construction was the 
+translation of a Dutch sentence to be tested.
+
+\newpage
+\section{Subgrammar Specification}
+The subgrammar definition can be found in the file which also contains all the 
+rules of this subgrammar, {\bf AdvpSubgrammars.mrule}, which is 
+{\em mrules84.mrule\/}.
+
+\begin{verbatim}
+%SUBGRAMMAR ADVPFormation
+
+
+   ( RC_StartAdvpRules )
+.  ( TC_AdvpPatterns )
+.  ( RC_AdvpSuperdeixis )
+.  { RC_AdvpSubst }
+
+
+\end{verbatim}
+
+\begin{description}
+  \item[Head]  SUBADV  \ \ \ \ FROM (ADVderivation)
+  \item[Export] ADVP
+  \item[Import] NPVAR, NP
+\end{description}
+
+\newpage
+\section{Rules and Transformations}
+
+\subsection{RC\_StartAdvpRules}
+\begin{description}
+\item[Kind] Obligatory Rule Class
+\item[Task] To provide a SUBADV with its correct number of ADVP argument 
+variables and build an ADVP above it. 
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RStartAdvp0
+\item[Task] To build an ADVP for an intransitive SUBADV, so with no arguments 
+in the ADVP.
+\item[File] english:AdvpSubgrammars.mrule (mrules84.mrule)
+\item[Semantics]
+\item[Example] yesterday $\rightarrow$ yesterday (We sailed yesterday)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RStartAdvp1
+\item[Task] To build an ADVP for a transitive SUBADV, so with one argument in 
+the ADVP. The argument may only be an NPVAR (usu.\ a measure phrase; it is 
+assumed that there are NP measure phrases, although elsewhere they are assumed 
+NPPROPs). For further comment, see TAdvpPattern1 below.
+\item[File] english:AdvpSubgrammars (mrules84.mrule)
+\item[Semantics]
+\item[Example] ago + x1 $\rightarrow$ ago x1 (Three hours ago)
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_AdvpPatterns}
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] To check the category of the argument variable and the relation 
+it bears in the ADVP against the Advpatterns specified for the ADV. The {\bf 
+advpatternefs} attribute of the ADVP is set at the value 
+actually chosen from the advpatterns of the ADV.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TAdvpPattern0
+\item[Task] To let ADVs that have no ADVP argument pass this transformation 
+class
+\item[File] english:AdvpSubgrammars (mrules84.mrule)
+\item[Semantics]
+\item[Example] yesterday (We sailed yesterday)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TAdvpPattern1
+\item[Task] To specify the relation name (which must always be {\em modrel\/})
+and the category (NPVAR) of the argument in the ADVP. Also, the {\em case\/} of 
+the argument is assigned (always {\em [accusative]\/}); there is no 
+separate Case-assignment Transformation.
+\item[File] english:AdvpSubgrammars (mrules84.mrule)
+\item[Semantics]
+\item[Examples] ago x1 $\rightarrow$ x1 ago (Three hours ago)
+\item[Remarks] There is no separate rule class for modification of ADVs in the 
+ADVPformation subgrammar (cf.\ the PREPPformation grammar, which does have 
+modification). This makes both subgrammars only partially isomorphic.
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_AdvpSuperdeixis}
+\begin{description}
+\item[Kind] Obligatory Rule Class
+\item[Task] To provide the ADVP with a value for the attribute {\bf 
+superdeixis}. The rule uses a 
+parameter, {\em super\/}, to determine whether a present or past superdeixis 
+value should be assigned.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RAdvpSuperdeixis
+\item[Task] see above
+\item[File] english:AdvpSubgrammars (mrules84.mrule)
+\item[Semantics]
+\item[Example] [yesterday]$_{omegasuperdeixis}$ $\rightarrow$ 
+[yesterday]$_{pastsuperdeixis}$ (We sailed yesterday)
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_AdvpSubst}
+\begin{description}
+\item[Kind] Iterative Rule Class
+\item[Task] To substitute non-sentential expressions for their variable. There 
+is no condition on substitution order (there is only one VAR anyway).
+Conditions on genericity and superdeixis are the same as in the comparable 
+class in the CLAUSEtoSENTENCE subgrammar (see doc.\ 370, p.\ 14). Reflexives 
+etc.\ have not yet been excluded from the current rule explicitly. 
+
+The rule uses the system parameter LEVEL to check whether the index of the 
+variable is consistent with (the level of) the variable that is to be 
+substituted for according to the rule parameter.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RAdvpSubst1
+\item[Task] To substitute a non-generic NP for its modrel VAR
+\item[File] english:AdvpSubgrammars (mrules84.mrule)
+\item[Semantics]
+\item[Example] [x1 ago] + three hours $\rightarrow$ [three hours ago]
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+
+\end{document}
+

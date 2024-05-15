@@ -1,0 +1,1402 @@
+R0233.tex
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Linguistics}
+   \RosTitle{Local M-rules for English and Dutch}
+   \RosAuthor{Margreet Sanders}
+   \RosDocNr{233}
+   \RosDate{November 16, 1987}
+   \RosStatus{concept}
+   \RosSupersedes{211}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Local M-rules}
+   \MakeRosTitle
+%
+\newpage
+\section{Introduction}
+In this document the local M-rules (both surface rules and real M-rules) 
+writtten for English and for Dutch are explained and discussed.
+Also, some general decisions concerning local rules 
+are documented. Most of these decisions were taken during the linguists' 
+meeting of 
+August 25, 1987, when document R0211 ({\em Local Dutch Rules. Documentation
+\/})
+was discussed. The rules themselves are not incorporated in this document. They 
+can be found under [LOCALROS.ROSETTA3.`language'.WORK] rlocal*.mrule.
+
+\section{Goal of Local M-rules}
+The local rules as described in the current document are intended for the word 
+translation mode,
+i.e.\ when one word is entered into the computer, all suitable 
+translations (consisting of as many words as necessary) should be returned. The 
+intended user of such a system is someone who wants to know the translation of 
+an unknown word encountered in a foreign text, rather than someone who is 
+translating from his or her mother tongue into some other language. The latter 
+user may refer to a dictionary more easily, since the dictionary form of a
+word of one's own mother tongue is usually well-known, while the former user 
+can only guess what the dictionary form of the unknow word is. However, the 
+current form of the local rules still presupposes some 
+knowledge of the foreign language in the case of 
+prepositions, particles, reflexives etc. This point will be discussed in more 
+detail in section 4 on Surface rules. 
+
+It was decided to distinguish between rules used in the word translator and 
+rules serving for robustness measures in the ordinary translation system, since 
+both functions pose clearly different demands. Robustness rules require a 
+strict adherence to the formulation of the complicated syntactic models used in 
+the Rosetta M-rules, while for word translation simplified models suffice 
+for correct translation. On the other hand, in word translation mode many more 
+possibilities for translation need to be considered than in the robustness 
+rules, where preferably only one translation is to be produced. The local rules 
+described in this document are the rules for the word translator.
+
+Given that the local rules have an independent status, it should be 
+realised that the formulation of right models in the local rules is to a 
+certain extent rather arbitrary, especially since there often is only one main 
+rule working on an input word. Internal consistency of the rules can be 
+reached easily. Indeed, the structure of  syntactic models has been simplified 
+somewhat in the local rules as compared to the `real' M-rules, especially when 
+this prevented the need for surface rules that should do 
+nothing else but attach a new top node to a certain word or constituent of the 
+source language. Decisions on the precise formulation of the in- and output 
+models were sometimes made on a purely ad hoc basis, and remain open to 
+criticism. Other peculiarities of the local rules are caused by the fact 
+that all information about possible meanings of the input string must be 
+derived from the string itself, and cannot be based on higher constituents.
+For instance, in the local rules the form of the 
+reflexive is determined by the form (person and number) of the verb, and not by 
+any VAR (which is of course absent in the word translation mode) as in the
+ordinary M-rules. 
+
+The translations for the input string returned by the computer should comprise 
+all semantic variants,
+but not variants determined solely by `syntactic constraints'. For example, the 
+attributive adjective {\em mooi} is generated in its dictionary form only, and 
+not also in the form {\em 
+mooie}, since there are no semantic reasons for distinguishing the two. Of 
+course, {\em mooie} will be generated when a nominalised adjective is concerned
+({\em Ik heb mooie en lelijke\/}), since there the -e ending is
+meaningful. In analysis, attributive {\em mooie\/} is still accepted, since the 
+user does not necessarily know that the final -e is determined by the following 
+noun. Therefore, {\em mooie\/} will be ambiguous in analysis, but unambiguous 
+when generated. 
+When no base form is apparent, as in the case of an adjective which has both an 
+inflectional and a periphrastic 
+comparative, it was decided to generate both equivalents, since no clear 
+grounds for selecting one of the two forms exist. 
+
+No system for interactive disambiguation of
+input strings is included in the present system yet, although the intention is 
+to develop some bonus system that will only produce the most likely 
+translation, and then ask the user whether more alternatives should be sought 
+(cf.\ doc.\ 77, {\em User-interface specification of Rosetta3\/} and doc.\ 213, 
+{\em The Transfer Modules of Rosetta3\/}).
+
+\section{Organisation of the local M-rules}
+Analytically speaking, the local M-rules take as input the output of the 
+local surface rules. For most categories, no surface rules exist, since usually 
+only one word may be entered into the computer, and not a whole phrase. For a 
+description of the surface rules, see section 4.
+
+The M-rules themselves are organised into one subgrammar per (basic) syntactic 
+category, with the restriction that no rules (and hence no subgrammars) exist 
+for categories that have no inflection or derivation, like CONJ, ART, COORD 
+etc. The general strategy is not to translate words from one category
+(e.g. the verb {\em to like\/}) into words of another category (e.g. the adverb 
+{\em graag\/}) etc. Since the intention is 
+to have the local rules work on the {\em Van Dale\/} tapes, where category 
+mismatches are rare, there seems to be little problem in this strategy. One 
+exception is made to the strategy just mentioned: it is assumed that composite 
+verbs which 
+consist of the verb `be' + an ADJ (or in Dutch: the verb `zijn' + an ADJ, e.g. 
+{\em schuldig zijn\/} as translation of {\em owe\/}) are 
+entered into the dictionary with only the ADJ, and not the verb. In the local 
+rules for verbs, extra rules are added which introduce the verb 
+syncategorematically when an ADJ is encountered as translation. These rules 
+work only in generation (see section 5.1 on Verbs).
+
+The Principle of Isomorphism is adhered to in the local M-rules as well.
+This means that where the one 
+language has a certain rule, the other should have a corresponding rule, even 
+if the phenomenon does not occur in that language, e.g.\ English has an M-rule 
+to decide the case of a BWHPRO ({\em who - whom\/}), while Dutch just has WHPROs 
+that never change form. Therefore, the Dutch counterpart of the English rule is 
+a vacuous one, that does not change the category of its input. Since 
+there is only one rule in the Dutch subgrammar SGWhpro, 
+the output of this subgrammar is the same as the input. Whether this can be 
+dealt with by the 
+formalism is as yet unclear (cf.\ document 101, where it is stated explicitly 
+that the intersection of HEADCATs and EXPORTCATs is assumed empty). The local 
+subgrammars do not always consist of just one rule; especially in the case of 
+SGVerb, many transformations are included to determine the correct order of 
+particles, verb, prepositions and reflexives.
+
+No Transfer component has been written yet. However, in the documentation of the 
+local M-rules the desired mapping is usually indicated. Local rules may be ambiguous, 
+i.e.\ one rule in language A may map onto several rules in language B and vice 
+versa. Since in the local rules not all rules are reversible (caused by the 
+general constraint of a one word input, even though a several word output is 
+allowed), the mapping is also not always 
+reversible (e.g.\ the English rule which analyses and produces the POSSPRO 
+{\em mine\/} is mapped, amongst others, onto a Dutch rule which produces {\em 
+die van mij\/}, 
+but this Dutch rule does not have a DECOMP part).
+
+
+\section{Surface Rules}
+Surface rules were necessary to allow for a multi-word input in specific cases. 
+These cases are: reflexives (verbs: {\em zich schamen\/}, Dutch adjectives: 
+{\em zich 
+bewust (van)\/}), obligatory prepositions (verbs: {\em houden van\/}, adjectives: 
+{\em aware of\/}), particles (verbs: {\em stand up, bel op\/}) and the article 
+for superlatives of adverbs ({\em the earliest, het liefst\/}). For Dutch, an 
+extra rule is added to allow possessive pronouns to take an article ({\em de 
+mijne, het mijne\/}).
+
+Some discussion took place on the need for these rules. Since it is 
+undesirable to have to generate all translations of all verbs with the same 
+stem (e.g.\ {\em houden, houden van, zich houden aan\/} etc.\ all have different 
+translations in English), and since no (interactive) disambiguation with 
+respect to meaning is included yet, it was decided to require the exact input 
+needed for recognition of the appropriate meaning key. On the one hand, this is 
+an advantage for the user, since just {\em kondigen\/} is now no longer 
+accepted in analysis, and clear instructions can be presented to include all 
+particles, prepositions and reflexives that can reasonably belong to the verb 
+or adjective. On the other hand, the translation of {\em houden\/} will now 
+only be {\em keep\/}, without any clue that when a preposition had been entered 
+along with the verb, a completely different translation would have emerged. No 
+user-friendly solution to this problem has been found yet.
+
+Specific for 
+English are some extra surface rules for the genitive of INDEFPROs and 
+(PROPER)NOUNs (note that in 
+English a genitive {\em 's\/} is considered a basic category, attached to the 
+previous word by a glue rule, while in Dutch the {\em -s\/} ending is part of 
+the inflection of a (proper)noun or indefpro). 
+
+In the surface rules, a top category UTT is attached to either the basic 
+category (in case of categories that are not dealt with in morphology, e.g.\ 
+COORD, RECIPRO) or to the category that is produced by the other surface 
+rules (e.g.\ ADJP, VERBP), or to the category that is produced by morphology 
+(e.g.\ VERB, POSSPRO). Thus, the input (analytically speaking) to the M-rules 
+is always a tree with top node UTT.
+
+\section{M-rules}
+In general, the local M-rules follow the lex-tree rules rather closely. 
+However, extra rules are necessary for specific multi-word translations, and 
+transformations are needed to spell out particles etc. Another difference with 
+the lex-tree rules is the assumption that in generation no ambiguities 
+will be produced, i.e.\ once a certain word is disambiguated in IL, only the 
+unambiguous forms are dealt with in the generative M-rules. For example, the 
+English personal pronoun {\em me\/} may be both an accusative and a dative. In 
+IL, the form is mapped onto both possibilities, and the generative component 
+will deal with these two independently, producing one {\em mij (acc)\/} and one 
+{\em mij (dat)\/}. In implementation, certain measures may be taken to prevent 
+the repetition of such identical output (note that the user cannot see that the 
+two {\em mij\/}s are different, since the attribute values are not meant to be 
+accessible to him or her). These measures are independent of the local rule 
+system, and go beyond the scope of this paper.
+
+In the 
+sections below, the local subgrammars will be discussed, together with remarks 
+on the most important rules in these subgrammars. Also, some links between 
+Dutch and English rules will be indicated. In the
+appendices, the subgrammar control expressions of all categories are 
+enumerated, with the Dutch subgrammars in App.\ A and the English subgrammars 
+in App.\ B. Note that in the rules 
+described in this document, derivation is not taken into account. The rules 
+are supposed to work on the output of the derivation subgrammars (from a 
+generative point of view) and thus usually take a SUBX (X = ADJ, VERB etc.) as 
+input.
+
+\subsection{Verbs}
+This is by far the largest subgrammar of the local rules. The body of the 
+subgrammar is formed by rules that
+form the present and past tense of indicatives, subjunctives and 
+participles, and make infinitives and imperatives. In the case of adjectives 
+being the translation of verbs, both Dutch and English have rules that 
+introduce the verb {\em be\/} or {\em zijn\/}, e.g.\ {\em zich schamen 
+$\rightarrow$ (be) ashamed; suffice $\rightarrow$ voldoende (zijn)\/}.
+
+For Dutch, only the simple 
+indicative form is recognised, with an alternative generative rule in the case 
+of a verb with conjugation class 0 (these verbs do not have any conjugation, 
+and the tenses are formed by means of the syncategorematically introduced 
+progaux {\em zijn\/}, e.g.\ {\em glides $\rightarrow$ is aan het 
+zweefvliegen\/}). For English, 
+the simple tense is dealt with, but there are extra generative rules to produce 
+the continuous tense as well (for non-stative verbs only). It is intended to 
+have only one IL representation for present tense, and to map this one IL rule 
+onto both Dutch and English 
+indicative rules. It is assumed that 
+no person 0 (inversion of verb + {\em je\/}) is recognised in IL. Dutch verb 
+forms going with person 5 (gij) must be mapped onto English person 2, since it 
+was decided not to deal with English person 5 (thou) at all, not even in 
+analysis.
+
+A problem exists for local translation of Dutch imperatives and infinitives. In 
+English morphology, it is assumed that these two forms always completely 
+coincide, so that the attribute `modus' can only have the value `infinitive', 
+not a value `imperative'. However, when the form of a reflexive must be 
+determined from the form of the verb, a distinction between the two modi
+becomes necessary, since the infinitive takes {\em oneself\/}, while the 
+imperative takes {\em yourself, yourselves\/}. In the ordinary M-rules, 
+specification of the correct form is determined by the SENTENCE-node, which can 
+be specified for mood. For the local rules, where such a higher node is lacking, 
+the solution was sought in the 
+introduction of a VERBP-node, which then is specified for numbers, [] 
+representing an infinitive, and [singular] and [plural] the two imperatives. An 
+alternative solution would have been to introduce the value `imperative' for 
+the VERB-attribute `modus', with the restriction that this value may only be 
+used in the M-rules and not in morphology. Both solutions seem very unelegant, 
+but since a VERBP-node is also needed in other rules (when reflexives etc.\ are 
+introduced), a choice for the first alternative seemed least  serious.
+
+In the local rules, the Dutch subjunctive (in present tense: -e form of verbs, 
+in past tense only {\em ware\/}) is dealt with in 
+analysis only; the rules are mapped onto the English generative subjunctive 
+rules. Note that these English rules are {\em not\/} reversible, to prevent the 
+analysis of all verbs as both infinitive {\em and\/} subjunctive.
+
+In line with what was mentioned in section 2 for adjectives, -e Forms of Dutch 
+participles ({\em 
+gekochte, stervende\/}) are accepted in analysis as possible variants of 
+simple attributive `adjectives'. A problem exists for verbs that have their past 
+participle ending in -en already: these verbs usually do not take an extra -e 
+when used attributively ({\em $^{*}$de gehangene man\/}), but there is no 
+attribute in verbs indicating this (the attribute `conjclass' is not 
+sufficient; cf.\ adjectives, which have an attribute `eFormation'). No solution 
+to this problem has been found yet. It is 
+assumed that the Dutch present participle rule should be mapped onto the 
+English ingForm rule, while the Dutch past participle rule corresponds to the 
+English PastPart rule.
+
+The correct placement of particles, prepositions and reflexives is accounted 
+for by 
+transformations, both in Dutch and in English. In Dutch, the relative position 
+of the verb depends on whether one is dealing with a main clause word order or 
+with a subordinate clause. It was decided to accept both orders in analysis, 
+but to generate only main sentence word order. The choice of the correct form 
+of the reflexive depends on the verb form. In generation, this is easy, since 
+only unambiguous verb forms are produced anyway, but in analysis, a decision 
+had to 
+be formulated as to what combinations are still accepted. It was decided to 
+accept verb forms that cannot be specified for a certain person or number 
+(subjunctives, infinitives, participles) only 
+with a neutral REFLPRO, i.e.\ `zich' for Dutch and `oneself' for English. This 
+poses a quite severe constraint on the user of the local translation system, 
+since he must be aware of the fact that he is dealing with such a verb form 
+(in the text the combination may well be different: {\em Hij zei dat ik 
+\underline{me wassen} moest\/}). However, even if all possible combinations of 
+verb 
+forms and reflpros were accepted, there still would be no way to preserve the 
+information that the reflpro in the original text was {\em me\/}, since the 
+spelling out of reflexives is done in a transformation, and not in a meaningful 
+rule. Hence, the translation of {\em me wassen\/} would probably still be the 
+neutral {\em wash oneself\/}, which is not very elegant either. 
+
+Note that the 
+form of the reflexive is used in analysis to disambiguate the verb form: once {
+\em jezelf\/} has been recognised, {\em wast\/} can only be 2nd person, and is 
+not ambiguous between 2nd and 3rd person anymore. A final point on reflexives 
+is that in English, all subrules have been doubled to account for the fact that 
+both direct and indirect object reflexives seem to exist ({\em avail oneself 
+(of)\/} vs.\ {\em have oneself a good time\/}). If indirect object reflexives 
+appear to occur only in idioms (which cannot be input to the local rules), 
+these extra subrules can be removed.
+
+A complication of the spelling out of neutral reflexives as mentioned above 
+occurs in the English counterpart of the Dutch eORenForm-rules.
+In Dutch, a rule exists to determine 
+the eORenForm of nominalised participles ({\em de gehangene(n)\/}). The English 
+counterpart of this rule, VerbNominalised, produces a translation with 
+{\em ...one(s)\/}. 
+However, in this context a reflexive should be spelled out as {\em himself, 
+herself\/} or {\em itself\/} when the noun is singular ({\em one\/}), and 
+{\em themselves\/} when the noun is plural ({\em ones\/}). The highly unelegant 
+but easiest solution is to remove {\em oneself\/}, just spelled out in the 
+reflexive transformation, and replace it by the correct form of 
+the reflpro. Note that for the singular rule, all three forms just mentioned 
+are indeed produced, since no criterion could be found to choose a specific 
+one. Placement of the English VerbNominalised rule before the reflexive 
+transformations might have been another solution, but then all reflexive, 
+particle and preposition 
+transformations would have to be doubled, allowing for very different input 
+models, since the normal Verb rules produce VERB(P)s, while the VerbNominalised 
+rule produces CNs.
+
+\subsection{Nouns}
+
+The rules produce singular and plural forms of nouns. In analysis, nouns that 
+have 
+[OnlyPlural] are only dealt with in the singular rule. It is assumed that nouns 
+with 
+[NoPlural] are also basically singular. In the generation part of the plural 
+rule, extra CA-pairs are included to deal with those cases where a noun is a 
+real plural in the source language, but an [OnlyPlur] or a [NoPlural] in the 
+target language, e.g.\ {\em anti aircraft guns\/} [number = plural] 
+$\rightarrow$ {\em afweergeschut\/} [number = singular]. This makes the M-rule 
+for plural formation of Nouns asymmetric.
+
+Propernouns that obligatorily take an article ({\em Rhine, Hebrides}) are listed 
+as BNOUNs in the dictionary. Propernouns that only take an article when they 
+are modified ({\em the beautiful Germany}) are converted into subnouns by the 
+noun derivation subgrammar, and thus may also be input to the local Noun-rules.
+
+The Noun rules also take care of genitive forms, both for English (where {\em 
+'s\/} is glued to the noun) and for Dutch (inflectional genitives). It is 
+assumed that in Dutch an 
+inflectional genitive can only occur for a limited number of singular nouns:
+converted propernouns and the restricted set containing 
+{\em moeder, (?)huis\/}. An even more restricted set of nouns (those of the 
+former rule ending in -s when plural) also takes an 
+inflectional genitive when plural ({\em ouders'\/}).
+Other Dutch nouns get a periphrastic phrase with {\em van de/het\/}. For 
+English, no periphrastic genitive rules have been formulated, even though not 
+all nouns seem to accept a genitive {\em 's\/}. Since English nouns do not have 
+an attribute `possgeni', restrictions on the occurrence of the genitive can 
+only be formulated on independent grounds.
+
+\subsection{Propernouns}
+
+It was decided to allow for singular propernouns only; all plural propernouns 
+must be formed by prior conversion to SUBNOUNs. Even though the singular rules 
+also deal with [OnlyPlur] Propernouns, in the same way the Noun rules do, it is 
+doubtful whether [OnlyPlur] propernouns exist, since they all seem to take an 
+article and hence are listed as BNOUNs in the dictionary. 
+
+Genitive formation of singular 
+propernouns is allowed both in Dutch and in English. Dutch has an extra rule 
+for periphrastic genitives with {\em van de/het\/}. The Propernoun rules are an 
+exact replica of the singular Noun rules. This also implies that all singular 
+Propernouns will be ambiguous between NOUN and PROPERNOUN, even in the local 
+rules.
+
+\subsection{Adjectives}
+
+The Adjective rules take care of positives, comparatives and superlatives of 
+adjectives. In Dutch, positives and comparatives may have NoForm or sForm ({\em
+vlug(s), vlugger(s)}). In analysis, -eForm of (attributive) adjectives is also
+accepted, but this form is not generated (cf.\ the remarks made in section
+2). It is assumed that Dutch sForm adjectives can simply be translated into
+ordinary English adjectives. Whether this mapping should be symmetric, i.e.\ 
+whether all English adjectives must also be translated into an sForm of a Dutch 
+adjective ({\em beautiful $\rightarrow$ mooi, moois\/}) has not been decided 
+yet.
+
+It is assumed that adjectives that are [NoComp] in one language 
+will also be [NoComp] in other languages ({\em houten - wooden}), since this 
+attribute-value is probably caused by semantic constraints that hold over 
+all languages. The rules 
+also introduce {\em meer/more\/} and {\em meest/most\/} for adjectives that 
+also or only take
+a periphrastic comparative and superlative. This is especially needed for 
+translation from Dutch into English, since English has only few adjectives that 
+take an inflectional comparative and superlative ({\em mooier - more beautiful
+\/}). It is unclear whether the Dutch periphrastic rule will ever be needed. 
+The Dutch AllerSuperlative is 
+analysed only; in IL, only one superlative is recognised.
+
+The Dutch AdjeORen rule produces -e and -en endings for adjectives that are 
+used nominalised in all degrees of comparison. Just as for participles of 
+verbs, the English counterparts of these rules produce periphrastic structures 
+with {\em one(s)}, except in those rare cases where the English adjective has 
+`nominalised' as one of the values for its attribute `uses' ({\em the rich, the 
+wealthy\/}). It is assumed that this nominalisation rule only works for plural 
+adjectives, and therefore need only be mapped onto the Dutch -enForm ({\em the 
+wealthy - de welgesteldeN\/}).
+
+Transformations are added to spell out the preposition going with the adjective 
+({\em genegen tot, aware of\/}), and for Dutch an extra transformation is 
+included to deal with a reflexive adjective (only example found so far: {\em 
+zich bewust van\/}). The only order of reflexive, verb and preposition 
+allowed, both in analysis and in generation, 
+is the standard one, i.e. {\em zich bewust van\/} is accepted, but {\em zich 
+van ... bewust\/} is not. For English, the AdjNominalised + Prep rule reverses 
+the order of the output string: {\em green one\/} vs.\ {\em one aware of\/}.
+
+\subsection{Adverbs}
+
+The rules for adverbs rather resemble the rules for adjectives. Adverbs can 
+also form comparatives and superlatives, both inflectional and periphrastic, 
+but an sForm of adverbs does 
+not exist. Whether English has any inflectional comparatives or superlatives 
+for adverbs while 
+Dutch needs a periphrastic form is even more doubtful than it was for 
+adjectives. However, the appropriate rule has been included just in case.
+The superlative of adverbs takes the obligatory article {\em het/the\/}:
+{\em het liefst, het meest priv\'{e}; the most quickly}. In analysis, 
+superlatives with and without 
+article are both allowed. Again, Dutch allerSuperlatives are accepted in 
+analysis only.
+
+With adverbs, only Dutch superlatives may have -e endings ({\em het liefst(e) 
+willen}). These -e endings are only accepted in analysis; they are not 
+generated. It is assumed that only inflectional superlatives can take a final 
+-e; periphrastic superlatives of adverbs cannot. 
+
+\subsection{Personal Pronouns}
+
+It was decided not to deal with the English person 5 ({\em thou\/}), since this
+would require extra rules for verb morphology as well, to deal with all the
+verb forms going with person 5 ({\em thou knowest\/, etc.}). Therefore, the
+Dutch PERSPRO {\em U\/} must be mapped onto the English {\em you\/}. Reduced
+forms of Dutch perspros ({\em 'm, me\/}) are accepted in analysis, but will not 
+be generated, except for
+generalised {\em je (one, you)\/} and {\em ze (they)\/}. Note that the 
+existence of the generalised {\em je\/} and {\em ze\/} causes all occurrences 
+of English {\em you\/} and {\em they\/} to be ambiguous, even in the local 
+rules. The Dutch generalised {\em je\/} has as one of its translations the 
+English IndefPro {\em one\/}, so that the Dutch PersPro rule must also be 
+mapped onto the English IndefPro rule. 
+
+As was mentioned in section 2, only
+unambiguous forms are generated with respect to case: even though the input is
+{\em him (acc,dat)\/}, the output will be {\em hem (acc)\/} and {\em hem
+(dat)\/}. 
+
+\subsection{Possessive Adjectives}
+
+The Dutch rules accept reduced forms in analysis, but generate only full 
+possessive 
+adjectives. It is assumed that morphology recognises the possadjs of 
+generalized reduced perspros {\em je\/} and {\em ze\/}
+({\em je\/} and {\em hun\/}, respectively) as unreduced forms. Note that 
+the Dutch PossAdj {\em je\/} has as one of its translations the English IndefPro {\em 
+one's\/}, so that the Dutch possadj rule must also be mapped onto the English 
+IndefProGeni rule.
+{\em Onze\/} is also only accepted in analysis; in generation, {\em ons\/} is 
+produced.
+For {\em het\/} no possessive forms exists; an extra 
+rule is added to produce {\em ervan\/} as translation of English {\em its\/}. 
+If possible translations of English {\em it\/} are the perspros {\em hij\/} 
+and {\em zij\/}, the rules will automatically also produce {\em hem/haar\/} as 
+translations of {\em its\/}.
+
+The third Dutch possadj rule accounts for the genitive forms of possessive 
+adjectives ({\em mijner\/} etc.). Generalized personal pronouns, {\em jullie\/}  and 
+{\em het\/} do not have this form. The English version of this rule works only 
+in generation, and produces a phrase with {\em of my\/} etc.
+
+\subsection{Possessive Pronouns}
+
+In Dutch, two separate rules have been formulated,
+since the 
+translation of English PossPros needs an article {\em mine $\rightarrow$ de/het
+mijne\/}, while in analysis a posspro without an article is accepted as 
+well ({\em mijne\/}). A third translation of English posspros is a phrase with 
+{\em van mij\/}, for cases like {\em This is mine\/}.
+Generalized personal pronouns, {\em gij\/} and {\em het\/} do not form 
+possessive pronouns. 
+Since {\em jullie\/} does not have a posspro either, a 
+fourth Dutch rule is added to generate {\em die/dat van mij, jullie\/} etc.\ as 
+translation for English {\em mine, yours\/} etc. It could 
+be argued that this rule should be reserved exclusively for the second person 
+plural, since all other persons could be dealt with by the other rules; 
+however, there seems to be no harm in a few extra translations for the 
+other persons.
+
+No rule is formulated for -enForms of Dutch possessive pronouns, since the 
+meaning of e.g.\ {\em de mijnen\/} seems not to be 
+a plural form of {\em de mijne\/}, but can 
+roughly be paraphrased as {\em those who are near to me\/}. Consequently,
+{\em de mijne\/} is ambiguous between singular and plural 
+reference. 
+
+\subsection{Wh Possessive Adjectives}
+
+It is assumed that in Dutch three different forms of {\em wie\/} exist: 
+([masc], sing), ([fem], sing) and ([], plur), to produce {\em wiens\/} and two 
+times {\em wier\/} respectively. English has only one {\em who\/} and one 
+{\em whose\/}.
+
+\subsection{Dem Possessive Adjectives}
+
+It was decided to deal with Dutch {\em diens\/} in analysis only, since translation 
+of English {\em his\/} should not give rise to too many ambiguities.
+As it is, {\em his\/} will produce {\em zijn, de/het zijne\/} and {\em die/dat 
+van hem\/}, 
+which seems quite enough to cover the meaning of {\em diens\/} as well. As is 
+apparent from the previous, it is assumed that the Dutch DEMPRO {\em die\/} has 
+as one of its possible translations the English PERSPRO {\em he\/}. The Dutch 
+DemPossAdj rule should then be mapped onto the English PossAdj rule. Since 
+English does not need a DemPossAdj rule, this subgrammar is completely missing
+in English (cf.\ App.\ B).
+
+\subsection{Determiners}
+
+In Dutch, determiners are generated with -e and -en 
+forms, just as adjectives and participles of verbs are. However, since the 
+translation of all forms into English seems to be the same, no distinction 
+between possible attributive or nominalised use (for which the determiners lack 
+an attribute, just as participles of verbs) has been made in the 
+rules: {\em beide(n) - both; welk(e) - which\/}. Note that the 
+English rule is vacuous: English has no distinction between a BDET and a DET.
+
+At the moment, no rule exists in morphology to form a genitive of determiners. 
+However, forms like {\em beider\/} and {\em aller\/} seem to exist as genitives 
+of {\em beiden\/} and {\em allen\/} respectively.
+Are these forms indeed determiners, derived from a 
+nominalisation of {\em beide\/} and {\em alle\/}, or are they separate
+indefinite pronouns (which can form genitives)? Should determiners get an 
+attribute `possgeni'? 
+
+When a firm decision has been taken as to 
+which words belong to the group of determiners,
+the local rules will be scanned for problems and deficiencies and 
+will be adapted to current needs.
+
+\subsection{Indefinite Pronouns}
+
+Note that for English, the basic IndefPro rule is vacuous, and is only needed 
+as counterpart for the Dutch rule. English has only INDEFPROs, while Dutch 
+recognises the difference between BIndefPro and IndefPro, since Dutch has an 
+inflectional genitive for IndefPros.
+
+It is assumed that all indefinite pronouns that can have a genitive in one
+language (all pronouns referring to animate beings?), can also have it in 
+the other, except for Dutch {\em men\/}. English 
+{\em one's\/} is mapped onto {\em zijn\/} in a separate rule. Since 
+{\em one\/} is not only mapped onto {\em men\/}, but also onto {\em je\/}, 
+this means that the English IndefProGeni-rule should also be mapped onto the 
+Dutch PossAdj-rule to produce the desired {\em je (gen)\/}.
+
+When a full list of indefinite pronouns is available in the test dictionary, 
+the rules will be checked for completeness.
+
+\subsection{Wh Pronouns}
+
+In this case, the Dutch rule is a vacuous one, needed only because of the 
+difference made in English 
+between {\em who (nom, acc)\/} and {\em whom (acc)\/}. Since this is the only 
+rule in the subgrammar, the export of Dutch SGWhPro is the same as the head. 
+The same holds for the English subgrammars of Determiners and IndefPros.
+
+\subsection{Utterance}
+The one rule in this subgrammar deals with the top node UTT. 
+
+
+\newpage
+\noindent
+{\Large\bf Appendix}
+\appendix
+\section{Control Expressions of the Local Subgrammars of Dutch}
+
+\begin{verbatim}
+
+1. SGVerb
+
+(* RC: RlocalVerbTense.mrule 1-19 *)
+
+( RlocalVerbPresIndic/1 | RlocalVerbPresIndic0/2 | RlocalAdjToVerbPres/3 
+| RlocalVerbPastIndic/4 | RlocalVerbPastIndic0/5 | RlocalAdjToVerbPast/6 
+| RlocalVerbPastPart/7  | RlocalVerbPastPart0/8  | RlocalAdjToVerbPastPart/9 
+| RlocalVerbPresPart/10 | RlocalAdjToVerbPresPart/11  
+| RlocalVerbInf/12      | RlocalAdjToVerbInf/13       
+| RlocalVerbImp/14      | RlocalVerbImp0/15      | RlocalAdjToVerbImp/16 
+| RlocalVerbPresSubj/17 | RlocalVerbPastSubj/18 )
+.
+[RlocalVerbeORen/19]
+.
+
+(* TC: RlocalVerbUse.mrule 20-28 *)
+
+(TlocalVerbPartAndRefl1/20 | TlocalVerbPartAndRefl2/21 | 
+ TlocalVerbPartAndRefl3/22 | TlocalVerbPartAndRefl4/23 |
+ TlocalVerbPartAndRefl5/24 )
+.
+(TlocalVerbPrep0/25 | TlocalVerbPrep1/26 | TlocalVerbPrep2/27 | 
+ TlocalVerbPrep3/28 )
+
+-----------------------------------------------------------------------
+2. SGNoun
+
+(RlocalNounSing/1        | RlocalNounPlur/2        | 
+ RlocalNounSingGeni1/3   | RlocalNounSingGeni2/4   |
+ RlocalNounPlurGeni1/5   | RlocalNounPlurGeni2/6 )
+
+-----------------------------------------------------------------------
+3. SGPropernoun
+
+(RlocalPropernounSing/1 | RlocalPropernounSingGeni1/2 |
+ RlocalPropernounSingGeni2/3 )
+
+-----------------------------------------------------------------------
+4. SGAdj
+
+(RlocalBasicAdj/1 | RlocalAdjComp/2 | RlocalAdjSup/3 )
+.
+[RlocalAdjeORen/4]
+.
+(TlocalAdjNoReflPrep/5 | TlocalAdjReflPrep/6)
+
+-----------------------------------------------------------------------
+5. SGAdv
+
+(RlocalBasicAdv/1 | RlocalAdvComp/2 | RlocalAdvSup1/3 | 
+ RlocalAdvSup2/4 )
+
+-----------------------------------------------------------------------
+6. SGPersPro
+
+RlocalPersPro/1
+
+-----------------------------------------------------------------------
+7. SGPossAdj
+
+( RlocalPossAdj1/1 | RlocalPossAdj2/2 | RlocalPossAdj3/3 )
+
+-----------------------------------------------------------------------
+8. SGPossPro
+
+( RlocalPossPro1/1 | RlocalPossPro2/2 | RlocalPossPro3/3 | 
+  RlocalPossPro4/4 )
+
+-----------------------------------------------------------------------
+9. SGWhPossAdj
+
+RlocalWhPossAdj/1 
+
+-----------------------------------------------------------------------
+10. SGDemPossAdj
+
+RlocalDemPossAdj/1 
+
+-----------------------------------------------------------------------
+11. SGDet
+
+RlocalDet/1
+
+-----------------------------------------------------------------------
+12. SGIndefPro
+
+( RlocalIndefPro1/1 | RlocalIndefPro2/2 )
+
+-----------------------------------------------------------------------
+13. SGWhPro
+
+RlocalWhPro/1
+
+-----------------------------------------------------------------------
+14. Utterance
+
+RlocalUtt/1
+
+\end{verbatim}
+
+\newpage
+\section{Control Expressions of the Local Subgrammars of English}
+
+\begin{verbatim}
+
+1. SGVerb
+
+(* RC LocalVerbTense 1-15 *)
+
+(RlocalVerbSimplePres/1 | RlocalVerbPresCont/2 | RlocalAdjtoVerbPres/3 |
+ RlocalVerbSimplePast/4 | RlocalVerbPastCont/5 | RlocalAdjtoVerbPast/6 |
+ RlocalVerbPastPart/7   | RlocalAdjtoVerbPastPart/8   |
+ RlocalVerbIng/9        | RlocalAdjtoVerbIng/10       |
+ RlocalVerbInfandImp/11 | RlocalAdjtoVerbInfandImp/12 |
+ RlocalVerbPresSubj/13  | RlocalAdjtoVerbPresSubj/14  |
+ RlocalVerbPastSubj/15 )
+.
+
+(* RC LocalVerbUse 16-26 *) 
+
+(TlocalVerbNoReflPartPrep/16) | ( (TlocalVerbReflPartPrep1/17 | 
+                                   TlocalVerbReflPartPrep2/18 )
+                                   .
+                                   (TlocalVerbRefl1/19 |
+                                    TlocalVerbRefl2/20)
+                                   .
+                                   TlocalVerbPart/21
+                                   .
+                                   (TlocalVerbPrep1/22 |
+                                    TlocalVerbPrep2/23) )
+.
+[RlocalVerbNominal1/24 | RlocalVerbNominal2/25 | RlocalVerbNominal3/26 ] 
+
+-----------------------------------------------------------------------
+2. SGNoun
+
+(RlocalNounSing/1        | RlocalNounPlur/2        | 
+ RlocalNounSingGeni/3    | RlocalNounPlurGeni/4 )
+
+-----------------------------------------------------------------------
+3. SGPropernoun
+
+(RlocalPropernounSing/1 | RlocalPropernounSingGeni/2 )
+
+-----------------------------------------------------------------------
+4. SGAdj
+
+(RlocalBasicAdj/1 | RlocalAdjComp/2 | RlocalAdjSup/3 )
+.
+(TlocalAdjNoPrep/4 | TlocalAdjPrep/5)
+.
+[RlocalAdjNominal1/6 | RlocalAdjNominal2/7 | RlocalAdjNominal3/8 ]
+
+-----------------------------------------------------------------------
+5. SGAdv
+
+(RlocalBasicAdv/1 | RlocalAdvComp/2 | RlocalAdvSup/3 )
+
+-----------------------------------------------------------------------
+6. SGPersPro
+
+RlocalPersPro/1
+
+-----------------------------------------------------------------------
+7. SGPossAdj
+
+( RlocalPossAdj1/1 | RlocalPossAdj2/2 )
+
+-----------------------------------------------------------------------
+8. SGPossPro
+
+RlocalPossPro/1
+
+-----------------------------------------------------------------------
+9. SGWhPossAdj
+
+RlocalWhPossAdj/1 
+
+-----------------------------------------------------------------------
+11. SGDet
+
+RlocalDet/1
+
+-----------------------------------------------------------------------
+12. SGIndefPro
+
+( RlocalBasicIndefPro/1 | RlocalIndefProGeni/2 )
+
+-----------------------------------------------------------------------
+13. SGWhPro
+
+RlocalWhPro/1
+
+-----------------------------------------------------------------------
+14. Utterance
+
+RlocalUtt/1
+
+\end{verbatim}
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.3 - released  feb-1987}
+% feb-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1987 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

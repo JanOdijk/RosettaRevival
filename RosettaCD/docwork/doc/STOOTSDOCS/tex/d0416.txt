@@ -1,0 +1,1531 @@
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta.x}
+   \RosTitle{A semantic type system}
+   \RosAuthor{Lisette Appelo en Joep Rous}
+   \RosDocNr{416}
+   \RosDate{December 21, 1989}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{semantic component, semantic structure, type}
+   \MakeRosTitle
+%
+%
+\setlength{\parindent}{0 in}
+\input{definitions}
+
+\section{Introduction}
+In the discussion of Rdoc 401 {\em Framework of the semantic component} and 
+Rdoc 353 {\em Types} the question came up whether the semantic 
+T-structures\footnote{In Rdoc 401 it was called M-structure}(or semantic types) as 
+proposed in Rdoc 401 could be `simple' feature bundles or should have a more 
+complex form, e.g. a set of attribute-value pairs, a list of feature bundels
+or even a tree, 
+resembling the S-trees of the syntactic component. We investigated 
+if there were reasons to prefer a complex
+form instead of the more simple solution 
+of feature bundles, as from the discussion of Rdoc 353 concerning types
+feature bundles seemed to be sufficient.\\
+
+We think that for an answer to this question the following items should be taken 
+into account:
+\begin{enumerate}
+\item Will the choice of a static type 
+(e.g.\ a set of attribute-value pairs) instead of a dynamic type (e.g. a tree or
+list) impose principal restrictions?
+\item How transparant will the solution be? This concerns matters of size, 
+maintenance and makability.
+\item How extensible will the solution be? We probably
+will not start with the most 
+difficult issues, but we will want to have the garantee that we can handle them
+in the future.
+\item What are the costs in terms of human effort?
+\item What are the effects on the efficiency with respect to the performance of 
+the system?
+\end{enumerate} 
+
+We will first summarize the proposal of Rdoc.\ 353 and
+make a few remarks on the nature of semantic rules (section 2).
+In section 3 and 4 we will present some possible complications (of Rosetta.x) that 
+could be 
+arguments to favour a complex type structure. Some examples and arguments 
+are taken 
+from discussions with Jan Odijk and Ren\'{e} Leermakers. Section 5 discusses possible solutions by extending the type system. Sectio
+n 6 contains a proposal for a
+new formulation of the type system. In section 7 we will discuss the relation
+between our type system and Montague Grammar. Section 8 and 9 contain some
+conclusions and additional remarks.
+
+\section{Semantic types and rules}
+\subsection{Formal presentation of the R0353 type system}
+In this section the type system presented by Jan O. in document 353 is presented
+in a more formal way.  An algebra will be described which defines the set of
+all possible type descriptions (the base set of the algebra). Furthermore, 
+a partial ordering will be defined
+for the base set of the algebra. Consequently, the compatibility test is just a
+test for the ordering relation of two elements of the base set of the algebra. 
+\begin{itemize}
+\item The set $T$ is the set of all possible {\em types}.
+\item To each {\em type} $t$ of $T$ a set of {\em meanings} is associated, this set is called the {\em domain} $D_{t}$ of type $t$.
+\item With a {\em meaning} we mean a basic or complex interlingua expression, 
+      that is, a semantic derivation  tree.   
+\item One meaning can be an element of several type domains. 
+\item Let $D$ be the set of all domains of the types in $T$. Then we define
+      the Boolean algebra $<A,\cap,\cup,',\emptyset,\bigcup_{d\in D} d>$, of which       $D\subseteq A$ is the generating set.
+      Furthermore, $A$ is a partially ordered set of which the 
+      relation "$\leq$" is defined as follows: 
+\begin{tabbing}
+$\forall D_1,D_2\in A: D_1\leq D_2 \Leftrightarrow D_1 \subseteq D_2$
+\end{tabbing}
+\item Let $\Re$ be the Boolean term algebra $<X,|,\cdot,\sim,notype,anytype>$, 
+      of which $T\subseteq X$ 
+      is the generating set. Because of the associativity of the $|$ and $\cdot$
+      operators  we will 
+      write  $e_1 | e_2\ldots | e_n$ in 
+      stead of
+      $(\ldots (e_1 | e_2)\ldots | e_n)$ and $e_1 \cdot e_2\ldots \cdot e_n$ in 
+      stead of $(\ldots (e_1 \cdot e_2)\ldots \cdot e_n)$.
+\item We define an interpretation function $\phi:X\rightarrow A$ as follows:
+      \begin{description}
+ \item[i] $\phi(t) = D_t$ if $t\in T$.
+ \item[ii] $\phi(\sim t) = \phi(t)'$.
+ \item[iii] $\phi(t_1\cdot\ldots\cdot t_n) = \phi(t_1)\cap\ldots\cap\phi(t_n)$.
+ \item[iv]  $\phi(t_1|\ldots|t_n) = \phi(t_1)\cup\ldots\cup\phi(t_n)$.
+      \end{description}
+\item Let $\Im$ be the algebra $<Y,\cdot>$,  where $T\subseteq Y$ is again
+      the generating set. Then, $Y\subseteq X$.
+\item The ordering relation "$\leq$" between elements of $Y$ and $X$ is to be
+ defined as :
+\begin{tabbing}
+$\forall\tau\in Y,\rho\in X: \tau\leq\rho\Leftrightarrow\phi(\tau)\subseteq\phi(\rho)$
+\end{tabbing}
+This definition, however, is difficult to work with in practice. The reason
+is that in order to check whether the ordering relation holds, several
+intersections have to be calculated. Because $A$ may contain infinite sets,
+such a calculation is problematical. Therefore, we define another
+ordering relation
+"$\sqsubseteq$" which causes less problems, and for which holds:
+\begin{tabbing}
+$\forall\tau\in Y,\rho\in X: \tau\sqsubseteq\rho\Rightarrow\tau\leq\rho$.
+\end{tabbing}
+ The   relation "$\sqsubseteq$" is defined as:
+\begin{description}
+   \item [i  ]$\forall t,r\in T : t\sqsubseteq r\Leftrightarrow D_t\subseteq D_r$.
+   \item [ii ]$\tau_1\cdot\ldots\cdot\tau_n\sqsubseteq\rho_1\cdot\ldots\cdot\rho_m 
+         \Leftrightarrow \forall\rho_i\exists\tau_j:\tau_j\sqsubseteq\rho_i$
+   \item [iii]$\tau_1\cdot\ldots\cdot\tau_n\sqsubseteq\rho_1|\ldots|\rho_m 
+         \Leftrightarrow \exists\rho_i\forall\tau_j:\tau_j\sqsubseteq\rho_i$
+\end{description}
+\item Each element of $Y$ is called a {\em type description}.
+\item An interlingua expression $e$ is said to have type description
+      $\tau$ if $e\in\phi(\tau)$.
+\item Type description $\tau\in Y$ is said to be {\em compatible} with 
+      $\rho\in X$ if $\tau\sqsubseteq\rho$.
+\item A type $t\in T$ is called a {\em maximum} if:
+\begin{tabbing}
+      $\neg\exists s\in T: t\sqsubseteq s$
+\end{tabbing}
+\item A type $r\in T$ is called a {\em root} of a type $t\in T$ if:
+\begin{tabbing}
+      $maximum(r)\wedge t\sqsubseteq r$
+\end{tabbing} 
+\item A type $t\in T$ is called a {\em minimum} if:
+\begin{tabbing}
+      $\neg\exists s\in T: s\sqsubseteq t$
+\end{tabbing}
+\item A type description $<\tau_1\cdot\ldots\cdot\tau_n>$ is called 
+      {\em minimal} with respect to the set $T$ of types if all $\tau_i$ are
+      minima.
+\item A {\em minimal} type description $<\tau_1\cdot\ldots\cdot\tau_n>$ of
+      expression $e$ 
+      is called {\em complete} with respect to the set
+      $T$ of types if:
+\begin{tabbing}
+ $\neg\exists \sigma\in T: minimum(\sigma)\wedge\sigma\not\in\{\tau_1,\ldots,\tau_n\}\wedge e\in \phi(\sigma)$
+\end{tabbing}
+\item  A function $L$ is defined which assigns to all basic interlingua
+       expressions a type description that is
+       minimal and complete with respect to $T$.
+\item A function EvalType is defined which calculates the type description
+      of an arbitrary interlingua expression as follows:
+\begin{tabbing}
+aaaaaaaaaa\=aaaaaa\=aaaaa\kill
+\> $EvalType(e) =_{def}$\\
+\>\> $ e\in T \rightarrow L(e)$\\
+\>\> $ e = I(e_1,\ldots e_n) \rightarrow F_I(EvalType(e_1)\ldots EvalType(e_n))$
+\end{tabbing}
+Because the functions $F_I$ are partial, the function $EvalType$ will not be
+defined for all interlingua expressions. We we call the expressions for
+which $EvalType$ is defined, {\em semantically well-formed} expressions.
+\end{itemize}
+
+\subsection{Remarks on the nature of semantic rules}
+
+The task of semantic rules as proposed in Rdoc 401 and Rdoc 353 is to test the 
+compatibility of semantic types with type requirements or calculate a new 
+semantic type  based on the old one(s).
+If a semantic rule has the actual arguments a$_{1}$,....,a$_{n}$
+with type descriptions t$_{1}$,....,t$_{n}$, then
+we can distinguish three kinds of semantic `actions':
+\begin{description}
+  \item[unification] The arguments of the rule are not allowed to have 
+contradictive types and the calculated type descriptions are the union of the 
+types of the arguments.\\
+informal example: I$_{NPformation-x}$:\\
+$<$definite $\cdot$ singular$>$ + $<$count $\cdot$ singular$>$ $\rightarrow$
+ $<$definite $\cdot$ singular $\cdot$ count$>$.\\
+(A simplified rule that corresponds to the rule that 
+combines a determiner with a common noun to a noun phrase, e.g. {\em het 
+meisje}.)
+  \item[compatibility test] One argument of the rule (the predicate or head) 
+has a type requirement  which is tested against the type descriptions of the other
+ arguments of the rule.\\
+informal example: I$_{start120}$:\\
+$<$req\_animate-generic$>$ + $<$animate$>$ + $<$generic$>$ $\rightarrow$ ok.\\
+(a simplified rule that corresponds to a StartVERBPPROP rule that combines a  
+two-place verb with its arguments.)
+  \item[calculation] From type descriptions of the arguments of a rule a new 
+type description is computed.\\
+informal example: I$_{accomplishment}$:\\
+$<$durative $\cdot$ vp120$>$ + $<$omegaSpec$>$ + $<$yesspec$>$ $\rightarrow$ 
+$<$accomplishment$>$.\\
+(A semantic rule that computes the Aktionsart of a proposition consisting of a 
+durative, two-place, non-ergative predicate and two arguments of which the 
+second argument has the property yesspec.  
+\end{description}
+
+Rules can have combinations of these actions:\\
+informal example: unification + calculation: I$_{NPformation-x}$:\\
+
+$<$definite$>$ + $<$plural $\cdot$ count$>$ $\rightarrow$ $<$definite $\cdot$ plural $\cdot$ count $\cdot$ yesspec$>$. \\
+(e.g.\ {\em de jongens})\\
+
+informal example: compatibility + calculation: a combination of I$_{start120}$ and
+I$_{activity}$ (in case semantic transformations are not allowed):\\
+$<$req\_animate-generic $\cdot$ durative $\cdot$ vp120$>$ + \\
+$<$animate $\cdot$ omegaSpec$>$+ $<$generic $\cdot$ omegaSpec$>$ $\rightarrow$ 
+$<$activity$>$.
+
+\section{Possible Complications}
+\subsection{Inconsistent type descriptions}
+From the definitions in the previous section we can see that 
+type descriptions \\
+$<\tau_1\ldots\tau_n >$ are called inconsistent
+if $D_{\tau_1}\cap\ldots\cap D_{\tau_n} = \emptyset$.
+This suggests that we can create a function which  tests type descriptions
+for their consistency.
+We must
+realize, however, that there is no independent static definition of the type 
+domains and that some of these domains are infinite sets. This 
+implies that no computable function  can be defined that is able to find 
+inconsistencies in type descriptions. Only a human can judge whether the
+type description calculated by the semantic component for a certain interlingua
+expression is correct. 
+Ideally, the semantic component defines the set of consistent type descriptions,
+in the same way the M-grammar defines the set of well-formed S-trees.  If 
+this set  contains inconsistent  descriptions then the reason for that are
+errors in the semantic rules. Only in one case inconsistent type descriptions
+can be discovered automatically \footnote{In section 6 we will see that the fact
+that the set of types can be partitioned into classes can also be used to find
+inconsistent type descriptions} , namely if a type description $\tau$ contains
+a type and its negation, as follows
+\begin{tabbing}
+$\tau = a\cdot\sim a\cdot\rho$
+\end{tabbing}
+According to the interpretation function $\phi$ this will alway yield the
+empty set.
+
+
+\subsection{Distributed information}
+
+In all examples of section 2 we assumed that the  type descriptions
+ had the form of a 
+feature bundle or a set of attribute-value pairs. That approach also assumes that it will always be possible to encode 
+the semantic properties of the arguments of a rule in the type description of 
+the result of that rule. To put into other words, that it will be possible to 
+let the rules be `local' and not `distant'.
+ 
+\begin{description}
+  \item[local rules]: local rules are rules that test or calculate semantic 
+types based on the semantic types of the direct arguments of that rule. 
+All the examples of Rdoc 353 are of this kind. Another example is the 
+calculation of the semantic type class {\em Aktionsart} of propositions above: 
+every 
+predicate has a semantic type of the class {\em temporal class} and the arguments 
+have a type of the class {\em SpecQ} (specified quantity). Based on these features the type  of the class {\em 
+Aktionsart} can be calculated  in the semantic rule that corresponds 
+to the 
+syntactic rule that makes a propositional structure. 
+  \item[distant rules]: distant rules are rules that test or calculate semantic 
+types based on the semantic types of earlier introduced elements
+next to the semantic types of the direct arguments of that rule. For example,
+the semantic rule that calculates the time reference and corresponds to a 
+syntactic tense rule, will base this calculation on tense information 
+transferred from the syntax and the semantic values of earlier introduced
+(variables for) adverbials that can be present or absent, or the  semantic 
+substitution rule that tests the type description of the variables against the
+ type description of the substituents.
+\end{description}
+Note that it seems to be easy to think of a solution in which distant rules 
+could be local rules by changing the place of the rules in the derivation, but 
+often there are (syntactic) reasons to have these particular places.\\
+It will be clear in the first place that such `distant' rules could be a 
+possible problem for an approach with a static type structure like a fixed set 
+of attribute value pairs  if it is not known how many properties of earlier 
+introduced elements should be preserved. In the second place, if the number of 
+type descriptions of earlier introduced elements is very large the transparancy 
+of the system will not be enhanced. Therefore, we will need probably
+more structured types for these cases.
+
+\section{Structured Types?}
+Let us consider some examples of the above mentioned complications: coordination,
+the issue of the pre-action technique, temporal 
+modifiers  and argument types. 
+
+\subsection{Coordination}
+Coordination is a good example of a case in which there is  a need for
+ more structured types. \\
+Let the type description of the expressions
+ $||$de theepot$||$  and  $||$de handdoek$||$ be $<concrete$ $staand>$ and
+$<concrete$ $liggend>$ respectively. What is in this case the type
+description of the expression $||$de theepot en de handdoek$||$ ? It
+is not $<concrete$ $staand$ $liggend>$  because that is an {\em
+inconsistent} type description. It seems more appropriate to state
+that $||$de theepot en de handdoek$||$ is an element of
+$( D_{concrete}\cap D_{liggend} )\cup ( D_{concrete}\cap D_{staand} )$. 
+However, in order to be able to formulate that in terms of
+type descriptions we need to extend the notation as given in section 2 to a more 
+structured one (cf. section 5.1). 
+\\
+\subsection{The pre-action technique}
+Until now the only place where the pre-action
+technique is necessary is M-Generator. The pre-action technique can be looked at
+as an implementation of a theory in which an ambiguity is
+created for each possible variable value. At the moment of
+substitution it is checked whether the variable value and the value
+of the substituent match, thereby creating a filter for wrong variable
+instantiations.
+
+In the semantic component we will also need a kind of pre-action technique,
+for the instantiation of variables in the semantic derivation tree. At least
+two problems arise if we want the pre-action technique to be
+an implementation of a theory which is equivalent to the one used in 
+M-Generator. 
+\begin{enumerate}
+\item  In order to be able to perform a check at substitution time the
+       type-description of the variable must be available. That, however,
+       is only possible (with a compositional formalism) if the type
+       description of the variable has been passed from one rule to
+       another in a bottom up way. This implies that, apart from the
+       changes in the type-descriptions caused by coordination, we also
+       need even more structure in our type-descriptions in order to 
+       incorporate variable type descriptions.       
+\item In M-Generator the set of possible values that a variable can
+      take has a finite number of elements. Here, on account of the type
+      descriptions introduced for coordination, a variable can take
+      an {\em infinite} number of values. That leaves us the choice
+      between 
+      a theory {\em with} the pre-action technique, in which infinity is
+      not a problem and a theory {\em without}
+      the preaction technique but in which the semantic component is a
+      {\em non-computable} function.
+\end{enumerate}
+
+\subsection{Temporal Modification}
+Temporal modifiers are treated as variables that are substituted for. This means
+that the problems with the pre-action technique also hold for them.  Furthermore
+there are rules that require the availability of them, or more precisely, it were
+those rules that  required the treatment of temporal modifiers as variables as 
+those rules had to be ordered before the substitution rules.
+The calculation of time reference as it is done now in the syntax of the 
+Rosetta3 grammars concerns the following aspects:
+\begin{itemize}
+  \item The calculation of a type of the class {\em Aktionsart} for propositions.
+ This calculation
+is based on a type of class {\em temporal class} of the predicate and the types of class {\em SpecQ} of the arguments of that predic
+ate.
+
+  \item The calculation of a type of the class {\em SpecQ} for arguments.
+
+\item Introduction of variables for temporal modifiers, i.e. referential, 
+retrospective, frequential and durative.
+
+\item Calculation of the `time reference' (a combination of the types of the
+classes {\em superdeixis, deixis, aspect and retro}).
+In case of propositions this will be based on syntactic tense 
+information (if present) and the present temporal modifiers with their temporal 
+semantic properties.
+\item Substitution of temporal adverbials. Depending on {\em aspect} and {\em
+Aktionsart} the substitution will be allowed. These tests cannot be done 
+earlier because the type of class {\em Aktionsart} and maybe in the future 
+{\em aspect} as well can be changed in substitution rules.
+
+\item The substitution rule for the {\em negation} element in propositions 
+changes the value of the type of class {\em Aktionsart} to {\em stative} if it 
+was not stative already.
+
+\end{itemize}
+We see that at least in two kinds of rules information carried by variables is 
+needed: Aktionsart calculation and time reference rules.  We expect the Aktionsart
+calculation rules to be `local', but the time reference rules cannot be `local', because the voice and proposition substitution rule
+s are situated
+between the introduction of the variables for temporal modifiers and the time
+reference rules.
+To encode all the information needed from earlier introduced 
+elements in a type description,
+at least the following classes of types would be
+ needed to pass information from one rule to another:\\
+
+\begin{tabular}{|l|l|l|}
+\hline
+propositions & entities & temporal modifiers\\
+\hline
+\hline
+Aktionsart & superdeixis & quant\\
+SpecQ & count-mass & timeAdvClass\\
+class & number &  deixis\\
+deixis & DETpresent & retro\\
+superdeixis & SpecQ & aspect\\
+aspect & & \\
+retro & & \\
+Refpresent & &\\
+Durpresent & & \\
+Retropresent & & \\
+Freqpresent & & \\
+Refdeixis & & \\ 
+Refaspect & & \\
+Retroaspect & & \\
+Duraspect & &  \\
+Freqaspect & &  \\
+FreqQuant & & \\
+\hline
+\end{tabular}
+
+
+This is already a rather long list for temporal features only and maybe
+it will not be enough as the details have only been worked out provisionally.\\
+Note that  already three type class sets have been assumed and
+that there will be at most one reference 
+adverbial, one durative adverbial, one retrospective adverbial and one 
+frequential adverbial.\\
+
+As long as we are dealing with a finite set of cases we can add  types 
+or classes of types.
+So the extensibility of the number of feature types is not a principal 
+problem as long we are sure that it will be a 
+finite list. However, we also think that the big size of the type description does not 
+favour the transparancy of the semantic structures. Therefore, a more structured type is to be preferred.
+\subsection{Argument types}
+As Jan O. pointed out in document 353 every function should specify for
+each of its arguments to what type it should belong. However, it might
+very well be necessary to access and even change type requirements in
+semantic rules. For instance, look at the following derivation tree:
+\begin{verbatim}
+                        Rstart
+
+              Rbaarderivation   X1 
+
+          isoleren
+\end{verbatim}
+The verb `{\em isoleren}' has 2 arguments and will therefore  have   
+2 type requirements in the lexicon. The derivation rule which changes the 
+verb into a
+{\em -baar} adverb  has to throw away one of the requirements because the
+adverb has only one argument. 
+Furthermore, the type requirements of `{\em isoleren}'
+must be available at the moment \verb+Rstart+ is applied,  because at that
+point the compatibility check between the type requirement and
+the actual arguments of `{\em isoleren}' is executed.
+This means that the T-structures that are passed from one rule to another should
+be able to carry type requirement information.
+ 
+\subsection{Summary}
+In this section we have seen that a more structured type description
+has to be preferred:
+\begin{itemize}
+  \item with coordinated structures to avoid inconsistent type descriptions.
+  \item to pass variable information for substitution rules and rules that need
+         information  that is carried by these variables as e.g. temporal
+          rules.
+  \item  to have access to type requirements for arguments.
+\end{itemize}
+\section{Possible Solutions: extensions of the type system}
+\subsection{Extension of type description}
+First we want to extend the type system (cf section 2) as to incorporate the
+possibility of coordinated constituents. In fact the extension is simple. 
+We define type descriptions to be elements of the set $X$ in stead of $Y$.
+This implies that type descriptions can be of the form $e_1|\ldots|e_n$. The
+interpretation of these kind of expressions is then exactly what we want for
+ coordinated structures, 
+namely the union of the interpretation of $e_1,\ldots,e_n$.
+\begin{tabbing}
+{\bf Example}\\
+\end{tabbing}
+Let the type description of the expressions
+ $||$de theepot$||$  and  $||$de handdoek$||$ be $<$ concrete staand $>$ and
+$<$ concrete liggend $>$ respectively. Then the type description of
+$||$de theepot en de handdoek$||$ would be 
+$<$ (concrete$ $staand) $|$ (concrete$ $liggend) $>$, which is interpreted 
+according to the interpretation function $\phi$ as 
+$( D_{concrete}\cap D_{liggend} )\cup ( D_{concrete}\cap D_{staand} )$
+\begin{tabbing}
+\end{tabbing}
+The definition of the algebra $\Im$ can now be done away with. However,
+we  have to change the definition of the ordering relation
+$\sqsubseteq$. The new definition which also accounts for "alternatives" 
+(descriptions of the form $e_1|\ldots|e_n$) is:
+\begin{description}
+   \item [i  ]$\forall t,r\in T : t\sqsubseteq r\Leftrightarrow D_t\subseteq D_r$.
+   \item [ii ]$\tau_1\cdot\ldots\cdot\tau_n\sqsubseteq\rho_1\cdot\ldots\cdot\rho_m 
+         \Leftrightarrow \forall\rho_i\exists\tau_j:\tau_j\sqsubseteq\rho_i$
+   \item [iii]$\tau_1\cdot\ldots\cdot\tau_n\sqsubseteq\rho_1|\ldots|\rho_m 
+         \Leftrightarrow \exists\rho_i\forall\tau_j:\tau_j\sqsubseteq\rho_i$
+   \item [iv ]$\tau_1|\ldots|\tau_n\sqsubseteq\rho
+         \Leftrightarrow \forall\tau_j:\tau_j\sqsubseteq\rho$
+\end{description}
+The relation $\sqsubseteq$ can be used  to define a partial ordering
+on the base set $X$ of algebra $\Re$.
+\begin{tabbing}
+{\bf Example}
+\end{tabbing}
+
+Let the verb {\em zich bevinden} require that its first argument  is an 
+expression which is compatible
+with type description $<concrete>$.  If the actual first argument
+is $||$de theepot en de handdoek$||$ (e.g. in `{\em de theepot en de 
+handdoek bevinden zich op tafel}', then the compatibility test is:
+\begin{tabbing}
+$<(concrete$ $staand)|(concrete$ $liggend)> \sqsubseteq <concrete>$
+\end{tabbing}
+this can be rewritten as:
+\begin{tabbing}
+$< concrete$  $staand >\sqsubseteq <concrete>\wedge
+<concrete$ $liggend>\sqsubseteq <concrete>$
+\end{tabbing}
+which can be further be simplified to.
+\begin{tabbing}
+($<concrete>\sqsubseteq <concrete> \vee
+<staand>\sqsubseteq <concrete>) \wedge $\\
+$(<concrete>\sqsubseteq <concrete> \vee
+<liggend>\sqsubseteq <concrete>)$ \\
+\end{tabbing}
+which is true.\\
+\\
+However, if we take the verb  {\em staan} in `{\em de theepot en de handdoek
+staan op tafel}', which requires type description $<(concrete$ $staand)>$,
+then the compatibility test is :
+\begin{tabbing}
+$<(concrete$ $staand)|(concrete$ $liggend)>\sqsubseteq <concrete$ $staand>$.
+\end{tabbing}
+which is the same as:
+\begin{tabbing}
+$((<concrete>\sqsubseteq <concrete> \vee
+<staand>\sqsubseteq <concrete>) \wedge $ \\  
+$(<concrete> \sqsubseteq <staand> \vee
+<staand> \sqsubseteq <staand> )) \wedge $\\
+$((<concrete> \sqsubseteq <concrete> \vee
+<liggend> \sqsubseteq <concrete>) \wedge $ \\
+$(<concrete> \sqsubseteq <staand> \vee
+<liggend> \sqsubseteq <staand>))$\\
+\end{tabbing}
+As we can see, this expression is false. Consequently, the expression
+`{\em de theepot en de handdoek staan op tafel}' is rejected by the type system.
+
+\subsection{Variable type description list}
+As we described in section 4 the complications with variables are 
+twofold:
+\begin{enumerate}
+   \item Some rules require the availability of variables, e.g.\ substitution
+rules, Aktionsart rules, time reference rules (section 4.1, 4.2).
+   \item Because coordinated structures can be formed in infinitely many ways,
+         the pre-action technique has to be incorporated in our theory
+         of the semantic component (section 4.1).
+\end{enumerate} 
+Let us first look at problem 2.  It is true that, because the number of possible
+coordinated structures is infinite, the number of corresponding type description
+expressions is also infinite. However, $\Re$ is a Boolean algebra which implies 
+that these infinitely many type description expressions can 
+be put into a normal form, of which there are just {\em finitely} many.
+Therefore, in theory, we should use the finite set of possible
+type descriptions in normal form rather than the infinite set of possible
+type description expressions\footnote{ A type description $t$ is in 
+{\em normal form} if
+it is of the form $e_1|\ldots|e_n$, where $e_1,\ldots, e_n$ are of the form
+$f_1\cdot\ldots\cdot f_m$ such that each $f_i$ is a basic type. Because
+the set of basic types is finite, there are only finitely many combinations
+$f_1\cdot\ldots\cdot f_m$ and therefore there are only finitely many normal 
+forms.}.  Consequently, it is not necessary to incorporate the pre-action technique
+in our theory.
+
+The complete theoretical process can now be sketched as follows.
+In A-Transfer the translation of a syntactical variable is ambiguous,
+it is translated into a set of semantical variables, such that each semantical
+variable has a different type description from the set of all possible
+type description expressions in  normal form. When the
+substitution rule is applied, it should check that the type description of
+the variable is the same as the type description of the substituent. Or more
+accurately formulated: it should check whether the interpretation of the
+type description of the variable is the same as the interpretation of the
+type description of the substituent. This can be checked by testing on the
+equality \footnote{In fact {\em equality } is not quite the correct formulation
+here, because the normal form $e_1|\ldots|e_n$ of a type description is unique
+except for the order of $e_1,\ldots, e_n$.  }
+of the type description expressions of variable and substituent after the
+type description of the substituent has been put into normal form. 
+
+Until now the T-Structures which have been introduced in document 403 could be 
+bare type descriptions. Problem 1 indicates that it is necessary for the 
+T-structures to carry other information too. If we would have a system in which
+logical expressions were build, then in the process of building complete
+expressions for one sentence
+expressions with unbound variables would appear.
+In general, the semantic variables in Rosetta get bound in the
+`substitution' rules. At that moment the type description of the variable
+has to be compared with the type description of the substituent. In order
+to make this type description available we propose to add to our T-structure
+a list of type descriptions corresponding to unbound variables that
+ occur in the semantic derivation tree, or more formally:
+\begin{itemize}
+\item 
+A T-structure corresponding to a semantic derivation tree $e$ 
+is a is a pair $(T,L)$, 
+where $T$ is a type description such that $e\in \phi(T)$,
+and where $L$ is a list of pairs $(i,t)$, where $i$ is a variable index
+of an unbound variable occurring in $e$
+and where $t$ is the type description of that variable.
+\end{itemize}
+
+\subsection{Argument requirement list}
+The T-structures defined in the previous section should be extended somewhat
+in order to account for type requirement specifications. If the logical
+expression corresponding to a semantic derivation tree $e$ is an n-place
+function $f$  then the T-structure corresponding to $e$ is a triple
+$(T,L,R)$, where $T$ and $L$ is a type description and a list of unbound
+variable type descriptions  respectively (cf.  previous
+section), and where $R$ is a list of type descriptions $r_1,\ldots ,r_n$
+such that each type description $r_i$ is the type requirement of the
+$i-$th argument of the function $f$. 
+
+\section{New formulation of the type system}
+\subsection{Definitions}
+\begin{itemize}
+\item The set $T$ is the set of all possible {\em types}.
+\item To each {\em type} $t$ of $T$ a set of {\em meanings} is associated, this set is called the {\em domain} $D_{t}$ of type $t$.
+\item With a {\em meaning} we mean a basic or complex interlingua expression, 
+      that is, a semantic derivation  tree.   
+\item One meaning can be an element of several type domains. 
+\item The set of types $T$ is {\em partitioned} into the subsets ( to be
+      called {\em classes}) $C_1\ldots C_n$.
+      For each pair of types $t_1, t_2$ in a subset $C_i$ it is true
+      by definition that $D_{t_1}\cap D_{t_2} = \emptyset$.
+\item Let $D$ be the set of all domains of the types in $T$. Then we define
+      the Boolean algebra $<A,\cap,\cup,',\emptyset,\bigcup_{d\in D} d>$, of which       $D\subseteq A$ is the generating set.
+      Furthermore, $A$ is a partially ordered set of which the 
+      relation "$\leq$" is defined as follows: 
+\begin{tabbing}
+$\forall D_1,D_2\in A: D_1\leq D_2 \Leftrightarrow D_1 \subseteq D_2$
+\end{tabbing}
+\item Let $\Re$ be the Boolean term algebra $<X,|,\cdot,\sim,notype,anytype>$, 
+      of which $T\subseteq X$ 
+      is the generating set. Because of the associativity of the $|$ and $\cdot$
+      operators  we will 
+      write  $e_1 | e_2\ldots | e_n$ in 
+      stead of
+      $(\ldots (e_1 | e_2)\ldots | e_n)$ and $e_1 \cdot e_2\ldots \cdot e_n$ in 
+      stead of $(\ldots (e_1 \cdot e_2)\ldots \cdot e_n)$.
+\item We define an interpretation function $\phi:X\rightarrow A$ as follows:
+      \begin{description}
+ \item[i] $\phi(t) = D_t$ if $t\in T$.
+ \item[ii] $\phi(\sim t) = \phi(t)'$.
+ \item[iii] $\phi(t_1\cdot\ldots\cdot t_n) = \phi(t_1)\cap\ldots\cap\phi(t_n)$.
+ \item[iv] $\phi(t_1|\ldots|t_n) = \phi(t_1)\cup\ldots\cup\phi(t_n)$.
+      \end{description}
+\item The set $X$ is a poset of which the ordering relation 
+      "$\sqsubseteq$" is to be defined as :
+\begin{description}
+   \item [i  ]$\forall t,r\in T : t\sqsubseteq r\Leftrightarrow D_t\subseteq D_r$.
+   \item [ii ]$\tau_1\cdot\ldots\cdot\tau_n\sqsubseteq\rho_1\cdot\ldots\cdot\rho_m 
+         \Leftrightarrow \forall\rho_i\exists\tau_j:\tau_j\sqsubseteq\rho_i$
+   \item [iii]$\tau_1\cdot\ldots\cdot\tau_n\sqsubseteq\rho_1|\ldots|\rho_m 
+         \Leftrightarrow \exists\rho_i\forall\tau_j:\tau_j\sqsubseteq\rho_i$
+   \item [iv ]$\tau_1|\ldots|\tau_n\sqsubseteq\rho
+         \Leftrightarrow \forall\tau_j:\tau_j\sqsubseteq\rho$
+\end{description}
+\item Each element of $X$ is called a {\em type description}.
+\item A type description $t$ is in {\em normal form} if
+      it is of the form $e_1|\ldots|e_n$, where $e_1,\ldots, e_n$ are of the form
+      $f_1\cdot\ldots\cdot f_m$ such that each $f_i$ is a basic type
+      \footnote{Each time the term {\em type description} is mentioned in the
+      rest of the document, we mean a type description in normal form}.
+\item An interlingua expression $e$ is said to have type description
+      $\tau$ if $e\in\phi(\tau)$.
+\item A type description $t$ is called {\em inconsistent} if $\phi(t)=\emptyset$.
+\item Type description $\tau$ is said to be {\em compatible} with type 
+      description $\rho$ if $\tau\sqsubseteq\rho$.
+\item Two type descriptions $\tau$ and $\rho$ are said to be {\em unifyable}  
+     \begin{itemize}
+      
+     \item \begin{itemize}
+           \item if $\tau,\rho\in T$ and  $\tau$ and $\rho$ are not
+            elements of the same {\em class} 
+           \item if $\rho$ is of the form $\sim r$, where  $\tau,r\in T$,
+                 and $r\neq\tau$.
+           \end{itemize}
+     \item if $\rho=\rho_1\cdot\ldots\cdot\rho_n$ and 
+           if for all $\rho_i$ holds that
+           $\tau$ and $\rho_i$ are unifyable.
+     \item if $\rho=\rho_1 |\ldots | \rho_n$ and if for all $\rho_i$ holds that
+           $\tau$ and $\rho_i$ are unifyable.
+     \item iff $\rho$ and $\tau$ are unifyable.
+     \end{itemize}
+\item If two type descriptions $\tau$ and $\rho$ are unifyable then 
+      the {\em unification} of  $\tau$ and $\rho$, notated as 
+      "$\tau\sqcap\rho$", is defined as:
+      \begin{itemize}
+         \item $\tau\sqcap\rho = $SIM$($NF$(\tau\cdot\rho))$, 
+               where NF is a function 
+               that brings an arbitrary type description into normal form.\\
+               The function SIM applies all standard simplification rules 
+               for Boolean algebra's, such as:
+                \begin{itemize}
+                   \item $\tau\cdot anytype = \tau$
+                   \item $\tau\cdot\tau = \tau$
+                   \item  if $\tau\sqsubseteq\rho$ then $\tau\sqcap\rho = \tau$ 
+               \end{itemize}
+       \end{itemize}
+\item A type $t\in T$ is called a {\em maximum} if:
+\begin{tabbing}
+      $\neg\exists s\in T: t\sqsubseteq s$
+\end{tabbing}
+\item A type $r\in T$ is called a {\em root} of a type $t\in T$ if:
+\begin{tabbing}
+      $maximum(r)\wedge t\sqsubseteq r$
+\end{tabbing} 
+\item A type $t\in T$ is called a {\em minimum} if:
+\begin{tabbing}
+      $\neg\exists s\in T: s\sqsubseteq t$
+\end{tabbing}
+\item A type description $<\tau_1\cdot\ldots\cdot\tau_n>$ is called 
+      {\em minimal} with respect to the set $T$ of types if all $\tau_i$ are
+      minima.
+\item A {\em minimal} type description $<\tau_1\cdot\ldots\cdot\tau_n>$ of
+      expression $e$ 
+      is called {\em complete} with respect to the set
+      $T$ of types if:
+\begin{tabbing}
+ $\neg\exists \sigma\in T: Minimum(\sigma)\wedge\sigma\not\in\{\tau_1,\ldots,\tau_n\}\wedge e\in \phi(sigma)$
+\end{tabbing}
+\item  A T-structure is a triple $(T,L,R)$  such that:
+\begin{itemize}
+   \item $T$ is a type description,
+   \item $L$ is a list of pairs $(i,t)$, where $i$ is a variable index and $t$
+         is a variable type description.
+   \item $R$ is a type requirement list, that is, a list of type descriptions.
+\end{itemize}
+\item  A function $\cal L$ is defined which assigns to all basic interlingua
+       expressions a T-structure $(t,<>,l)$, where $t$ is type description 
+       that is minimal and complete with respect to $T$.
+\item Variables have a corresponding T-structure of the form $(t,<t>,<>)$,
+      where $t$ is a type description in normal from.
+\item A function M-Sem is defined which calculates the type description
+      of an arbitrary interlingua expression as follows:
+\begin{tabbing}
+aaaaa\=aaaaaa\=aaaaa\kill
+\> M-Sem$(e) =_{def}$\\
+\>\> $bxpr(e) \rightarrow {\cal L}(e)$\\
+\>\> $var(e) \rightarrow ts(e)$\\
+\>\> $ e = I(e_1,\ldots e_n) \rightarrow F_I($M-Sem$(e_1)\ldots $M-Sem$(e_n))$\\
+\\
+Here, $bxp$r is a predicate which is true if $e$ is a basic expression,\\
+\>$var$ is true if $e$ is a variable and \\
+\>$ts$ is a function that returns the T-Structure of a variable
+\end{tabbing}
+Because the functions $F_I$ are partial, the function M-Sem will not be
+defined for all interlingua expressions. We we call the expressions for
+which M-sem is defined, {\em semantically well-formed} expressions.
+\end{itemize}
+
+\subsection{Examples}
+\begin{itemize}
+\item The set of possible types $T$ could be 
+      $\{human, mass, count, singular, plural \}$.
+\item D$_{human}$ = \{ $||$man$||$,$||$vrouw$||$,$||$de mannen$||$,$||$vrouwen$||$\}
+\item $T$ can be partitioned into the following classes:
+     \begin{description}
+        \item[-] $C_{human} = \{ human\} $
+        \item[-] $C_{poscomas} = \{ mass, count\} $
+        \item[-] $C_{number} = \{ singular, plural\} $
+     \end{description}
+\item $< \sim animate\cdot animate >$ and $< count\cdot mass >$ are inconsistent
+      type descriptions.
+\item $< animate\cdot count>$ is not unifyable with $< animate\cdot mass>$,
+\item In the hierarchy, specified in appendix A2 of doc.\ 353,  $entity$ and
+      $path$ are maxima, and $drink$ and $game$ minima.
+\item The lexical item $||$man$||$ will have the minimal type description
+      $< human >$ and not for example $< animate >$.
+\item The T-structure $(< activity >, <(21,<human\cdot yesspec> ), (23, <musinstr\cdot yesspec )>, <>)$
+      can be seen as a result of applying a startrule with incorporated
+      Aktionsart calculation.
+\end{itemize}
+
+\section{The relation with Montague Grammar}
+We think it is wise to investigate the relation of the type system presented in
+document 353 with the Model Theoretical Semantics as presented by Richard
+Montague. This is especially important if we are also going to generate
+logical expressions in the semantic component  in the future.
+The question is whether this approach of building type descriptions in a
+compositional way is compatible with the way in which
+a logical expression is build in Montague grammar. 
+
+For instance,  the type system functions require that their arguments
+have a certain type. Often the actual argument is an unbound (semantic or
+logical) variable. In the proposal of Jan O. for such an unbound variable 
+the type description is assumed of the expression which is syntactically called 
+the substituent of the rule in which the variable is bound. 
+Let us look at an 
+example taken from PTQ. 
+\begin{tabbing}
+{\em a woman walks}
+\end{tabbing}
+The logical formula of this sentence is derived as follows
+\begin{tabbing}
+aaaaa\=aaaaaaaaaaaaaaaaaaaaaaaaaa\=aaaaaaaaaa\kill
+(1) \>a woman \> $\lambda P.\exists x[woman(x)\wedge P(x)]$\\
+(2) \>she$_2$ walks \> $walk(x_2)$\\
+(3) \>a woman walks \> $\lambda P.\exists x[woman(x)\wedge P(x)](\lambda x_2.walk(x_2))$\\
+(4) \>\>$\exists x[woman(x)\wedge \lambda x_2.walk(x_2)(x)]$\\
+(5) \>\>$\exists x[woman(x)\wedge walk(x)]$\\
+\end{tabbing}
+The place where the compatiblity check is performed in the Rosetta system is (2).
+In (2) we see that the check has to be applied between the type 
+description of variable $x_2$ and the expected argument type of $walk$. From (4) 
+and (5) we learn that the actual argument of $walk$ is the variable $x$.
+Furthermore, 
+we learn that the variables $x$ and $x_2$ should have the same (or compatible) 
+type descriptions in order to guarantee that $walk(x)$ is a correct expression 
+according to the Type System.
+In the proposal described in 353  not the type description of the variable $x$ is 
+ checked,
+but in stead, the type description of the complete expression "{\em a woman}"
+corresponding to the formula $\lambda P.\exists x[woman(x)\wedge P(x)]$.
+Both approaches will only have the same effect in very specific circumstances.
+Let the type description $\tau$ 
+corresponding to
+$\lambda P.\exists x[woman(x)\wedge P(x)]$  be of the form
+$\tau_1\cdot\tau_2$, where $\tau_2$ is the type description of the individual $x$.
+In that case the type system will require that the argument type of $walk$, say
+$\rho$, is compatible with $\tau$, or more formally:
+\begin{tabbing}
+aaaaa\=aaaaaaaaaaaaaaaaaaaaaaaaaa\=aaaaaaaaaa\kill
+$\tau_1\cdot\tau_2 \sqsubseteq\rho$\\
+or\\
+(7)\> $\tau_1\sqsubseteq\rho \vee \tau_2\sqsubseteq\rho$
+\end{tabbing}
+The actual compatibility check in the PTQ example ( in 5), however, is of the form
+\begin{tabbing}
+aaaaa\=aaaaaaaaaaaaaaaaaaaaaaaaaa\=aaaaaaaaaa\kill
+(8) \> $\tau_2\sqsubseteq\rho$
+\end{tabbing}
+These propositions will only be equal if $\neg\tau_1\sqsubseteq\rho \vee \tau_2\sqsubseteq\rho$ is true. 
+This will, for instance, be the case if
+$\tau_1\sqsubseteq\rho$ is always undefined. Or, in other words, if the 
+argument type requirement of the function does not contain features which
+refer to the complete "substituent" expression.
+
+Another aspect which should be noticed is the fact that, semantically,
+the logical expression corresponding to "{\em a woman}" is the
+{\bf function} and  the expression corresponding to 
+{\em she$_2$ walks} is the {\bf argument}. If we perform function argument
+checks in our type system rules and if we want the type system
+to have some kind of relation with 
+Montague Grammar, then we should realize, each time we write a
+rule, which expression (from a semantic viewpoint)  is the function  
+and which expression the argument.
+
+\section{Conclusions}
+We think that the extended type system as described in section 6 will solve most
+of our problems.  The T-structures are  dynamic types which is necessary because
+of coordinated structures and information passing. A T-structure consists of three parts which helps to structure the information an
+d enhances the transparancy of
+a type description. As the T-structure is rather flexible,  we expect it to be 
+extensible. 
+
+It will not cost much effort to implement the body of the semantic
+component  as we can use  existing algorithms. The concept of T-structures is new
+and, consequently, it is difficult to estimate the implementation effort. 
+We expect that the 
+specification of the types and the definiton
+of the type hierarchy will cost a lot of effort.
+
+With respect to the efficiency of the system we  think that  with the pre-action
+technique (not in the theory) the variable ambiguity can be solved  in the same way as we do it in syntax now.  If a lot of temporar
+y ambiguities  can be avoided in 
+the syntax and postponed to and solved in the semantic component, we hope that
+the system as a whole will be more efficient and, of course, better.
+\section{Remarks}
+Finally, a few remarks have to be made:
+\begin{itemize}
+  \item {\bf Semantic transformations}\\
+In Rdoc 401 the possibility of semantic transformations is mentioned. 
+In the proposal above this possibility is not treated.
+At the moment, we think semantic transformations are not necessary, because the 
+candidates still can be incorporated  in semantic rules corresponding to a
+ syntactic rule. For example,
+the Aktionsart rules, that are now syntactic transformations(!), can be incorporated in the semantic start rules.  It may be possibl
+e that  in the future these rules will become too complicated and that we will feel the need to spit them up into a 
+rule and a transformation. It should be noted that we will  need a control
+expression then.
+
+\item {\bf Negation}\\
+Notice that the partial ordering "$\sqsubseteq$" in section 6 has not been 
+defined for expressions
+that contain negations. Theoretically, there is no problem, the default
+subset ( "$\subseteq$") interpretation can be used, together with the rules of set
+theory. In practice, this yields results which cannot be calculated 
+by a real system, because in order to be able to do so, intersections
+between type domains have to be calculated. In general, however, intersections 
+between type domains
+cannot be calculated because the domains are not given by means of a static 
+definition. In some restricted situations expressions with negations can be
+calculated, for instance, if the
+negation has the form  $\tau\sqsubseteq\sim\rho$, where both $\tau$ and $\rho$ are
+elements of $T$, and if the following condition holds\\
+$\forall\tau_1,\tau_2,\rho\in T: (\phi(\tau_1)\subseteq\phi(\rho) \wedge \phi(\tau_2)\subseteq\phi(\rho)\Rightarrow\phi(\tau_1)\cap\
+phi(\tau_2)=\emptyset)$
+
+But there are more problems with negation, for example the one
+mentioned by  Jan O. in document 353.  The problem that Jan O. describes is
+is the difficulty  with the interpretation of the negation. Maybe the set 
+theoretical interpretation is not the most obvious one in a type system. The
+suggestions made by Jan O. should be analyzed carefully. And indeed, it
+is only useful to allow negations if an intuitively appealing definition
+can be found.
+
+\item {\bf Notation of semantic rules}
+This document does not contain a proposal for the notation of semantic rules.
+Probably the M-rules notation will not be adequate as T-structure differ
+from S-trees considerably. Furthermore, operations like {\em unification} and
+{\em compatibility}, which are not available in the current M-rule notation, are
+needed.
+
+In the near future we will present a proposal for semantic rule notation.
+\end{itemize}
+\end{document}
+
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1 (RWR-102-RO-90#1-RO)}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

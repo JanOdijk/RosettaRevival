@@ -1,0 +1,1459 @@
+DUTCH 89
+&
+The following transformations are planned:
+\begin{description}
+\item[Tnegadapt1] Negadaptation  under S, plus a filter
+\item[Tnegadapt2] Negadaptation under VP, plus a filter
+\item[Tnegadapt3] Negadaptation in PREPP (optional, only in analysis) under S
+\item[Tnegadapt4] Negadaptation in PREPP (optional, only in analysis) under VP
+\item[Fnegspeed] to speed up analysis.
+The  speedfilter Fnegspeed checks whether negative words still occur in the structure.
+This is only allowed if we are dealing with verb raising structures;
+It is never allowed for: subjrel, objrel, indobjrel, preadvrel. We might even
+strengthen this: it is allowed if and only if there is verbraising,  
+the actual verbpatterns contain [synclosedsent, synclosedinfsent] 
+and thetavp in [vp010, vp012].
+\item[Tnegadaptfilter] to guarantee application of the T's in generation
+\end{description}
+
+
+Proposed Control expression:
+
+.Fnegspeed
+{ Tnegadapt1 | Tnegadapt2 | Tnegadapt3 | Tnegadapt4}
+. Tnegadaptfilter
+
+to be done( * means: done )
+
+iemand -> niemand*
+iets   -> niets*
+ergens -> nergens*
+ooit   -> nooit*
+een    -> geen*
+--     -> geen*
+
+\newpage
+\begin{verbatim}
+%
+% TRANSFORMATION Tnegadapt1
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             meltnegrel/NEG(KEY_NEGkey){NEGrec1},
+             I1:rel1/T1,
+             mu2 
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             I2:rel1/T2,
+             mu2 
+           ]
+
+>
+
+   MATCHCONDITIONS
+      <
+       I1: QUOTE_Possnietxp(T1)
+       I2: NOT QUOTE_POssnietXp(T2)
+       m1: ALL
+       m : ALL
+      >
+
+
+<
+   SUBRULE
+      <T1:NP{NPrec1}[head/INDEFPRO{INDEFPROrec1}
+                       [head/BINDEFPRO(AUX_iemandBINDEFPROkey){BINDEFPROrec1}] 
+                    ] 
+      >
+      <T2:NP{NPrec2}[head/INDEFPRO{INDEFPROrec2}
+                       [head/BINDEFPRO(AUX_niemandBINDEFPROkey){BINDEFPROrec2}] 
+                    ] 
+      >
+
+      COMP
+         <
+          C1: NPrec1 = AUX_NPoniemandBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec1 = COPYT_bindefproTOindefpro(BINDEFPROrec1)
+          A1: INDEFPROrec2 := COPYT_bindefproTOindefpro(BINDEFPROrec2);
+              NPrec2 := AUX_NPonniemandBNDFPR;
+              NPrec2.cases := NPrec1.cases;
+         >
+      DECOMP
+         <
+          C1: NPrec2 = AUX_NPonniemandBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec2 = COPYT_bindefproTOindefpro(BINDEFPROrec2)
+          A1: INDEFPROrec1 := COPYT_bindefproTOindefpro(BINDEFPROrec1);
+              NPrec1 := AUX_NPoniemandBNDFPR;
+              NPrec1.cases := NPrec2.cases;
+         >
+
+   SUBRULE
+      <T1:NP{NPrec1}[head/INDEFPRO{INDEFPROrec1}
+                       [head/BINDEFPRO(AUX_ietsBINDEFPROkey){BINDEFPROrec1}] 
+                    ] 
+      >
+      <T2:NP{NPrec2}[head/INDEFPRO{INDEFPROrec2}
+                       [head/BINDEFPRO(AUX_nietsBINDEFPROkey){BINDEFPROrec2}] 
+                    ] 
+      >
+
+      COMP
+         <
+          C1: NPrec1 = AUX_NPonietsBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec1 = COPYT_bindefproTOindefpro(BINDEFPROrec1)
+          A1: INDEFPROrec2 := COPYT_bindefproTOindefpro(BINDEFPROrec2);
+              NPrec2 := AUX_NPonnietsBNDFPR;
+              NPrec2.cases := NPrec1.cases;
+         >
+      DECOMP
+         <
+          C1: 
+              NPrec2 = AUX_NPonnietsBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec2 = COPYT_bindefproTOindefpro(BINDEFPROrec2)
+          A1: INDEFPROrec1 := COPYT_bindefproTOindefpro(BINDEFPROrec1);
+              NPrec1 := AUX_NPonietsBNDFPR;
+              NPrec1.cases := NPrec2.cases;
+         >
+
+   SUBRULE
+      <T1: RADVP{RADVPrec1}[head/RADV(AUX_ergensRADVkey){RADVrec1} ] >
+      <T2: RADVP{RADVPrec2}[head/RADV(AUX_nergensRADVkey){RADVrec2} ] >
+
+      COMP
+         <
+          C1: RADVPrec1 =
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               radvkey : KEY_ergensRADVkey
+              }
+
+          A1: RADVPrec2 :=
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               kindefs : RADVPrec1.kindefs
+               radvkey : KEY_nergensRADVkey
+              }
+
+
+         >
+      DECOMP
+         <
+          C1: RADVPrec2 =
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               radvkey : KEY_nergensRADVkey
+              }
+          A1: RADVPrec1 :=
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               kindefs : RADVPrec2.kindefs
+               radvkey : KEY_ergensRADVkey
+              }
+
+         >
+
+   SUBRULE
+      <T1: ADVP{ADVPrec1}
+              [head/ADV{ADVrec1}
+                   [head/SUBADV{SUBADVrec1}
+                       [head/BADV(AUX_ooitBADVkey){BADVrec1} ] ] 
+              ] 
+      >
+      <T2: ADVP{ADVPrec2}
+              [head/ADV{ADVrec2}
+                   [head/SUBADV{SUBADVrec2}
+                       [head/BADV(AUX_nooitBADVkey){BADVrec2} ] ] 
+              ] 
+       >
+      COMP
+         <
+          C1: SUBADVrec1 = AUX_SUBADVonooitBADV AND
+              ADVrec1 = AUX_ADVonooitBADV            AND
+              ADVPrec1 = AUX_ADVPonooitBADV
+          A1: SUBADVrec2 := AUX_SUBADVonnooitBADV;
+              ADVrec2 := AUX_ADVonnooitBADV;
+              ADVPrec2 := AUX_ADVPonnooitBADV;
+         >
+      DECOMP
+         <
+          C1: SUBADVrec2 = AUX_SUBADVonnooitBADV AND
+              ADVrec2 = AUX_ADVonnooitBADV AND
+              ADVPrec2 = AUX_ADVPonnooitBADV
+          A1: SUBADVrec1 := AUX_SUBADVonooitBADV;
+              ADVrec1 := AUX_ADVonooitBADV;
+              ADVPrec1 := AUX_ADVPonooitBADV;
+         >
+
+
+   SUBRULE
+      <T1: NP{NPrec1}[ detrel/DETP{DETPrec1}
+                             [head/ART(KEY_eenARTkey){ARTrec1} ] ,
+                       mu6 
+                     ] 
+      >
+      <T2: NP{NPrec2}[ detrel/DETP{DETPrec2}
+                             [head/DET{DETrec2}
+                                  [head/BDET(KEY_geenBDETkey){BDETrec2}]],
+                       mu6 
+                     ]  
+      >
+
+      COMP
+         <
+          C1: DETPrec1 = AUX_DETPoneenART AND
+              count IN NPrec1.actcomas                              AND
+              NPrec1.number = singular                              AND
+              NPrec1.possnietnp = DETPrec1.possnietnp
+          A1: DETrec2 := AUX_DETongeenBDET;
+              DETPrec2 := AUX_DETPongeenBDET;
+              NPrec2 := NPrec1;
+              NPrec2.possnietnp := DETPrec2.possnietnp;
+         >
+      DECOMP
+         <
+          C1: DETrec2 = AUX_DETongeenBDET AND
+              DETPrec2 = AUX_DETPongeenBDET          AND
+              count IN NPrec2.actcomas            AND
+              NPrec2.number = singular            AND
+              NPrec2.possnietnp = DETPrec2.possnietnp
+          A1: DETPrec1 := AUX_DETPoneenART;
+              NPrec1 := NPrec2;
+              NPrec1.possnietnp := DETPrec1.possnietnp
+         >
+
+
+   SUBRULE
+      <T1: NP{NPrec1}[ I6:mu6 ] 
+      >
+      <T2: NP{NPrec2}[ detrel/DETP{DETPrec2}
+                             [head/DET{DETrec2}
+                                  [head/BDET(KEY_geenBDETkey){BDETrec2}]],
+                       I6:mu6 
+                     ]  
+      >
+
+   MATCHCONDITIONS
+      <
+       I6: NOT EXIST(mu6,[detrel/..])
+      >
+
+
+      COMP
+         <
+          C1: ((count IN NPrec1.actcomas AND NPrec1.number = plural) OR
+               (mass  IN NPrec1.actcomas AND NPrec1.number = singular)  
+              )                                                             AND
+              NPrec1.possnietnp = true
+          A1: DETrec2 := AUX_DETongeenBDET;
+              DETPrec2 := AUX_DETPongeenBDET;
+              NPrec2 := NPrec1;
+              NPrec2.possnietnp := DETPrec2.possnietnp;
+         >
+      DECOMP
+         <
+          C1: DETrec2 = AUX_DETongeenBDET AND
+              DETPrec2 = AUX_DETPongeenBDET AND
+              NPrec2.possnietnp = DETPrec2.possnietnp AND
+              ((count IN NPrec2.actcomas AND NPrec2.number = plural) OR
+               (mass  IN NPrec2.actcomas AND NPrec2.number = singular)  
+              ) 
+          A1: NPrec1 := NPrec2;
+              NPrec1.possnietnp := true;
+         >
+
+
+
+>
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Tnegadapt1
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 25-MAY-1988 16:06:12  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Tnegadapt2
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu2,
+                      meltnegrel/NEG(KEY_NEGkey){NEGrec1},
+                      I1:rel1/T1,
+                      mu3
+                    ],
+             mu4 
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu2,
+                      I2:rel1/T2,
+                      mu3
+                    ],
+             mu4
+           ]
+
+>
+
+   MATCHCONDITIONS
+      <
+       I1: QUOTE_Possnietxp(T1)
+       I2: NOT QUOTE_POssnietXp(T2)
+       m1: ALL
+       m : ALL
+      >
+
+<
+   SUBRULE
+      <T1:NP{NPrec1}[head/INDEFPRO{INDEFPROrec1}
+                       [head/BINDEFPRO(AUX_iemandBINDEFPROkey){BINDEFPROrec1}] 
+                    ] 
+      >
+      <T2:NP{NPrec2}[head/INDEFPRO{INDEFPROrec2}
+                       [head/BINDEFPRO(AUX_niemandBINDEFPROkey){BINDEFPROrec2}] 
+                    ] 
+      >
+
+      COMP
+         <
+          C1: NPrec1 = AUX_NPoniemandBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec1 = COPYT_bindefproTOindefpro(BINDEFPROrec1)
+          A1: INDEFPROrec2 := COPYT_bindefproTOindefpro(BINDEFPROrec2);
+              NPrec2 := AUX_NPonniemandBNDFPR;
+              NPrec2.cases := NPrec1.cases;
+         >
+      DECOMP
+         <
+          C1: NPrec2 = AUX_NPonniemandBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec2 = COPYT_bindefproTOindefpro(BINDEFPROrec2)
+          A1: INDEFPROrec1 := COPYT_bindefproTOindefpro(BINDEFPROrec1);
+              NPrec1 := AUX_NPoniemandBNDFPR;
+              NPrec1.cases := NPrec2.cases;
+         >
+
+   SUBRULE
+      <T1:NP{NPrec1}[head/INDEFPRO{INDEFPROrec1}
+                       [head/BINDEFPRO(AUX_ietsBINDEFPROkey){BINDEFPROrec1}] 
+                    ] 
+      >
+      <T2:NP{NPrec2}[head/INDEFPRO{INDEFPROrec2}
+                       [head/BINDEFPRO(AUX_nietsBINDEFPROkey){BINDEFPROrec2}] 
+                    ] 
+      >
+
+      COMP
+         <
+          C1: NPrec1 = AUX_NPonietsBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec1 = COPYT_bindefproTOindefpro(BINDEFPROrec1)
+          A1: INDEFPROrec2 := COPYT_bindefproTOindefpro(BINDEFPROrec2);
+              NPrec2 := AUX_NPonnietsBNDFPR;
+              NPrec2.cases := NPrec1.cases;
+         >
+      DECOMP
+         <
+          C1: 
+              NPrec2 = AUX_NPonnietsBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec2 = COPYT_bindefproTOindefpro(BINDEFPROrec2)
+          A1: INDEFPROrec1 := COPYT_bindefproTOindefpro(BINDEFPROrec1);
+              NPrec1 := AUX_NPonietsBNDFPR;
+              NPrec1.cases := NPrec2.cases;
+         >
+
+   SUBRULE
+      <T1: RADVP{RADVPrec1}[head/RADV(AUX_ergensRADVkey){RADVrec1} ] >
+      <T2: RADVP{RADVPrec2}[head/RADV(AUX_nergensRADVkey){RADVrec2} ] >
+
+      COMP
+         <
+          C1: RADVPrec1 =
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               radvkey : KEY_ergensRADVkey
+              }
+
+          A1: RADVPrec2 :=
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               kindefs : RADVPrec1.kindefs
+               radvkey : KEY_nergensRADVkey
+              }
+
+
+         >
+      DECOMP
+         <
+          C1: RADVPrec2 =
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               radvkey : KEY_nergensRADVkey
+              }
+          A1: RADVPrec1 :=
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               kindefs : RADVPrec2.kindefs
+               radvkey : KEY_ergensRADVkey
+              }
+
+         >
+
+   SUBRULE
+      <T1: ADVP{ADVPrec1}
+              [head/ADV{ADVrec1}
+                   [head/SUBADV{SUBADVrec1}
+                       [head/BADV(AUX_ooitBADVkey){BADVrec1} ] ] 
+              ] 
+      >
+      <T2: ADVP{ADVPrec2}
+              [head/ADV{ADVrec2}
+                   [head/SUBADV{SUBADVrec2}
+                       [head/BADV(AUX_nooitBADVkey){BADVrec2} ] ] 
+              ] 
+       >
+      COMP
+         <
+          C1: SUBADVrec1 = AUX_SUBADVonooitBADV AND
+              ADVrec1 = AUX_ADVonooitBADV            AND
+              ADVPrec1 = AUX_ADVPonooitBADV
+          A1: SUBADVrec2 := AUX_SUBADVonnooitBADV;
+              ADVrec2 := AUX_ADVonnooitBADV;
+              ADVPrec2 := AUX_ADVPonnooitBADV;
+         >
+      DECOMP
+         <
+          C1: SUBADVrec2 = AUX_SUBADVonnooitBADV AND
+              ADVrec2 = AUX_ADVonnooitBADV AND
+              ADVPrec2 = AUX_ADVPonnooitBADV
+          A1: SUBADVrec1 := AUX_SUBADVonooitBADV;
+              ADVrec1 := AUX_ADVonooitBADV;
+              ADVPrec1 := AUX_ADVPonooitBADV;
+         >
+
+
+   SUBRULE
+      <T1: NP{NPrec1}[ detrel/DETP{DETPrec1}
+                             [head/ART(KEY_eenARTkey){ARTrec1} ] ,
+                       mu6 
+                     ] 
+      >
+      <T2: NP{NPrec2}[ detrel/DETP{DETPrec2}
+                             [head/DET{DETrec2}
+                                  [head/BDET(KEY_geenBDETkey){BDETrec2}]],
+                       mu6 
+                     ]  
+      >
+
+      COMP
+         <
+          C1: DETPrec1 = AUX_DETPoneenART                              AND
+              count IN NPrec1.actcomas                              AND
+              NPrec1.number = singular                              AND
+              NPrec1.possnietnp = DETPrec1.possnietnp
+          A1: DETrec2 := AUX_DETongeenBDET;
+              DETPrec2 := AUX_DETPongeenBDET;
+              NPrec2 := NPrec1;
+              NPrec2.possnietnp := DETPrec2.possnietnp;
+         >
+      DECOMP
+         <
+          C1: DETrec2 = AUX_DETongeenBDET             AND
+              DETPrec2 = AUX_DETPongeenBDET           AND
+              count IN NPrec2.actcomas            AND
+              NPrec2.number = singular            AND
+              NPrec2.possnietnp = DETPrec2.possnietnp
+          A1: DETPrec1 := AUX_DETPoneenART;
+              NPrec1 := NPrec2;
+              NPrec1.possnietnp := DETPrec1.possnietnp
+         >
+
+
+   SUBRULE
+      <T1: NP{NPrec1}[ I6:mu6 ] 
+      >
+      <T2: NP{NPrec2}[ detrel/DETP{DETPrec2}
+                             [head/DET{DETrec2}
+                                  [head/BDET(KEY_geenBDETkey){BDETrec2}]],
+                       I6:mu6 
+                     ]  
+      >
+
+   MATCHCONDITIONS
+      <
+       I6: NOT EXIST(mu6,[detrel/..])
+      >
+
+
+      COMP
+         <
+          C1: ((count IN NPrec1.actcomas AND NPrec1.number = plural) OR
+               (mass  IN NPrec1.actcomas AND NPrec1.number = singular)  
+              )                                                             AND
+              NPrec1.possnietnp = true
+          A1: DETrec2 := AUX_DETongeenBDET;
+              DETPrec2 := AUX_DETPongeenBDET;
+              NPrec2 := NPrec1;
+              NPrec2.possnietnp := DETPrec2.possnietnp;
+         >
+      DECOMP
+         <
+          C1: DETrec2 = AUX_DETongeenBDET AND
+              DETPrec2 = AUX_DETPongeenBDET AND
+              NPrec2.possnietnp = DETPrec2.possnietnp AND
+              ((count IN NPrec2.actcomas AND NPrec2.number = plural) OR
+               (mass  IN NPrec2.actcomas AND NPrec2.number = singular)  
+              ) 
+          A1: NPrec1 := NPrec2;
+              NPrec1.possnietnp := true;
+         >
+
+
+
+>
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Tnegadapt2
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 26-MAY-1988 09:20:13  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Tnegadapt3
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             meltnegrel/NEG(KEY_NEGkey){NEGrec1},
+             rel1/PREPP{PREPPrec1}
+                 [ I3:sig1,
+                   I1:objrel/T1,
+                   mu3
+                 ],
+             mu2 
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             rel1/PREPP{PREPPrec1}
+                 [ I3:sig1,
+                   I2:objrel/T2,
+                   mu3
+                 ],
+             mu2 
+           ]
+
+>
+
+   MATCHCONDITIONS
+      <
+       I1: QUOTE_Possnietxp(T1)
+       I2: NOT QUOTE_POssnietXp(T2)
+       I3: ALL(sig1, head/..)
+       m1: ALL
+       m : ALL
+      >
+
+<
+   SUBRULE
+      <T1:NP{NPrec1}[head/INDEFPRO{INDEFPROrec1}
+                       [head/BINDEFPRO(AUX_iemandBINDEFPROkey){BINDEFPROrec1}] 
+                    ] 
+      >
+      <T2:NP{NPrec2}[head/INDEFPRO{INDEFPROrec2}
+                       [head/BINDEFPRO(AUX_niemandBINDEFPROkey){BINDEFPROrec2}] 
+                    ] 
+      >
+
+      COMP
+         <
+          C1: NPrec1 = AUX_NPoniemandBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec1 = COPYT_bindefproTOindefpro(BINDEFPROrec1)
+          A1: INDEFPROrec2 := COPYT_bindefproTOindefpro(BINDEFPROrec2);
+              NPrec2 := AUX_NPonniemandBNDFPR;
+              NPrec2.cases := NPrec1.cases;
+         >
+      DECOMP
+         <
+          C1: NPrec2 = AUX_NPonniemandBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec2 = COPYT_bindefproTOindefpro(BINDEFPROrec2)
+          A1: INDEFPROrec1 := COPYT_bindefproTOindefpro(BINDEFPROrec1);
+              NPrec1 := AUX_NPoniemandBNDFPR;
+              NPrec1.cases := NPrec2.cases;
+         >
+
+   SUBRULE
+      <T1:NP{NPrec1}[head/INDEFPRO{INDEFPROrec1}
+                       [head/BINDEFPRO(AUX_ietsBINDEFPROkey){BINDEFPROrec1}] 
+                    ] 
+      >
+      <T2:NP{NPrec2}[head/INDEFPRO{INDEFPROrec2}
+                       [head/BINDEFPRO(AUX_nietsBINDEFPROkey){BINDEFPROrec2}] 
+                    ] 
+      >
+
+      COMP
+         <
+          C1: NPrec1 = AUX_NPonietsBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec1 = COPYT_bindefproTOindefpro(BINDEFPROrec1)
+          A1: INDEFPROrec2 := COPYT_bindefproTOindefpro(BINDEFPROrec2);
+              NPrec2 := AUX_NPonnietsBNDFPR;
+              NPrec2.cases := NPrec1.cases;
+         >
+      DECOMP
+         <
+          C1: 
+              NPrec2 = AUX_NPonnietsBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec2 = COPYT_bindefproTOindefpro(BINDEFPROrec2)
+          A1: INDEFPROrec1 := COPYT_bindefproTOindefpro(BINDEFPROrec1);
+              NPrec1 := AUX_NPonietsBNDFPR;
+              NPrec1.cases := NPrec2.cases;
+         >
+
+   SUBRULE
+      <T1: RADVP{RADVPrec1}[head/RADV(AUX_ergensRADVkey){RADVrec1} ] >
+      <T2: RADVP{RADVPrec2}[head/RADV(AUX_nergensRADVkey){RADVrec2} ] >
+
+      COMP
+         <
+          C1: RADVPrec1 =
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               radvkey : KEY_ergensRADVkey
+              }
+
+          A1: RADVPrec2 :=
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               kindefs : RADVPrec1.kindefs
+               radvkey : KEY_nergensRADVkey
+              }
+
+
+         >
+      DECOMP
+         <
+          C1: RADVPrec2 =
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               radvkey : KEY_nergensRADVkey
+              }
+          A1: RADVPrec1 :=
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               kindefs : RADVPrec2.kindefs
+               radvkey : KEY_ergensRADVkey
+              }
+
+         >
+
+   SUBRULE
+      <T1: ADVP{ADVPrec1}
+              [head/ADV{ADVrec1}
+                   [head/SUBADV{SUBADVrec1}
+                       [head/BADV(AUX_ooitBADVkey){BADVrec1} ] ] 
+              ] 
+      >
+      <T2: ADVP{ADVPrec2}
+              [head/ADV{ADVrec2}
+                   [head/SUBADV{SUBADVrec2}
+                       [head/BADV(AUX_nooitBADVkey){BADVrec2} ] ] 
+              ] 
+       >
+      COMP
+         <
+          C1: SUBADVrec1 = AUX_SUBADVonooitBADV AND
+              ADVrec1 = AUX_ADVonooitBADV            AND
+              ADVPrec1 = AUX_ADVPonooitBADV
+          A1: SUBADVrec2 := AUX_SUBADVonnooitBADV;
+              ADVrec2 := AUX_ADVonnooitBADV;
+              ADVPrec2 := AUX_ADVPonnooitBADV;
+         >
+      DECOMP
+         <
+          C1: SUBADVrec2 = AUX_SUBADVonnooitBADV AND
+              ADVrec2 = AUX_ADVonnooitBADV AND
+              ADVPrec2 = AUX_ADVPonnooitBADV
+          A1: SUBADVrec1 := AUX_SUBADVonooitBADV;
+              ADVrec1 := AUX_ADVonooitBADV;
+              ADVPrec1 := AUX_ADVPonooitBADV;
+         >
+
+
+   SUBRULE
+      <T1: NP{NPrec1}[ detrel/DETP{DETPrec1}
+                             [head/ART(KEY_eenARTkey){ARTrec1} ] ,
+                       mu6 
+                     ] 
+      >
+      <T2: NP{NPrec2}[ detrel/DETP{DETPrec2}
+                             [head/DET{DETrec2}
+                                  [head/BDET(KEY_geenBDETkey){BDETrec2}]],
+                       mu6 
+                     ]  
+      >
+
+      COMP
+         <
+          C1: DETPrec1 = AUX_DETPoneenART                              AND
+              count IN NPrec1.actcomas                              AND
+              NPrec1.number = singular                              AND
+              NPrec1.possnietnp = DETPrec1.possnietnp
+          A1: DETrec2 := AUX_DETongeenBDET;
+              DETPrec2 := AUX_DETPongeenBDET;
+              NPrec2 := NPrec1;
+              NPrec2.possnietnp := DETPrec2.possnietnp;
+         >
+      DECOMP
+         <
+          C1: DETrec2 = AUX_DETongeenBDET             AND
+              DETPrec2 = AUX_DETPongeenBDET           AND
+              count IN NPrec2.actcomas            AND
+              NPrec2.number = singular            AND
+              NPrec2.possnietnp = DETPrec2.possnietnp
+          A1: DETPrec1 := AUX_DETPoneenART;
+              NPrec1 := NPrec2;
+              NPrec1.possnietnp := DETPrec1.possnietnp
+         >
+
+
+   SUBRULE
+      <T1: NP{NPrec1}[ I6:mu6 ] 
+      >
+      <T2: NP{NPrec2}[ detrel/DETP{DETPrec2}
+                             [head/DET{DETrec2}
+                                  [head/BDET(KEY_geenBDETkey){BDETrec2}]],
+                       I6:mu6 
+                     ]  
+      >
+
+   MATCHCONDITIONS
+      <
+       I6: NOT EXIST(mu6,[detrel/..])
+      >
+
+
+      COMP
+         <
+          C1: ((count IN NPrec1.actcomas AND NPrec1.number = plural) OR
+               (mass  IN NPrec1.actcomas AND NPrec1.number = singular)  
+              )                                                             AND
+              NPrec1.possnietnp = true
+          A1: DETrec2 := AUX_DETongeenBDET;
+              DETPrec2 := AUX_DETPongeenBDET;
+              NPrec2 := NPrec1;
+              NPrec2.possnietnp := DETPrec2.possnietnp;
+         >
+      DECOMP
+         <
+          C1: DETrec2 = AUX_DETongeenBDET AND
+              DETPrec2 = AUX_DETPongeenBDET AND
+              NPrec2.possnietnp = DETPrec2.possnietnp AND
+              ((count IN NPrec2.actcomas AND NPrec2.number = plural) OR
+               (mass  IN NPrec2.actcomas AND NPrec2.number = singular)  
+              ) 
+          A1: NPrec1 := NPrec2;
+              NPrec1.possnietnp := true;
+         >
+
+
+
+>
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Tnegadapt3
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 26-MAY-1988 13:24:55  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Tnegadapt4
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                   [ mu4,
+                     meltnegrel/NEG(KEY_NEGkey){NEGrec1},
+                     rel1/PREPP{PREPPrec1}
+                         [ I3:sig1,
+                           I1:objrel/T1,
+                           mu3
+                         ],
+                      mu5
+                    ],
+             mu2 
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                   [ mu4,
+                     rel1/PREPP{PREPPrec1}
+                         [ I3:sig1,
+                           I2:objrel/T2,
+                           mu3
+                         ],
+                      mu5
+                    ],
+             mu2 
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: QUOTE_Possnietxp(T1)
+       I2: NOT QUOTE_POssnietXp(T2)
+       I3: ALL(sig1, head/..)
+       m1: ALL
+       m : ALL
+      >
+
+<
+   SUBRULE
+      <T1:NP{NPrec1}[head/INDEFPRO{INDEFPROrec1}
+                       [head/BINDEFPRO(AUX_iemandBINDEFPROkey){BINDEFPROrec1}] 
+                    ] 
+      >
+      <T2:NP{NPrec2}[head/INDEFPRO{INDEFPROrec2}
+                       [head/BINDEFPRO(AUX_niemandBINDEFPROkey){BINDEFPROrec2}] 
+                    ] 
+      >
+
+      COMP
+         <
+          C1: NPrec1 = AUX_NPoniemandBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec1 = COPYT_bindefproTOindefpro(BINDEFPROrec1)
+          A1: INDEFPROrec2 := COPYT_bindefproTOindefpro(BINDEFPROrec2);
+              NPrec2 := AUX_NPonniemandBNDFPR;
+              NPrec2.cases := NPrec1.cases;
+         >
+      DECOMP
+         <
+          C1: NPrec2 = AUX_NPonniemandBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec2 = COPYT_bindefproTOindefpro(BINDEFPROrec2)
+          A1: INDEFPROrec1 := COPYT_bindefproTOindefpro(BINDEFPROrec1);
+              NPrec1 := AUX_NPoniemandBNDFPR;
+              NPrec1.cases := NPrec2.cases;
+         >
+
+   SUBRULE
+      <T1:NP{NPrec1}[head/INDEFPRO{INDEFPROrec1}
+                       [head/BINDEFPRO(AUX_ietsBINDEFPROkey){BINDEFPROrec1}] 
+                    ] 
+      >
+      <T2:NP{NPrec2}[head/INDEFPRO{INDEFPROrec2}
+                       [head/BINDEFPRO(AUX_nietsBINDEFPROkey){BINDEFPROrec2}] 
+                    ] 
+      >
+
+      COMP
+         <
+          C1: NPrec1 = AUX_NPonietsBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec1 = COPYT_bindefproTOindefpro(BINDEFPROrec1)
+          A1: INDEFPROrec2 := COPYT_bindefproTOindefpro(BINDEFPROrec2);
+              NPrec2 := AUX_NPonnietsBNDFPR;
+              NPrec2.cases := NPrec1.cases;
+         >
+      DECOMP
+         <
+          C1: 
+              NPrec2 = AUX_NPonnietsBNDFPR EXCEPT FOR [cases] AND
+              INDEFPROrec2 = COPYT_bindefproTOindefpro(BINDEFPROrec2)
+          A1: INDEFPROrec1 := COPYT_bindefproTOindefpro(BINDEFPROrec1);
+              NPrec1 := AUX_NPonietsBNDFPR;
+              NPrec1.cases := NPrec2.cases;
+         >
+
+   SUBRULE
+      <T1: RADVP{RADVPrec1}[head/RADV(AUX_ergensRADVkey){RADVrec1} ] >
+      <T2: RADVP{RADVPrec2}[head/RADV(AUX_nergensRADVkey){RADVrec2} ] >
+
+      COMP
+         <
+          C1: RADVPrec1 =
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               radvkey : KEY_ergensRADVkey
+              }
+
+          A1: RADVPrec2 :=
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               kindefs : RADVPrec1.kindefs
+               radvkey : KEY_nergensRADVkey
+              }
+
+
+         >
+      DECOMP
+         <
+          C1: RADVPrec2 =
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               radvkey : KEY_nergensRADVkey
+              }
+          A1: RADVPrec1 :=
+              {
+               req     : [pospol,negpol,omegapol]
+               env     : [pospol,negpol,omegapol]
+               mood    : declxpmood
+               kindefs : RADVPrec2.kindefs
+               radvkey : KEY_ergensRADVkey
+              }
+
+         >
+
+   SUBRULE
+      <T1: ADVP{ADVPrec1}
+              [head/ADV{ADVrec1}
+                   [head/SUBADV{SUBADVrec1}
+                       [head/BADV(AUX_ooitBADVkey){BADVrec1} ] ] 
+              ] 
+      >
+      <T2: ADVP{ADVPrec2}
+              [head/ADV{ADVrec2}
+                   [head/SUBADV{SUBADVrec2}
+                       [head/BADV(AUX_nooitBADVkey){BADVrec2} ] ] 
+              ] 
+       >
+      COMP
+         <
+          C1: SUBADVrec1 = AUX_SUBADVonooitBADV AND
+              ADVrec1 = AUX_ADVonooitBADV            AND
+              ADVPrec1 = AUX_ADVPonooitBADV
+          A1: SUBADVrec2 := AUX_SUBADVonnooitBADV;
+              ADVrec2 := AUX_ADVonnooitBADV;
+              ADVPrec2 := AUX_ADVPonnooitBADV;
+         >
+      DECOMP
+         <
+          C1: SUBADVrec2 = AUX_SUBADVonnooitBADV AND
+              ADVrec2 = AUX_ADVonnooitBADV AND
+              ADVPrec2 = AUX_ADVPonnooitBADV
+          A1: SUBADVrec1 := AUX_SUBADVonooitBADV;
+              ADVrec1 := AUX_ADVonooitBADV;
+              ADVPrec1 := AUX_ADVPonooitBADV;
+         >
+
+
+   SUBRULE
+      <T1: NP{NPrec1}[ detrel/DETP{DETPrec1}
+                             [head/ART(KEY_eenARTkey){ARTrec1} ] ,
+                       mu6 
+                     ] 
+      >
+      <T2: NP{NPrec2}[ detrel/DETP{DETPrec2}
+                             [head/DET{DETrec2}
+                                  [head/BDET(KEY_geenBDETkey){BDETrec2}]],
+                       mu6 
+                     ]  
+      >
+
+      COMP
+         <
+          C1: DETPrec1 = AUX_DETPoneenART                              AND
+              count IN NPrec1.actcomas                              AND
+              NPrec1.number = singular                              AND
+              NPrec1.possnietnp = DETPrec1.possnietnp
+          A1: DETrec2 := AUX_DETongeenBDET;
+              DETPrec2 := AUX_DETPongeenBDET;
+              NPrec2 := NPrec1;
+              NPrec2.possnietnp := DETPrec2.possnietnp;
+         >
+      DECOMP
+         <
+          C1: DETrec2 = AUX_DETongeenBDET             AND
+              DETPrec2 = AUX_DETPongeenBDET           AND
+              count IN NPrec2.actcomas            AND
+              NPrec2.number = singular            AND
+              NPrec2.possnietnp = DETPrec2.possnietnp
+          A1: DETPrec1 := AUX_DETPoneenART;
+              NPrec1 := NPrec2;
+              NPrec1.possnietnp := DETPrec1.possnietnp
+         >
+
+
+   SUBRULE
+      <T1: NP{NPrec1}[ I6:mu6 ] 
+      >
+      <T2: NP{NPrec2}[ detrel/DETP{DETPrec2}
+                             [head/DET{DETrec2}
+                                  [head/BDET(KEY_geenBDETkey){BDETrec2}]],
+                       I6:mu6 
+                     ]  
+      >
+
+   MATCHCONDITIONS
+      <
+       I6: NOT EXIST(mu6,[detrel/..])
+      >
+
+
+      COMP
+         <
+          C1: ((count IN NPrec1.actcomas AND NPrec1.number = plural) OR
+               (mass  IN NPrec1.actcomas AND NPrec1.number = singular)  
+              )                                                             AND
+              NPrec1.possnietnp = true
+          A1: DETrec2 := AUX_DETongeenBDET;
+              DETPrec2 := AUX_DETPongeenBDET;
+              NPrec2 := NPrec1;
+              NPrec2.possnietnp := DETPrec2.possnietnp;
+         >
+      DECOMP
+         <
+          C1: DETrec2 = AUX_DETongeenBDET AND
+              DETPrec2 = AUX_DETPongeenBDET AND
+              NPrec2.possnietnp = DETPrec2.possnietnp AND
+              ((count IN NPrec2.actcomas AND NPrec2.number = plural) OR
+               (mass  IN NPrec2.actcomas AND NPrec2.number = singular)  
+              ) 
+          A1: NPrec1 := NPrec2;
+              NPrec1.possnietnp := true;
+         >
+
+
+
+>
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Tnegadapt4
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 26-MAY-1988 13:30:05  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER Negadaptfilter
+< m :CLAUSE{CLAUSErec1}[mu1, predrel/VERBP{VERBPrec1}[mu2],mu3 ]
+>
+  
+   MATCHCONDITIONS
+      <
+       m: EXIST(mu1, [meltnegrel/..]) OR
+          EXIST(mu2, [meltnegrel/..]) OR
+          EXIST(mu3, [meltnegrel/..])
+      >
+
+         <
+          C1: true
+          A1: @
+         > 
+
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] Negadaptfilter
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 26-MAY-1988 13:33:30  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+ FILTER FpreNegadapt
+< m :CLAUSE{CLAUSErec1}[mu1, predrel/VERBP{VERBPrec1}[mu2 ] mu3 ]
+>
+     MATCHCONDITIONS
+      <
+       m: QUOTE_NegINNPPP(mu1) OR 
+          QUOTE_NeginNPPP(mu2) OR 
+          QUOTE_NeginNPPP(mu3)
+      >
+
+         <
+          C1:
+          A1:
+         >
+
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] FpreNegadapt
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 11-OCT-1988 13:14:43  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER Fnegspeed
+< m :CLAUSE{CLAUSErec1}[mu1, predrel/VERBP{VERBPrec1}[mu2 ], mu3 ]
+>
+  
+   MATCHCONDITIONS
+      <
+       m: EXIST(mu1,[I11:rel1/T1]) OR
+          EXIST(mu1, [I12:rel2/T2]) OR
+          EXIST(mu2,[I11:rel1/T1]) OR
+          EXIST(mu2, [I12:rel2/T2]) OR
+          EXIST(mu3,[I11:rel1/T1]) OR
+          EXIST(mu3, [I12:rel2/T2]) 
+          I11: rel1 IN [subjrel, objrel, indobjrel, preadvrel] AND
+               QUOTE_NegPhrase(T1)
+          I12: [rel2] * [subjrel, objrel, indobjrel, preadvrel] = []  AND
+               QUOTE_NegPhrase(T2) AND 
+               CLAUSErec1.synvpefs * AUX_VRvps = []
+      >
+
+
+         <
+          C1: true
+          A1: @
+         >
+
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] Fnegspeed
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 3-MAR-1989 13:21:41  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+%%

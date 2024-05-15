@@ -1,0 +1,2689 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta2
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        : M-SYNTAX FOR DUTCH IN ROSETTA2. M-RULES. 
+                        PART I. CLAUSE RULES.
+
+         Author       :  Jan Landsbergen
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  0016
+
+         Date         :  85/06/18
+
+         Status       :  concept
+
+         Supersedes   :  
+
+         Distribution :  project
+
+         Clearance    :  Philips
+
+         Keywords     :  M-rules, Dutch, clause rules
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta   Doc.nr: 0016             date:85/06/18
+$NP 1
+$SC &%
+$AC @
+$LD 4
+$UC _
+
+
+
+_Preface_
+
+$ Because of the excessive length I will split the documentation of the
+Dutch M-rules into two parts. This document contains the first part. Here
+are the contents of the two parts.$
+ 
+                PART I. CLAUSE RULES
+
+0.     Introduction. Overview.
+1.     Clause rules
+
+                PART II. OTHER RULES
+
+2.     Utterance rules
+3.     PP rules
+4.     ADJP rules
+5.     ADVP rules
+6.     NP rules
+7.     NUMP rules
+8.     Local rules
+9.     BUG rules
+$NP
+
+_0. Introduction. Overview._
+
+$ In this document (and in PART II)
+the M-rules of the Rosetta2 grammar for Dutch are specified.
+First I give an overview.$
+$ Eight groups of rules can be distinguished. (N.B. this distinction into
+groups is useful for mnemotechnic and organisational reasons, but has
+no meaning in the formal definition of the grammar and in the actual
+programs.)$
+$ In the implemented system Rosetta2 there are a few more rules than are
+specified here: rules for the treatment of modal verbs and for idioms, that
+have been added later on.$
+
+$ 1. Clause rules: they construct main sentences, 
+relative sentences, complement sentences
+etc. The clause rules constitute 
+the main part of the current syntax. In section 1 they will be
+discussed in more detail.$
+
+$ The clause rules are specified in this part I, the other rule can be
+found in part II. An overview of these rules is given here.$
+
+$ 2. NP rules: they construct$
+$ various kinds of pronouns,$
+$ a noun, possibly preceded by a determiner and pre-modifiers and followed by
+post-modifiers.$
+$ Pre-modifiers are adjective-phrases, "ante" relative sentences, numerals and
+ordinals.$ 
+$ Post-modifiers are PP's and relative sentences.$
+
+$ 3. PP rules: they construct an OPENPP with a subjrel/VAR. When the PP is
+substituted in a clause or NP, the VAR disappears and the category becomes PP.
+There is also a rule that eliminates the VAR in isolated PPs.$
+
+$ 4. ADJP-rules: They construct an OPENADJP with a subj/VAR. 
+When the OPENADJP is substituted in a clause or NP, the VAR disappears and
+the category becomes ADJP. There is also a rule that eliminates the
+VAR in isolated ADJPs. The constructed
+adjective phrases consist of an adjective,
+possibly preceded by an adverbial or a negation, and possibly followed by
+a comparative "than/as" construction or by a "prepositional phrase" (as in
+"fond of ..").$ 
+
+$ 5. ADVP-rules: similar to ADJP rules, but more restrictive. An adverbial
+phrase may consist of an adverb possibly preceded by another adverb or a
+negation.$
+
+$ 6. NUMP rules: they construct numeral phrases.$
+
+$ 7. UTTERANCE rules: they construct utterances, consisting of sentences, NPs,
+EXCLAMs separated by comma's or COORDs.$
+
+$ 8. Local rules: in analysis they are able to reduce 
+inflected nouns, verbs and adjectives locally to basic expressions, 
+in generation they form the corresponding inflected forms of the target
+language. The local rules are of importance for the robustness of the
+system.$
+
+$ 9. BUG rules: robustness rules which assign unknown words (with the category
+BUG the category PROPERNOUN. $
+
+Remarks on the notation of the rules:
+
+$ 1. According to document R0012 M-rules consist of:$
+    1. Enumeration of model variables,
+    2. Left and right S-tree models,
+    3. Parameters and their values (optional),
+    4. Generative condition and action,
+    5. Analytical condition and action.
+$ Here the model variables are not explicitly enumerated. On the other hand
+there are rules, the variable substitution rules, which contain an
+additional part, called the pre-action. In this pre-action the attributes of
+the variable are specified (in the same way as in the analytical action of
+the rule). This part does not really belong to the M-rule (and is not
+executed at the same time as the M-rule), but it 
+corresponds to the generative part of the rule and is important for efficiency.
+In
+R0024 the purpose of the pre-action is explained.$
+$ 2. The notation of the conditions and actions is 
+not always as formal as it should
+be. I present the rules here as they have been defined in the past, without
+trying to improve the notation. In fact, one of the reasons for typing all this
+is to offer material to those who will work on a better notation.$
+$ 3. In the analytical rules it is often convenient to have an assignment to the
+parameter (in the analytical action) instead of a condition on parameter
+values (in the analytical condition). If only one parameter value is possible
+for each actual input of the analytical rule, the two methods are equivalent.
+Here both notations are used.$
+$ 4. In many cases there is no strict symmetry between the analytical and the
+generative part of the rule. Sometimes this is done to make the analysis more
+tolerant (especially in those cases that the rule is not very precise anyway),
+but in most cases it is because in analysis we rely on the work that has
+already been done in the surface parser. In the future, in a situation where
+more than one person writes grammar rules (or if the grammar is often changed)
+this is not an advisable strategy.$
+$ 5. In many rules auxiliary functions are used. They are usually defined in
+the rule itself or at the beginning of the section.$
+$ 6. In some rules keys of specific words have to be mentioned. In these cases
+we use a constant denoting the key, e.g. "hijpersprokey" for the personal
+pronoun "hij". The function F-BLEX is applicable to a key and delivers
+the S-tree corresponding to the key according to the basic lexicon. (In
+some cases it is assumed to deliver only the record)$
+$NP
+
+
+
+_1. The clause rules_
+
+_1.1. Introduction_
+
+$ The clause rules construct sentences, starting with a BVERB, main sentences
+as well as relative sentences and complement sentences. This construction
+takes place in a number of consecutive steps. These steps can be recognized
+by the category at the top, starting with CL0 and then running via
+CL1, CL2, ... CL9 to SENT, RELCL etc. So, although the M-rules are not
+explicitly ordered, there is an implicit ordering forced by the categories
+of the intermediate results.$
+$ For every step there is a group of M-rules.$
+
+$ --> CL0: START-CLAUSE rules. They have a BVERB and VARiables as arguments
+and build a CL0, consisting of a head/VERB and arg/VAR's. They require as
+many variables as the attribute aantalargs of the VERBrecord requires. The
+rules have parameters, which carry information about the "soort"
+(main or relative sentence) and about the mood. This information is not
+immediately used, but is stored in the CLrecord.$
+
+$ CL0 --> CL0: EMPTY-SUBSTITUTION rules. They substitute the element EMPTY
+for a variable (meaning: existential quantification). In one of the
+following rules this empty element has to be deleted. In this way the
+syntactic and the semantic aspect can be separated.$
+
+$ CL0 --> CL1: VERB PATTERN rules. The attribute vps in a VERBrecord
+indicates what verb patterns the verb may have (e.g. a verb pattern
+consisting of a subject NP and a complement clause). These rules create
+a specific pattern, i.e. they assign the right syntactic relations
+to the variables and order them in some standard way (the order of 
+declarative main sentences). For each verb pattern there is a vp rule
+or an instance of a vp rule. If a verb allows a verb pattern with less
+arguments than aantalargs, the superfluous EMPTY's are deleted. The verb
+pattern that has been chosen is assigned to the attribute vps of the
+CLrecord.$
+$ There are special verb pattern rules for the treatment of idioms
+and for modal verbs, they are not discussed here.$
+
+$ CL1 --> CL2: VOICE rules. They assign the active or the passive voice
+to the sentence, adjust the order and the syntactic relations and create
+the passive PP (with "door") in case of the passive. (auxiliary verbs
+are not created here, this is postponed until the TIME rules.)
+If the active subject is EMPTY, the passive PP is not made and thus the
+EMPTY is deleted. A special case is the "erpassive", 
+e.g. "er wordt gelopen", where the EMPTY active subject is deleted too.$
+
+$ CL2 --> CL2: ARGUMENT SUBSTITUTION rules. They substitute the actual
+arguments for the argument variables. An argument may be an NP, an
+ADJP (adjective phrase) or a clause (a SUBSENT, e.g. "dat hij komt",
+an OPENCOMPLCL, e.g. "x%1% te komen" or a GESLCOMPLCL, e.g. "hij komen").$
+$ Notice that the correspondence between substitution rules
+of isomorphic grammars prescribes that corresponding substitution rules
+substitute for the same variable index, but not necessarily for the same
+syntactic relation.$
+$ The case (nominative / dative / accusative) of an argument NP is 
+determined in the substitution rule. The choice between infinitives with
+"te" and without "te" in complement sentences is also made in the rule
+that substitutes this complement into a clause.$
+$ In case of substitution of open complement sentences, with a subject
+variable, it is checked whether the index of this variable is identical to
+the index of the subject or of the indirect object in the main sentence,
+depending on the verb pattern.$
+$ If a SUBSENT is substituted at subject position the substitution rule
+performs extraposition.$
+
+$ CL2 --> CL3: TIME rules. Here a specific tempus (o.t.t., o.v.t. etc.)
+is chosen. The corresponding form of the main verb and of the possible
+auxiliaries is determined (including the auxiliary for the passive). 
+The form of the finite verb is 
+adjusted to person and number of the subject. If necessary reflexive 
+pronouns and particles are created here (the necessary information
+is found in the VERBrecord). All these elements are put in a standard
+order (subject, refl. pro, auxiliaries, particle, main verb.$
+
+$ CL3 --> CL4: ORDER rules. They put the elements of the sentence at the 
+right place, taking into account the "soort" (main sentence, relative sentence,
+complement sentence).$
+
+$ CL4 --> CL5: ADV-SUBSTITUTION test. This rule is mainly of use for the
+efficiency of the analysis. The analytical rule tests whether there are still
+modifiers in the sentence. Only if these modifiers may be arguments of the
+main verb (prepositional object or passive PP), the test succeeds and the rule
+is applicable. Because of the newly introduced idiom rules, the test had to
+be made more tolerant. It may be omitted entirely in the future.$
+
+$ CL5 --> CL5: ADV-SUBSTITUTION rules.$
+$ They substitute adverbials (OPENADVP's, OPENPP's and ADVSENT's) in 
+sentences. This is the syntactic way to look at it, semantically the
+sentence is substituted for the subject variable of the OPENADVP or OPENPP.$
+$ If there is more than one adverbial, the analytical rules eliminate
+them in some standard order.$
+
+$ CL5 --> CL6: NEGATION rules.$
+$ There is a rule for sentences without negation, a rule for substitution of
+"niet" and a rule for replacing "een ..." by "geen ...".$
+
+$ CL6 --> CL7: SHIFT rules.$
+$ They have the task to shift WH-parts or parts with a free variable to
+the front of the clause. There are special rules to shift from a complement
+sentence or subsentence to the next higher sentence.$
+$ In the analytical rules it has to be decided what syntactic relation
+the shifted element may have. The verb patterns play a role in this choice.$
+$ In the analytical rules the "shifting back" of declarative ADVP's and PP's
+is treated as well.$
+
+$ CL7 --> CL8: INVERSION rules.$
+$ They perform subject-verb inversion if necessary (in yes-no questions and
+main sentences with a shift element). $
+
+$ CL8 --> CL9: FINAL clause rules.$
+$ Here a number of additional transformations is performed.$
+$ E.g.: "op het" --> "er op", "op iets" --> "ergens op", etc.$
+  The direct object "het" is put in front of the indirect object.
+  If necessary a GLUE is put between a particle and the main verb.
+
+$ CL9 --> ...: END clause rules.$
+$ Here the clause gets its category, depending on the "soort"
+in the CLrecord.$
+--> SENT        (hij wandelt)
+--> RELCL       (x%3% wandelt)
+--> SUBSENT     (dat hij wandelt; of hij wandelt; wie wandelt)
+--> OPENCOMPLCL (x%1% wandelen; x%2% een appel eten)
+--> GESLCOMPLCL (hij komen)
+--> ANTERELCL   (wandelende; gegeten)
+--> ADVSENT     (als hij wandelt)
+
+$ Note that the implicit order of the rules forces us to apply argument
+substitution rules first, then adverbial substitution rules and
+then negation rules. This implies that negation has widest scope and that
+adverbials have wider scope than argument NPs. This is obviously wrong
+in many cases and should be changed in the future.$
+$NP
+ 
+
+_1.2. The STARTCL rules_
+
+$ The START-CLAUSE rules have a BVERB and VARiables as arguments
+and build a CL0, consisting of a head/VERB and arg/VAR's. They require as
+many variables as the attribute aantalargs of the VERBrecord indicates. 
+RSTARTCL0 is the rule for verbs with zero arguments (e.g. "regenen", 
+RSTARTCL1 for verbs with one argument (e.g. "wandelen"), 
+RSTARTCL2 for two (e.g. "eten"), RSTARTCL3 for three (e.g. geven"). The
+rules have parameters, which carry information about the "soort"
+(main or relative sentence), the supertense and the mood. 
+This information is not
+immediately used, but is stored in the CLrecord. In generation this
+parameter 
+information comes from the preceding analysis and transfer components.
+In analysis the CLrecord contains this information when we arrive at the 
+STARTCL rules, thanks to the preceding analysis rules. There seems to be
+no particular reason why all this information has to be transferred in the
+STARTCL rules. In the future it may be better to have these parameters 
+in the rules where they are used.$
+
+Auxiliary function:
+
+$ In the STARTCL rules the following function is used.$
+
+makeomegaclrec =%def%
+                    {mood: omegamood,
+                     voice: omegavoice,
+                     tijd: omegatijd,
+                     supertense:omegatense,
+                     soort: omegaclsoort,
+                     vps: []               }
+$NP 
+
+RSTARTCL0
+
+m1: BVERB{ VERBrec1 }
+m:  CL0{ CLrec1 } [head/ VERB{ VERBrec1 } ]
+
+external parameters:
+supertensepar: [presenttensepar, pasttense, omegatense]   (supertensetype)
+clsoortpar:    [hoofdzin, opencomplzin, geslcomplzin, bijvbijzin, datdeelzin,
+                ofdeelzin, whdeelzin]      (clsoorttype)
+moodpar:       [impenk, impmv, yesno, whinterr, declarative]  (moodtype)
+
+GEN COND    VERBrec1.aantalargs = 0
+
+    ACTION  CLrec1 := makeomegaclrec;
+            CLrec1.mood := moodpar;
+            CLrec1.supertense := supertensepar;
+            CLrec1.soort := clsoortpar
+
+AN COND     VERBrec1.aantalargs = 0  and
+            CLrec1.mood = moodpar and
+            CLrec1.supertense = supertensepar and
+            CLrec1.soort = clsoortpar
+
+   ACTION  -
+$NP
+
+RSTARTCL1
+
+m1: BVERB{ VERBrec1 }
+m2: VAR{ VARrec1 }
+m:  CL0{ CLrec1 } [head/ VERB{ VERBrec1 }, arg/ VAR{ VARrec1 } ]
+
+external parameters:
+supertensepar: [presenttensepar, pasttense, omegatense]   (supertensetype)
+clsoortpar:    [hoofdzin, opencomplzin, geslcomplzin, bijvbijzin, datdeelzin,
+                ofdeelzin, whdeelzin]      (clsoorttype)
+moodpar:       [impenk, impmv, yesno, whinterr, declarative]  (moodtype)
+
+GEN COND    VERBrec1.aantalargs = 1
+
+    ACTION  CLrec1 := makeomegaclrec;
+            CLrec1.mood := moodpar;
+            CLrec1.supertense := supertensepar;
+            CLrec1.soort := clsoortpar
+
+AN COND     VERBrec1.aantalargs = 1  and
+            CLrec1.mood = moodpar and
+            CLrec1.supertense = supertensepar and
+            CLrec1.soort = clsoortpar
+
+   ACTION  -
+$NP
+
+RSTARTCL2
+
+m1: BVERB{ VERBrec1 }
+m2: VAR{ VARrec1 }
+m3: VAR{ VARrec2 }
+m:  CL0{ CLrec1 } [head/ VERB{ VERBrec1 }, 
+                   arg/ VAR{ VARrec1 }, arg/ VAR{ VARrec2 }] ]
+
+parameters:
+supertensepar: [presenttensepar, pasttense, omegatense]   (supertensetype)
+clsoortpar:    [hoofdzin, opencomplzin, geslcomplzin, bijvbijzin, datdeelzin,
+                ofdeelzin, whdeelzin]      (clsoorttype)
+moodpar:       [impenk, impmv, yesno, whinterr, declarative]  (moodtype)
+
+GEN COND    VERBrec1.aantalargs = 2
+
+    ACTION  CLrec1 := makeomegaclrec;
+            CLrec1.mood := moodpar;
+            CLrec1.supertense := supertensepar;
+            CLrec1.soort := clsoortpar
+
+AN COND     VERBrec1.aantalargs = 2  and
+            CLrec1.mood = moodpar and
+            CLrec1.supertense = supertensepar and
+            CLrec1.soort = clsoortpar
+
+   ACTION   -
+$NP
+
+RSTARTCL3
+
+m1: BVERB{ VERBrec1 }
+m2: VAR{ VARrec1 }
+m3: VAR{ VARrec2 }
+m4: VAR{ VARrec3 }
+m:  CL0{ CLrec1 } [head/ VERB{ VERBrec1 }, arg/ VAR{ VARrec1 },
+                   arg/ VAR{ VARrec2 }, arg/ VAR{ VARrec3 } ]
+
+external parameters:
+supertensepar: [presenttensepar, pasttense, omegatense]   (supertensetype)
+clsoortpar:    [hoofdzin, opencomplzin, geslcomplzin, bijvbijzin, datdeelzin,
+                ofdeelzin, whdeelzin]      (clsoorttype)
+moodpar:       [impenk, impmv, yesno, whinterr, declarative]  (moodtype)
+
+GEN COND    VERBrec1.aantalargs = 3
+
+    ACTION  CLrec1 := makeomegaclrec;
+            CLrec1.mood := moodpar;
+            CLrec1.supertense := supertensepar;
+            CLrec1.soort := clsoortpar
+
+AN COND     VERBrec1.aantalargs = 3  and
+            CLrec1.mood = moodpar and
+            CLrec1.supertense = supertensepar and
+            CLrec1.soort = clsoortpar
+
+   ACTION   -
+
+$NP
+
+_2.2. EMPTY-SUBSTITUTION rule_
+
+$ This rule substitutes the element EMPTY
+for a variable (semantics: existential quantification). $
+$ In the cases that the actual ("realized") number of arguments in a sentence 
+is less than "aantalargs" indicates, the superfluous argument variables 
+in this rule
+must be replaced by EMPTY. In one of the following rules this EMPTY must
+be eliminated in its turn: for example in a vp-rule, but possibly in the rule
+that makes the "erpassive". $
+$ The EMPTY has been invented to make it possible that the actual elimination
+of the argument can be done in the rules where this is convenient from
+a syntactic point of view, whereas this rule deals with the semantic aspects.
+Because the EMPTYSUBST rule  is always
+applied before the other substitution rules, it 
+ has necessarily the smallest scope. So "iedereen eet" gets the
+interpretation where everybody may eat something different. This is correct,
+but maybe there are counter-examples as well.$
+
+REMPTYSUBST1
+
+m1: EMPTY{ }
+m2: CL0{ CLrec1 } [ mu1, arg/ VAR{ VARrec1 }, mu2 ]
+m:  CL0{ CLrec1 } [ mu1, arg/ VAR{ VARrec1 }, mu2 ]
+
+pre-action:  VARrec1 := { index: LEVEL, soort: othervar, 
+                          persoon: 3, getal: enkelvoud }
+                          
+
+GEN COND   VARrec1.index = LEVEL  and
+           VARrec1.soort = othervar
+
+    ACTION -
+
+AN COND    no-EMPTYs-in(mu1)
+   ACTION  VARrec1 := { index: LEVEL, soort: othervar, 
+                        persoon: 3, getal: enkelvoud }
+
+$ (* The analytical 
+condition no-EMPTYs-in(mu1) serves only to avoid superfluous
+ambiguities if there is more than one EMPTY. *)$
+$NP
+
+_2.3. VERB PATTERN rules_
+
+$ There are 7 verb pattern rules: RVP0 - 6, each handling one or more
+verb patterns.$
+$ The attribute vps in a VERBrecord
+indicates what verb patterns the verb may have (e.g. a verb pattern
+consisting of a subject NP and a complement clause). These rules create
+a specific pattern, i.e. they assign the right syntactic relations
+to the variables and order them in some standard way (the order of 
+declarative main sentences). For each verb pattern there is a vp rule
+or an instance of a vp rule. If a verb allows a verb pattern with less
+arguments than aantalargs, this is allowed if the extra arguments
+are EMPTY's. Then the superfluous EMPTY's are deleted. Note that other
+arguments, "inside" the veb patterns, may be EMPTY too. They are
+not deleted here, but later. E.g. "er wordt gegeten" is generated as
+follows:$
+RSTARTCL2 -->         CL0[eten x%1% x%2%]
+REMPTYSUBST1 (2 x)--> CL0[eten EMPTY EMPTY]
+RVP1 -->              CL1[EMPTY eten]
+RVOICE3 -->           CL2{passive}[er eten]
+RTIJD1  -->           CL3[er wordt gegeten]
+
+$ The verb
+pattern that has been chosen is assigned to the attribute vps of the
+CLrecord. (The CLrecord may contain a _set_ of vps. This is used in
+analysis: there it is more efficient to maintain a set of "still 
+possible" verb patterns. Cf. R0024.)$
+
+$ There are special verb pattern rules for the treatment of idioms
+and for modal verbs. They are not discussed here.$
+
+$ In R0009 the various verb patterns are discussed.$
+$NP
+
+Auxiliary functions
+
+makehetnp =%def%
+               (* makes an NP consisting of the personal pronoun "het" *)
+               NP{ getal: enkelvoud,
+                   soort: hetpro,
+                   persoon: 3,
+                   natgeslacht: omegageslacht,
+                   supertense: omegatense,
+                   mood: declarative,
+                   cases: [nominative, accusative, dative],
+                   quant: defquant                        }
+                 [ head/ PERSPRO{ PERSPROrec1 } ]
+                     where PERSPROrec1 := F-BLEX(hetpersprokey) ] 
+                           with cases := [nominative, accusative, dative]
+
+makeemptyargs(n) =%def% (arg/ EMPTY{ key: emptykey })&n&
+                                (i.e. n times arg/ ...)
+                                (if n<=0 the result is eps, the empty list)
+
+emptyargs(mu, n) =%def% ( mu = (arg/ EMPTY)&n& )
+$ This is the way the definition should be, because of the symmetry. In fact
+a simpler function is used. Emptyargs(mu) means that mu is empty or 
+consists only of arg/EMPTY's.$
+$NP
+                           
+RVP0
+
+m1: CL0{ CLrec1 } [ head/ VERB{ VERBrec1 }, mu1 ]
+m:  CL1{ CLREC1 } [ subj/ T1, head/ VERB{ VERBrec1 } ]
+
+GEN COND    vp0 in VERBrec1.vps  and
+            emptyargs(mu1)
+
+    ACTION  T1 := makehetnp;
+            CLrec1.vps := [ vp0 ]
+
+AN COND     T1 = NP{ NOMrec1 }  with  NOMrec1.soort = hetpro  and
+            vp0 in CLrec1.vps  
+
+   ACTION   mu1 := makeemptyargs(VERBrec1.aantalargs);
+            CLrec1.vps := [ ] 
+$NP
+RVP1
+
+m1: CL0{ CLrec1 } [ head/ VERB{ VERBrec1 }, arg/ T1, mu1 ]
+m:  CL1{ CLrec1 } [ subj/ T1, head/ VERB{ VERBrec1 } ]
+
+external parameter:
+vppar: [vp1a, vp1b, vp1c ]  (verbpatterntype)
+
+GEN COND    vppar in VERBrec1.vps  and
+            emptyargs(mu1)
+
+    ACTION  CLrec1.vps := [ vppar ]
+
+AN COND     vppar in CLrec1.vps  
+
+   ACTION   mu1 := makeemptyargs(VERBrec1.aantalargs - 1);
+            CLrec1.vps := [ ] 
+
+$ (* This rule is also applied if no other verb pattern rule is applicable.
+This is a robustness measure, the so-called emergency exit. It enables the 
+system to translate "ik bedoel", although "bedoelen" does not have
+verb pattern vp1a. *)$
+$NP
+
+RVP2
+
+m1: CL0{ CLrec1 } [ head/ VERB{ VERBrec1 }, arg/ T1, arg/ T2, mu1 ]
+m:  CL1{ CLrec1 } [ subj/ T1, head/ VERB{ VERBrec1 }, rel2/ T2 ]
+
+external parameter:
+vppar: [vp2a, vp2c, vp2d, vp2e, vp2f ]  (verbpatterntype)
+
+GEN COND    vppar in VERBrec1.vps  and
+            emptyargs(mu1)
+
+    ACTION  CLrec1.vps := [ vppar ];
+            if vppar = vp2a then rel2 := obj
+            else if vppar = vp2e then rel2 := pred
+            else rel2 := compl
+
+AN COND     vppar in CLrec1.vps  and
+            ((vppar = vp2a and rel2 = obj) or
+             (vppar = vp2e and rel2 =pred) or
+             (vppar in [vp2c, vp2d, vp2f] and rel2 = compl))
+
+   ACTION   mu1 := makeemptyargs(VERBrec1.aantalargs - 2);
+            CLrec1.vps := [ ] 
+$NP
+RVP3
+
+m1: CL0{ CLrec1 } [ head/ VERB{ VERBrec1 }, arg/ T1, arg/ T2, mu1 ]
+m:  CL1{ CLrec1 } [ subj/ T1, head/ VERB{ VERBrec1 }, 
+                prepobj/ PPVAR{ PPrec1 } [ head/ PREP{ PREPrec1 }, obj/ T2 ] ]
+
+
+GEN COND    vp2b in VERBrec1.vps  and
+            VERBrec1.prep <> 0  and
+            emptyargs(mu1)  and
+            T2.cat <> EMPTY
+
+    ACTION  CLrec1.vps := [ vp2b ];
+            PPrec1 := { mood: omegamood, soort: omegaadvp,
+                        prepkey: VERBrec1.prepkey, supertense: omegatense }
+            PREPrec1 := F-BLEX(VERBrec1.prepkey) 
+
+AN COND     vp2b in CLrec1.vps  and
+            PREPrec1.key = VERBrec1.prepkey 
+
+   ACTION   mu1 := makeemptyargs(VERBrec1.aantalargs - 2);
+            CLrec1.vps := [ ] 
+$NP
+
+RVP4
+
+m1: CL0{ CLrec1 } [ head/ VERB{ VERBrec1 }, arg/ T1, arg/ T2, arg/ T3 ]
+m:  CL1{ CLrec1 } [ subj/ T1, head/ VERB{ VERBrec1 }, indobj/ T3, rel1/ T2 ]
+
+external parameter:
+vppar: [vp3a, vp3c, vp3d ]  (verbpatterntype)
+
+GEN COND    vppar in VERBrec1.vps  
+
+    ACTION  CLrec1.vps := [ vppar ];
+            if vppar = vp3a then rel1 := obj
+            else rel1 := compl
+
+AN COND     vppar in CLrec1.vps  and
+            ((vppar = vp3a and rel1 = obj) or
+             (vppar in [vp3c, vp3d] and rel1 = compl))
+
+            (* In analysis the structural condition should allow the order
+             rel1 - indobj as well *)
+
+   ACTION   CLrec1.vps := [ ] 
+$NP
+RVP5
+
+m1: CL0{ CLrec1 } [ head/ VERB{ VERBrec1 }, arg/ T1, arg/ T2, arg/ T3 ]
+m:  CL1{ CLrec1 } [ subj/ T1, head/ VERB{ VERBrec1 }, obj/ T2, 
+                prepobj/ PPVAR{ PPrec1 } [ head/ PREP{ PREPrec1 }, obj/ T3 ] ]
+
+
+GEN COND    vp3b in VERBrec1.vps  and
+            VERBrec1.prep <> 0  
+
+    ACTION  CLrec1.vps := [ vp3b ];
+            PPrec1 := { mood: declarative, soort: omegaadvp,                *)
+                        prepkey: VERBrec1.prepkey, supertense: omegatense }
+            PREPrec1 := F-BLEX(VERBrec1.prepkey) 
+
+AN COND     vp3b in CLrec1.vps  and
+            PREPrec1.key = VERBrec1.prepkey 
+
+(* In analysis the structural condition should allow the order prepobj - obj
+ as well *)
+
+   ACTION   CLrec1.vps := [ ] 
+
+*) In RVP3 mood: omegamood. Inconsequent.
+$NP
+
+RVP6
+
+m1: CL0{ CLrec1 } [ head/ VERB{ VERBrec1 }, arg/ T1, arg/ T2, arg/ T3 ]
+m:  CL1{ CLrec1 } [ subj/ T1, head/ VERB{ VERBrec1 }, obj/ T2, pred/ T3 ]
+
+GEN COND    vp3f in VERBrec1.vps  
+
+    ACTION  CLrec1.vps := [ vp3f ];
+
+AN COND     vp3f in CLrec1.vps 
+
+            (* In analysis the structural condition should allow the order
+             pred - obj as well *)
+
+   ACTION   CLrec1.vps := [ ] 
+$NP
+
+_2.4. VOICE rules._
+
+There are 3 voice rules: RVOICE1 - 3.
+$ RVOICE1 makes the active form.
+RVOICE2 makes the passive form. Both rules have a parameter voicepar, which
+can be active or passive. If RVOICE1 is called with voicepar = active, it is
+applied if the verb can have the active voice (according to the attribute
+possvoices). If RVOICE1 is called with voicepar =
+passive, it is only applied if the verb cannot have the passive
+voice (in that case RVOICE2 is not applicable). RVOICE2 behaves analogously,
+it is applied if it is called with voicepar=passive, if the verb allows this,
+or with voicepar=active if the active voice is not possible.$
+$ The result is that during transfer a preference for active or for passive
+can be expressed (e.g. because the input sentence in the source language
+had that voice) and that this preference is obeyed if possible. All this
+is rather tricky and asymmetric. It is unclear anyway what the notions
+active and passive mean in an intermediate language.$ 
+$ If the "deep" subject is EMPTY, it is deleted in RVOICE2.$
+$ RVOICE3 handles the "erpassive", i.e. the passive without a passive subject,
+in which "er" appears at the surface subject position. E.g., "er wordt 
+gelopen", "er wordt gegeten", "er wordt door Jan gegeten". The verbs that
+allow this (all Dutch verbs with aantalargs >= 1 ?) have erpassive in 
+possvoices.$
+$ In this grammar these subject-less cases are distinguished from cases like
+"er wordt iets gegeten", in which there is a subject (with relation postsubj).
+These cases are handled in a special substitution rule (RARGSUBST3), which
+is applicable for active forms as well (e.g. "er loopt iemand").$
+$ In RVOICE3 the subject must be EMPTY and is eliminated. RVOICE3 may
+correspond with other rules that eliminate EMPTY, e.g. an English rule that
+transforms "EMPTY walks" into "one walks".$
+$ The voice rules do not yet create the auxiliary verb. This is done in the
+TIJD rules, where a definitive decision about the kind of auxiliary can
+be made.$
+$NP
+
+RVOICE1
+
+m1: CL1{ CLrec1 } [ mu1, head/ VERB{ VERBrec1 }, mu2 ]
+m:  CL2{ CLrec1 } [ mu1, head/ VERB{ VERBrec1 }, mu2 ]
+
+external parameter:
+voicepar: [active, passive]    (voicetype)
+
+GEN COND     (voicepar = active and active in VERBrec1.possvoices) or
+             (voicepar = passive and not(passive in VERBrec1.possvoices))
+
+    ACTION  CLrec1.voice := active
+
+AN  COND    CLrec1.voice = active  and
+            voicepar = active
+            (* So in analysis voicepar can only be active *) 
+
+    ACTION  CLrec1.voice := omegavoice
+$NP
+
+RVOICE2
+
+m1: CL1{ CLrec1 } [ subj/ T1, head/ VERB{ VERBrec1 }, sig1, obj/ T2, mu1 ]
+m:  CL2{ CLrec1 } [ subj/ T2, head/ VERB{ VERBrec1 }, sig1, sig2, mu1 ]
+
+external parameter:
+voicepar: [active, passive]    (voicetype)
+
+GEN COND     not(CLrec1.mood in [impenk, impmv])  and
+             (sig1 = indobj/ ...  or  sig1 = eps ) and
+             T2.cat = VAR  and     
+             ((voicepar = passive and passive in VERBrec1.possvoices) or
+              (voicepar = active and not((active in VERBrec1.possvoices)
+                                         or (T1.cat = EMPTY))  ))
+
+    ACTION  CLrec1.voice := passive;
+            if T1.cat = EMPTY then sig2 := eps
+            else sig2 := prepobj/ PPVAR{ PPrec1 } [ head/ T4, obj/ T1 ]
+            with PPrec1 := { mood: omegamood, soort: andereadv,
+                            supertense: omegatense, prepkey: doorprepkey }
+              and T4 := F-BLEX(doorprepkey)
+            fi
+
+AN  COND    CLrec1.voice = passive  and
+            voicepar = passive  and
+                  (* So in analysis voicepar can only be passive *)
+            T2.cat = VAR  and
+            (sig1 = indobj/ ...  or  sig1 = eps)  and
+            ((sig2 = eps  or  
+             (sig2 = prepobj/ PPVAR{ PPrec1 } [head/ T5, obj/ T6 ]
+                     with PPrec1.key = doorprepkey) )
+
+    ACTION  CLrec1.voice := omegavoice
+            if sig2 = eps then T1 := EMPTY{ key: emptykey }
+            else T1 := T6      (* the object of the OPENPP *)
+            fi
+$NP
+RVOICE3
+
+m1: CL1{ CLrec1 } [ subj/ T1, head/ VERB{ VERBrec1 }, mu1 ]
+m:  CL2{ CLrec1 } [ subj/ THERE{ key: erkey }, head/ VERB{ VERBrec1 }, 
+                    sig2, mu1 ]
+
+GEN COND    no obj/... in mu1  and
+            not(CLrec1.mood in [impenk, impmv])  and
+            erpassive in VERBrec1.possvoices
+
+    ACTION  if T1.cat = EMPTY then sig2 := eps
+            else sig2 := prepobj/ PPVAR{ PPrec1 } [ head/ T2, obj/ T1 ];
+            with PPrec1 := { mood: omegamood, soort: andereadv,
+                            supertense: omegatense, prepkey: doorprepkey }
+              and T2 := F-BLEX(doorprepkey)
+            fi;
+            CLrec1.voice := passive
+
+AN  COND    (* in the structural condition it must be allowed that sig2 (the
+                prepobj) is _in_ mu1, not at the beginning *)
+            CLrec1.voice = passive  and
+            erpassive in VERBrec1.possvoices  and
+            no obj/... in mu1  and
+            ((sig2 = eps  or  
+             (sig2 = prepobj/ PPVAR{ PPrec1 } [head/ ..., obj/ T3 ]
+                     with PPrec1.key = doorprepkey) )
+
+    ACTION  CLrec1.voice := omegavoice;
+            if sig2 = eps then T1 := EMPTY{ key: emptykey }
+            else T1 := T3      (* the object of the OPENPP *)
+            fi
+$NP
+
+_2.5. Argument substitution rules_
+
+$ The ARGSUBST rules substitute the actual
+arguments for the argument variables. An argument may be an NP, an
+ADJP (adjective phrase) or a clause (a SUBSENT, e.g. "dat hij komt",
+an OPENCOMPLCL, e.g. "x%1% te komen" or a GESLCOMPLCL, e.g. "hij komen").$
+$ The index of the variable has to be equal to LEVEL (this identifier
+indicates the level of the derivation tree labeled by the name of the
+current rule; cf. document R0011, section 6).$
+$ Notice that the correspondence between substitution rules
+of isomorphic grammars prescribes that corresponding substitution rules
+substitute for the same variable index, but not necessarily for the same
+syntactic relation.$
+$ The case (nominative / dative / accusative) of an argument NP is 
+determined in the substitution rule. The choice between infinitives with
+"te" and without "te" in complement sentences is also made in the rule
+that substitutes this complement.$
+$ In case of substitution of open complement sentences, with a subject
+variable, it is checked whether the index of this variable is identical to
+the index of the subject or of the indirect object in the main sentence,
+depending on the verb pattern.$
+$ If a SUBSENT is substituted at subject position the substitution rule
+performs immediately the extraposition transformation.$
+$ In order to avoid superfluous ambiguities there is also a standard order of 
+applying the argument substitution rules in analysis. Cf. the auxiliary 
+function substorder.$
+
+Overview:
+RARGSUBST1: substitution of NP as subj, obj or indobj.
+RARGSUBST2: substitution of NP as prepobj.
+RARGSUBST3: substitution of indef. NP as subj --> "er" + postsubj.
+RARGSUBST4: substitution of ADJP as pred.
+RARGSUBST5: substitution of SUBSENT as obj.
+RARGSUBST6: substitution of SUBSENT as prepobj, with extraposition.
+RARGSUBST7: substitution of SUBSENT as subj, with extraposition.
+RARGSUBST8: substitution of OPENCOMPLCL with "te" (vp3c, vp3d).
+RARGSUBST9: substitution of OPENCOMPLCL without "te" (vp2d).
+RARGSUBST10: substitution of OPENCOMPLCL without "te" (vp2c, vpmodal2).
+RARGSUBST11: substitution of GESLCOMPLCL (vp2f).
+
+$ In a Dutch-Dutch translation the following groups of rules are
+translatable into each other: [1,2,3], [4], [5,6,7,11], [8,9,10].$
+
+$ The conversion of a GESLCOMPLCL into a finite SUBSENT (with "dat")
+must be done in the TIME rule (For this purpose 
+the parameter supertense is used, in G-transfer).$
+
+Auxiliary functions:
+
+assigncase(NP{ NOMrec1 }[ mu1 ], c) =%def%
+           (* assigns the case c to an NP, i.e. to the top node and
+              to the head if this is a personal pronoun *) 
+    NOMrec1.cases := [c];
+    if NOMrec1.soort in [persproniethet, hetpro]
+    then if mu1 = mu2, head/ PERSPRO{PERSPROrec1}, mu3
+         then PERSPROrec1.cases := [c]
+         fi
+    else if NOMrec1.soort = conjsoort and
+            mu1 = arg/T1, head/ ..., arg/ T2
+         then assigncase(T1); assigncase(T2)
+         fi
+    fi
+
+undocase(NP{ NOMrec1 }[ mu1 ]) =%def%
+         (* removes the case information from the NP *)
+    NOMrec1.cases := [ ];
+    if NOMrec1.soort in [persproniethet, hetpro]
+    then if mu1 = mu2, head/ PERSPRO{PERSPROrec1}, mu3
+         then PERSPROrec1.cases := [ ]
+         fi
+    else if NOMrec1.soort = conjsoort and
+            mu1 = arg/T1, head/ ..., arg/ T2
+         then undocase(T1); undocase(T2)
+         fi
+    fi
+
+$ The function substorder sees to it that during analysis the substitution
+rules are applied in a fixed order (in order to avoid superfluous
+ambiguities). After the introduction of idiom rules substorder had
+to be made more tolerant in certain cases, but here the original version
+is given.$
+
+substorder(mu, rel) =%def%                (mu is a reltreelist, rel a relation)
+    (* if substorder is true for a reltreelist mu and a relation rel, a 
+       substitution rule may be applied for this relation *) 
+    rel = subj     --> true
+    rel = indobj   --> alreadyelim(mu, [subj, complsubj])
+    rel = compl    --> alreadyelim(mu, [subj, complsubj])               
+    rel = obj      --> alreadyelim(mu, [subj, complsubj, indobj, compl])
+    rel = prepobj  --> alreadyelim(mu, [subj, complsubj, indobj, compl, obj]) 
+    rel = pred     --> alreadyelim(mu, [subj, complsubj, indobj, compl, obj, 
+                                        prepobj]) 
+    else           --> false.
+    fi
+
+alreadyelim(mu, R) =%def%       (R a set of relations)
+   (* alreadyelim is true if for the relations in R no substitution rules 
+      are applicable any more *)
+   for all r/T in mu:
+      if r in R  then  if r = prepobj
+                       then T.cat = PPVAR
+                       else T.cat in [VAR, EMPTY, THERE]
+                       fi
+      else true
+      fi                    
+
+maketeinfverb(mu) =%def%                (* lopen --> te lopen *)
+    mu with the following modifications
+        search for first r/T in mu such that:
+        (r = aux or r = head) and
+        T = VERB{ VERBrec1 }  and
+        VERBrec1.tijd = Infinitief;
+        replace r/T by:
+        r/ VERB{ VERBrec2 }[ terel/ TE{key: tekey}, head/ VERB{VERBrec2}]
+        in which VERBrec2 := copy(VERBrec1) with VERBrec2.tijd := TeInf
+
+remteinfverb(mu) =%def%                  (* te lopen --> lopen *)
+    mu with the following modifications
+        search for first r/T in mu such that:
+        (r = aux or r = head) and
+        T = VERB{ VERBrec1 }[ terel/ TE, head/ VERB{VERBrec2}]
+        replace r/T by:
+        r/ VERB{ VERBrec2 }
+
+maketeinftijd(t) =%def%       (t: cltijdtype)
+    t = oinft --> oteinft
+        vinft --> vteinft
+        oinftt --> oteinftt
+        vinftt --> vteinftt
+
+remteinftijd(t) =%def%
+    t = oteinft --> oinft
+        vteinft --> vinft
+        oteinftt --> oinftt
+        vteinftt --> vinftt
+
+$ Expressions like "te komen" are represented as a VERB node with two sons:
+"te" and the VERB "komen". The VERB record at the top has tijd = TeInf. 
+All this is rather clumsy.$
+$NP
+
+RARGSUBST1                               (* substitution of subject, object
+                                           or indirect object *)
+
+m1: NP{ NOMrec1 } [ mu1 ]
+m2: CL2{ CLrec1 } [ mu2, rel1/ VAR{ VARrec1 }, mu3 ]
+m:  CL2{ CLrec1 } [ mu2, rel1/ NP{ NOMrec1 }[ mu1 ], mu3 ]
+
+pre-action: VARrec1 := { index: LEVEL, soort: npvar,
+                        persoon: NOMrec1.persoon, getal: NOMrec1.getal }
+
+GEN COND    rel1 in [subj, obj, indobj]  and
+            VARrec1.index = LEVEL  and
+            VARrec1.soort = npvar  and
+            VARrec1.persoon = NOMrec1.persoon  and
+            VARrec1.getal = NOMrec1.getal  and
+            not( rel1 = subj  and  (vp1b in CLrec1.vps  or  vp1c in CLrec1.vps))
+
+    ACTION  if rel1 = subj then assigncase(NP{NOMrec1}[mu1], nominative)
+            else if rel1 = obj  then assigncase(NP{NOMrec1}[mu1], accusative)
+            else if rel1 = indobj then assigncase(NP{NOMrec1}[mu1], dative) fi;
+            NOMrec1.supertense := omegatense
+
+AN  COND    substorder(mu2.rel1/NP.mu3 , rel1)  and
+                       (* the "." is here the separator between the elements
+                          of a reltreelist model, usually written as ",",
+                          but this is used here as the argument separator *)
+            ((rel1 = subj and nominative in NOMrec1.cases) or
+             (rel1 = obj  and accusative in NOMrec1.cases) or
+             (rel1 = indobj  and  dative in NOMrec1.cases))
+
+    ACTION  undocase(NP{NOMrec1}[mu1]);
+            VARrec1 := {index: LEVEL, soort: npvar,
+                        persoon: NOMrec1.persoon, getal: NOMrec1.getal};
+            NOMrec1.supertense := CLrec1.supertense     
+$NP
+
+RARGSUBST2                               (* substitution of prepositional
+                                             object *)
+
+m1: NP{ NOMrec1 } [ mu1 ]
+m2: CL2{ CLrec1 } [ mu2, 
+                    prepobj/ PPVAR{ PPrec1 } [ mu4,
+                                               obj/ VAR{ VARrec1 }, 
+                                               mu5 ],
+                    mu3 ]
+m:  CL2{ CLrec1 } [ mu2, 
+                    prepobj/ PP{ PPrec1 } [ mu4,
+                                            obj/ NP{ NOMrec1 }[ mu1 ], 
+                                            mu5 ],
+                    mu3 ]
+ 
+pre-action: VARrec1 := { index: LEVEL, soort: npvar,
+                        persoon: NOMrec1.persoon, getal: NOMrec1.getal }
+
+GEN COND    VARrec1.index = LEVEL  and
+            VARrec1.soort = npvar  and
+            VARrec1.persoon = NOMrec1.persoon  and
+            VARrec1.getal = NOMrec1.getal
+            
+    ACTION  assigncase(NP{NOMrec1}[mu1], accusative);
+            PPrec1.mood := NOMrec1.mood;
+            NOMrec1.supertense := omegatense
+
+AN  COND    substorder(mu2.prepobj/PP.mu3 , prepobj)  and
+                       (* The "." is here the separator between the elements
+                           of a reltreelist model, usually written as ",",
+                           but the "," is already used here as the argument 
+                           separator *)
+                        (* Note that the first argument of substorder is the
+                           complete reltreelist of m2, but that the current 
+                           notation forces us to write that in this way *)
+            NOMrec1.cases * [dative, accusative] <> []
+
+    ACTION  undocase(NP{NOMrec1}[mu1]);
+            VARrec1 := {index: LEVEL, soort: npvar,
+                        persoon: NOMrec1.persoon, getal: NOMrec1.getal};
+            NOMrec1.supertense := CLrec1.supertense;   
+            PPrec1.mood := omegamood  
+$NP
+
+RARGSUBST3                               (* "er" + postsubj *)
+
+m1: NP{ NOMrec1 } [ mu1 ]
+m2: CL2{ CLrec1 } [ subj/ VAR{ VARrec1 }, 
+                    head/ VERB{ VERBrec1 }, sig1, mu2 ]
+m:  CL2{ CLrec1 } [ subj/ THERE{ key: erkey },
+                    head/ VERB{ VERBrec1 }, sig1,
+                    postsubj/ NP{ NOMrec1 }[ mu1 ], mu2 ]
+
+pre-action: VARrec1 := { index: LEVEL, soort:npvar, 
+                         persoon: NOMrec1.persoon, getal: NOMrec1.getal }
+
+GEN COND    NOMrec1.quant in [indefquant, whquant] and
+            VARrec1.index = LEVEL  and
+            VARrec1.soort = npvar  and
+            VARrec1.persoon = NOMrec1.persoon  and
+            VARrec1.getal = NOMrec1.getal  and
+            CLrec1.vps * [vp1a, vp1c] <> []  and
+            (sig1 = eps  or  (sig1 = indobj/... and no indobj/... in mu2))
+
+    ACTION  assigncase(NP{NOMrec1}[mu1], nominative);
+            NOMrec1.supertense := omegatense
+
+AN  COND    nominative in NOMrec1.cases  and
+            NOMrec1.quant in [indefquant, whquant]  and
+            (sig1 = eps  or  sig1 = indobj/...)
+
+    ACTION  undocase(NP{NOMrec1}[mu1]);
+            VARrec1 := {index: LEVEL, soort: npvar,
+                        persoon: NOMrec1.persoon, getal: NOMrec1.getal};
+            NOMrec1.supertense := CLrec1.supertense     
+$NP
+
+RARGSUBST4                          (* substitution of predicative adjective *)
+                                       
+m1: OPENADJP{ ADJPrec1 }[arg/ VAR{ VARrec1 }, mu1 ]
+m2: CL2{ CLrec1 } [ mu2, subj/ VAR{ VARrec2 }, mu3,
+                    pred/ VAR{ VARrec3 }, mu4 ]
+m:  CL2{ CLrec1 } [ mu2, subj/ VAR{ VARrec2 }, mu3,
+                    pred/ ADJP{ ADJPrec1 } [ mu1 ], mu4 ]
+
+pre-action: VARrec1 := { index: LEVEL, soort: othervar,
+                        persoon: 3, getal: enkelvoud }
+                      (* persoon and getal are irrelevant if soort=othervar *)
+
+GEN COND    VARrec1.index = LEVEL  and
+            VARrec1.soort = othervar  and
+            VARrec1.index = VARrec2.index  and
+            not( ADJPrec1.evorm )
+
+    ACTION  ADJPrec1.supertense := omegatense
+
+AN  COND    substorder(mu2.mu3.mu4 , pred)  and
+            not( ADJPrec1.evorm )
+
+    ACTION  VARrec3 := {index: LEVEL, soort: othervar,
+                        persoon: 3, getal: enkelvoud};
+            VARrec1 := copy(VARrec2)
+$NP
+
+RARGSUBST5                               (* substitution of SUBSENT *)
+
+m1: SUBSENT{ CLrec1 }[ mu1 ]
+m2: CL2{ CLrec2 } [ mu2, obj/ VAR{ VARrec1 }, mu3 ]
+m:  CL2{ CLrec2 } [ mu4, sig1, obj/ SUBSENT{ CLrec1 } [ mu1 ] ]
+
+pre-action: VARrec1 := { index: LEVEL, soort:othervar,
+                        persoon: 3, getal: enkelvoud }
+
+GEN COND    VARrec1.index = LEVEL  and
+            VARrec1.soort = othervar
+
+    ACTION  NOMrec1.supertense := omegatense;
+            sig1 := eps;
+            mu4 := mu2, mu3
+
+AN  COND    (sig1 = eps  or  sig1 = puncrel/ PUNC{ key: kommakey }))  and
+            substorder(mu2.mu3 , obj)
+
+    ACTION  VARrec1 := {index: LEVEL, soort: othervar,
+                        persoon: 3, getal: enkelvoud};
+            CLrec1.supertense := CLrec2.supertense;
+            mu2 := mu4;
+            mu3 := eps
+
+$ (* There is some asymmetry w.r.t. mu2, mu3 and mu4. In generation the
+object/ SUBSENT is shifted to the right, if mu3 is non-empty (It might be
+a prepobj). In analysis the obj/ SUBSENT is not shifted to the left in
+that case. Fortunately the analytical vp rules accept a prepobj left of the
+obj. *)$
+$NP
+
+RARGSUBST6                               (* substitution of SUBSENT as 
+                                             prepositional object , with
+                                             extraposition, "op het, dat .. *)
+
+m1: SUBSENT{ CLrec1 }[ mu1 ]
+m2: CL2{ CLrec2 } [ mu2, 
+                    prepobj/ PPVAR{ PPrec1 } [ head/ T1,
+                                               obj/ VAR{ VARrec1 } ],
+                    mu3 ]
+m:  CL2{ CLrec2 } [ mu2, prepobj/ PP{ PPrec1 } [ head/ T1, obj/ T2 ],
+                    mu3, sig1,
+                    extrapos/ SUBSENT{ CLrec1 } [ mu1 ] ]
+
+pre-action: VARrec1 := { index: LEVEL, soort:othervar,
+                        persoon: 3, getal: enkelvoud }
+
+GEN COND    VARrec1.index = LEVEL  and
+            VARrec1.soort = othervar
+
+    ACTION  CLrec1.supertense := omegatense;
+            sig1 := eps;
+            T2 := makehetnp         (* Cf. the vp rules for the definition *)
+
+AN  COND    (sig1 = eps  or  sig1 = puncrel/ PUNC{ key: kommakey })  and
+            substorder(mu2.mu3 , prepobj)  and
+            T2 = NP{ NOMrec1 } with NOMrec1.soort = hetpro
+
+    ACTION  VARrec1 := {index: LEVEL, soort: othervar,
+                        persoon: 3, getal: enkelvoud};
+            CLrec1.supertense := CLrec2.supertense
+$NP
+
+RARGSUBST7                               (* substitution of SUBSENT as
+                                            subject with extraposition *)
+
+m1: SUBSENT{ CLrec1 }[ mu1 ]
+m2: CL2{ CLrec2 } [ subj/ VAR{ VARrec1 }, mu2 ]
+m:  CL2{ CLrec2 } [ subj/ T1, mu2, sig1, extrapos/ SUBSENT{ CLrec1 } [ mu1 ] ]
+
+pre-action: VARrec1 := { index: LEVEL, soort:othervar,
+                        persoon: 3, getal: enkelvoud }
+
+GEN COND    VARrec1.index = LEVEL  and
+            VARrec1.soort = othervar
+
+    ACTION  CLrec1.supertense := omegatense;
+            sig1 := eps;
+            T1 := makehetnp    (* Cf. vp rules for definition of makehetnp *)
+
+AN  COND    (sig1 = eps  or  sig1 = puncrel/ PUNC{ key: kommakey })  and
+            T1.cat = NP  and
+            T1.rec.soort = hetpro
+
+    ACTION  VARrec1 := {index: LEVEL, soort: othervar,
+                        persoon: 3, getal: enkelvoud};
+            CLrec1.supertense := CLrec2.supertense;
+$NP
+
+RARGSUBST8                               (* substitution of open complement
+                                         clause for verb pattern vp3c, vp3d *)
+
+m1: OPENCOMPLCL{ CLrec1 }[ sig1, subj/ VAR{ VARrec1 }, mu1 ]
+m2: CL2{ CLrec2 } [ subj/ VAR{ VARrec2 },
+                    head/ T1,
+                    indobj/ VAR{ VARrec3 }, 
+                    compl/ VAR{ VARrec4 }  ]
+m:  CL2{ CLrec2 } [ subj/ VAR{ VARrec2 },
+                    head/ T1,
+                    indobj/ VAR{ VARrec3 }, 
+                    compl/ TECOMPLSENT{ CLrec1 } [ sig1, sig2, mu1' ] ]
+
+pre-action: VARrec1 := { index: LEVEL, soort:othervar,
+                        persoon: 3, getal: enkelvoud }
+
+GEN COND    VARrec4.index = LEVEL  and
+            VARrec4.soort = othervar  and
+            ((vp3c in CLrec2.vps  and  VARrec3.index = VARrec1.index) or
+             (vp3d in CLrec2.vps  and  VARrec2.index = VARrec1.index) )  and
+            (sig1 = shift/ ...  or  sig1 = eps)  and
+            CLrec1.supertense = CLrec2.supertense
+
+    ACTION  CLrec1.supertense := omegatense;
+            sig2 := eps;
+            mu1' := maketeinfverb(mu1);
+            CLrec1.tijd := maketeinftijd(CLrec1.tijd)
+
+AN  COND    CLrec2.vps * [vp3c, vp3d] <> []  and
+           (sig1 = eps  or  sig1 = shift/ ...)  and
+           (sig2 = omrel  or  sig2 = eps)
+
+    ACTION  VARrec4 := {index: LEVEL, soort: othervar,
+                        persoon: 3, getal: enkelvoud};
+            if vp3c in CLrec2.vps 
+            then VARrec1 := copy(VARrec3); 
+                 CLrec1.vps := [vp3c]
+            else VARrec1 := copy(VARrec2);
+                 CLrec2.vps := [vp3d]
+            fi;
+            CLrec1.supertense := CLrec2.supertense;
+            mu1 := remteinfverb(mu1');
+            CLrec1.tijd := remteinftijd(CLrec1.tijd)
+    
+$NP
+
+RARGSUBST9                               (* substitution of open complement
+                                             clause for verb pattern vp2d *)
+
+m1: OPENCOMPLCL{ CLrec1 }[ sig1, subj/ VAR{ VARrec1 }, mu1 ]
+m2: CL2{ CLrec2 } [ subj/ VAR{ VARrec2 },
+                    mu3,
+                    compl/ VAR{ VARrec3 }  ]
+m:  CL2{ CLrec2 } [ subj/ VAR{ VARrec2 },
+                    mu3,
+                    compl/ TECOMPLSENT{ CLrec1 } [ sig1, sig2, mu1' ] ]
+
+pre-action: VARrec3 := { index: LEVEL, soort: othervar,
+                        persoon: 3, getal: enkelvoud }
+
+GEN COND    VARrec3.index = LEVEL  and
+            VARrec3.soort = othervar  and
+            VARrec1.index = VARrec2.index  and
+            vp2d in CLrec2.vps  and  
+            (sig1 = shift/ ...  or  sig1 = eps)  and
+            CLrec1.supertense = CLrec2.supertense
+
+    ACTION  CLrec1.supertense := omegatense;
+            sig2 := eps;
+            mu1' := maketeinfverb(mu1);
+            CLrec1.tijd := maketeinftijd(CLrec1.tijd)
+
+AN  COND    substorder (mu3, compl)  and
+            vp2d in CLrec2.vps  and
+           (sig1 = eps  or  sig1 = shift/ ...)  and
+           (sig2 = omrel  or  sig2 = eps)
+
+    ACTION  VARrec3 := {index: LEVEL, soort: othervar,
+                        persoon: 3, getal: enkelvoud};
+            VARrec1 := copy(VARrec3); 
+            CLrec2.vps := [vp2d];
+            CLrec1.supertense := CLrec2.supertense;
+            mu1 := remteinfverb(mu1');
+            CLrec1.tijd := remteinftijd(CLrec1.tijd)
+$NP
+
+RARGSUBST10                               (* substitution of open complement
+                                             clause for verb pattern vp2c.
+                                             This rule is used for vpmodal2
+                                             as well  *)
+
+m1: OPENCOMPLCL{ CLrec1 }[ sig1, subj/ VAR{ VARrec1 }, mu1, mu2 ]
+m2: CL2{ CLrec2 } [ subj/ VAR{ VARrec2 },
+                    mu3,
+                    compl/ VAR{ VARrec3 }  ]
+m:  CL2{ CLrec2 } [ subj/ VAR{ VARrec2 },
+                    mu3, mu1,
+                    compl/ COMPLSENT{ CLrec1 } [ sig1, mu2 ] ]
+
+pre-action: VARrec1 := { index: LEVEL, soort: othervar,
+                        persoon: 3, getal: enkelvoud }
+GEN COND    VARrec3.index = LEVEL  and
+            VARrec3.soort = othervar  and
+            VARrec1.index = VARrec2.index  and
+            vp2c in CLrec2.vps  and  
+            (sig1 = shift/ ...  or  sig1 = eps)  and
+            CLrec1.supertense = CLrec2.supertense  and
+            mu1 consists of obj, indobj, prepobj, mod, part, refl, pred 
+            (so mu2 starts where a different relation is encountered)   
+
+    ACTION  CLrec1.supertense := omegatense;
+
+AN  COND    vp2c in CLrec2.vps  and
+           (sig1 = eps  or  sig1 = shift/ ...)  and
+            mu1 consists of obj, indobj, prepobj, mod, part, refl, pred 
+            (so mu3 ends where one of these relations occurs)
+           
+    ACTION  VARrec3 := {index: LEVEL, soort: othervar,
+                        persoon: 3, getal: enkelvoud};
+            VARrec1 := copy(VARrec2); 
+            CLrec2.vps := [vp2c];
+            CLrec1.supertense := CLrec2.supertense;
+$NP
+
+RARGSUBST11                               (* substitution of closed complement
+                                             clause for verb pattern vp2f. *)
+
+m1: GESLCOMPLCL{ CLrec1 }[ sig1, subj/ NP{ NOMrec1 }, mu1, mu2 ]
+m2: CL2{ CLrec2 } [ mu3,
+                    compl/ VAR{ VARrec1 }  ]
+m:  CL2{ CLrec2 } [ mu3,
+                    complsubj/ NP{ NOMrec1 },
+                    mu1,
+                    compl/ COMPLSENT{ CLrec1 } [ sig1, mu2 ] ]
+
+pre-action: VARrec3 := { index: LEVEL, soort:othervar,
+                        persoon: 3, getal: enkelvoud }
+
+
+GEN COND    VARrec1.index = LEVEL  and
+            VARrec1.soort = othervar  and
+            vp2f in CLrec2.vps  and  
+            (sig1 = shift/ ...  or  sig1 = eps)  and
+            CLrec1.supertense = CLrec2.supertense  and
+            mu1 consists of obj, indobj, prepobj, mod, part, refl, pred 
+            (so mu2 starts where a different relation is encountered)   
+
+    ACTION  CLrec1.supertense := omegatense;
+            assigncase(NP{NOMrec1}, accusative)
+
+AN  COND    substorder(mu3.mu1, compl)  and
+            vp2f in CLrec2.vps  and
+           (sig1 = eps  or  sig1 = shift/ ...)
+           
+    ACTION  VARrec1 := {index: LEVEL, soort: othervar,
+                        persoon: 3, getal: enkelvoud};
+            CLrec2.vps := [vp2f];
+            CLrec1.supertense := CLrec2.supertense;
+            assigncase(NP{NOMREC1}, nominative)
+    
+$ (* It is possible to translate a GESLCOMPLCL into a SUBSENT (e.g. "hij komen"
+into "dat hij komt"). But this conversion is not done during the actual
+substitution. It is achieved by having an ambiguous transfer of the time 
+rule RTIJD1 for these complement sentences. The supertense is used to
+determine the tense. *)$
+$NP
+_2.6. TIME rules_
+
+There are 3 TIME rules: RTIJD1 - 3.
+$  In these rules a specific verb time (o.t.t., o.v.t. etc.)
+is chosen. The corresponding form of the main verb and of the possible
+auxiliaries is determined (including the auxiliary for the passive). 
+The form of the finite verb is 
+adjusted to person and number of the subject. If necessary, reflexive 
+pronouns and particles are created here (the necessary information
+is found in the VERBrecord). All these elements are put in a standard
+order (subject, refl. pro, auxiliaries, particle, main verb).$
+$ Rule RTIJD2 is for imperatives. Rule RTIJD3 is for the verb forms of the
+"anterelclause". RTIJD1 is for all other cases.$
+
+$ In some cases the "soort" of the clause is modified by the tijd rule:$
+$ - bijvbijzin (relative clause) becomes finietbijzin (finite rel. cl.) in
+RTIJD1 or voltdwcl / tegdwcl (for non-finite rel. cl.) in RTIJD3. (in 
+RORDER4 it is checked whether a voltdwcl or tegdwcl may become an anterelcl.)$
+$ - geslcomplzin (closed complement sentence, i.e. complement with subject NP)
+becomes datdeelzin (a finite subsentence) if RTIJD1 is applied to it with
+a finite tempus as the value of parameter cltijdpar.$
+$ In G-TRANSFER a non-finite time is always translated into both 
+a finite time and a non-finite time. In most cases one of these possibilities
+is filtered out. The
+parameter supertense of the TIJD rules is used in G-TRANSFER
+ to choose the right finite time.$
+$ Here are a 
+few examples of the transfer of TIJD rules in order to show how the
+supertense is used. There are two IL rules for time: RT1 and RT2. RT2 is
+only for imperatives, RT1 is for all other cases. A-TRANSFER translates
+both RTIJD1 and RTIJD3 into RT1; the parameters tijdpar and supertensepar
+are copied. For the finite times G-TRANSFER RT1 is translated into RTIJD1
+with the same parameters. For the infinitive times there are two translations:
+e.g. RT1 with tijdpar=oinft and supertense=past is translated into: (i) RTIJD1
+with tijdpar=oinft and supertense=past, (ii) RTIJD1 with tijdpar=ovt and
+supertense=past (ovt is chosen because supertense = past). The result
+is that "Piet komen" in "hij zag Piet komen" is translated into 
+both "Piet komen" and "dat Piet kwam".$
+$ In an analogous way RTIJD3 with tijdpar=voltdwcltijd and supertense=present
+is translated into RT1 with tijdpar=voltdwcltijd and supertense=present, by
+A-TRANSFER. G-TRANSFER translates this into (i) RTIJD3 with 
+tijdpar=voltdwcltijd and supertense=present, (ii) RTIJD1 with tijdpar=vtt
+and supertense=present. The result is that "de gegeten appel" in "hij ziet de
+gegeten appel" is translated into "de gegeten appel" and "de appel die 
+gegeten is".$   
+$NP
+
+Auxiliary functions:
+
+$ The functions headtijd (the tempus of the main verb), comptijd (the
+tempus of the auxiliary verb of completion) and zullentijd (the tempus
+of the auxiliary
+verb of the future tense) are specified in the following table.$
+
+cltijd     headtijd     comptijd       zullentijd
+-------------------------------------------------
+ott        TegenwTijd   omegatijd      omegatijd 
+ovt        VerlTijd     omegatijd      omegatijd
+oinft      Infinitief   omegatijd      omegatijd
+ottt       Infinitief   omegatijd      Tegenwtijd
+ovtt       Infinitief   omegatijd      VerlTijd
+oinftt     Infinitief   omegatijd      Infinitief
+vtt        VoltDw       TegenwTijd     omegatijd
+vvt        VoltDw       VerlTijd       omegatijd
+vinft      VoltDw       Infinitief     omegatijd
+vttt       VoltDw       Infinitief     TegenwTijd
+vvtt       VoltDw       Infinitief     VerlTijd
+vinftt     VoltDw       Infinitief     Infinitief
+
+makereflpro(VERBREC, P, G ) :         {persoon P, getal G}
+    if P=4 then P:=3; (* "u" --> "zich" *)
+    if VERBREC.reflexive
+    then makereflpro := refl/ REFLPRO{ key: "the right key for this P and G",
+                                       persoon:P, getal: G }
+    else makereflpro := eps  fi
+
+makepart(VERBREC):                 
+    if VERBREC.part = 0
+    then makepart := eps
+    else makepart := part/ PART{key: VERBREC.part}  fi
+
+testreflpro(sig, VERBREC, P, G):
+    testreflpro := (sig = eps  and  not VERBREC.reflexive)        or
+                   (sig = refl/ REFLPRO{persoon:P1, getal: G1} and 
+                   (P1 = P or (P1 = 3 and P = 4)                  
+                    VERBREC.reflexive                             )
+
+testpart(sig, VERBREC):
+    testpart := (sig = eps  and  VERBREC.part = 0)  or
+                (sig = part/ PART{key: VERBREC.part})
+$NP
+
+RTIJD1
+
+m1: CL2{ CLrec1 } [mu1, head/ VERB{ VERBrec1 }, mu2] 
+m:  CL3{ CLrec1 } [ mu1, sig1, sig2, sig3, sig4,
+                    head/ VERB{ VERBrec1 }, mu2 ]
+
+(* This is a good example of a rule that is too long. It should be split up
+or it should make more use of auxiliary functions. *)
+
+external parameters:
+supertensepar: [presenttense, pasttense, omegatense]     (supertensetype)
+cltijdpar:     [ott, ovt, oinft, ottt, ovtt, oinftt, vtt, vvt, vinft,
+                vttt, vvtt, vinftt, omegatijd]           (cltijdtype)
+               (* In the implemented version cltijdpar may have the additional
+                  value omegatijd. This was necessary because of the addition
+                  of the rules for modal verbs which have a deviating treatment
+                  of tempus *)
+
+GEN COND    not(CLrec1.mood in [impenk, impmv])  and
+            (subj/...  in mu1  or  postsubj/... in mu2)  and
+            (CLrec1.soort <> opencomplzin  or
+             cltijdpar in [oinft, oinftt, vinft, vinftt, omegacltijd])
+
+    ACTION  if subj/ NP{NOMrec} in mu1, mu2 then subjpersoon := NOMrec.persoon;
+                                                 subjgetal := NOMrec.getal
+       else if subj/ VAR{VARrec} in mu1,mu2 then subjpersoon := VARrec.persoon;
+                                                 subjgetal := VARrec.getal
+       else if postsubj/ NP{NOMrec} in mu1, mu2 then 
+                                                subjpersoon := NOMrec.persoon;
+                                                subjgetal := NOMrec.getal
+                                            else subjpersoon := 3; 
+                                                 subjgetal := enkelvoud;
+       fi;
+       sig4 := makepart(VERBrec1);
+       if CLrec1.voice = active
+       then sig1 := makereflpro(VERBrec1, subjpersoon, subjgetal)
+       else sig1 := eps fi;
+       if zullentijd(cltijdpar) = omegatijd
+       then sig2 := eps
+       else VERBrec2 := F-BLEX(zullenkey);
+            VERBrec2.tijd := zullentijd(cltijdpar):
+            VERBrec2.getal := subjgetal;
+            VERBrec2.personen := [subjpersoon];
+            sig2 := aux/ VERB{VERBrec2}
+       fi;
+       if CLrec1.voice = active
+       then VERBrec1.tijd := headtijd(cltijdpar);
+            if VERBrec1.tijd = VoltDw  and
+               CLrec1.vps * [vp2c, vp2f] <> []
+            then VERBrec1.tijd := Infinitief
+            fi;
+            if comptijd(cltijdpar) = omegatijd
+            then sig3 := eps;
+                 if headtijd(cltijdpar) in [TegenwTijd, VerlTijd]
+                 then VERBrec1.getal := subjgetal;
+                      VERBrec1.personen := [subjpersoon]
+                 fi
+             else if hebvorm in VERBrec1.voltvormen
+                  then VERBrec3 := F-BLEX(hebbenkey)
+                  else VERBrec3 := F-BLEX(zijnkey)
+                  fi;
+                  VERBrec3.tijd := comptijd(cltijdpar);
+                  if VERBrec3.tijd in [TegenwTijd, VerlTijd]
+                  then VERBrec3.getal := subjgetal;
+                       VERBrec3.personen := [subjpersoon]
+                  fi;
+                  sig3 := aux/ VERB{VERBrec3}
+             fi   
+       else (* passive *)
+            VERBrec1.tijd := VoltDw;
+            if comptijd(cltijdpar) = omegatijd
+            then if headtijd(cltijdpar) = VoltDw
+                 then sig3 := eps
+                 else VERBrec3 := F-BLEX(wordenkey);
+                      VERBrec3.tijd := headtijd(cltijdpar);
+                      if VERBrec3.tijd in [TegenwTijd, VerlTijd]
+                      then VERBrec3.getal := subjgetal;
+                           VERBrec3.personen := [subjpersoon]
+                      fi;
+                      sig3 := aux/ VERB{ VERBrec3 }
+                 fi
+            else VERBrec3 := F-BLEX(zijnkey);
+                 VERBrec3.tijd := comptijd(cltijdpar);
+                 if VERBrec3.tijd in [TegenwTijd, VerlTijd]
+                 then VERBrec3.getal := subjgetal;
+                      VERBrec3.personen := [subjpersoon]
+                 fi;
+                 sig3 := aux/ VERB{VERBrec3}
+            fi  
+       fi;
+       if CLrec1.soort = bijvbijzin
+       then CLrec1.soort := finietbijzin
+       else if CLrec1.soort = geslcomplzin  and  
+               not(cltijdpar in [oinft, oinftt, vinft, vinftt])
+       then CLrec1.soort := datdeelzin
+       fi;
+
+AN  COND    (* In the surface parser the cltijd has been derived from the
+                form of the head and auxiliary verbs. In this analytical
+                rule it is assumed that this has been done correctly. Therefore
+                there is a lack of symmetry. *)
+            subjpersoon := derived from mu1 and mu2 like in GEN ACTION
+            subjgetal :=      ,,     ,,                          ,,
+            not(CLrec1.mood in [impenk, impmv])  and
+            mu1 does not contain aux/... or head/...  and
+            testreflpro(sig1, VERBrec1, subjpersoon, subjgetal)  and
+            testpart(sig4, VERBrec1)  and
+            (sig2 = eps  or  (sig2 = aux/ VERB{VERBrec2} 
+                                          with VERBrec2.key = zullenkey)) and
+            (sig3 = eps  or  (sig3 = aux/ VERB{VERBrec3}
+                                          with VERBrec3.key in [zijnkey, 
+                                                        hebbenkey, wordenkey]))
+            and 
+            (* "action" inside the condition: *)
+                if sig2 = eps then if sig3 = eps
+                                   then firstverbrec := VERBrec1
+                                   else firstverbrec := VERBrec3 (from sig3)
+                                   fi
+                              else firstverbrec := VERBrec2 (from sig2)
+                              fi
+            (firstverbrec.tijd = Infinitief  or
+             (subjpersoon in firstverbrec.personen  and
+              subjgetal = firstverbrec.getal ))
+
+    ACTION  VERBrec1.tijd := omegatijd;
+            VERBrec1.personen := [];
+            VERBrec1.getal := omegagetal;
+            if CLrec1.soort = finietbijzin
+            then CLrec1.soort := bijvbijzin;
+            supertensepar := CLrec1.supertense;
+            if CLrec1.vps * [vpmodal1, vpmodal2] <> []
+            then cltijdpar := omegatijd
+            else cltijdpar := CLrec1.tijd
+            fi
+$NP
+
+RTIJD2                                (* for imperatives *)
+
+m1: CL2{ CLrec1 } [subj/ T1, head/ VERB{ VERBrec1 }, mu1] 
+m:  CL3{ CLrec1 } [ sig1, sig2, head/ VERB{ VERBrec1 }, mu1 ]
+
+GEN COND    CLrec1.mood in [impenk, impmv]  and
+            CLrec1.soort = hoofdzin  and
+            T1 = NP{NOMrec1} with NOMrec1.persoon in [2,4]
+            (* We do not distinguish between normal (persoon=2) and polite
+                (persoon=4) forms of the imperative. But as the hidden subject
+                of the imperative is made explicit in analysis and translated
+                locally, we must be prepared for both cases in generation (as
+                translations of the English "you", for instance). *)
+             
+    ACTION  if VERBrec1.key = zijnkey
+            then VERBrec1.tijd := GebWijsZijn
+            else VERBrec1.tijd := TegenwTijd fi;
+            VERBrec1.getal := enkelvoud;
+            if CLrec1.mood = impenk
+            then VERBrec1.personen := [1]
+            else VERBrec1.personen := [2] fi;
+            sig1 := makereflpro(VERBrec1, 2, enkelvoud);
+            sig2 := makepart(VERBrec1)
+
+AN  COND    CLrec1.mood in [impenk, impmv]  and
+            CLrec1.soort = hoofdzin  and
+            VERBrec1.tijd in [TegenwTijd, GebWijsZijn]  and
+            VERBrec1.getal := enkelvoud  and
+            ((CLrec1.mood = impenk  and  1 in VERBrec1.personen) or
+             (CLrec1.mood = impmv  and  2 in VERBrec1.personen))   and
+            testreflpro(sig1, VERBrec1, 2, enkelvoud)  and
+            testpart(sig2, VERBrec1)
+
+    ACTION  VERBrec1.tijd := omegatijd;
+            VERBrec1.personen := [];
+            VERBrec1.getal := omegagetal;
+            T1 := NP{NOMREC1}[ head/ PERSPRO{PERSPROrec1} ] 
+                  with NOMrec1 := makeindefnomrec;
+                       NOMrec1.persoon := 3;
+                       NOMrec1.quant := defquant;
+                       PERSPROrec1 := F-BLEX(jijpersprokey)
+$NP
+
+RTIJD3                           (* for "ante" relative clauses *)
+
+m1: CL2{ CLrec1 } [subj/ VAR{ VARrec1 }, head/ VERB{ VERBrec1 }, mu1] 
+m:  CL3{ CLrec1 } [subj/ VAR{ VARrec1 }, sig1, sig2, 
+                    head/ VERB{ VERBrec1 }, mu1 ]
+
+external parameters:
+supertensepar: [presenttense, pasttense, omegatense]     (supertensetype)
+cltijdpar:     [voltdwcltijd, tegdwcltijd]               (cltijdtype)
+
+GEN COND    CLrec1.soort = bijvbijzin  
+
+    ACTION  if cltijdpar = voltdwcltijd
+            then CLrec1.soort := voltdwbijzin;
+                 CLrec1.tijd := voltdwcltijd;
+                 VERBrec1.tijd := VoltDw;
+                 sig1 := makereflpro(VERBrec1, 3, enkelvoud)
+            else CLrec1.soort := tegdwbijzin;
+                 CLrec1.tijd := tegdwcltijd;
+                 VERBrec1.tijd := TegDw;
+                 sig1 := eps
+            fi;
+            sig2 := makepart(VERBrec1)
+
+AN  COND    CLrec1.vps * [vpmodal1, vpmodal2] = []  and
+            CLrec1.tijd = cltijdpar  and
+            CLrec1.supertense = supertensepar  and
+            testreflpro(sig1, 3, enkelvoud)  and
+            testpart(sig2, VERBrec1)  and
+            CLrec1.soort in [voltdwbijzin, tegdwbijzin]
+
+    ACTION  VERBrec1.tijd := omegatijd;
+            CLrec1.soort := bijvbijzin
+$NP
+
+_2.7. ORDER rules_
+
+There are 3 order rules: RORDER1-3.
+$ The ORDER rules put the verbs, particles and reflexive pronouns at the
+right place, dependent on the "soort" of the sentence (WH-shift and
+subject-verb inversion are not treated by these rules). The analytical
+order rules rules put these elements at their canonical place.$
+
+$ For each of the four order rules we give examples of what they do.$
+
+- RORDER1. (main sentence without auxiliaries)
+    Jan zich af vraagt iets  -->  Jan vraagt zich iets af
+    Jan zich af vraagt of hij .. --> Jan vraagt zich af of hij ...
+
+- RORDER2. (main sentence with auxiliaries)
+    Lisette zich heeft af gevraagd iets --> Lisette heeft zich iets af gevraagd
+    Lisette zich heeft af gevraagd of zij .. --> Lisette heeft zich af gevraagd
+                                                 of zij ..
+    Andre@' heeft moeten Marie dit vragen --> Andre@' heeft Marie dit moeten 
+                                              vragen
+    Andre@' heeft gevraagd dit te eten --> Andre@' heeft gevraagd dit te eten
+
+- RORDER3. (bijzin)
+    deelzin:
+    Franciska zich af vraagt iets --> Franciska zich iets af vraagt
+    Elly zich af vraagt of zij .. --> Elly zich af vraagt of zij ..
+    Harm zich heeft af gevraagd iets --> Harm zich iets heeft af gevraagd
+    finietbijzin:
+    x zich heeft af gevraagd of .. --> x zich heeft af gevraagd of ..
+    Agnes zich af vraagt x --> Agnes zich x af vraagt
+    complzin:
+    Carel zich af vragen iets --> Carel zich iets af vragen
+    x zich hebben af gevraagd iets --> x zich iets hebben af gevraagd
+
+- RORDER4. (anterelcl)
+    op gegeten door Rene@' --> door Rene@' opgegeten
+    lezende kranten --> kranten lezende
+    zich af vragende iets --> zich iets af vragende
+$NP
+
+RORDER1                              (* main sentence without aux's *)
+
+m1: CL3{ CLrec1 } [mu1, sig1, sig2, head/ T1, mu3, mu4 ] 
+m:  CL4{ CLrec1 } [mu1, head/ T1, sig1, mu3, sig2, mu4 ] 
+
+GEN COND     CLrec1.soort = hoofdzin  and
+             CLrec1.tijd in [ott, ovt]  and 
+             CLrec1.voice = active  and    
+             (mu1 = subj/.. or mu1 = eps)  and
+             (sig1 = refl/.. or sig1 = eps)  and
+             (sig2 = part/.. or sig2 = eps)  and
+             mu3 does not contain compl/.., extrapos/.. or obj/SUBSENT
+             (so mu4 starts where one of these occur)
+
+    ACTION   -
+
+AN  COND     CLrec1.soort = hoofdzin  and
+             CLrec1.tijd in [ott, ovt]  and 
+             CLrec1.voice = active  and    
+             (mu1 = subj/.. or mu1 = eps)  and
+             (sig1 = refl/.. or sig1 = eps)  and
+             (sig2 = part/.. or sig2 = eps)  and
+             mu3 does not contain compl/.., extrapos/.., obj/SUBSENT
+                                  refl/.. or part/..
+             
+    ACTION   -
+$NP
+
+RORDER2                                (* main sentence with aux's *)
+
+m1: CL3{ CLrec1 } [mu1, sig1, aux/ T1, mu2, mu3, mu4 ] 
+m:  CL4{ CLrec1 } [mu1, aux/ T1, sig1, mu3, mu2', mu4 ] 
+
+GEN COND     CLrec1.soort = hoofdzin  and
+             not(CLrec1.tijd in [ott, ovt] and CLrec1.voice = active) and    
+             (mu1 = subj/.. or mu1 = eps)  and
+             (sig1 = refl/.. or sig1 = eps)  and
+             mu2 consists of aux/.., head/.. and part/..  and
+             (so mu3 starts where other relations begin)
+             mu3 does not contain compl/.., extrapos/.., obj/ SUBSENT
+             (so mu4 starts where these begin)
+
+    ACTION   mu2' := mu2
+
+AN  COND     CLrec1.soort = hoofdzin  and
+             not(CLrec1.tijd in [ott, ovt] and CLrec1.voice = active) and    
+             (mu1 = subj/.. or mu1 = eps)  and
+             (sig1 = refl/.. or sig1 = eps)  and
+             mu2' consists of aux/.., head/.. and part/..
+             (mu3 ends where these relations begin)
+                 
+    ACTION   mu2 := mu2'  in standard order, i.e.
+             first  aux/ VERB{VERBrec1} with VERBrec1.key = zullenkey
+             then other aux/..'s
+             then possibly part/..
+             then head/..
+$NP
+
+RORDER3                                      (* relative sentence *)
+
+m1: CL3{ CLrec1 } [mu1, sig1, mu2, mu3, mu4 ] 
+m:  CL4{ CLrec1 } [mu1, sig1, mu3, mu2', mu4 ] 
+
+GEN COND     CLrec1.soort in [finietbijzin, opencomplzin, geslcomplzin,
+                              datdeelzin, ofdeelzin, whdeelzin]        and
+             (mu1 = subj/.. or mu1 = eps)  and
+             (sig1 = refl/.. or sig1 = eps)  and
+             mu2 has the form aux/.. (0,1 or 2 x), part/.. (0 or 1 x), head/..,
+             mu3 starts after the head and ends before first occurrence of
+             compl/.., extrapos/.. or obj/SUBSENT,
+             mu4 is the rest
+
+    ACTION   mu2' := mu2
+
+AN  COND     CLrec1.soort in [finietbijzin, opencomplzin, geslcomplzin,
+                              datdeelzin, ofdeelzin, whdeelzin]        and
+             (mu1 = subj/.. or mu1 = eps)  and
+             (sig1 = refl/.. or sig1 = eps)  and
+             mu3 ends before the first occurrence of aux/.., part/.., head/..,
+             mu2' consists of aux/..'s, part/.., head/..
+             mu4 is the rest
+
+    ACTION   mu2 := mu2' in standard order (see RORDER2)
+$NP
+
+RORDER4                                      (* anterelcl *)
+
+m1: CL3{ CLrec1 } [sig1, sig2, sig3, head/ T1, mu1 ] 
+m:  CL4{ CLrec1 } [sig1, sig2, mu1, sig3, head/ T1 ]
+
+GEN COND     CLrec1.soort in [voltdwbijzin, tegdwbijzin ]
+             sig1 = subj/..  and
+             (sig2 = refl/.. or sig2 = eps)  and
+             (sig3 = part/.. or sig3 = eps)  and
+             mu1 does not contain compl/.., extrapos/.. or obj/SUBSENT,
+
+    ACTION   -
+
+AN  COND     CLrec1.soort in [voltdwbijzin, tegdwbijzin ]
+             sig1 = subj/..  and
+             (sig2 = refl/.. or sig2 = eps)  and
+             mu1 is the rest until part/.. or head/..  and
+             (sig3 = part/.. or sig3 = eps) 
+
+    ACTION   -
+$NP
+
+_2.8. ADV-SUBSTITUTION test_
+
+$ The ADV-SUBST test is introduced for analysis reasons. In
+RADVSUBSTTEST1 the mod/ EMPTY "traces" of analytical ADVSUBST rules (cf. 2.9)
+are deleted and it is checked whether the remaining mod's might be prepobj's
+(including the prepobj for the passive), in other words whether
+they might be arguments. If they cannot, the ADVSUBSTTEST1
+rule is not applicable and thus this path is blocked. If there is a COMPLSENT
+in the sentence, the test on remaining mod's should not be performed, because
+the mod's might belong to that COMPLSENT (or even a COMPLSENT nested in it, 
+etc.). Mod/ ADVP's and mod/ ADVSENT's are not allowed in any case.$
+$ The introduction of idiom vp rules, i.e. of idiomatic
+verb patterns with mod's for
+example, forces us to make this rule more tolerant in some cases. Ultimately
+the rule may have to disappear anyway, for instance if we have no longer the
+strict separation between argument substitution rules and adverbial 
+substitution rules.$
+$NP
+
+RADVSUBSTTEST1
+
+m1: CL4{ CLrec1 } [mu1, head/ VERB{ VERBrec1 }, mu2 ]
+m:  CL5{ CLrec1 } [mu1', head/ VERB{ VERBrec1 }, mu2' }
+
+GEN COND     true
+
+    ACTION   mu1' := mu1  with prepobj's changed into mod's
+             mu2' := mu2   ,,     ,,        ,,    ,,   ,,
+
+AN  COND     no mod/ ADVSENT or mod/ ADVP in mu1' or mu2'  and
+             ( (compl/ COMPLSENT in mu2')  or
+               (for each mod/ PP{PPrec1} or mod/ OPENPP{PPrec1}
+                in mu1' and mu2' holds:
+                ( (PPrec1.prepkey = doorkey and CLrec1.voice = passive) or
+                  (PPrec1.prepkey = VERBrec1.prepkey)                     ))) 
+
+    ACTION   mu1 := mu1' with mod/ EMPTY's eliminated and other mod/..'s
+                         changed into prepobj's
+             mu2 := mu2' ,,        ,,                ,,
+$NP
+
+_2.9 ADV-SUBSTITUTION rules_
+
+$ There are 2 ADV-SUBST rules: RADVSUBST1-2.$
+$ They add an adverbial (OPENADVP, OPENPP or ADVSENT) to the clause.
+This is the traditional way to look at it, more precisely the
+clause is substituted for the subject variable of the OPENADVP or OPENPP.$
+$ If there is more than one adverbial, the analytical rules eliminate
+them in some standard order. The way in which this ordering is organized
+(in combination with RADVSUBSTTEST1) causes asymmetry between the analytical
+and the generative rules.$
+$ _Generation_: The ADVSUBST rules put ADVP's, PP's, OPENPP's and ADVSENT's
+at the right place. ADVSENT's are placed at the end, by RADVSUBST2. For
+the other modifiers the function "advplaats" in RADVSUBST1 
+decides about the place.$
+$ _Analysis_: it is not tested whether the ADVP's, PP's and PPVAR's have the
+right place. So what S-PARSER allows is allowed here. The problem with analysis
+is that for efficiency reasons (especially for avoiding superfluous parsings)
+the mod's must be eliminated in a certain order, with the complication that 
+in certain cases the mod's must remain (prepobj's, mod's of COMPLSENT's).
+The analytical condition of RADVSUBST1 sees to it that ADVSENT's are
+eliminated first (by RADVSUBST2). Then application of RADVSUBST1 leads to
+the replacement of a mod/ ADVP (or PP or PPVAR) by a mod/ EMPTY (This
+use of EMPTY has no relation with EMPTYSUBST rules, it is a trick).
+RADVSUBST1 has the condition that left of the modifier to be eliminated
+no mod/ EMPTY may occur. After the application of ADVSUBST rules
+RADVSUBSTTEST1 checks whether the result is acceptable and the eliminates
+the mod/ EMPTY's. As a consequence the ADVSUBST rules operate in all
+possible ways from right to left, but superfluous ambiguities are avoided.$
+
+$ Notice that OPENADVP, OPENPP, OPENPPVAR have a subj/ VAR, OPENPPVAR and
+PPVAR have an obj/ VAR.$
+$NP
+
+Auxiliary function:
+
+advplaats (advsoort, clsoort, mu) =%def%
+
+(* advplaats splits mu into two parts; the adverbial will be placed between
+these parts *)
+
+if clsoort = hoofdzin
+then mu1 := the longest left part of mu containing only subj/.., refl/.., 
+            indobj/.. and one VERB (aux/.. or head/..);
+     mu2 := the part of mu following mu1, consisting of mod's (if there are
+            no mod's adter mu1, mu2 := eps);
+     mu3 := the rest of mu
+else  (* clsoort <> hoofdzin *)
+     mu1 := the longest left partof mu containing only subj/.., refl/.. and
+            indobj/..; 
+     mu2 := the part of mu following mu1, consisting of mod's (possibly empty);
+     mu3 := the rest of mu
+fi;
+if advsoort = tijdadv
+then advplaats := < mu1 , mu2.mu3 >
+else advplaats := < mu1.mu2 , mu3 >
+fi
+
+(* Advplaats is used in both ADVSUBST and NEG rules. In practice the 
+placement of adverbs is often wrong. Presumably this can be improved
+by simple modifications. *)
+$NP
+
+RADVSUBST1                   (* hij wandelt + x%1% vaak --> hij wandelt vaak *)
+
+m1: CL5{ CLrec1 } [ mu2 ]
+m2: N1 [ subj/ VAR{ VARrec1 }, mu1 ]
+
+m:  CL5{ CLrec1 } [mu3, mod/ N1 [ mu1 ], mu4 ]
+
+pre-action: VARrec1 := {index: LEVEL, soort: othervar, 
+                        persoon: 3, getal: enkelvoud }                         
+
+GEN COND     N1.cat in [ OPENADVP, OPENPP, OPENPPVAR ]
+
+    ACTION   if N1.cat = OPENADVP then N1.cat := ADVP
+             else if N1.cat = OPENPP then N1.cat := PP
+             else N1.cat := PPVAR  fi;
+             <mu3, mu4> := advplaats(N1.rec.soort, CLrec1.soort, mu2)
+
+AN  COND     N1.cat in [ ADVP, PP, PPVAR ]  and
+             no mod/ EMPTY in mu3  and
+             no mod/ ADVSENT in mu4  and
+             VARrec1.soort = othervar
+
+    ACTION   mu2 := mu3, mod/ EMPTY, mu4;
+             if N1.cat = ADVP then N1.cat := OPENADVP
+             else if N1.cat = PP then N1.cat := OPENPP
+             else N1.cat := OPENPPVAR  fi;
+             if N1.cat in [ OPENPP,OPENPPVR ]
+             then N1.rec.supertense := CLrec1.supertense;
+                  if PPrec1.prepkey = vanprepkey then bonus := -1
+             fi;
+             VARrec1 := {index: LEVEL, soort: othervar, 
+                        persoon: 3, getal: enkelvoud }                         
+
+$NP
+
+RADVSUBST2                     (* hij wandelt + als het niet regent -->
+                                  hij wandelt als het niet regent *)
+
+m1: CL5{ CLrec1 } [ mu1 ]
+m2: ADVSENT{ CLrec2 } [ mu2 ]
+m:  CL5{ CLrec1 } [mu1, sig1, mod/ ADVSENT{ CLrec2 }[ mu2 ] ]
+
+GEN COND     true
+
+    ACTION   sig1 := punc/ PUNC{ key: kommakey } [ eps ]
+
+AN  COND     sig1 = eps  or  sig1 = punc/ PUNC{ key: kommakey }[ eps ] 
+
+    ACTION   -
+
+$ The implemented version of the analytical RADVSUBST2 is more tolerant and
+accepts ADVSENTs at the beginning of the sentence as well.$ 
+$NP
+
+_2.10. NEGATION rules_
+
+$ There is a rule for sentences without negation (RPOS), a 
+rule for substitution of "niet" (RNEG1) and a rule for 
+replacing "een ..." by "geen ...", "iets" by "niets" etc.( RNEG2)$
+
+$ RPOS is necessary because  we need a rule
+to go from CL5 to CL6 
+even if there is no negation. This is one of the disadvantages of having a
+strict ordering between argument substitution rules, adverbial
+substitution rules and negation rules. A more serious disadvantage is that
+we do not handle adequately cases of negation inside the scope of
+quantifiers. E.g. "hij zag iets niet" is analyzed as  niet(hij zag iets)
+and translated into "hij zag niets".$
+$ RNEG2 for cases of negation on the sentence level that affect the internal
+structure of indefinite NP's could be extended to adverbs ("ooit"-->"nooit").
+RNEG2 has been written for generation only (without any special reason).$
+$NP
+
+RNEG1
+
+m1: CL5{ CLrec1 } [ mu1 ]
+m2: NEG{ KEYrec1 } [ eps ]
+
+m:  CL6{ CLrec1 } [ mu2, mod/ NEG{ KEYrec1 }, mu3 ]
+
+GEN COND     true
+
+    ACTION   < mu2, mu3 > := advplaats(andereadv, CLrec1.soort, mu1)
+
+AN  COND     true
+
+    ACTION   -
+
+(* advplaats is defined in 2.9 *)
+$NP
+
+RNEG2                          (* negation that affects NP, generation only! *)
+
+m1: CL5{ CLrec1 } [ mu1, rel1/ NP{ NOMrec1 }[ mu2 ], mu3 ]
+m2: NEG{ KEYrec1 } [ eps ]
+
+m:  CL6{ CLrec1 } [ mu1, rel1/ NP{ NOMrec1 } [ mu2' ], mu3 ]
+
+GEN COND     (rel1 = objrel or rel1 = indobjrel)  and
+             NOMrec1.quant = indefquant  and
+             ((mu2 = head/ INDEFPRO{ INDEFPROrec1}
+                     with (INDEFPROrec1.key = iemandkey or ...= ietskey)) or
+               mu2 = det/ ART{ key: eenartkey }, mu2'' ) )
+
+    ACTION   if mu2 = head/ INDEFPRO{ key: iemandkey, ...}
+             then mu2' := head/ F-BLEX(niemandkey) 
+             else if mu2 = head/ INDEFPRO{ key: ietskey, ...}
+             then mu2' := head/ F-BLEX(nietskey)
+             else (* mu2 = det/ ART, mu2'' *)
+                  mu2' := det/ QADJ{ key: geenqadjkey,
+                                     comanmrs: [plurcount,singmass,singcount],
+                                     genders: [mnlgender,vrgender,omegagender]}
+             fi
+$NP
+
+RPOS
+
+m1: CL5{ CLrec1 } [ mu1 ]
+m:  CL6{ CLrec1 } [ mu1 ]
+
+GEN COND     true
+
+    ACTION   -
+
+AN  COND     no mod/ NEG in mu1  (* for efficiency *)
+
+    ACTION   -
+$NP
+
+_2.11. SHIFT rules_
+
+$ There are 4 shift rules: RSHIFT1-4.$
+$ They have the task to shift WH-parts or parts with a free variable to
+the front of the clause. There are special rules to shift from a complement
+sentence or subsentence to the next higher sentence. Especially in
+complement sentences, which have both a subject variable and a variable to
+be shifted (e.g. "te doen" in "het werk dat hij vergat te doen") the
+matter is rather complicated and the rules are
+presumably not yet error-free.$
+$ A complication caused by the current implementation is that we cannot
+characterize by means of a parameter for what variable index a shift rule
+has been applied (the set of parameter values must be finite). So the
+decision what element should be shifted is taken in generation independent
+of analysis.$
+$ In the analytical rules it has to be decided what syntactic relation
+the shifted element may have. The verb patterns play a role in this choice.$
+$ The analytical versions of the shift rules are also used to "shift back" 
+declarative ADVP's and PP's from the front of the clause to a canonical 
+position.$
+
+$ RSHIFT1 handles the cases in which no shift is necessary. What we would like
+is to apply this rule in those cases that none of the other shift rules
+can be applied, but this cannot be expressed in the current formalism
+(except by conjoining all the conditions of the other rules 
+and negating them). What we have
+now is a  generative rule that is always applicable, but of which we trust
+that it is only called if in analysis no shifting has taken place. All this
+is not very nice.$
+$ RSHIFT2 does the shift inside a clause.$
+$ RSHIFT3 does the shift from the front of 
+a nested SUBSENT to the front of the next-higher clause.$
+$ RSHIFT4 does the shift from the front of an infinitive complement to the 
+front of the next-higher clause.$
+$ In analysis the main problem is at what place RSHIFT2 has to put the
+shifted elements. The auxiliary function possiblerel decides if the shifted
+element may get a specific relation (there is an internal parameter for
+running through the set of possible relations), the auxiliary function 
+relplaats decides about the place of this relation.$
+$NP
+
+Auxiliary functions
+
+relplaats( clsoort, rel, mu ) =%def%    
+     (* decides at what place in mu the relation rel can be inserted *)
+< mu1, mu2 > such that mu = mu1.mu2  and mu1 is the max. left part of mu
+that contains no other relations than:
+if clsoort = hoofdzin then one VERB (aux or head)   plus
+if      rel = postsubj then [ subj, mod, refl ]
+else if       complsubj     [ subj, mod, refl, postsubj ]
+else if       indobj        [ subj, mod, refl, postsubj, complsubj ]
+else if rel in [obj, pred, mod] 
+                       then [ subj, mod, refl, postsubj, complsubj, indobj ]
+fi
+
+(* mu1.mu2 denotes the concatenation of mu1 and mu2, usually written as
+mu1, mu2 , but here we need the comma as the separator of function arguments *)
+
+ 
+possiblerel( rel, VPSET, mu ) =%def%
+     (* decides whether relation rel is possible in mu taking into account
+        the verb patterns of the verb, in VPSET *)
+if rel = postsubj then subj/ THERE in mu and not(rel in mu)
+else if rel = complsubj then vp2f in VPSET and not(rel in mu)
+else if rel = indobj then VPSET * indobjvps <> [] and not(rel in mu)
+else if rel = obj then VPSET * objvps <> [] and not(rel in mu)
+else if rel = pred then VPSET * predvps <> [] and not(rel in mu)
+else if rel = mod then true
+else false
+fi
+
+Here  indobjvps = [vp3a, vp3c, vp3d]
+         objvps = [vp2a,vp3a,vp3b,vp3f]
+        predvps = [vp2e,vp3f]
+$NP
+
+RSHIFT1                                  (* no shift necessary *)
+
+m1: CL6{ CLrec1 } [ sig1, mu1 ]
+m:  CL7{ CLrec1 } [ sig1, mu1 ]
+
+GEN COND     true
+
+    ACTION   -
+
+AN  COND     sig1 <> shift/..
+
+    ACTION   -
+$NP
+
+RSHIFT2                                  (* shift inside clause *)
+
+m1: CL6{ CLrec1 } [ mu1, rel1/ T1, mu2 ]
+m:  CL7{ CLrec1 } [ shift/ T1, mu3 ]
+
+internal parameter: relpar
+            values: [indobj, obj, postsubj, complsubj, pred, mod]
+
+GEN COND     rel1 = relpar  and
+             ((T1.cat = VAR) or 
+              (T1.cat = PPVAR) or
+              (T1.cat in [ADVP, PP, NP, ADJP] and T1.rec.mood = whinterr))
+
+    ACTION   mu3 := mu1, mu2
+
+$ (* In the implementation the gen. rule has been extended: if the rule is 
+called
+and the GEN COND does not hold the rule is applied anyway but without shifting,
+so in fact exactly like RSHIFT1. The reason for this is that in analysis the
+rule is also used for shifting declarative modifiers from the front of the 
+sentence to a canonical place, but that in generation we do not want to do the
+reverse. All this is rather confused and can only be explained historically.*)$
+
+AN  COND     possiblerel(relpar, CLrec1.vps, mu3)  and
+             ((T1.cat = VAR and relpar <> mod)  or
+              (T1.cat in [PPVAR, ADVP, PP, ADVSENT] and relpar = mod)  or
+              (T1.cat = NP and relpar in [indobj, obj, postsubj, complsubj]) or
+              (T1.cat = ADJP and relpar = pred)  )   
+
+    ACTION   rel1 := relpar;
+             if T1.cat = ADVSENT
+             then mu1 := mu3; mu2 := eps
+             else <mu1, mu2> := relplaats(CLrec1.soort, relpar, mu3)
+             fi
+
+(* the analytical rule includes the case that a declarative ADVP, PP or ADVSENT
+is at the front of the clause *)
+$NP
+
+RSHIFT3                                  (* shift from SUBSENT *)
+
+m1: CL6{ CLrec1 } [ mu1, 
+                    obj/ SUBSENT{ CLrec2 }[conj/ CONJ{KEYrec1}, rel1/ T1, mu3],
+                    mu2 ]
+m:  CL7{ CLrec1 } [ shift/ T1, 
+                    mu1, 
+                    obj/ SUBSENT{ CLrec2 }[conj/ CONJ{KEYrec1}, mu3],
+                    mu2 ]
+
+GEN COND     KEYrec1.key = datconjkey  and
+             ((rel1 = shift)  or 
+              (( rel1 = subj )  and
+               (T1.cat = VAR or (T1.cat = NP and T1.rec.mood = whinterr)))))
+
+    ACTION   CLrec2.mood := declarative
+
+AN  COND     T1.cat = VAR   or
+             T1.cat = PPVAR  or
+             (T1.cat in [NP, ADJP, ADVP, PP] and T1.rec.mood = whinterr)
+
+    ACTION   if subj/.. in mu3
+             then rel1 := shift
+             else rel1 := subj  fi;
+             if T1.cat in [NP, ADJP, ADVP, PP]
+             then CLrec2.mood := whinterr  fi
+$NP
+
+RSHIFT4                                  (* shift from complement *)
+
+m1: CL6{ CLrec1 } [ mu1, 
+                    compl/ CAT1{ CLrec2 }[ shift/ T1, mu3],
+                    mu2 ]
+m:  CL7{ CLrec1 } [ shift/ T1, 
+                    mu1, 
+                    compl/ CAT1{ CLrec2 }[ mu3 ],
+                    mu2 ]
+
+GEN COND     (CAT1 = COMPLSENT or CAT1 = TECOMPLSENT)  and
+             (T1.cat = VAR or T1.cat = PPVAR or
+               (T1.cat in [NP, ADJP, ADVP, PP] and T1.rec.mood = whinterr))
+
+    ACTION   CLrec2.mood := declarative
+
+AN  COND     (CAT1 = COMPLSENT or CAT1 = TECOMPLSENT)  and
+             (T1.cat = VAR or T1.cat = PPVAR  or
+             (T1.cat in [NP, ADJP, ADVP, PP] and T1.rec.mood = whinterr))
+
+    ACTION   if T1.cat in [NP, ADJP, ADVP, PP]
+             then CLrec2.mood := whinterr  fi
+$NP
+
+_2.12. INVERSION rules_
+
+$ These rules perform subject-verb inversion if necessary 
+(in yes-no questions and
+sentences with a shift element). $
+
+RINV2 does inversion in yes-no questions.
+RINV3 does inversion in case of a shift.
+RINV1 is for the cases that there is no inversion.
+$NP
+
+RINV1                                  (* no inversion *)
+
+m1: CL7{ CLrec1 } [ mu1 ]
+m:  CL8{ CLrec1 } [ mu1 ]
+
+GEN COND     not( (CLrec1.soort = hoofdzin)  and
+                  ((CLrec1.mood = yesno) or 
+                   ((CLrec1.mood = whinterr) and (mu1 begins with shift)) ) )
+    ACTION   -
+
+AN  COND     not( (CLrec1.soort = hoofdzin)  and
+                  ((CLrec1.mood = yesno) or 
+                   ((CLrec1.mood = whinterr) and (mu1 begins with shift)) ) )
+
+    ACTION   -
+$NP
+
+RINV2                                  (* yes-no inversion *)
+
+m1: CL7{ CLrec1 } [ subj/ T1, rel1/ VERB{ VERBrec1 }, mu1 ]
+m:  CL8{ CLrec1 } [ rel1/ VERB{ VERBrec1 }, subj/ T1, mu1 ]
+
+GEN COND     CLrec1.soort = hoofdzin  and
+             CLrec1.mood = yesno
+
+    ACTION   if T1 = NP{ NOMrec1 } with NOMrec1.persoon = 2  and 
+                CLrec1.tijd = ott
+             then VERBrec1.personen := [ 0 ]
+             fi
+
+AN  COND     CLrec1.soort = hoofdzin  and
+             CLrec1.mood = yesno
+
+    ACTION   if T1 = NP{ NOMrec1 } with NOMrec1.persoon = 2  and 
+                0 in VERBrec1.personen 
+             then VERBrec1.personen := [ 2 ]
+             fi
+$NP
+
+RINV3                                  (* inversion because of shift *)
+
+m1: CL7{ CLrec1 } [ shift/ T1, subj/ T2, rel1/ VERB{ VERBrec1 }, mu1 ]
+m:  CL8{ CLrec1 } [ shift/ T1, sig1, rel1/ VERB{ VERBrec1 }, subj/ T2, mu1 ]
+
+GEN COND     CLrec1.soort = hoofdzin  and
+             CLrec1.mood = whinterr
+
+    ACTION   if T2 = NP{ NOMrec1 } with NOMrec1.persoon = 2  and 
+                CLrec1.tijd = ott
+             then VERBrec1.personen := [ 0 ];
+                  sig1 := eps
+             fi
+
+AN  COND     CLrec1.soort = hoofdzin  and
+             (sig1 = eps or sig1.cat = PUNC)
+
+    ACTION   if T2 = NP{ NOMrec1 } with NOMrec1.persoon = 2  and 
+                0 in VERBrec1.personen 
+             then VERBrec1.personen := [ 2 ]
+             fi
+
+(* in analysis the rule takes account of a declarative shift, e.g. an ADVP
+in front *)
+(* in analysis a comma behind the shift (because of the surface parser this
+must be an ADVSENT) is allowed, in generation no comma is made *)
+$NP
+
+_2.13. FINAL clause rule_
+
+$ Here a number of additional transformations is performed before the END
+clause rules finish the clause. There is only one rather simple rule,
+RFINALCL1, but it uses a number of rather complex 
+auxiliary functions that perform the
+transformations:$
+
+$ - splitpp: does transformations like "op het" --> "er op", 
+"op iets" --> "ergens op", etc. and shifts the "er" to the left, if necessary.
+("ik reken niet er op" --> "ik reken er niet op")$
+unsplitpp is the analytical counterpart.
+
+$ - shifthet: puts the direct object "het" in front of the indirect object
+and the reflexive pronoun.$
+$ reshifthet does the reverse in analysis.$
+
+$ - makepartglue: creates a GLUE between a particle and a main verb.$
+$ rempartglue deletes the glue, in analysis.$
+  
+Auxiliary functions:
+
+shifthet ( mu ) :                 (* indobj + het --> het + indobj *)
+    if mu = mu%1%, indobj (or refl)/ T1, obj/ T2, mu2  and
+       T2.cat = NP  and  T2.rec.soort = hetpro
+    then shifthet := mu1, obj/ NP{..}, indobj(or refl)/ T1, mu2
+    else shifthet := mu
+    fi
+
+reshifthet ( mu ) :                (* het + indobj --> indobj + het *)
+    if mu = mu1, obj/ T1, indobj(or refl)/ T2, mu2  and
+       T1.cat = NP  and  T1.rec.soort = hetpro
+    then reshifthet := mu1, indobj(or refl)/ T2, obj/ T1, mu2
+    else reshifthet := mu
+    fi
+
+
+makepartglue ( mu ) :              (* op + geven --> opgeven *)
+    if mu = mu%1%, part/ T%1%, head/ T2, mu2
+    then makepartglue := mu1, part/ T1, glue/ GLUE, head/T2, mu2
+    else makepartglue := mu
+    fi
+
+rempartglue ( mu ) :               (* opgeven --> op + geven *)
+    if mu = mu1, part/ T1, glue/T2, head/ VERB, mu2
+    then rempartglue := mu1, part/ T1, head/ VERB, mu2
+    else rempartglue := mu
+    fi
+
+splitpp ( mu ) :                   (* op + het --> er + op *)
+    if mu = mu1, rel1/ PP{ PPrec1 }[ head/ PREP{ PREPrec1 }, 
+                                     obj/ NP{ NOMrec1 }[ head/ T1 ] ], mu2 ]
+       and specialpro( T1 )
+       and rel1 in [shift, mod]
+    then  T1' := protoadvp( T1 );
+          if T1.cat in [ PERSPRO, DEMPRO ]
+          then mu1' := lefthop( mu1, rel1/ T1')
+          else mu1' := mu1 , rel1/ T1'
+          fi;
+          if PREPrec1.key = metprepkey
+          then PREPrec1.key := meeprepkey (* "tot"-->"toe" has been forgotten*)
+          fi;
+          splitpp := mu1' , dangling/ PREP{ PREPrec1 } , mu2
+    else splitpp :== mu
+    fi
+
+
+unsplitpp ( mu ) :              (* er + op --> op het *)
+    if mu = mu1 , rel1/ ADVP{ ADVPrec1 }[head/ ADV{ ADVrec1 } ] ,
+            mu2 , dangling/ PREP{ PREPrec1 } , mu3
+       and rel1 in [ shift, mod ]
+       and ADVrec1.key in [er-, hier-, daar-, waar-, ergens-, nergens-,
+                           overaladvkey ]
+    then if PREPrec1.key = meeprepkey
+         then PREPrec1.key = F-BLEX(metprepkey) fi;
+         T%PP% := PP{ mood: ADVPrec1.mood, supertense: omegatense,
+                        soort: andereadv, prepkey: PREPrec1.key }
+                      [head/ PREP{ PREPrec1 }, obj/ advtopronp( ADVrec1.key )];
+         if mu2 = glue/ GLUE
+         then unsplitpp := mu1, rel1/ T%PP%, mu3
+         else if mu1 = eps and rel1 = shift
+         then unsplitpp := shift/ T%PP%, mu2, mu3
+         else unsplitpp := mu1, mu2, mod/ T%PP%, mu3
+         fi
+    else unsplitpp := mu
+    fi 
+
+
+advtopronp ( K ) :                          ( key K )
+    soortvar := omeganomsoort;
+    moodvar := declarative;
+    quantvar := indefquant;
+    if K = eradvkey
+    then PROVAR := F-BLEX( hetprokey );
+         soortvar := hetpro
+    else if K = hieradvkey
+    then PROVAR := F-BLEX( ditdemprokey )     (* the singular "dit"*)
+    else if K = daaradvkey
+    then PROVAR := F-BLEX( datdemprokey )     (* the singular "dat"*)
+    else if K = waaradvkey
+    then PROVAR := F-BLEX( watwhprokey )      (* the singular "wat"*)
+         soortvar := wiewatsoort;
+         moodvar := whinterr;
+         quantvar := whquant
+    else if K = ergensadvkey
+    then PROVAR := F-BLEX( ietsindefprokey ) 
+    else if K = nergensadvkey
+    then PROVAR := F-BLEX( nietsindefprokey ) 
+    else if K = overaladvkey
+    then PROVAR := F-BLEX( allesindefprokey ) 
+    fi;
+advprotonp := NP { getal: enkelvoud,
+                   soort: soortvar,
+                   persoon: 3,
+                   natgeslacht: omegageslacht,
+                   supertense: omegatense,
+                   mood: moodvar,
+                   cases: [nominative, accusative, dative],
+                   quant: quantvar  }
+                 [ head/ PROVAR ]
+
+
+protoadvp ( T ):                     (S-tree T for which specialpro(T) = true)
+    soortvar := andereadv;
+    moodvar := declarative;
+    keyvar := 0;
+    if T.cat = PERSPRO and T.rec.key = hetprokey
+    then soortvar := eradv; keyvar := eradvkey
+    else if T.cat = DEMPRO
+    then if T.rec.key = ditdemprokey
+         then keyvar := hieradvkey
+         else keyvar := daaradvkey
+         fi
+    else if T.cat = WHPRO and T.rec.key = watwhprokey
+    then soortvar := waaradvp;
+         moodvar := whinterr;
+         keyvar := waaradvkey
+    else if T.cat := INDEFPRO
+    then if T.rec.key = ietskey
+         then keyvar := ergenskey
+         else if T.rec.key = nietskey
+         then keyvar := nergenskey
+         else keyvar := overalkey
+         fi
+    fi;
+    protoadvp := ADVP { soort: soortvar, mood: moodvar }
+                      [ head/ ADV{ key:keyvar, soort: soortvar, mood: moodvar}]
+ 
+
+specialpro (T) =%def%                               (S-tree T)
+    (T.cat = PERSPRO and T.rec.key = hetprokey)  or
+    (T.cat = DEMPRO and T.rec.key in [ditprokey, datprokey])  or
+    (T.cat = INDEFPRO and T.rec.key in [ietskey, nietskey])  or
+    (T.cat = WHPRO and T.rec.key = watprokey)
+
+
+lefthop ( mu, sig ):                            (reltreelist mu, reltree sig)
+    mu2 := max. right part of mu consisting of refl, postsubj, complsubj,
+           obj, indobj, pred, mod;
+    mu1 := remaining left part of mu;
+    if mu2 = eps then mu2 := glue/ GLUE fi;
+    lefthop := mu1, sig, mu2 
+
+(* the lefthop must be more restrictive: INDEFPRO and WHPRO should not hop *)
+
+(* A WH-PP (e.g. "van wat") is shifted to the left by the shift rules; so we
+do not need a special version of the lefthop for them *)
+$NP
+
+RFINALCL1
+
+m1: CL8{ CLrec1 } [ mu1 ]
+m:  CL9{ CLrec1 } [ mu1 ]
+
+GEN COND     true
+
+    ACTION   mu1 := makepartglue(shifthet(splitpp(mu1)))
+
+
+AN  COND     true
+
+    ACTION   mu1 := unsplitpp(reshifthet(rempartglue(mu1)))
+
+$NP
+
+_2.14. END clause rules_
+
+$ Here it is decided what kind of sentence is made, making use of the "soort"
+in the CLrecord.$
+RENDCL1: --> SENT        (hij wandelt)
+RENDCL2: --> RELCL       (x%3% wandelt)
+RENDCL3: --> SUBSENT     (dat hij wandelt; of hij wandelt; wie wandelt)
+RENDCL4: --> OPENCOMPLCL (x%1% wandelen; x%2% een appel eten)
+RENDCL5: --> GESLCOMPLCL (hij komen)
+RENDCL6: --> ANTERELCL   (wandelende; gegeten)
+RENDCL7: --> ADVSENT     (als hij wandelt)
+ 
+$ Terminology: I use the category SENT if a clause is really finished: a
+complete surface structure; a CL is not yet ready, it may contain a VAR and
+will change during substitution. $
+
+
+Auxiliary function for ENDCL rules:
+
+novarorempty ( mu ) =%def%
+    not( r/ VAR in mu  or  r/ EMPTY in mu  or  r/ PPVAR in mu)
+
+$ This function is used in the generative rules to check whether there are no
+undesired variables or EMPTY's in the sentences. Presumably this check is
+superfluous because of the isomorphy with the analysis rules.$
+$NP
+
+RENDCL1                                          (* main sentence *)
+
+m1: CL9{ CLrec1 } [ mu1 ]
+m:  SENT{ CLrec1 } [ mu1 ]
+
+GEN COND     CLrec.soort = hoofdzin  and
+             novarorempty (mu1)
+
+    ACTION   CLrec1.soort := omegaclsoort
+
+
+AN  COND     true
+
+    ACTION   CLrec1.soort := hoofdzin
+$NP
+
+RENDCL2                                   (* finite relative clause *)
+
+m1: CL9{ CLrec1 } [ sig1, mu1 ]
+m:  RELCL{ CLrec1 } [ sig1, mu1 ]
+
+GEN COND     CLrec.soort = finietbijzin  and
+             novarorempty (mu1)  and
+             (sig1 = subj/ VAR or sig1 = shift/ VAR or sig1 = shift/ OPENPP)
+
+    ACTION   CLrec1.soort := omegaclsoort
+
+
+AN  COND     sig1 = subj/ VAR  or  sig1 = shift/ VAR  or  sig1 = shift/ OPENPP
+
+    ACTION   CLrec1.soort := finietbijzin
+$NP
+
+RENDCL3                                   (* subsentence *)
+
+m1: CL9{ CLrec1 } [ mu1 ]
+m:  SUBSENT{ CLrec1 } [ sig1, mu1 ]
+
+GEN COND     CLrec.soort in [ datdeelzin, ofdeelzin, whdeelzin]  and
+             (novarorempty (mu1)  or 
+              (mu1 starts with VAR and novarempty(mu1.brother) ) )
+
+    ACTION   if CLrec1.soort = datdeelzin
+             then sig1 := conj/ CONJ{ key: datconjkey }
+             else if CLrec1.soort = ofdeelzin
+             then sig1 := conj/ CONJ{ key: ofconjkey }
+             else sig1 := eps
+             fi;
+             CLrec1.soort := omegaclsoort
+
+
+AN  COND     (( sig1 = conj/ CONJ{ key: K } 
+                       with (K = datconjkey or K = ofconjkey))  or
+              (sig1 = eps and mu1 starts with rel1/ T
+                                with T.cat in [NP, ADVP, PP] and
+                                     T.rec.mood = whinterr))
+
+    ACTION   if sig1 = conj/ T1
+             then if T1.rec.key = datconjkey 
+                  then CLrec1.soort := datdeelzin
+                  else CLrec1.soort := ofdeelzin  fi
+             else CLrec1.soort := whdeelzin  fi
+                   
+$NP
+
+RENDCL4                                         (* open compl. clause *)
+
+m1: CL9{ CLrec1 } [ sig1, subj/ VAR{ VARrec1 }, mu1 ]
+m:  OPENCOMPLCL{ CLrec1 } [ sig1, subj/ VAR{ VARrec1 }, mu1 ]
+
+GEN COND     CLrec1.soort = opencomplzin  and
+             ((sig1 = shift/...)  or
+              (CLrec1.mood = declarative and sig1 = eps) )  and
+             Clrec1.tijd in infinitieftijden  (* oinft, vinft etc. *) and
+             novarorempty (mu1)
+
+    ACTION   CLrec1.soort := omegaclsoort
+
+
+AN  COND     ((sig1 = shift/...)  or
+              (CLrec1.mood = declarative and sig1 = eps) )
+
+    ACTION   CLrec1.soort := opencomplzin
+$NP
+
+RENDCL5                                     (* closed compl. clause *)
+
+m1: CL9{ CLrec1 } [ mu1 ]
+m:  GESLCOMPLCL{ CLrec1 } [ mu1 ]
+
+GEN COND     CLrec.soort = geslcomplzin  and
+             CLrec1.tijd in infinitieftijden and
+             novarorempty (mu1)
+
+    ACTION   CLrec1.soort := omegaclsoort
+
+
+AN  COND     true
+
+    ACTION   CLrec1.soort := geslcomplzin
+$NP
+
+RENDCL6                                          (* anterelclause *)
+
+m1: CL9{ CLrec1 } [ subj/ VAR{ VARrec1 }, mu1 ]
+m:  ANTERELCL{ CLrec1 } [ subj/ VAR{ VARrec1 }, mu1 ]
+
+GEN COND     CLrec.soort in [ voltdwbijzin, tegdwbijzin ]  and
+             novarorempty (mu1)
+
+    ACTION   CLrec1.soort := omegaclsoort
+
+
+AN  COND     CLrec1.tijd in [ tegdwcltijd, voltdwcltijd ]
+
+    ACTION   if CLrec1.tijd = tegdwcltijd
+             then CLrec1.soort := tegdwbijzin
+             else CLrec1.soort := voltdwbijzin
+             fi
+$NP
+
+RENDCL7                                          (advsent)
+
+m1: CONJ{ KEYrec1 }
+m1: CL9{ CLrec1 } [ mu1 ]
+m:  ADVSENT{ CLrec1 } [ conj/ CONJ{ KEYrec1 }, mu1 ]
+
+GEN COND     CLrec.soort = datdeelzin  and
+             novarorempty (mu1)
+
+    ACTION   CLrec1.soort := omegaclsoort
+
+
+AN  COND     not(KEYrec1.key = ofconjkey  or  KEYrec1.key = datconjkey)
+
+    ACTION   CLrec1.soort := datdeelzin
+

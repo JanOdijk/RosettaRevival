@@ -1,0 +1,363 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta2
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  TECHNIQUES FOR REDUCING THE DEGREE OF AMBIGUITY
+
+         Author       :  Jan Landsbergen
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  0024
+
+         Date         :  85/12/13
+
+         Status       :  approved
+
+         Supersedes   :  
+
+         Distribution :  project
+
+         Clearance    :  Philips
+
+         Keywords     :  trick, particle, idiom, pre-action, shadow rule
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright  Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta                     Doc.nr: 0024                    date:85/12/13
+$SC &%
+$UC _
+$NP 1
+$LD 4
+$c1 Introduction
+$ In Rosetta2 a number of techniques is used which might be called tricks, but
+which are in my opinion quite respectable. These tricks all relate to cases
+in which we have a nice piece of theory, for which a direct implementation 
+would be possible in principle, but where this would lead to an absurd 
+inefficiency. This dilemma between a nice theory and an efficient system
+can be solved in three ways: (i) by inventing a new theory which is both
+nice and efficient, (ii) by making the theory less nice, (iii) by making
+the implementation "less direct". In this document I will discuss a few 
+examples of cases (ii) and (iii) and the grey zone in between.$
+$ Although it is a bit of a side-line I will explain here what I 
+understand by "direct implementation". A better term might be "_compositional_
+implementation". This is an implementation which obeys the Compositionality
+Principle of Implementation: the implementation of the theory is a function of
+the implementation of its parts. A compositional implementation has the
+advantages (i) that it is relatively easy to establish its correctness
+and (ii) that a minor change in the theory will cause only a minor change
+in the implementation.  What concerns us here is not the implementation of
+the general Rosetta formalism, but the relation between the description 
+of specific linguistic phenomena and their implementation. 
+From an organisational point of view
+it is important to realize that decisions on compositional implementation
+can be left to the software specialists, whereas the decision on a 
+non-compositional implementation must be made jointly by linguists and
+programmers.$
+$ The pre-actions described in section 4 are a good example
+of a non-compositional implementation. It is interesting to note that the 
+pre-actions could also be incorporated into the theory. In that case the
+theory would be less compositional, the implementation would remain 
+compositional and the resulting implemented system would be exactly
+the same.$
+$c1 Particles
+$ In Dutch there are many verbs with particles, e.g. "opstaan", "opgeven",
+etc. The particles may occur in combination with the verb ("opstaan",
+"opgestaan") or separately ("... staat niet op ..."). The current
+treatment in the morphological component is as follows. B-LEX contains
+an entry for the complete verb. So there is an entry for "staan",a 
+different entry for "opstaan" and again a different entry for "afstaan". 
+The record of the verb "opstaan" 
+has an attribute indicating what particle it expects (i.e. the key of "op"). 
+In AMDICT and GMDICT the stem "sta" is related to the keys of both
+"opstaan", "afstaan" and "staan". 
+The particles have separate entries in AMDICT and GMDICT.$ 
+$ So if "staat"
+occurs in a sentence, A-MORPH gives an ambiguous result: for both 
+"opstaan", "afstaan" and "staan" it gives a reading of the sentence.
+The syntactic components (S-PARSER and/or M-PARSER) must
+see to it that only the right combination of verb and (possibly) particle 
+remains.$
+$ This is an elegant approach, but very inefficient if it is implemented
+compositionally: verb stems as "geef"
+will have many different entries and therefore the surface parser will
+have to operate on a large set of inputs. $
+$ In practice we apply the following trick. A-MORPH operates in the way
+that was described, but immediately after A-MORPH, and before S-PARSER, it
+is tested for each verb expecting a particle whether this particle is indeed
+present in the sentence. If the particle is not present, it is assumed
+that this version of the verb cannot be the correct one and it (more 
+precisely: the path with this verb) is deleted (unless it is the only
+version of the verb, then it is maintained for robustness reasons).$
+$ This ad hoc efficiency measure is justified by global knowledge about
+the syntax. The Particle Postulate says that a verb expecting a particle
+cannot occur in a sentence without that particle. $
+$ Note that in this case there is a feedback from implementation to theory,
+although the theory has not changed, we have been forced to make a
+general property of the theory more explicit. Originally the knowledge
+about particles and verbs was hidden in the rules; the implementation forces us
+to formulate the Particle Postulate. The set of syntactic rules
+may change from day to day, thanks to their compositional implementation 
+that is no problem, but changing the Particle Postulate has more
+consequences.$
+$ The particle trick may be applied at a larger scale if we have dictionaries 
+with
+many idiomatic expressions, structured in such a way that the information
+about the idiom is added to the "head" of the idiom. For an expression
+like "de brui geven aan" there will be an extra entry of "geef". If
+we have many idioms, it is important that the irrelevant entries of "geef"
+are filtered out as soon as possible by checking whether the keys of
+other parts of the idiom (in this case "brui") can be found in the sentence.$
+$c1 Attributes with sets as values
+$ In the S-trees of Rosetta2 various attributes have sets as values;
+in some cases there is no theoretical motivation for this - a single-valued
+attribute would be sufficient - but a set-valued attribute is chosen
+to keep 
+the number of
+ambiguities during analysis small. So in these cases we make the theory
+a bit less nice for the sake of efficient analysis.$
+
+$ I will now discuss in some detail an example, the use of verb patterns.
+In the VERBrecord we 
+find as the value of the (inherent) attribute vps the set of possible verb
+patterns of the verb. E.g. [vp1a, vp2a] for the verb "to eat".
+In an actual sentence only one of the possible verb patterns is actually
+used. For example, in "he is eating" only vp1a is used. In order
+to indicate what verb pattern is used, we may add an attribute vp
+to the clause record. In generation it is decided in the vp rule
+what verb pattern is chosen (if more than one verb pattern is possible,
+several vp rules are applicable and there are several paths from that
+point) and this verb pattern is assigned to the attribute vp of the
+clause record. If subsequent generative rules (e.g. the argument
+substitution rules) need to know what
+the verb pattern is, they look at the vp of the clause record.$
+$ Now the analysis. The principle of reversibility of the M-rules
+prescribes: if a generative argument substitution rule requires
+that there is a specific verb pattern in the attribute
+vp of the clause record (and the generative action does not change
+this value), then the analytical rule must require this too. So, for
+the successful application of this rule it is necessary that in analysis
+the vp attribute has been assigned the right value by one of the previous
+M-rules, or by the surface parser. This is possible, but in an early
+stage of the analysis we do not always have all necessary information
+to decide unambiguously which of the verb patterns of the verb is
+actually used. In such cases an ambiguity arises. For example: in
+the sentence "what do you expect to eat?" the complement "to eat"
+may have both vp1a and vp2a in the surface parser. Only later on
+during analysis it can be decided that vp2a is the right choice.$
+$ This approach is correct from a formal point of view, but has the
+practical disadvantage that ambiguities arise in an early stage
+of analysis that can only be filtered out much later. This efficiency
+problem is solved in the following way, which can also be used in
+other cases.$
+$ In the clause record we do not have an attribute vp, but an attribute
+vps with a set of verb patterns as its value. In generation we always
+assign sets of one element to this attribute, so there everything
+is obviously equivalent to the original situation. In analysis the
+value of vps is the set of verb patterns which are still possible 
+at that stage of the analysis. So we may start, in the surface parser,
+with the complete set of verb patterns of the verb and let this
+set shrink when we apply rules that are only applicable for
+specific verb patterns. Ultimately a verb pattern rule for a specific pattern
+is applicable if that pattern is in the set. So, more than one vp rule
+may be applicable to the same S-tree. If by the shrinking process 
+the set of vps becomes empty, we have a dead end and the analysis along
+this path is stopped.$
+$ Somewhat more formally: an S-tree with a clause record with$ 
+    vps = [vp%1%, ... , vp%n%] 
+$ is an 
+abbreviation of a set of n S-trees with $
+    vp = vp%1%, ... , vp = vp%n%, 
+respectively.  
+$ Let us call them elementary and composite S-trees for a moment.
+An assignment of a set $ 
+    [vp%1%, ... , vp%n%] 
+$ to
+the attribute vps of a composite S-tree 
+is equivalent to the creation of an n-fold
+ambiguity of elementary S-trees. A condition $
+    vp%i% in vps 
+$ on composite S-trees is equivalent to a condition $
+    vp%i% = vp
+$ to each of the elementary S-trees in the corresponding set,
+but in the case of composite S-trees the condition has to be followed
+by an action $
+    vps := [vp%i%].
+$ Note that a condition on composite S-trees such as vps = [vp%1%,...,vp%n%]
+cannot be "decomposed" into conditions on elementary S-trees and is therefore
+not allowed.$ 
+$ It seems worthwhile to formalize this matter a little more. Maybe we
+should use a special notation for this kind of sets.$
+$ Not all set-attributes are abbreviations of element-attributes. In
+the Dutch syntax of Rosetta2 the inherent attribute "possvoices" (in
+a verbrecord) is an example of a "direct" set-attribute. We are allowed
+to use in an M-rule the condition $
+    possvoices = [active, passive]
+$ if we want to express that a verb must allow both the active and the
+passive voice. An example of a non-inherent direct set-attribute is
+"comanmrs" in the qadjrecord. A set-value of comanmrs corresponds to
+a particular form of the QADJ. However, this kind of attributes is
+rather difficult to understand and to handle and should be 
+discouraged.$
+$c1 The pre-actions (shadow rules) for variables
+$ The "trick" described here relates to the conflict between the wish to
+have generative M-rules that operate as locally as possible and phenomena like
+agreement. An example: "hij is vergeten zich te scheren". The form of the 
+reflexive
+pronoun in the complement sentence depends on the subject of the main
+sentence. For reasons of locality we would like to complete the 
+complement sentence before it is inserted into the main sentence.
+It is undesirable if a complement sentence (which may be nested into
+other complements arbitrarily deep) can only be finished after the subject of
+the main sentence is known. M-rules that look arbitrarily deep into S-trees
+should not be admitted. The example with reflexive pronouns given here
+is relevant for Dutch and English, but in Roman languages this kind of
+phenomena is more wide-spread, because in those languages the form of
+a participle or an adjective depends on the subject.$
+$ In principle this problem is easy to solve. Complement sentences have
+a variable as their subject (as long as they have not been substituted).
+We may add attributes person, number (and possibly gender)
+ to the variable record.
+So from now on each syntactic 
+variable has a person and a number. In 
+the analysis these attribute values are assigned at the moment that the 
+variable is "created", by the argument substitution rule. This rule
+assigns the person and number of the removed NP to the variable.$
+  "hij is vergeten zich te scheren" --> 
+  "hij" + "x%1% is vergeten zich te scheren",
+with x%1% = VAR { index:1, persoon:3, getal:enkelvoud }.
+$ The analytical substitution rule that removes the complement adds this
+variable x%1% to the complement as the subject (x%1% zich scheren),
+ including the corresponding 
+attribute values.
+In this way the person and the number of the subject are known in the
+complement sentence and we can use that information for testing agreement
+between the reflexive pronoun and the subject locally.$
+$ So "x%1% zich scheren" is only correct if x%1% has
+person : 3.$
+$ However, now a serious ambiguity problem arises in generation.
+The syntactic variable x%1% is translated into a logical variable V%1% (by
+A-TRANSFER). $
+  VAR {index:1, persoon:3, getal:enkelvoud } --> V%1%
+$ It is not correct to translate the attribute-values of the 
+variable as well. The person might be translatable in principle, but
+number and gender of an NP may change during translation and therefore
+the attributes of the corresponding variable may change too. So the logical
+variable does not have these attributes, which means that in G-TRANSFER
+there will be an explosion of ambiguities if the logical variables are
+translated back into syntactic variables. If Dutch is the target language:$
+  V%1% -->   VAR { index:1, persoon:1, getal:enkelvoud }, (abbrev. x%1%(1,enk))
+           VAR { index:1, persoon:2, getal:enkelvoud },
+           ...
+           VAR { index:1, persoon:3, getal: meervoud }
+$ Note that this is only an efficiency problem. M-GENERATOR will operate
+nicely after this ambiguous transfer, with generative M-rules that are the
+reverse of the analytical ones. The result will be a 6-fold ambiguous
+translation of the complement:$
+  x%1%(1,enk) me scheren,
+  x%1%(2,enk) je scheren,
+  x%1%(3,enk) zich scheren,
+  ...
+  x%1%(3,mv) zich scheren.
+$ Ultimately only the version with x%1%(3,enk) will survive because its
+person and number must agree with those of the subject NP of the main 
+sentence.$
+$ This approach is quite correct and satisfies the requirements of
+locality and reversibility of the rules, but it leads to an intolerable
+degree of ambiguity (6&n& for n variables). The charm of the pre-action
+trick is that it is clearly equivalent to the ambiguous approach, but
+that it avoids the ambiguity explosion by using some global information. 
+This is done as follows.$
+$ If we have a syntactic derivation tree of the form R%j,i%< d%1%, d%2% >
+and R%j% is a substitution rule for variable x%i%, then the S-tree 
+generated by d%1% will be substituted for x%i% in the S-tree generated
+by d%2% (Let us neglect for a moment the possibility of ambiguities,
+which makes the story and the implementation more difficult, but
+not essentially different). 
+The order in which d%1% and d%2% are evaluated by M-GENERATOR
+is arbitrary. Now we make the following changes:$
+$ 1. During the local generative transfer of variables the attributes
+persoon etc. of the variable are not yet specified. So there is no
+ambiguity at this point.$
+$ 2. The order in which M-GENERATOR evaluates derivation trees is no
+longer arbitrary: in the case of a tree R%j,i%< d%1%, d%2% > with
+R%j,i% a substitution rule for x%i% the "substituent" d%1% is 
+evaluated first.$
+$ 3. After evaluation of d%1% the person and the number of the generated
+NP are assigned to all occurrences of x%i% in d%2%; this is the
+so-called pre-action.$
+$ 4. Then d%2% is evaluated in the usual way and R%j,i% is applied (M-rule
+R%j,i% itself has not changed).$
+
+$ (There are a few hidden assumptions here which should be made explicit:
+(i) a variable is always translated into a variable (ii) a substitution rule
+for variable x%i% is always translated into a substitution rule for
+variable x%i%, (iii) a variable can only be introduced (in analysis) or
+removed (in generation) by a substitution rule.)$  
+
+$ It is tempting to use the pre-action technique (making use of the order
+of evaluation of a derivation tree) for other phenomena
+as well. For instance, the attribute supertense is used at the moment
+for transporting information from the main, finite, sentence to a 
+nested non-finite sentence. It is imaginable (but not completely clear
+to me at the moment) that pre-action-like techniques could do the same
+job in a more elegant  way. It is worthwhile to investigate to what extent
+these techniques can be used for maintaining a local, compositional 
+approach to grammar and yet having available global information. This
+study might lead to an interesting
+modification of the formalism. $
+$ The restrictions of the pre-action technique can be illustrated by
+the following example. An NP consisting of a personal pronoun should
+have a case (say: nominative or accusative). Only at
+the moment that the NP is substituted in a clause, by a substitution rule,
+we know what the 
+case must be. So at that moment the NP must be inspected and
+if its head is a personal pronoun, it must be changed. This is 
+unpleasant and becomes rather complicated if we have coordinated NPs.
+If M-GENERATOR would evaluate the clause first, we could start evaluating
+the NP with the pre-knowledge about its case and assign the right case
+to the personal pronoun immediately. But now we have an order conflict.
+Because of the agreement we want to evaluate the NP first, because of
+the case we want to evaluate the clause first.$
+$ Joep Rous (doc. R0040, p. 10) has suggested that we add attributes to
+the nodes of a derivation trees and use an attribute grammar for 
+transporting information from one part
+of the derivation tree to another part. This would provide us with
+a general mechanism for pre-action-like tricks.
+Carel Fellinger has pointed out that
+the definition of M-GENERATOR in terms of parallel processes may lead to
+a similar generalization. Both approaches deserve to 
+be investigated in the future. $  
+

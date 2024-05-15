@@ -1,0 +1,1098 @@
+DUTCH 105
+&
+
+There are four rules Rrelmarking1-4. They are parametrized over an
+index parameter and a moodparameter. It is their task to mark variables
+with index = indexpar with the value of the moodparameter, so that one
+shift transformation can do the shifting required.
+
+This file also contains a transformation to turn VARPREPPs containing a CNVAR
+into mood=relativexpmood.
+
+They perform the following tasks:
+
+\begin{description}
+  \item[Rrelmarking1(xpmoodpar=relativexpmood)] It 
+marks NPVAR's outside VP with mood= relativexpmood;
+  \item[Rrelmarking1(xpmoodpar=topicxpmood)]]
+     it marks NPVAR(if it does not have relation=subjrel), 
+     PREPPVAR, ADVPVAR outside VP with mood= topicxpmood 
+  \item[Rrelmarking2(xpmoodpar=relativexpmood)] It 
+marks NPVAR's inside VP with mood= relativexpmood;
+  \item[Rrelmarking2(xpmoodpar=topicxpmood)]]
+     it marks NPVAR, PREPPVAR, ADVPVAR  inside VP with mood= topicxpmood 
+  \item[Rrelmarking3(xpmoodpar=relativexpmood)] It 
+marks NPVAR's under VARPREPP outside of VP with mood= relativexpmood;
+  \item[Rrelmarking3(xpmoodpar=topicxpmood)]]
+     it marks NPVAR
+     PREPPVAR, ADVPVAR under VARPREPP outside of VP with mood= topicxpmood 
+  \item[Rrelmarking4(xpmoodpar=relativexpmood)] It 
+marks NPVAR's in VARPREPP's inside of VP with mood= relativexpmood;
+  \item[Rrelmarking1(xpmoodpar=topicxpmood)]]
+     it marks NPVAR
+     PREPPVAR, ADVPVAR in VARPREPP inside of VP with mood= topicxpmood 
+\end{description}
+
+BONUS:
+The topicalization part of these rules always leads to lowering of Wbonus. In
+the case of topicalization of bare NPs, a Wbonus lowering of -10 (i.e. a 
+somewhat arbitrarily chosen but very large lowering)is assigned in analysis
+ to avoid that a 
+translation such as `the girl hits the boy' for `de jongen slaat het
+meisje' occurs very early. In all other cases there is a Wbonus lowering of -1.
+
+
+UP_TO_AMBIGUITY constraint
+
+In quite ad-hoc a manner, a constraint is built in, such that topicalization of
+NPVAR applies only if there is no subject, or a subject that is sufficiently
+different from the topicalized phrase, or in an infinite clause.
+
+This will guarantee that `De man kuste de vrouw' is not also translated into
+`The woman kissed the man', but it excludes ` de aardappels aten de mannen'
+to get the correct translation `the men were eating the potatoes'. This 
+sentence will get `the potatoes were eating the men'  as its only translation.
+
+As far as I can see, there is not a simple solution for this problem possible at all, 
+even if we have a perfect type system. either one translation will not be 
+obtained (if topicalization is restricted), or the additional translation
+will be generated.
+
+In the absence of a type system ,restricting topicalization seems the best 
+option; If a type system is available, topicalization should not be restricted,
+though perhaps these cases of topicalization should get an even lower bonus.
+
+A solution that is possible (if a type system is available) 
+is the following: assign the restricted cases of
+topicalization so low a bonus that no sentence will be generated for this
+analysis if there are other alternatives.
+
+
+
+\newpage
+\begin{verbatim}
+%
+% RULE Rrelmarking1
+< m1:CLAUSE{CLAUSErec1}[mu1, I1:rel1/T1, mu2 ] 
+>
+
+< m :CLAUSE{CLAUSErec1}[mu1, I2:rel1/T2, mu2 ] 
+>
+
+   MATCHCONDITIONS
+      <
+       I1: T1.CAT IN [NPVAR,PREPPVAR, ADVPVAR] WITH T1.REC.index = indexpar
+       I2: (T2.CAT IN [NPVAR,PREPPVAR, ADVPVAR] 
+                 WITH T2.REC.mood IN[relativexpmood, topicxpmood]) 
+       m : (T2.CAT IN [NPVAR] WITH T2.REC.mood = topicxpmood) ->
+           ((NOT EXIST(mu1, [postsubjrel/..])) AND
+            ((NOT EXIST(mu1, [subjrel/..])) OR
+             EXIST(mu1,[I11:subjrel/T3])
+            ) 
+           )
+           I11:QUOTE_UptoAmbiguity(T3,T2) 
+      >
+
+   PARAMETERS
+      <
+       indexpar   :indextype
+       xpmoodpar  :xpmoodtype
+      >
+
+<
+
+   SUBRULE
+      <T1:NPVAR{NPVARrec1} 
+      >
+      <T2:NPVAR{NPVARrec2} 
+      >
+ 
+
+
+      COMP
+         <
+          C1: NPVARrec1.mood = declxpmood AND
+              xpmoodpar IN [relativexpmood, topicxpmood] AND
+              ((rel1 = subjrel) -> (xpmoodpar <> topicxpmood)) AND
+              [NPVARrec1.NPhead] * [hetNP, watindefproNP, 
+                                   zegenNP, reducedpersproNP] = []
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.mood := xpmoodpar; 
+         >
+      DECOMP
+         <
+          C1: ((rel1 = subjrel) -> (NPVARrec2.mood <> topicxpmood)) AND
+              [NPVARrec2.NPhead] * [hetNP, watindefproNP, 
+                                   zegenNP, reducedpersproNP] = []
+              C11: NPVARrec2.mood = relativexpmood
+              A11: @
+              C12: NPVARrec2.mood = topicxpmood
+              A12: WBONUS -10;
+                   @
+          A1: indexpar := NPVARrec2.index; 
+              NPVARrec1 := NPVARrec2;
+              NPVARrec1.mood := declxpmood;
+              xpmoodpar := NPVARrec2.mood
+         >
+
+
+   SUBRULE
+      <T1:PREPPVAR{PREPPVARrec1} >
+      <T2:PREPPVAR{PREPPVARrec2} >
+
+
+      COMP
+         <
+          C1: PREPPVARrec1.mood = declxpmood AND
+              xpmoodpar IN [topicxpmood, relativexpmood] 
+          A1: PREPPVARrec2 := PREPPVARrec1;
+              PREPPVARrec2.mood := xpmoodpar; 
+         >
+      DECOMP
+         <
+          C1: PREPPVARrec2.mood IN [topicxpmood, relativexpmood]
+              C11: PREPPVARRec2.mood = relativexpmood
+              A11: @
+              C12: PREPPVARrec2.mood = topicxpmood
+              A11: WBONUS -1;
+                   @
+          A1: indexpar := PREPPVARrec2.index; 
+              PREPPVARrec1 := PREPPVARrec2;
+              PREPPVARrec1.mood := declxpmood;
+              xpmoodpar := PREPPVARrec2.mood
+         >
+
+   SUBRULE
+      <T1:ADVPVAR{ADVPVARrec1} >
+      <T2:ADVPVAR{ADVPVARrec2} >
+
+
+      COMP
+         <
+          C1: ADVPVARrec1.mood = declxpmood AND
+              xpmoodpar = topicxpmood 
+          A1: ADVPVARrec2 := ADVPVARrec1;
+              ADVPVARrec2.mood := xpmoodpar; 
+         >
+      DECOMP
+         <
+          C1: ADVPVARrec2.mood = topicxpmood
+          A1: WBONUS -1;
+              indexpar := ADVPVARrec2.index; 
+              ADVPVARrec1 := ADVPVARrec2;
+              ADVPVARrec1.mood := declxpmood;
+              xpmoodpar := ADVPVARrec2.mood
+         >
+
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Rrelmarking1
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 25-JUL-1988 09:57:26  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% RULE RRelmarking2
+< m1:CLAUSE{CLAUSErec1}[ mu1, predrel/VERBP{VERBPrec1}
+                                     [ mu2, I1:rel1/T1, mu3], 
+                         mu4 
+                       ]
+                          
+>
+
+< m :CLAUSE{CLAUSErec1}[ mu1, predrel/VERBP{VERBPrec1}
+                                     [ mu2, I2:rel1/T2, mu3], 
+                         mu4 
+                       ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: T1.CAT IN [NPVAR,PREPPVAR,ADVPVAR] WITH T1.REC.index = indexpar
+       I2: (T2.CAT IN [NPVAR,PREPPVAR,ADVPVAR] WITH T2.REC.mood IN[relativexpmood, topicxpmood]) 
+       m : (T2.CAT IN [NPVAR] WITH T2.REC.mood = topicxpmood) ->
+           ((NOT EXIST(mu1, [postsubjrel/..])) AND
+            ((NOT EXIST(mu1, [subjrel/..])) OR
+             EXIST(mu1,[I11:subjrel/T3])
+            ) 
+           )
+           I11:QUOTE_UptoAmbiguity(T3,T2) 
+      >
+
+   PARAMETERS
+      <
+       indexpar   :indextype
+       xpmoodpar  :xpmoodtype
+      >
+
+<
+
+   SUBRULE
+      <T1:NPVAR{NPVARrec1} 
+      >
+      <T2:NPVAR{NPVARrec2} 
+      >
+
+
+      COMP
+         <
+          C1: NPVARrec1.mood = declxpmood AND
+              xpmoodpar IN [relativexpmood, topicxpmood] AND
+              [NPVARrec1.NPhead] * [hetNP, watindefproNP, 
+                                   zegenNP, reducedpersproNP] = []
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.mood := xpmoodpar; 
+         >
+      DECOMP
+         <
+          C1: [NPVARrec2.NPhead] * [hetNP, watindefproNP, 
+                                   zegenNP, reducedpersproNP] = []
+
+              C11: NPVARrec2.mood = relativexpmood
+              A11: @
+              C12: NPVARrec2.mood = topicxpmood
+              A12: WBONUS -10;
+                   @
+          A1: indexpar := NPVARrec2.index; 
+              NPVARrec1 := NPVARrec2;
+              NPVARrec1.mood := declxpmood;
+              xpmoodpar := NPVARrec2.mood
+         >
+
+
+
+   SUBRULE
+      <T1:PREPPVAR{PREPPVARrec1} >
+      <T2:PREPPVAR{PREPPVARrec2} >
+
+
+      COMP
+         <
+          C1: PREPPVARrec1.mood = declxpmood AND
+              xpmoodpar IN [relativexpmood,topicxpmood] 
+          A1: PREPPVARrec2 := PREPPVARrec1;
+              PREPPVARrec2.mood := xpmoodpar; 
+         >
+      DECOMP
+         <
+          C1: PREPPVARrec2.mood IN [relativexpmood, topicxpmood]
+              C11: PREPPVARRec2.mood = relativexpmood
+              A11: @
+              C12: PREPPVARrec2.mood = topicxpmood
+              A11: WBONUS -1;
+                   @
+          A1: indexpar := PREPPVARrec2.index; 
+              PREPPVARrec1 := PREPPVARrec2;
+              PREPPVARrec1.mood := declxpmood;
+              xpmoodpar := PREPPVARrec2.mood
+         >
+
+   SUBRULE
+      <T1:ADVPVAR{ADVPVARrec1} >
+      <T2:ADVPVAR{ADVPVARrec2} >
+
+
+      COMP
+         <
+          C1: ADVPVARrec1.mood = declxpmood AND
+              xpmoodpar = topicxpmood 
+          A1: ADVPVARrec2 := ADVPVARrec1;
+              ADVPVARrec2.mood := xpmoodpar; 
+         >
+      DECOMP
+         <
+          C1: ADVPVARrec2.mood = topicxpmood
+          A1: WBONUS -1;
+              indexpar := ADVPVARrec2.index; 
+              ADVPVARrec1 := ADVPVARrec2;
+              ADVPVARrec1.mood := declxpmood;
+              xpmoodpar := ADVPVARrec2.mood
+         >
+
+>
+&
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RRelmarking2
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 25-JUL-1988 10:08:06  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+x% RULE Rrelmarking3
+< m1:CLAUSE{CLAUSErec1}[ mu1, rel2/VARPREPP{VARPREPPrec1}
+                                     [ mu2, I1:rel1/T1, mu3], 
+                         mu4 
+                       ]
+                          
+>
+
+< m :CLAUSE{CLAUSErec1}[ mu1, rel2/VARPREPP{VARPREPPrec2}
+                                     [ mu2, I2:rel1/T2, mu3], 
+                         mu4 
+                       ]
+>
+
+
+   MATCHCONDITIONS
+      <
+       I1: T1.CAT IN [NPVAR,PREPPVAR, ADVPVAR] WITH T1.REC.index = indexpar
+       I2: (T2.CAT IN [NPVAR,PREPPVAR, ADVPVAR] WITH T2.REC.mood IN[relativexpmood, topicxpmood]) 
+      >
+
+   PARAMETERS
+      <
+       indexpar   :indextype
+       xpmoodpar  :xpmoodtype
+      >
+
+<
+
+   SUBRULE
+      <T1:NPVAR{NPVARrec1} >
+      <T2:NPVAR{NPVARrec2} >
+
+
+      COMP
+         <
+          C1: NPVARrec1.mood = declxpmood AND
+              xpmoodpar IN [relativexpmood, topicxpmood]
+              C11: xpmoodpar = topicxpmood AND
+                   VARPREPPrec1.mood = declxpmood
+              A11: VARPREPPrec2 := VARPREPPrec1;
+                   VARPREPPrec2.mood := topicxpmood; 
+              C12: xpmoodpar = relativexpmood
+              A12: VARPREPPrec2 := VARPREPPrec1;
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.mood := xpmoodpar; 
+         >
+      DECOMP
+         <
+          C1: true
+              C11: VARPREPPrec2.mood = topicxpmood
+              A11: WBONUS -1
+                   VARPREPPrec1 :=  VARPREPPrec2;
+                   VARPREPPrec1.mood := declxpmood;
+              C12: VARPREPPrec2.mood <> topicxpmood
+              A12: VARPREPPrec1 := VARPREPPrec2;
+          A1: indexpar := NPVARrec2.index; 
+              NPVARrec1 := NPVARrec2;
+              NPVARrec1.mood := declxpmood;
+              xpmoodpar := NPVARrec2.mood
+         >
+
+   SUBRULE
+      <T1:PREPPVAR{PREPPVARrec1} >
+      <T2:PREPPVAR{PREPPVARrec2} >
+
+
+      COMP
+         <
+          C1: PREPPVARrec1.mood = declxpmood AND
+              xpmoodpar IN [topicxpmood] AND
+              VARPREPPrec1.mood = declxpmood
+          A1: VARPREPPrec2 := VARPREPPrec1;
+              VARPREPPrec2.mood := topicxpmood; 
+              PREPPVARrec2 := PREPPVARrec1;
+              PREPPVARrec2.mood := xpmoodpar; 
+         >
+      DECOMP
+         <
+          C1: PREPPVARrec2.mood = topicxpmood AND
+              VARPREPPrec2.mood = topicxpmood
+          A1: WBONUS -1;
+              VARPREPPrec1 :=  VARPREPPrec2;
+              VARPREPPrec1.mood := declxpmood;
+              indexpar := PREPPVARrec2.index; 
+              PREPPVARrec1 := PREPPVARrec2;
+              PREPPVARrec1.mood := declxpmood;
+              xpmoodpar := PREPPVARrec2.mood
+         >
+
+   SUBRULE
+      <T1:ADVPVAR{ADVPVARrec1} >
+      <T2:ADVPVAR{ADVPVARrec2} >
+
+
+      COMP
+         <
+          C1: ADVPVARrec1.mood = declxpmood AND
+              xpmoodpar = topicxpmood AND
+              VARPREPPrec1.mood = declxpmood
+          A1: WBONUS -1;
+              VARPREPPrec2 := VARPREPPrec1;
+              VARPREPPrec2.mood := topicxpmood; 
+              ADVPVARrec2 := ADVPVARrec1;
+              ADVPVARrec2.mood := xpmoodpar; 
+         >
+      DECOMP
+         <
+          C1: ADVPVARrec2.mood = topicxpmood AND
+              VARPREPPrec2.mood = topicxpmood
+          A1: VARPREPPrec1 :=  VARPREPPrec2;
+              VARPREPPrec1.mood := declxpmood;
+              indexpar := ADVPVARrec2.index; 
+              ADVPVARrec1 := ADVPVARrec2;
+              ADVPVARrec1.mood := declxpmood;
+              xpmoodpar := ADVPVARrec2.mood
+         >
+
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Rrelmarking3
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 25-JUL-1988 10:13:44  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% RULE Rrelmarking4
+< m1:CLAUSE{CLAUSErec1}[ mu1, predrel/VERBP{VERBPrec1}
+                                     [ mu5,
+                                       rel2/VARPREPP{VARPREPPrec1}
+                                           [ mu2, I1:rel1/T1, mu3], 
+                                       mu6
+                                     ],
+                         mu4 
+                       ]
+                          
+>
+
+< m :CLAUSE{CLAUSErec1}[ mu1, predrel/VERBP{VERBPrec1}
+                                     [ mu5,
+                                       rel2/VARPREPP{VARPREPPrec2}
+                                           [ mu2, I2:rel1/T2, mu3], 
+                                       mu6
+                                     ],
+                         mu4 
+                       ]
+>
+
+
+   MATCHCONDITIONS
+      <
+       I1: T1.CAT IN [NPVAR,PREPPVAR, ADVPVAR] WITH T1.REC.index = indexpar
+       I2: (T2.CAT IN [NPVAR,PREPPVAR, ADVPVAR] 
+                 WITH T2.REC.mood IN[relativexpmood, topicxpmood]) 
+      >
+
+   PARAMETERS
+      <
+       indexpar   :indextype
+       xpmoodpar  :xpmoodtype
+      >
+
+<
+
+   SUBRULE
+      <T1:NPVAR{NPVARrec1} >
+      <T2:NPVAR{NPVARrec2} >
+
+
+      COMP
+         <
+          C1: NPVARrec1.mood = declxpmood AND
+              xpmoodpar IN [relativexpmood, topicxpmood] 
+              C11: xpmoodpar = topicxpmood AND
+                   VARPREPPrec1.mood = declxpmood
+              A11: VARPREPPrec2 := VARPREPPrec1;
+                   VARPREPPrec2.mood := topicxpmood; 
+              C12: xpmoodpar = relativexpmood
+              A12: VARPREPPrec2 := VARPREPPrec1;
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.mood := xpmoodpar; 
+         >
+      DECOMP
+         <
+          C1: true
+              C11: VARPREPPrec2.mood = topicxpmood
+              A11: WBONUS -1
+                   VARPREPPrec1 :=  VARPREPPrec2;
+                   VARPREPPrec1.mood := declxpmood;
+              C12: VARPREPPrec2.mood <> topicxpmood
+              A12: VARPREPPrec1 := VARPREPPrec2;
+          A1: indexpar := NPVARrec2.index; 
+              NPVARrec1 := NPVARrec2;
+              NPVARrec1.mood := declxpmood;
+              xpmoodpar := NPVARrec2.mood
+         >
+
+
+
+   SUBRULE
+      <T1:PREPPVAR{PREPPVARrec1} >
+      <T2:PREPPVAR{PREPPVARrec2} >
+
+
+      COMP
+         <
+          C1: PREPPVARrec1.mood = declxpmood AND
+              xpmoodpar = topicxpmood AND
+              VARPREPPrec1.mood = declxpmood
+          A1: VARPREPPrec2 := VARPREPPrec1;
+              VARPREPPrec2.mood := topicxpmood; 
+              PREPPVARrec2 := PREPPVARrec1;
+              PREPPVARrec2.mood := xpmoodpar; 
+         >
+      DECOMP
+         <
+          C1: PREPPVARrec2.mood = topicxpmood AND
+              VARPREPPrec2.mood = topicxpmood
+          A1: WBONUS -1;
+              VARPREPPrec1 :=  VARPREPPrec2;
+              VARPREPPrec1.mood := declxpmood;
+              indexpar := PREPPVARrec2.index; 
+              PREPPVARrec1 := PREPPVARrec2;
+              PREPPVARrec1.mood := declxpmood;
+              xpmoodpar := PREPPVARrec2.mood
+         >
+
+   SUBRULE
+      <T1:ADVPVAR{ADVPVARrec1} >
+      <T2:ADVPVAR{ADVPVARrec2} >
+
+
+      COMP
+         <
+          C1: ADVPVARrec1.mood = declxpmood AND
+              xpmoodpar = topicxpmood AND
+              VARPREPPrec1.mood = declxpmood
+          A1: VARPREPPrec2 := VARPREPPrec1;
+              VARPREPPrec2.mood := topicxpmood; 
+              ADVPVARrec2 := ADVPVARrec1;
+              ADVPVARrec2.mood := xpmoodpar; 
+         >
+      DECOMP
+         <
+          C1: ADVPVARrec2.mood = topicxpmood AND
+              VARPREPPrec2.mood = topicxpmood
+          A1: WBONUS -1;
+              VARPREPPrec1 :=  VARPREPPrec2;
+              VARPREPPrec1.mood := declxpmood;
+              indexpar := ADVPVARrec2.index; 
+              ADVPVARrec1 := ADVPVARrec2;
+              ADVPVARrec1.mood := declxpmood;
+              xpmoodpar := ADVPVARrec2.mood
+         >
+
+>
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Rrelmarking4
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 25-JUL-1988 10:20:19  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER Fnotopic
+< m :CLAUSE{CLAUSErec1}[mu1, predrel/VERBP{VERBPrec1}[mu2 ], mu3 ]
+>
+  
+
+   MATCHCONDITIONS
+      <
+       m: ((EXIST(mu1, [I11:../T1]) OR
+            EXIST(mu1,[../VARPREPP{VARPREPPrec1}[mu4, I11:../T1,mu5 ]]) 
+           )       AND
+           (
+            NOT EXIST(mu1,[I11:shiftrel/T1]) OR 
+            CLAUSErec1.synvpefs * AUX_VRvps = [] 
+           )
+          )                                                              OR
+          EXIST(mu2, [I11:../T1]) OR
+          EXIST(mu2,[../VARPREPP{VARPREPPrec1}[mu4, I11:../T1,mu5 ]])    OR
+          EXIST(mu3, [I11:../T1]) OR
+          EXIST(mu3,[../VARPREPP{VARPREPPrec1}[mu4, I11:../T1,mu5 ]]) 
+       I11: T1.CAT IN [NPVAR, PREPPVAR, ADVPVAR] 
+                  WITH T1.REC.mood IN [topicxpmood, relativexpmood]
+      >
+
+         <
+          C1: true
+          A1: @
+         >
+
+
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] Fnotopic
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 14-AUG-1989 14:18:59  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Tvarppmoodadapt1
+< m1:CLAUSE{CLAUSErec1}[ mu1,
+                         predrel/VERBP{VERBPrec1}
+                               [ mu2,
+                                 rel1/VARPREPP{VARPREPPrec1}[I3:mu3],
+                                 mu4
+                               ],
+                         mu5
+                       ]
+>
+
+< m :CLAUSE{CLAUSErec1}[ mu1,
+                         predrel/VERBP{VERBPrec1}
+                               [ mu2,
+                                 rel1/VARPREPP{VARPREPPrec2}[I3:mu3],
+                                 mu4
+                               ],
+                         mu5
+                       ]
+
+>
+
+   MATCHCONDITIONS
+      <
+       I3: EXIST(mu3,[../CNVAR{}]) OR 
+           EXIST(mu3,[../RADVP{}[../CNVAR{}]])
+      >
+
+      COMP
+         <
+          C1: VARPREPPrec1.mood = declxpmood
+          A1: VARPREPPrec2 := VARPREPPrec1;
+              VARPREPPrec2.mood := relativexpmood;
+         >
+      DECOMP
+         <
+          C1: VARPREPPrec2.mood = relativexpmood
+          A1: VARPREPPrec1 := VARPREPPrec2;
+              VARPREPPrec1.mood := declxpmood;
+         >
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TTvarppmoodadapt1
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 22-MAY-1990 10:04:47  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER Fvarppmoodadapt1
+< m :CLAUSE{CLAUSErec1}[ mu1,
+                         predrel/VERBP{VERBPrec1}
+                               [ mu2,
+                                 rel1/VARPREPP{VARPREPPrec1}[I3:mu3],
+                                 mu4
+                               ],
+                         mu5
+                       ]
+>
+
+   MATCHCONDITIONS
+      <
+       I3: EXIST(mu3,[../CNVAR{}]) OR 
+           EXIST(mu3,[../RADVP{}[../CNVAR{}]])
+      >
+
+         <
+          C1: VARPREPPrec1.mood = declxpmood
+          A1: @
+         >
+  
+&
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Fvarppmoodadapt1
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 22-MAY-1990 10:43:37  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER Fprevarppmoodadapt
+< m :CLAUSE{CLAUSErec1}[ mu1,
+                         predrel/VERBP{VERBPrec1}
+                               [ mu2,
+                                 rel1/VARPREPP{VARPREPPrec2}[I3:mu3],
+                                 mu4
+                               ],
+                         mu5
+                       ]
+
+>
+
+   MATCHCONDITIONS
+      <
+       I3: EXIST(mu3,[../CNVAR{}]) OR 
+           EXIST(mu3,[../RADVP{}[../CNVAR{}]])
+      >
+
+         <
+          C1: VARPREPPrec2.mood = relativexpmood
+          A1: @
+         >
+
+  
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] Fprevarppmoodadapt
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 22-MAY-1990 10:45:19  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+%%
+

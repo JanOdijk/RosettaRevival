@@ -1,0 +1,401 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta2
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  SURFACE RULES
+
+         Author       :  Jan Landsbergen
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  0013
+
+         Date         :  85/12/04
+
+         Status       :  approved
+
+         Supersedes   :  
+
+         Distribution :  project
+
+         Clearance    :  Philips
+
+         Keywords     :  surface rules, notation, regular expression
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta                      Doc.nr: 0013                date:85/12/04
+$UC _
+$NP 1
+$SC &%
+$LD 4
+                        
+
+
+
+_1.Introduction_
+
+
+$ In R0011 the role of the surface rules in an M-grammar is described. It
+is stated there that each surface rule SR%i% defines a function f%SRi% 
+from tuples
+of S-trees to sets of S-trees. This function must obey the following
+condition:$
+    if  t in F%SRi%(t%1%,...,t%n%)  then SONS(t) = <t%1%,...,t%n%>
+$ These definitions are independent of any particular notation of the
+surface rules. In this document the current notation will be described
+and it will be shown how the function F%SRi% is defined for a surface 
+rule.$
+$ In current practice there is another condition on surface rules than
+the one described before: the applicability of a surface rule to a tuple
+t%1%,...,t%n% may only depend on the information in the top of the
+S-trees t%1%,...,t%n%, i.e. their categories and the corresponding
+attribute values. It is not sure that this condition will be
+maintained in the future. A problem with it is that in some cases
+it leads to the desirability of extra attributes in the top node 
+that express properties
+of the S-tree that would otherwise require to look deeper into the tree.
+These additional attributes may not be very useful in the M-grammar.$
+$ A surface rule does not necessarily have a fixed number of arguments.
+The motivation for this is that the number of arguments of a surface rule
+corresponds to the number of sons of the new node and that we want to
+be able to make S-trees that are arbitrarily "broad". There is
+no limit to the number of sons that S-trees may have. 
+For instance: there is 
+in principle an arbitrary number of adverbials possible in
+a sentence, they will not be represented by some form of nesting
+(unless there are good reasons for it), so a sentence node may
+have arbitrarily many sons.$
+$ These considerations lead to the conclusion that surface rules must
+take into account syntactic categories and attribute values and be
+applicable to sequences of arbitrary length. In order to cope with
+the arbitrary length we need rewrite rules with arbitrarily long right hand
+parts. We achieve that by formulating the right hand parts as regular
+expressions. Various notations for this are possible, here the extended
+Backus-Naur notation is used. In order to cope with the fact that the
+applicability of rules depends not only on categories but
+on attributes as well, the rules have to be "augmented" with conditions
+on attributes. Furthermore, the rules must specify the attribute values
+of the new top node and the syntactic relations.$ 
+$ A regular expression
+denotes a possibly infinite set of strings. Therefore a rule that
+contains such a regular expression is in principle an abbreviation of
+an infinite set of rules. From an implementation point of view this
+is insatisfactory, therefore we give in the next section a constructive
+definition of the task of the rules.$
+$NP
+
+_2. Regular expressions_
+
+$ In this section our notation for regular expressions is described,
+together with their intended interpretation. The notation has been inspired
+by the Extended BNF notation.$
+$ Until recently, a somewhat different notation was used; this notation is
+given too.$
+
+$ A regular expression denotes a set of strings over some alphabet. We
+have to start with the specification of the alphabet.
+In the examples the alphabet will
+consist of capitals.$
+$ A regular expression consisting of a single symbol, e.g. A, 
+denotes the string consisting of that symbol.$
+
+$ A sequence of constructs (which may be symbols or other compound constructs)
+is specified by enumerating them, separated by full stops: E%1%. ... .E%n%.$
+This sequence denotes the cartesian product of the sets of strings denoted by 
+E%1%,...,E%n% respectively.
+For example:
+ B.C.D  denotes B C D.
+ A.(B | C) denotes A B and A C.
+
+$ Enclosure of a construct by the brackets { and } denotes
+repetition of the enclosed construct zero or more times.$
+$ For example:$
+ { A } denotes the empty string eps, A, A A, A A A, etc.
+ (The old notation was A&*&)
+ B.{ C } denotes  B,  B C,  B C C, B C C C, etc. 
+
+ 
+$ Enclosure of a syntactic construct by the brackets [ and ] denotes
+that the enclosed construct is optional.$
+$ For example:$
+ [ A ] denotes the empty string and A.
+ (The old notation was A&eps&)
+ B.[ C ]  denotes B and B C.
+ { A }.[ B ] denotes the empty string, A, A A , A A A ,etc., B, A B, A A B,
+ A A A B etc.
+
+
+$ Alternative forms are denoted by the | sign.$
+For example:
+ (B | C)  denotes a B and a C.
+The brackets may be left out if no ambiguity arises.
+(The old notation was B U C)  
+
+A formal summary:
+
+- Syntax of regular expressions over a given alphabet:
+1. For each element A of the alphabet: A is a regular expression.
+2. If E%1% and E%2% are regular expressions, E%1%.E%2% is a regular expression.
+3. If E is a regular expresson then {E} is a regular expression.
+4. If E is a regular expresson then [E] is a regular expression.
+5. If E%1% and E%2% are regular expressions, (E%1% | E%2%) is a regular 
+expression.
+
+- "Semantics":
+DEN(A) =%def% { A |  A in the alphabet}.
+DEN(E%1%. ... .E%n%) = {a%1%....a%n% | a%i% in DEN(E%i%) }
+DEN( {E} ) =%def% { eps } + { ab | a in DEN(E), b in DEN( {E} )}
+DEN( [E] ) =%def%  { eps } + DEN(E).
+DEN( E | F ) =%def% DEN(E) + DEN(F).
+(+ is the set union operator)
+$NP
+
+_3. Form and function of the surface rules_
+
+$ A surface rule consists of:$
+
+1. A regular expression E over an alphabet of indexed categories
+   { < CAT, i > | CAT in SYNCATS, 1 <= i <= m }, for some m;
+   This alphabet may be different for each rule.
+   We will write CAT%j% as an abbreviation of < CAT, j >.
+2. A set of parameters (auxiliary variables) P%1%,...,P%k%. Each parameter has 
+   a (Pascal) type, defining the possible values of that parameter. A tuple
+   of parameter values v%1%,...,v%k% will be denoted as pi. For each parameter
+   P%i% a start value v%i,0% is defined. pi%0% is the tuple of start values.
+3. For each index i (1 <= i <= m):
+   - a syntactic relation REL%i%.
+   - a condition COND%i%, i.e. a proposition in terms of parameters, constants 
+     and attributes corresponding to CAT%i% (the attributes in ATS%CATi%).
+   - an action ACTION%i%, i.e. a set of assignments to parameters in terms
+     of parameters, attributes in ATS%CATi% and constants.
+4. A final condition FINAL-COND in terms of parameters and constants.
+5. A final action FINAL-ACTION, which specifies a new top node, i.e. its
+   category and its attribute values. These values are defined in 
+   terms of parameters and constants.
+   (the constants used in the surface rules are Pascal constants (e.g. true)
+   or values of enumerated types already declared as types of parameters
+   or types of attribute-values (or sets of these values). The operations
+   used in the rules are the usual boolean and set operations.)
+
+
+$ The function F%SR% (from tuples of S-trees to sets of S-trees) for
+a surface rule SR with regular expression E is then  
+defined as follows:$
+F%SR%(t%1%, ..., t%m%) =%def% 
+           { N [ r%1%/t%1%, . . . , r%m%/t%m% ]  |
+                      _E_ <C%1%,i%1%>.....<C%m%,i%m%> (m>=1) in DEN(E):
+                      _E_ pi%1%, ..., pi%m%:
+                       CAT(t%1%) = C%1%, COND%i1%(pi%0%, t%1%) and 
+                       r%1%=REL%1% and pi%1%=ACTION%i1%(pi%0%, t%1%) and
+                       ....
+                       CAT(t%m%) = C%m% and COND%im%(pi%m-1%, t%m%) and 
+                       r%m%=REL%m% and pi%m%=ACTION%im%(pi%m-1%, t%m%) and
+                       FINAL-COND(pi%m%) and N = FINAL-ACTION(pi%m%) }
+
+$ Note that if DEN(E) contains the empty string, this is not used in the
+definition. Rewrite rules with an empty right hand side are not allowed.$ 
+$ As DEN(E) may be infinite this is not a constructive definition. We give
+therefore another definition of F%SR%, which is constructive. This definition
+is intended to be equivalent to the first one. The definition shows
+explicitly how a function F%E% runs through the regular expression and
+the tuple of S-trees simultaneously and updates the values of the 
+parameters.$
+
+F%SR%(t%1%,...,t%n%) =%def%
+{ N[mu] |_E_ pi%n%,mu: < pi%n%, mu, eps> in F%E%(<pi%0%, eps, <t%1%,...,t%n%>>)
+                  and FINAL-COND(pi%n%) and N = FINAL-ACTION(pi%n%) }
+
+$ F%E% is defined as follows
+for the various possible forms of E.$
+
+First we define F%E% for the case that E consists of one indexed category <C,i>
+    F%<C,i>%(< pi, mu, a >) =%def%
+                          { <pi', mu.r%i%/t, a%1%>    |  a = t.a%1% and
+                                                    CAT(t) = C  and
+                                                    COND%i%(pi, t)
+                                                    and pi' = ACTION%i%(pi,t) 
+                                                    and r%i% = REL%i%         }
+
+Here   a, a%1% are lists of S-trees ( a%1% may be empty), mu is a reltreelist,
+pi and pi' are tuples of parameter values. 
+mu.r%i%/t%i% is the reltreelist mu  extended with the pair r%i%/t%i%. 
+Here we use temporarily the full stop instead of the comma, because the comma 
+is already used as a separator in tuples. 
+Note that F%<C,i>%(< pi, mu, a>) is the empty set if a is the empty list
+of S-trees or if the first tree in a has the wrong category or the wrong
+attribute-values.
+
+F%{E}%(< pi, mu, a >) =%def%
+                      { y | _E_ x: x in F%E%(< pi, mu, a>) and
+                                 x <> < pi, mu, a >   and y in F%{E}%(x) }
+                   +  {< pi, mu, a>}  
+
+x and y are abbreviated notations for tuples of the form < pi, mu, a >, where
+pi is a tuple of parameter values, mu is a reltreelist and a is a list of
+S-trees.
+
+F%E1.E2%(< pi, mu, a >) =%def%
+                      { y | _E_ x: x in F%E1%(< pi, mu, a >) and 
+                                 y in F%E2%(x)               } 
+
+F%(E1 | E2)%(< pi, mu, a >) =%def%
+                      F%E1%(< pi, mu, a >)  +  F%E2%(< pi, mu, a >)
+
+F%[E]%(< pi, mu, a >) =%def%
+                      F%E%(< pi, mu, a >)  +  {< pi, mu, a >}
+
+ 
+$NP
+
+_4. A notational extension_
+
+$ In complex rules it may be useful to specify the regular expressions 
+in a more modular way
+by using auxiliary categories for parts of the regular expression.$
+For example:
+A%1%.[ B%2% ].C%3%.[ E%4%.F%5% ].{A%1%.[ B%2% ].C%3%}
+may be written as 
+aap.noot.{aap} ,
+where
+aap = A%1%.[ B%2% ].C%3%
+noot = [ E%4%.F%5% ]
+Auxiliary symbols may be defined by means of other auxiliary symbols.
+(recursion not allowed)
+
+$ The interpretation of an expression with auxiliary categories is the 
+expression
+that we obtain if we replace the auxiliary categories by the expressions they 
+are abbreviations of.$
+
+$ An auxiliary symbol may denote the empty string.$
+$NP
+
+
+_5. An example of a surface rule_
+
+We give a simple example of a rule for Dutch preposition phrases.
+
+_SR11_    
+
+Regular expression:    [PREP%1%].NP%2%.[PART%3% | PREP%4%]
+
+parameters         type        start value
+------------------------------------------
+moodvar            moodtype    omegamood
+prepfound          boolean     false
+exppostkey         keytype     0
+prepkeyvar         keytype     0
+
+1: COND:  soort in [ gewoneprep, splitprep ]
+ 
+   ACTION: if soort = splitprep
+           then exppostkey := postpkey;
+           prepfound := true;
+           prepkeyvar := key
+
+          (* soort, postpkey, key are attributes corresponding to cat. PREP *)
+   
+   REL:    headrel
+
+
+2: COND:   soort <> hetpro  and
+           cases * [dative, accusative] <> []
+
+   ACTION: moodvar := mood
+  
+           (* mood, soort and cases are attributes of NP *)
+
+   REL:    objrel
+
+           
+3: COND:   prepfound  and
+           exppostkey = key
+
+   ACTION: -
+
+   REL:    postpreprel
+
+
+4: COND:   soort = postprep  and
+           not prepfound
+
+   ACTION: prepfound := true;
+           prepkeyvar := key
+
+   REL:    headrel
+
+
+FINAL COND:    prepfound
+
+FINAL ACTION:  newtop := PP { mood: moodvar,
+                              soort: anderevar,
+                              prepkey: prepkeyvar,
+                              supertense: omegatense}
+       
+
+COMMENT:  A PP may consist of PREP + NP (gewone prep), e.g. "in de tuin", 
+          or NP + PREP (postprep), e.g. "de tuin in",
+          or PREP + NP + PART (splitprep), e.g. "naar Engeland toe".
+          The NP may not be the personal pronoun "het"; the NP must have a
+          dative or accusative case (e.g. "de man" is allowed, "hij" is not
+          allowed, "hem" is allowed).
+
+
+$ In the current implementation a distinction is made between local
+and global conditions, in the conditions for the indices. The local
+condition is the part of the condition that only refers to attributes,
+but not to parameters. The global condition contains the other conditions,
+which refer to parameters.
+The conjunction of the global and the local condition should be
+equivalent to the original condition. The motivation for this distinction
+is that it appears to be efficient to check the local conditions for
+each S-tree at the same time as its category and to check the global 
+conditions later on, after a fitting path through the regular expression
+has been found.$ 
+$NP
+
+
+                      CONTENTS
+
+
+1. Introduction
+
+2. Regular expressions
+
+3. Form and function of the surface rules
+
+4. A notational extension
+
+5. An example of a surface rule

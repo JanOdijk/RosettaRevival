@@ -1,0 +1,329 @@
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.Mrules.English}
+   \RosTitle{Rosetta3 English M-rules: PREPPFORMULAtoPROP}
+   \RosAuthor{Margreet Sanders}
+   \RosDocNr{382}
+   \RosDate{November 15, 1989}
+   \RosStatus{approved}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{English, documentation, Mrules, PREPPFORMULAtoPROP}
+   \MakeRosTitle
+%
+%
+
+\section{Introduction}
+As all main category grammars, the English PREPPPROP grammar is divided in 
+three parts. First, {\bf PREPPPROPformation} forms the PROP-structure. Then, {
+\bf PREPPPROPtoFORMULA} turns this PROP into an intermediate structure, called 
+PREPPFORMULA
+(comparable to the CLAUSE in the sentence grammar). Finally, {\bf 
+PREPPFORMULAtoPROP} makes an open or closed PROP-structure, comparable to the 
+SENTENCE level in the sentence grammar. Prior to PREPPPROPformation, there is 
+the {\bf PrepDerivation} grammar, which was discussed in doc.\ 316, {\em 
+Rosetta3 English M-rules: Derivation Subgrammars\/}. The final open or closed 
+PREPPPROP is usually input to the Proposition Substitution Rules in the 
+XPPROPtoCLAUSE subgrammar. A `bare' PREPPPROP may also form an expression on 
+its own with help of the copula {\em be\/}. In that case, it leaves the 
+PREPPPROP grammars after PREPPPROPformation, and 
+is input to the ClauseFormation Rules of the XPPROPtoCLAUSE subgrammar. 
+There is no rule to make a complete Utterance of a closed PREPPPROP.
+
+The current document describes the contents of the third PREPPPROP subgrammar, 
+PREPPFORMULAtoPROP (the first subgrammar was discussed in doc.\ 380, {\em 
+Rosetta3 English M-rules: PrepppropFormation\/}, and the second one 
+in doc.\ 381, {\em Rosetta3 English Mrules: PREPPPROPtoFORMULA\/}). 
+The subgrammar consists of 
+a number of rule classes and transformation classes. A rule class in its turn
+consists of a number of rules and a transformation class of a number of 
+transformations. The relative ordering of the rules and transformations in the
+(sub)grammar is indicated by a {\em control expression}. A summary of this
+control expression (i.e.\ a listing of the ordering of the rule classes, 
+without explicit mentioning of the rules themselves) is also included here, 
+and the initial (= head), import and export categories are given. 
+
+In the section on the rules and transformations, only the rule names are given, 
+but not the exact rule formulation. What is attempted 
+is to provide a detailed overview of the workings of the subgrammar, and 
+how the different rule classes achieve this,
+together with some comments on the problems still to be solved, the reasons 
+behind certain choices, and perhaps possible alternatives. For every rule, an 
+example is given. If it is uncertain whether the example is correct (either 
+because it may not be an example of the phenomenon in question, or because it 
+may not be correct English), it is preceded by a question mark. Note that all 
+explanation of rules and transformations is given from a generative viewpoint
+only, unless explicitly stated otherwise. Often, the information given in this 
+document is based strongly on the comment already present in the documentation 
+of the rules themselves. Discrepancies between what is stated here and what is 
+said in the rule itself are usually caused by the fact that the rule file has 
+not  been updated, although insights have changed. The semantics of the rules 
+has been left unspecified in the current documentation, since it is not at all 
+clear.
+
+Whenever the current implementation differs widely from the strategy that was 
+devised in the definition phase of Rosetta3 (as laid down for English in docs.\ 
+150, {\em Subgrammars of English\/}, 153, {\em Rule and Transformation Classes 
+of English\/}, and 155, {\em Rule and Transformation Classes common to all 
+languages\/}, all written by Jan Odijk), this will be indicated explicitly in 
+the current document. Conditions on crucial orderings of rule classes will be 
+repeated here, even if they do not differ from the original strategy, to make 
+the document as self-contained as possible.
+
+Finally note that the rules described in this document have NOT been tested 
+properly. English analysis is not possible yet (there is no Surface Parser), and 
+English generation has only been tested in as far as the construction was the 
+translation of a Dutch sentence to be tested.
+
+\newpage
+\section{PREPPFORMULAtoPROP}
+The exact contents of the PREPPFORMULAtoPROP subgrammar are mainly determined 
+by the requirements of isomorphy with the CLAUSEtoSENTENCE subgrammar. Thus, 
+many rule classes just provide some sort of 
+`default' value for the category to be used when it is substituted into the 
+higher sentence. The subgrammar is only partially isomorphic with the 
+CLAUSEtoSENTENCE subgrammar: for some optional rule classes present there 
+(viz.\ RelMarking, PosNegVar and ConjSent), no counterparts exist in the 
+present subgrammar. This means that only if no rules from these classes are 
+present in the derivation tree, can an isomorphic derivation be found in the 
+current subgrammar.
+
+In doc.\ 150, it was assumed that the current subgrammar would also have rules 
+for reciprocal and reflexive spelling. However, since the antecedent of these 
+elements will usually be in the higher sentence, it seems doubtful whether 
+these rules are useful here. They have not been written. For the rest, the 
+contents of the subgrammar more or less agree with the definition in doc.\ 150.
+
+\section{Grammar Specification}
+The grammar definition can be found in the file which also contains all the 
+rules of this subgrammar, {\bf PreppFormulaToProp.mrule}, 
+which is {\em mrules88.mrule\/}.
+
+\begin{verbatim}
+%SUBGRAMMAR PreppformulaTOprop
+
+
+   ( TC_pppPROstatus)
+.  { RC_pppSubstitution }
+.  ( TC_pppAspectneutralization )
+.  ( RC_pppMood )
+.  ( RC_pppPunc )
+
+\end{verbatim}
+
+\begin{description}
+  \item[Head]  PREPPFORMULA  \ \ \ \ FROM (PREPPPROPtoFORMULA)
+  \item[Export] OPENPREPPPROP, CLOSEDPREPPPROP
+  \item[Import] NP, PREPP, ADVP
+\end{description}
+
+\newpage
+\section{Rules and Transformations}
+
+\subsection{TC\_pppPROstatus}
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] To assign a value to the attribute {\bf PROsubject}. The default 
+value is {\em false\/}. In generation, there is a free choice between the two 
+rules, and both an OPENPREPPPROP (PROsubject = {\em true\/}) and a 
+CLOSEDPREPPPROP (PROsubject = {\em false\/}) can be made. If a subject 
+substitution rule is applied (see below), only the version with PROsubject = {
+\em false\/} is allowed; hence, the transformation class is ordered crucially 
+before the substitution rules.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TpppNoPROsubj
+\item[Task] Vacuous rule, leaving the {\bf PROsubject} attribute of the 
+PREPPFORMULA at its default value, which is {\em false\/}.
+\item[File] english:PreppformulaToProp.mrule (mrules88.mrule)
+\item[Semantics] --
+\item[Example] [x1 in x2]$_{PROsubject=false}$ $\rightarrow$ 
+[x1 in x2]$_{PROsubject=false}$ (She seemed in her early 
+twenties) (with {\em seem\/} as one-place verb)
+\item[Remarks] 
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TpppPROsubj
+\item[Task] To set the {\bf PROsubject} attribute of the 
+PREPPFORMULA at the value {\em true\/}.
+\item[File] english:PreppformulaToProp.mrule (mrules88.mrule)
+\item[Semantics] --
+\item[Example] [x1 in x2]$_{PROsubject=false}$ $\rightarrow$ 
+[x1 in x2]$_{PROsubject=true}$ (She seemed in her early 
+twenties) (with {\em seem\/} as two-place verb)
+\item[Remarks] 
+\end{description}
+
+\end{description}
+
+
+\newpage
+\subsection{RC\_pppSubstitution}
+\begin{description}
+\item[Kind] Iterative Rule Class
+\item[Task] To substitute non-sentential expressions for their variable, in the 
+order dictated by analysis and consistent with the substitution order 
+conditions.
+
+The rules use the system parameter LEVEL to check whether the index of the 
+variable is consistent with (the level of) the variable that is to be 
+substituted for according to the rule parameter.
+
+For more information on the rule class, see the documentation to the comparable 
+class in the CLAUSEtoSENTENCE subgrammar (doc.\ 370, p.\ 14). The same 
+constraints hold, except that reflexives etc.\ have not yet been excluded from 
+the current rules explicitly (needed to speed up analysis). 
+Also, the substorder constraint is only mentioned 
+for subject substitution, since it is not needed for substitution in the PREPP 
+(there only is one argument there anyway).
+
+In the NP substitution rules, the value of the attribute {\bf generic} is set 
+to {\em omegageneric\/}, because the Surface Parser cannot decide on genericity.
+Also, the value of the attribute {\bf superdeixis} is set to {\em 
+omegadeixis\/}, for the same reason.
+
+There still is no way to limit the workings of the substitution rules in this 
+grammar to those cases where it is really needed, i.e.\ where there will not be 
+any substitution in the higher clause. Thus, many ambiguities arise caused by
+substitution having applied in different cycles. See section 5 of doc.\ 368, 
+{\em Scope in Rosetta3\/}, for a discussion of this problem.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RpppSubjSubst
+\item[Task] To substitute a non-generic NP for its subjrel VAR
+\item[File] english:PreppformulaToProp.mrule (mrules88.mrule)
+\item[Semantics]
+\item[Example] [x1 against the analysis] + the man $\rightarrow$ [the man 
+against the analysis] (The man seemed against the analysis)
+\item[Remarks] This rule was added because in Spanish, some constructions never 
+get a subject in the main clause (there only is something like {\em It seemed 
+that the man was against the analysis\/}).
+
+The rule is practically a copy of an older version of the subject substitution 
+rule in the 
+sentence grammar. Hence, it is restricted to non-generic NPs. Once generic NPs 
+can be made, it should be decided whether the rule can simply be parametrized 
+for genericity, or whether an extra rule (containing more restrictions on the 
+model) is needed. 
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RpppNPSubst
+\item[Task] To substitute a non-generic NP for its objrel VAR
+\item[File] english:PreppformulaToProp.mrule (mrules88.mrule)
+\item[Semantics]
+\item[Example] [x1 behind x2] + the door $\rightarrow$ [x1 behind the door]
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RpppPREPPSubst
+\item[Task] To substitute a PREPP for its objrel VAR
+\item[File] english:PreppformulaToProp.mrule (mrules88.mrule)
+\item[Semantics]
+\item[Example] [x1 from x2] + behind the door $\rightarrow$ [x1 from behind 
+the door]
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RpppADVPSubst
+\item[Task] To substitute an ADVP for its objrel VAR
+\item[File] english:PreppformulaToProp.mrule (mrules88.mrule)
+\item[Semantics]
+\item[Example] ? [x1 until x2] + tomorrow $\rightarrow$ [x1 until tomorrow]
+\item[Remarks] Perhaps this is the wrong example, since temporal expressions 
+are considered PREPPs, and not PREPPPROPs. If so, there may be no need for the 
+current rule.
+\end{description}
+
+\end{description}
+
+
+\newpage
+\subsection{TC\_pppAspectNeutralization}
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] To reset the attribute {\bf aspect} of the PREPPFORMULA, which was  
+set at the value {\em imperfective\/} in the Aspect Rule Class (see previous 
+subgrammar), to the 
+value {\em omegaaspect\/}. This is needed because the Surface Parser cannot 
+decide the correct value in analysis, while the Aspect Rule Class is an 
+obligatory class in the sentence grammar.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TpppAspectNeutralization
+\item[Task] see above
+\item[File] english:PreppformulaToProp.mrule (mrules88.mrule)
+\item[Semantics] --
+\item[Example] [x1 behind x2]$_{imperfective}$ $\rightarrow$ [x1 behind 
+x2]$_{omegaaspect}$ (He hid behind the door)
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_pppMood}
+\begin{description}
+\item[Kind] Obligatory Rule Class
+\item[Task] To turn a PREPPFORMULA into a closed or open PREPPPROP, depending 
+on the value of the attribute {\bf PROsubject}. This rule is the 
+`XPPROP-version' of the Mood Rules in the sentence grammar, but there are no 
+new attributes going with the new topnode in the current subgramamar.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] ROpenPPPMood
+\item[Task] To turn a PREPPFORMULA into an OPENPREPPPROP
+\item[File] english:PreppformulaToProp.mrule (mrules88.mrule)
+\item[Semantics] 
+\item[Example] $_{PREPPFORMULA}$[x1 out] $\rightarrow$ $_{OPENPREPPPROP}$[x1 
+out]
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RClosedPPPMood
+\item[Task] To turn a PREPPFORMULA into a CLOSEDPREPPPROP
+\item[File] english:PreppformulaToProp.mrule (mrules88.mrule)
+\item[Semantics] 
+\item[Example] $_{PREPPFORMULA}$[the ball out] $\rightarrow$ 
+$_{CLOSEDPREPPPROP}$[the ball out] (The ball seemed out)
+\item[Remarks] 
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_pppPunc}
+\begin{description}
+\item[Kind] Obligatory Rule Class
+\item[Task] Vacuous rule, to serve as counterpart in the isomorphic scheme for 
+the punctuation rules in the sentence subgrammar. 
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RpppNoPunc
+\item[Task] see above
+\item[File] english:PreppformulaToProp.mrule (mrules88.mrule)
+\item[Semantics] 
+\item[Example] the ball out
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+
+\end{document}
+

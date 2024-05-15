@@ -1,0 +1,77 @@
+h57114
+s 00056/00001/00000
+d D 1.2 95/10/17 11:48:14 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 95/10/17 11:38:51 rous 1 0
+c date and time created 95/10/17 11:38:51 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+#! /bin/sh -e
+#
+case $# in
+0) echo "Usage: rgrab componentname filename release"; exit 1;;
+1) echo "Usage: rgrab componentname filename release"; exit 1;;
+2) ;;
+3) ;;
+*) echo "Usage: rgrab componentname filename release"; exit 1;;
+esac
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+#
+#
+trap '' 1 2 3
+#
+trap 'echo "RGRAB: No grab allowed during your other grabs"; umask 22; cd $savedir; exit 2' 0
+umask 222
+( echo "  " > $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs ) 2> /dev/null
+umask 22
+#
+#
+set -e
+trap 'echo "RGRAB: No grab allowed during your integrate"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs ; cd $savedir; exit 2' 0
+if ( test -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/integrate.rbs )
+then exit 0
+fi
+#
+#
+set -e 
+trap 'echo "RGRAB: Error during grab" ; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs ; cd $savedir ; exit 2' 0
+#
+#
+#
+if ( test "$1" = "actions" )
+then cd actions
+else cd $1/source
+fi
+if ( test -s  $2 )
+then echo "RGRAB: File already exists in your source directory!"
+     exit
+elif ( test -s $RBS_ARCHIVE$RBS_RELEASE/$1/sccs/s.$2 )
+then echo "grabbing...."
+#     sccs -d$RBS_ARCHIVE$RBS_RELEASE/$1 -psccs edit -s $2 1> /dev/null 2>&1
+     sccs -d$RBS_ARCHIVE$RBS_RELEASE/$1 -psccs edit -s -r$3 $2 
+     echo "grabbed file $2 for release $3"
+     chmod u+rwx $2
+else echo "RGRAB: File does not exist in the archive!"
+     exit 
+fi
+#
+#
+#
+rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/grab.rbs
+cd $savedir
+trap 0
+E 2
+E 1

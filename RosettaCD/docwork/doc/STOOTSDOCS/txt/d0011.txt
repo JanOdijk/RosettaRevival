@@ -1,0 +1,958 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta2
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  M-GRAMMARS 
+
+         Author       :  Jan Landsbergen
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  0011
+
+         Date         :  85/11/27
+
+         Status       :  approved
+
+         Supersedes   :  
+
+         Distribution :  project
+
+         Clearance    :  Philips
+
+         Keywords     :  M-syntax, analysis, generation, M-parser, S-parser
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta                       Doc.nr: 0011                    date:85/11/27
+$SC &%
+$UC _
+$NP 1
+$LD 4
+
+                             
+
+
+_1. Introduction_
+
+$ The purpose of this document is to give the formal definition
+of M-grammars and of some closely related concepts, including the
+functional definitions of the relevant components of Rosetta2. Occasionally
+possible modifications and additions will be mentioned, but the main 
+purpose is to have the important definitions all together. For a
+good understanding it is advised to read first M.S. 12.950 
+(Isomorphic grammars and their use in the Rosetta translation system).
+But the definitions in this document are the official ones.$
+$ The morphological component will only be discussed very globally in
+this paper. A separate document is devoted to morphology (R0008).$
+
+An M-grammar consists of:
+- a syntactic component: the M-syntax
+- a semantic component
+- a morphological component
+
+$ In an M-grammar, as we have seen in M.S. 12.950, 
+we deal with the following kinds of objects.$
+- logical derivation trees, the meaning representations of sentences.
+- syntactic derivation trees, representations of the derivation process of
+  S-trees.
+- S-trees, surface  structures of sentences.
+- sequences of lexical S-trees, of which the elements (the lexical S-trees)
+  correspond (in general) to the words of sentences.
+- sentences, i.e. sequences of words (in which a word is a string of symbols).
+
+$ The M-grammar defines these objects and various relations between them.
+The syntactic component defines a relation between syntactic derivation trees
+and S-trees and a relation between S-trees and sequences of lexical S-trees.
+The semantic component defines a relation between logical derivation trees and
+syntactic derivation trees. 
+The morphological component defines a relation between sequences of lexical
+S-trees and sentences.$
+$ The composition of these relations is R%G% (for an M-grammar G), a relation
+between
+logical derivation trees and sentences. This relation can also be expressed
+by means of a function GENERATION%G% from logical derivation trees to sets
+of sentences, and by means of a function ANALYSIS%G% from sentences to
+sets of logical derivation trees. These functions are defined as compositions
+of generative and analytical sub-functions corresponding to the sub-relations
+of which R%G% is composed. The relational and the functional
+definitions 
+are set-theoretically equivalent. The interesting difference is that the
+constructive way in which the generation and the analysis functions
+are defined,
+indicates that (and sometimes how)
+ effective procedures for them can be written.$
+$ In this paper I will - in general- start with the generative 
+definitions and then give the
+analytical definitions. For the relations no independent definitions
+will be given, they will be defined in terms of the generative functions.$
+
+$ In sections 2, 3 and 4 the syntactic, the semantic and the morphological
+component will be defined. The generative and analytical functions for
+the syntactic component are defined in section 6 after the introduction
+of some conditions on M-grammars for making analysis possible. Then in
+section 7 the function ANALYSIS and GENERATION  are defined 
+(as long as we are dealing
+with one grammar only, we omit the subscript G). In section 8 the
+isomorphy relation between grammars  and the translation function
+are defined. In section 9 some problems with the current framework are
+discussed.$
+
+$ The translation function defined by isomorphic M-grammars is a function from
+sentences to sets of sentences (sets of "possible translations"). The Rosetta2
+program is an implementation of this function, but involves more, for instance
+ways to choose the "best" translation from the set of possible translations.
+In R0014 some of these extensions are discussed. Another difference between the
+theoretical translation function and the implemented Rosetta2 system is that a
+sentence does not enter the system as a sequence of words, but as a string
+of symbols including spaces, carriage returns etc. The relation between this
+string and a sequence of words is defined by the lay-out component. This
+component is not part of the M-grammar but because there 
+is a close relation between the tasks of the lay-out component and the
+morphological component, they are both discussed in the same 
+document (R0008).$
+$NP
+
+_2. The syntactic component_
+
+_2.1. Overview_
+
+The syntactic component consists of
+$ 1) a definition of the set T: the domain of possible S-trees.$
+$ 2) a definition of the set T%M%: the set of syntactically well-formed S-trees.
+T%M% is a subset of T.$
+$ 3) the specification of a set of surface rules, which together with
+the morphological component defines the set T%S%, a subset of T. According to
+the surface  syntax condition discussed in section 5 T%M% must be
+a subset of T%S%.$
+
+ad 1) The domain T is defined by specifying
+$ (i)   a (finite) set SYNCATS of syntactic categories.$
+$ (ii)  for each category C in SYNCATS a (finite) set ATS%C% of attributes.$
+$ (iii) for each attribute a in ATS%C% (for a C in SYNCATS) a 
+set VALUES%a% of values (in general finite; the only exception
+is the index of variables).$
+(iv)  a (finite) set SYNRELS of syntactic relations.
+
+$ ad 2) T%M% is defined by adding to (i) - (iv) the
+specification of:$
+(v) a set B of so-called basic S-trees, B <= T  (<= is the subset relation).
+    We will indicate them with b or b%i%.
+    We assume that each b in B has a unique name, to be indicated as _b_.
+    There is a subset of SYNCATS, called BASICCATS, which is used for basic
+    S-trees only.
+
+(vi) a set MRULES of syntactic rules R%i%: the M-rules.
+    A syntactic rule R%i% defines two functions:
+        F%Ri%, from n-tuples of S-trees to finite sets S-trees.
+               (n is fixed for each rule: n-ary rule)
+        F%Ri%', from S-trees to finite sets of n-tuples of S-trees.
+        So  F%Ri% :  T x . . . x T --> _P_(T)     (_P_: powerset)
+            F%Ri%':  T --> _P_(T x . . . x T).
+        For F%Ri% we speak of generative application of the rule, or shortly
+        the generative rule. F%Ri%' is the analytical rule.
+        (distinguish: the M-rule R%i% in some notation, the name
+        of the rule, to be indicated as _R_%i%, and the function defined
+        by the rule)
+
+$ (vii) a set TOPCATS of top categories, a subset of the set of
+syntactic categories SYNCATS.$
+
+
+$ ad 3) For the definition of the set T%S% we add:$
+
+$ (viii) a set SURFRULES of surface rules SR%i%. 
+A surface rule SR%i% defines a function f%SRi% from sequences of 
+S-trees to sets of S-trees. See 2.4.$ 
+
+$ Summarizing, the syntactic component of an M-grammar
+(an M-syntax) is an 8-tuple of sets: (i)-(viii).$
+
+
+_2.2. The definition of T_
+
+An S-tree is an expression of the form
+        node[reltreelist]
+Here reltreelist is a list of pairs of the form
+        r/t
+in which r is a syntactic relation (r in SYNRELS) and t an S-tree.
+The reltreelist may be empty. We write that as
+        node[eps] or node[] or just: node
+and we call such an S-tree a terminal S-tree.
+A node has the form
+        C{a%1%:v%1%, . . . , a%m%:v%m%}
+$ in which C is a syntactic category, a%1%, . . . , a%m% the attributes 
+corresponding to C and each v%i% one of the possible values of a%i%.
+So C in SYNCATS, a%i% in ATS%C%, v%i% in VALUES%ai%.$
+
+N.B.:
+A reltreelist is ordered; for the attributes the order is not relevant.
+
+$ If for a certain category C the set of attributes is empty, we write$
+        C{}  or just C.
+
+$ We will indicate an S-tree by t or t%i%.$
+$ Summarizing, an S-tree t has the form$
+        C{a%1%:v%1%, . . . , a%n%:v%n%} [r%1%/t%1%, . . . , r%n%/t%n%]
+
+$ We call C{...} the top node of t, C the (top) category of t 
+and t%1%,...,t%n% the sons of t.$
+
+        TOPNODE(t) =%def% C{a%1%:v%1%, . . . , a%m%:v%m%}
+        CAT(t) =%def% C
+        SONS(t) =%def% <t%1%, . . . ,t%n%>
+
+
+We define the function LEAVES on S-trees as follows:
+
+LEAVES( t ) =%def%
+                   if terminal(t) and CAT(t) in LEXCATS
+                            then result := {t}
+                            else begin
+                                 "write t as node[r%1%/t%1%,...,r%n%/t%n%]";
+                                 result := LEAVES(t%1%) x ....x LEAVES(t%n%) 
+                                 end;
+                   LEAVES := result 
+
+$ So the result of LEAVES is a set with 1 element, viz.
+a tuple of terminal S-trees, or the empty set. The latter case occurs
+if one of the leaves has a category which is not in 
+LEXCATS. (LEXCATS is the set of lexical categories, i.e.
+categories of words; this set is defined in the
+morphological component. If t in T%L% then CAT(t) in LEXCATS.) 
+In the future we will presumably no longer require 
+that LEAVES delivers terminal S-trees. That change is necessary if we want
+to allow that the S-trees in T%L% are non-terminals. 
+This seems to be a reasonable extension if we want the morphological
+component to handle word derivations and composite words. In that case
+LEAVES is not a fortunate term, the alternative term LINEARIZER 
+would be more appropriate.$
+
+$RL 4
+_2.3. The definition of T%M%_
+
+T%M% is defined as follows.
+First the set T%M%&+& is defined as the smallest set such that:
+1. B <= T%M%&+&
+2. if t%l%, . . . , t%n% in T%M%&+&, and R%i% is an n-ary rule in MRULES 
+   then F%Ri%(t%1%, . . . , t%n%) <= T%M%&+&. 
+   (N.B. With F%Ri%(...) I mean the result of the application of F%Ri%; I
+    will use parentheses ( and ) for function-application and other brackets
+    [], {}, <>, to indicate " structure in expressions" )
+
+$ T%M% is the subset of T%M%&+& consisting of exactly those S-trees 
+for which the top category is
+an element of TOPCATS.$
+
+T%M% =%def% { t | t in T%M%&+& and CAT(t) in TOPCATS }
+
+$ The syntactic component also defines a set of syntactic
+derivation trees D%M%.$
+$ D%M% is the smallest set such that:$
+        1. for all b in B: _b_ in D%M%
+        2. if R%i% is an n-ary M-rule, and d%1%, . . . , d%n% in D%M%,
+           then _R_%i%<d%1%, . . . , d%n%>  in D%M%.
+$ Intuitively  a derivation tree is a representation of a 
+derivational history which indicates how a set of S-trees is generated
+by recursive application of rules on basic expressions. 
+This set may be empty, because one or more rules in the derivation tree may
+turn out to be not applicable. As an M-rule may deliver more than one result,
+a derivation tree may define more than one S-tree. In section 6 
+the exact definitions of the relations between derivation trees and S-trees 
+are given.$
+
+
+_2.4. The definition of T%S%. Surface syntax_
+
+
+$ A surface rule SR%i% in SURFRULES defines a function
+f%SRi%: from tuples of S-trees (of length >= 1) 
+to finite sets of S-trees (this is similar to the
+way in which an M-rule defines a function, but in surface rules there is
+no fixed length of the tuple).
+An important difference with M-rules is that f%Ri% has to obey the
+following condition:$
+
+        if t in f%SRi%(t%1%,...,t%n%)  then  SONS(t) = <t%l%,  . . . ,t%n%>
+                         i.e. t has the form  node[r%1%/t%1%,...,r%n%/t%n%]
+
+$ So a surface rule - if applicable to a tuple of S-trees 
+t%1%, . . . ,t%n% - makes a new top node and determines the relations
+with the subtrees t%1%, . . . ,t%n%, but does not alter these subtrees or
+their order.$
+
+$ The set of surface rules must be _cycle-free_ in order to guarantee that
+the application of surface rules to one S-tree (i.e. to a 1-tuple) stops after
+finitely many steps:$
+        if  u%1% in f%SR1%(u%0%),   
+            u%2% in f%SR2%(u%1%),
+            ......
+            u%i% in f%SRi%(u%i-1%)     (i>=1)
+        then  f%SR1%(u%i%) = [] (the empty set).
+
+$ From the M-syntax - the tuple (i)-(viii) - and the morphological component
+we can derive the _surface syntax_ as the following 7-tuple:$
+(i) - (iv) als in the M-syntax,
+(v) the set SURFRULES, as in (viii) of the M-syntax,
+$ (vi) the set T%L% of lexical S-trees as defined by the
+morphological component of the M-grammar (at the moment T%L% consists of
+terminal S-trees),$
+(vii) the set TOPCATS as in the M-syntax.
+
+$ The surface syntax defines a set
+T%S% of S-trees in the following way.$
+
+$ (i), (ii), (iii), (iv) define the set T of 
+possible S-trees in the same way as in the M-syntax.$  
+Then the set T%S%&+& is defined recursively:
+        1. T%L% <= T%S%&+&
+        2. if t%1%, . . . , t%n% in T%S%&+& and SR%i% in SURFRULES
+           then f%SRi%(t%1%, . . . ,t%n%) <= T%S%&+&
+
+$ T%S% is the subset of T%S%&+& of which the elements have a top category 
+from TOPCATS.$
+
+        T%S% = { t | t in T%S%&+& and CAT(t) in TOPCATS }
+
+$ It can be proved - thanks to the cycle-freeness - that the surface syntax
+defines for each sentence a finite set of S-trees
+with that sentence as the sequence of leaves. So the 
+function S-PARSER as defined in section 6 gives a finite set of surface trees
+for each sentence.$
+ 
+$ Remark 1: The definition of T%S% is analogous to the definition of T%M%; 
+a surface syntax can be regarded as a special case of an M-syntax (in which
+the set of M-rules of (vi) is identical to the set of 
+surface rules of (viii).$
+$ Remark 2: In the set of S-trees defined by a 
+surface syntax the leaves are always the unaltered 
+lexical S-trees (from T%L%) with which the generation process starts.$
+$RL 6
+
+_2.5. The relation between  syntactic derivation trees and S-trees_
+
+$ The syntactic component defines not only the sets T, T%M%,
+T%S% and D%M%, but also the
+relation between  derivation trees and the S-trees they "generate".$
+$ This relation is defined by the function M-GENERATOR,
+a function from syntactic derivation trees (in D%M%) to sets of
+S-trees (in T%M%). M-GENERATOR will be defined in section 6, together with
+the function M-PARSER for analysis.$
+
+
+_2.6. The relation between S-trees and sequences of lexical S-trees_
+
+$ From a generative point of view the definition of this relation is
+almost trivial. It is in fact the function LEAVES as defined
+in section 2.2.  Defining the "reverse" function (S-PARSER) for LEAVES 
+is less trivial. See section 6 about this topic.$
+$NP
+
+_3. The semantic component_
+
+
+$ The semantic component specifies the intermediate language IL and the 
+relation between  the set of syntactic derivation trees as defined
+by the syntactic component and the expressions of IL, called 
+logical derivation trees.$
+
+$ IL is defined by specifying :$
+(i) a set of basic meanings, i.e. their names.
+(ii) a set of meaning rules, i.e. their names. For each meaning rule the 
+number of arguments is fixed.
+ 
+Definition of logical derivation trees:
+1. The  names of basic meanings are logical derivation trees.
+$ 2. If e%1%, . . . , e%n% are logical derivation trees and _M_%i% is the name
+of a meaning rule with n arguments,
+then _M_%i%< e%1%, . . . , e%n% > is a logical derivation tree.$
+
+$ The relation between  syntactic and logical derivation trees is first defined
+as an analytical function A-TRANSFER 
+from syntactic derivation trees to 
+logical derivation trees by 
+specification of:$
+$ (iii) a function A-TR%B% from basic expressions to (finite) 
+sets of basic meanings ( i.e. their names).$
+$ (iv) a function A-TR%R% from M-rules to meaning rules (the names).$
+
+$ These functions can in general be specified by enumeration, in the
+form of a tables.
+There are a few exceptions to this:$
+$ - Voor A-TR%B%: there are in principle infinitely many variables. Their
+translation must be defined "procedurally": a syntactic variable
+with index i is translated into a logical variable with index i. Something
+similar is done in the current system with basic expressions that
+represent numbers (in ciphers).$
+$ - Voor A-TR%R%: In Rosetta2 the rule names have a  structure: they may
+consist of the name of a rule scheme and a number of parameter values 
+defining an
+instance of the scheme. The number of parameter values is always finite and
+therefore a specification of the translation in table form is still possible,
+though not always convenient
+(In the future rule parameters may
+be abolished and replaced by abstract basic expressions).$
+
+$ The function A-TRANSFER is defined as follows:$
+
+A-TRANSFER (d) =%def%
+
+              { e | d is a basic expression in B, and  e in A-TR%B%(d) }
+
+          +   { e | e has the form _M_%i%<e%1%, . . . , e%n%>
+                    d has the form _R_%i%<d%1%, . . . , d%n%>
+                    _M_%i% = A-TR%R%(_R_%i%),
+                    e%1% in A-TRANSFER(d%1%),
+                    ...
+                    ...
+                    e%n% in A-TRANSFER(d%n%)                  }
+
+
+$ The semantic component also defines a generative
+function G-TRANSFER 
+from logical derivation trees to 
+syntactic derivation trees by 
+specifying:$
+$ (v) a function G-TR%B% from basic meanings to (finite) 
+sets of basic expressions.$
+$ (vi) a function G-TR%R% from  meaning rules to (finite) sets of 
+M-rules.$
+
+
+G-TRANSFER (e)  =%def%
+
+              { d | e is a basic meaning, and  d in G-TR%B%(e) }
+
+          +   { d | e has the form _M_%i%<e%1%, . . . , e%n%>,
+                    d has the form _R_%i%<d%1%, . . . , d%n%>,
+                    _R_%i% in G-TR%R%(_M_%i%),
+                    d%1% in G-TRANSFER(e%1%),
+                    ...
+                    ...
+                    d%n% in G-TRANSFER(e%n%)                  }
+
+$ The reversibility condition for the semantic component is:$
+
+_E_ in A-TR%B%(_b_)  <===>  _b_ in G-TR%B%(_E_)
+
+_M_%i% = A-TR%R%(_R_%i%)  <===>  _R_%i% in G-TR%R%(_M_%i%)
+
+
+$ If the reversibility condition is obeyed it follows that 
+the analytical transfer function
+A-TRANSFER and the generative transfer function G-TRANSFER are each
+other's reverse:$
+           
+          e in A-TRANSFER(d)  <===>  d in G-TRANSFER(e)
+
+$ Summarizing, the semantic component specifies an intermediate language
+IL, a function A-TRANSFER from D%M% into the powerset of  IL and a 
+function G-TRANSFER from IL into the powerset of D%M%.$
+
+$ Sometimes a relational definition is useful. We define R%sem% as follows:$
+
+    e R%sem% d   <===>  e in A-TRANSFER(d)
+
+$ In M.S. 12.950 (section 2.3) R%sem% (there R%G,sem% for a grammar G) is
+defined directly in terms of relational versions of G-TR%B% and G-TR%R%. 
+The equivalence of the various definitions can be established easily.$
+$NP
+
+_4. The morphological component_
+
+
+$ The morphological component is discussed elsewhere (R0008). For this
+overview it  is relevant that the morphological component defines the
+following sets and functions:$
+$ (i) The set T%L% of lexical S-trees, S-trees that correspond with words.
+In Rosetta2 these are always terminal S-trees. Lexical 
+S-trees have a syntactic category in LEXCATS.$
+$ (ii) A function A-MORPH from sentences (sequences of words) to sets of
+sequences of lexical S-trees.$
+$ (iii) A function G-MORPH from sequences of lexical S-trees to sets of
+sentences.$
+
+$ The reversibility conditions for the morphological component see to it that
+for all sentences s and sequences of lexical S-trees s%L%:$
+
+     s%L% in A-MORPH(s)  <===>  s in G-MORPH(s%L%)
+
+$ In M.S. 12.950 the task of the morphological components is 
+defined relationally, with the relation R%morph% (there R%G,morph%, for 
+M-grammar G). Here R%morph% is defined as:$
+
+     s%L% R%morph% s  <===>  s in G-MORPH(s%L%)
+$NP
+
+_5. Conditions on M-grammars_
+
+
+$ For an effective syntactic analysis a precondition is that the set
+of syntactic derivation trees of each sentence is finite. If 
+there are (infinitely many) syntactic variables in the set
+of basic expressions and corresponding M-rules (rule schemes) for
+the "binding" of these variables (as in Montague's PTQ, but also
+in Rosetta2),
+then we have the problem that there are in principle for any sentence
+infinitely many syntactic derivation trees, only differing in the
+ indices of the variables. The solution is to allow only canonical 
+derivation trees. In a canonical derivation tree each 
+variable has an index equal to the "level" of the node in
+the derivation tree by which (i.e. by the M-rule of that node) the
+variable is bound. More precisely: we require that a variable
+binding rule binds exactly those variables with an index equal to the level
+(the distance from the top) of the corresponding node in the derivation
+tree. So, in this special case the function defined by an M-rule
+is partially determined by this level, which is external information. More
+about this in section 6. See Reprint 7573 
+(Adaptation of Montague Grammar to the requirements of parsing) for a
+discussion of this topic in a somewhat different framework.$
+
+$ In addition to this  an M-grammar must obey three 
+conditions in order to make syntactic analysis possible:$
+1. Reversibility condition on M-rules,
+2. Measure condition,
+3. Surface syntax condition.
+ 
+
+ad 1. _Reversibility condition_ on M-rules.
+For each rule R%i% holds:
+        t in F%Ri%(t%1%, . . . ,t%n%) <===> <t%1%, . . . , t%n%> in F%Ri%'(t)
+
+ad 2. _Measure condition_.
+$ There is a complexity measure MEASURE for S-trees (a measure is a 
+function from S-trees to a countable ordered set with a minimum, 
+for example the positive integers) such that for each M-rule R%i% holds:$
+        t in F%Ri%(t%1%, . . . ,t%n%) ===> _A_ t%i%: MEASURE(t) > MEASURE(t%i%)
+$ So: the generative rules make always "bigger" S-trees (and the analytical
+rules always "smaller" ones).$
+
+
+ad 3. _Surface syntax condition_:
+$ The set T%M% is contained in the set T%S%.$
+
+$ So the surface syntax must be "weaker" than the M-syntax. The purpose
+of the surface rules in an M-syntax and the consequent
+surface syntax is to define a set T%S% of S-trees that encompasses
+T%M%, but is on the other hand so restrictive  that for any sentence 
+there is only a finite number of S-trees in T%S% with that sentences as
+"LEAVES". Furthermore the surface rules must have properties that enable to
+define a parser for them (i.e. an effective function from sentences to sets
+of S-trees).$
+
+$ Remark: the reversibility condition is a condition on separate M-rules.
+The measure condition is a condition on the package of M-rules as a whole.
+The surface syntax condition is a condition on the M-grammar as a whole 
+in which the syntactic component as well as the morphological component play
+a role.$
+
+
+$ A consequence of the surface syntax condition is that the 
+set of leaves of S-trees in T%M% is contained in T%L%, the
+set of lexical S-trees defined by the morphological component. 
+For T%M% is contained in T%S% and the leaves of S-trees in 
+T%S% must be elements of T%L%. Consequence: neither LEAVES nor G-MORPH
+may be used as a filter.$
+$NP 
+
+
+_6. Analysis and generation functions for the syntactic component_
+
+
+$ The syntactic component of an M-grammar defines the functions
+M-GENERATOR and M-PARSER. M-GENERATOR is applied to a derivation tree
+and delivers a set of S-trees; M-PARSER is applied to an 
+S-tree and delivers a set of derivation trees. The functions make the
+intuitive idea of a derivation tree as a reflection of the derivational
+history of an S-tree more precise.$
+
+M-GENERATOR(d) =%def%
+
+               { t | _E_ b in B: d=_b_ and t=b }
+
+           +   { t | _E_ t%l%,...,t%n%,  d%l%,...,d%n%, R%i% :   
+                       d = R%i%<d%1%,...,d%n%>,
+                       t%l% in M-GENERATOR(d%l%),
+                       . . .
+                       . . .
+                       t%n% in M-GENERATOR(d%n%),
+                       t in F%Ri%(t%l%,...,t%n%)             }
+(* The + denotes set union *)
+
+M-PARSER( t )  =%def%
+
+                { d | _E_ b in B: t=b and d=_b_ }
+
+            +   { d | _E_ t%l%,..., t%n%, d%l%,..., d%n%, R%i% :
+                      <t%l%,..., t%n%> in F%Ri%'(u),
+                       d%l% in M-PARSER(t%l%),
+                       . . .
+                       . . .
+                       d%n% in M-PARSER(t%n%),
+                       d = _R_%i%<d%l%, . . . , d%n%>          }
+
+$ If we want M-PARSER and M-GENERATOR to analyze or generate only S-trees 
+of T%M%, we must add a 
+condition on top categories; the recursive definitions of M-PARSER and
+M-GENERATOR characterize T%M%&+&.$
+
+$ In fact, both M-GENERATOR and M-PARSER should have a second argument, LEVEL,
+corresponding to the level of the derivation tree (and the depth of the
+recursion as well). In M-rules for variable "binding" (which eliminate
+ variables
+in generation and introduce them in analysis) this LEVEL plays an important
+role. In analysis these rules create only variables with an index equal to 
+LEVEL and in generation they eliminate only variables with this index.
+I have decided not to burden the definitions with this complication, 
+but for the algorithmic definitions of M-GENERATOR and
+M-PARSER I will give both versions.$
+$ Thanks to the measure condition the recursion in M-PARSER is finite.$
+
+$ With the help of the reversibility condition for the M-rules it is easy to 
+prove that$
+        t in  M-GENERATOR(d) <---> d in  M-PARSER(t)
+
+$ Sometimes a relational definition is useful. We define:$
+
+        d R%syn% t   <-->  t in  M-GENERATOR(d)
+
+        t R%leaves% s%L%  <--> s%L% in LEAVES(t)
+ 
+$ For most people the global algorithms for M-PARSER and M-GENERATOR are
+easier to read than the static definitions. Here are the definitions of
+the algorithms.$
+
+M-GENERATOR(d) :
+        result := []; (* the empty set *)
+        if  "d is of the form _b_ and b in B"
+                then  result := [ _b_ ]
+                else "d has the form  _R_%i%<d%1%, . . . ,d%n%>"
+                     for all t%1% in M-GENERATOR(d%1%):
+                     ....
+                     ....
+                     for all t%n% in M-GENERATOR(d%n%):
+                        result := result +  F%Ri%(t%1%, . . . ,t%n%);
+        M-GENERATOR := result
+
+
+
+M-PARSER(t) :
+        result := []; 
+        if  "t is a basic expression b in B"
+                then  result := [_b_]
+                else for all M-rules R%i%:
+                     for all <t%1%, . . . ,t%n%> in  F%Ri%'(t):
+                     for all d%1% in M-PARSER(t%1%):
+                     ....
+                     for all d%n% in M-PARSER(t%n%):
+                        result := result + [ _R_%i%<d%1%, . . . ,d%n%> ];
+        M-PARSER := result
+
+$ N.B. In this definition of M-PARSER it is assumed that an analytical rule
+can never be applicable to a 
+basic expression, in other words that a generative rule can never deliver
+a basic expression. This is an additional assumption, which - if correct -
+should be added to the definition of M-grammars.$
+
+$ If we take into consideration the beforementioned complication with
+variable binding rules, we have to alter the definitions somewhat. Let
+us write F%Ri,LEVEL% to indicate that the application of M-rules may
+depend on the LEVEL. Let us assume that M-GENERATOR' and M-PARSER' have
+the LEVEL as a second argument and that at the first time they are called
+this level is 0. The modified definitions are:$ 
+
+M-GENERATOR(d, LEVEL) :
+        result := [];
+        if  "d is of the form _b_ and b in B"
+                then  result := [ _b_ ]
+                else "d has the form  _R_%i%<d%1%, . . . ,d%n%>"
+                     for all t%1% in M-GENERATOR(d%1%, LEVEL+1):
+                     ....
+                     ....
+                     for all t%n% in M-GENERATOR(d%n%, LEVEL+1):
+                        result := result +  F%Ri,LEVEL%(t%1%, . . . ,t%n%);
+        M-GENERATOR := result
+
+
+$RL 10
+M-PARSER(t, LEVEL) :
+        result := [];
+        if  "t is a basic expression b in B"
+                then  result := [_b_]
+                else for all M-rules R%i%:
+                     for all <t%1%, . . . ,t%n%> in  F%Ri,LEVEL%'(t):
+                     for all d%1% in M-PARSER(t%1%,LEVEL+1):
+                     ....
+                     for all d%n% in M-PARSER(t%n%,LEVEL+1):
+                        result := result + [ _R_%i%<d%1%, . . . ,d%n%>];
+        M-PARSER := result
+
+$ The set T%M%&+& of correct S-trees defined in section 2.3 can also
+be defined as the set of S-trees that we get if we apply M-GENERATOR 
+to all possible derivation trees in
+D%M%.$
+        T%M%&+& = { t | _E_ d in D%M%: t in M-GENERATOR(d) }
+$ This definition is equivalent to that of 2.3 and also to the following:$
+        T%M%&+& = { t |  M-PARSER(t) <> [] } 
+
+$ The set of sentences (i.e. sequences of lexical S-trees) generated by a
+derivation tree d, can be obtained easily , 
+by application of LEAVES to all S-trees in M-GENERATOR(d).$ 
+$ In analysis the matter is more complicated. M-PARSER expects 
+an S-tree as its argument. In order to guarantee that for any sentence
+(sequence of lexical S-trees) the corresponding S-trees can be made,
+an M-grammar has to obey the surface syntax condition. On the basis of the
+surface rules that are part of the M-grammar a 
+function S-PARSER can be defined; this delivers for a sentence a set of
+surface structures for that sentence. A surface structure
+for a sequence of lexical S-trees is an S-tree from T%S% of which the leaves
+are these lexical S-trees (in the same order). The well-formed S-trees 
+from T%M% for that sentence have to be in that set of possible surface 
+structures.$
+
+        S-PARSER(L%1%,.....,L%n%) =%def%
+                { t | t in T%S%  and  LEAVES(t) = {L%1%,.....,L%n% }  }
+
+
+$ About the reversibility: S-PARSER is not the reverse of LEAVES, for 
+LEAVES is applicable to S-trees outside T%S% as well. However, the 
+"composition"
+of S-PARSER and M-PARSER, which we will call S+M-PARSER,
+is the reverse of the "composition" of
+M-GENERATOR and LEAVES, which we will call M-GEN+LEAVES.$
+
+Sketch of the proof:
+
+d in S+M-PARSER( s%L% )
+        =%eq%
+
+        there is a t such that 
+        t in S-PARSER( s%L% )
+        d in M-PARSER(t)
+        =%eq%
+
+        there is a t such that 
+        t in T%S%, LEAVES(t) = { s%L% },
+        t in M-GENERATOR( d )
+        =%eq%                           {for: if t in M-GENERATOR(d), then
+                                         t in T%M% and therefore t in T%S%}
+        there is a t such that:
+        LEAVES(t) = s%L% ,
+        t in M-GENERATOR( d )
+        =%eq%
+
+        s%L% in M-GEN + LEAVES (d) 
+
+$ That there is an effective procedure for S-PARSER, follows from the
+cycle-freeness condition. For a given sequence s%L% there is only a
+finite (though large) number of S-trees in T%S% with S%L% as their leaves.
+An algorithm that applies the surface rules
+bottom-up in all possible ways, must come to an end, if it is avoided
+that it applies the same rule to the same arguments more than once.
+Of course it is assumed that for the surface rules themselves
+there are effective procedures.$
+
+
+$ Remark: in the Rosetta2 program S-PARSER does not really test 
+whether the resulting S-trees are in T%S%. The implemented S-PARSER simply
+assumes that the sequence s%L% on which it operates, consists of
+correct lexical S-trees, a reasonable assumption, because this is 
+the output of
+A-MORPH. Only under that assumption the result of S-PARSER, which applies
+surface rules and tests the top category, is indeed a set of S-trees in T%S%.$
+$ Because of this, in the implementation the composition of 
+A-MORPH, S-PARSER and M-PARSER
+is the reverse of the composition of M-GENERATOR, LEAVES and G-MORPH.$
+
+$ The program for S-parser is not discussed here, but I will give a 
+recursive definition of S-PARSER, which makes clear
+that in principle an effective (but not: efficient) 
+procedure can be written for it and which on the other hand is close enough
+to the original definition to prove the equivalence (under the before-mentioned
+assumption).$
+
+S-PARSER ( s ) =%def% { t | <t> in PARTIAL-PARSINGS( s ) and CAT(t) in TOPCATS}
+
+
+PARTIAL-PARSINGS ( s ) =%def%
+                  { s }
+               +  { r |_E_ s%1%, s%2%, s%3%, s, t, SR%i%:
+                       s = s%1%.s%2%.s%3%,
+                       t in f%SRi%( s%2% )  
+                       r in PARTIAL-PARSINGS( s%1%.t.s%3% )  }
+(Here r, s, s%i% are sequences of S-trees, t is an S-tree,
+ "." is the concatenation operator on tuples.)
+$NP
+
+_7. ANALYSIS and GENERATION_
+
+
+$ In the previous sections we saw that an M-grammar
+defines a number of functions:$ 
+
+- A-MORPH and G-MORPH, defined by the morphological component.
+- S-PARSER, M-PARSER, LEAVES and M-GENERATOR, defined by the syntactic
+component.
+- A-TRANSFER and G-TRANSFER, defined by the semantic component.
+
+$ On the basis of these functions a function ANALYSIS and a
+function GENERATION can be defined for any M-grammar:$
+
+ANALYSIS is a function from sentences to sets of logical derivation trees.
+
+ANALYSIS (s) =%def%
+                { e | _E_ s%L%,t,d : s%L% in A-MORPH(s) and t in S-PARSER(s%L%)
+                                and  d in M-PARSER(t) and e in A-TRANSFER(d)  }
+
+$ GENERATION is a function from logical derivation trees to sets of sentences.$
+
+GENERATION (e) =%def%
+                { s | _E_ d,t,s%L% : d in A-TRANSFER(e) and t in M-GENERATOR(d)
+                                and  s%L% in LEAVES(t) and s in G-MORPH(s%L%) }
+
+From the reversibility conditions for the components it follows that: 
+
+    e in ANALYSIS(s)  <===>  s in GENERATION(e)
+
+$ The language defined by an M-grammar G is the set of sentences that can be
+generated by application of GENERATION to all possible
+expressions of IL.$
+
+        L = { s | _E_ e in IL: s in GENERATION(e) }
+$NP
+
+_8. Isomorphic M-grammars_
+
+
+$ Two M-grammars G and G' are isomorphic if and only if: $
+
+1. The semantic components of G and G' define the same IL.
+2. _A_ e in IL: 
+         ( _E_ s: s in GENERATION%G%(e) <===> _E_ s': s' in GENERATION%G'%(e) )
+
+$ As the components LEAVES and G-MORPH have no filtering effect, the second
+condition may also be formulated as:$
+
+_A_ e in IL: (_E_ d, t: d in G-TRANSFER%G%(e) and t in M-GENERATOR%G%(d)  <===>
+            _E_ d', t': d in G-TRANSFER%G'%(e) and t' in M-GENERATOR%G'%(d') )
+
+$ Note that the isomorphy relation is an equivalence relation, which can be
+extended to sets of more than two languages.
+Be given two isomorphic grammars G and G'. Suppose that G defines 
+the language L and G' the language L'. Then a translation function from
+L to L' can be defined, as follows.$
+
+TR-F%L-L'% (s) =%def% { s' | _E_ e in IL: e in ANALYSIS%G%(s) and 
+                                        s' in GENERATION%G'%(e) }
+$NP
+
+_9. Open problems_
+
+
+$ 1. In the current syntax M-rules tend to be rather complex, which is
+partially caused by the isomorphy condition. It may 
+be useful to make a distinction between "meaningful" rules
+and purely syntactic transformations and to require isomorphy only between
+the meaningful rules. 
+It may also be useful to have the possibility to order M-rules explicitly.
+(There are preliminary papers on this matter, 
+RN8405 and RN8407 in the old documentation system. New versions will appear)$
+
+$ 2. There are problems with defining a measure for the M-syntax, 
+while in practice the goal
+for which the measure condition was invented: avoiding eternal loops, is
+not difficult to attain. Presumably the modifications mentioned under 1. will
+make the solution of the measure problem easier.$
+
+$ 3. There is little insight at the moment in methods to prove the
+surface syntax condition for a realistic set of surface rules.$
+$ Note that the surface rules and the surface syntax condition are intended
+to guarantee _practical_ parsability. Proving theoretical parsability
+appears to be less difficult. If the number of possible non-terminal
+nodes is finite (this is the case) and there is some notion of
+cycle-freeness for M-rules, such that the number of possible S-trees with
+a given sequence of leaves is finite, these S-trees could be defined
+by a huge, but finite, number of surface rules (and lextree rules in the
+morphological component).$
+$ How can we arrive at a realistic set of surface rules in such a way
+that we are sure that T%M% <= T%S%? It would be nice if we could derive
+the set of surface rules from the set of M-rules, but that appears to be
+too difficult for the time being. Another approach might be the following.$
+$ We start with the specification of a super surface syntax (sss), which 
+defines the set of all S-trees that may occur as intermediate results
+of the application of M-rules. All basic expressions belong to
+the sss-domain. Each M-rule must give results within this domain if applied
+to arguments within this domain. This can be proved for each rule separately,
+which is presumably much easier than deriving the surface rules from
+the M-rules. In principle this is all that has to be done.
+In order to make an efficient surface parser it is necessary to reduce
+the sss to a smaller surface syntax that defines more precisely all possible
+final results of the M-syntax (with CAT(t) in TOPCATS and LEAVES(t) 
+consisting of lexical S-trees in T%L%). This may be the
+most difficult part of the job. 
+$ As long as this problem has not been solved, we work in practice with
+a system, in which the surface  syntax plays an independent role. 
+The language defined by the analysis component is then an intersection
+of two languages (of T%S% and T%M%). $
+
+$ 4. It must be investigated to what extent isomorphy of
+grammars can be proved or at least made plausible.$ 
+$NP
+
+
+                     CONTENTS
+
+1. Introduction
+
+2. The syntactic component
+    2.1. Overview
+    2.2. The definition of T
+    2.3. The definition of T%M%
+    2.4. The definition of T%S%. Surface syntax.
+    2.5. The relation between syntactic derivation trees and S-trees
+    2.6. The relation between S-trees and sequences of lexical S-trees
+
+3. The semantic component
+
+4. The morphological component
+
+5. Conditions on M-grammars 
+
+6. Analysis and generation function for the syntactic component
+
+7. ANALYSIS and GENERATION
+
+8. Isomorphic M-grammars
+
+9. Open problems

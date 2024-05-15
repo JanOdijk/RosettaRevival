@@ -1,0 +1,78 @@
+h64412
+s 00057/00001/00000
+d D 1.2 95/10/17 11:07:12 rous 2 1
+c 
+e
+s 00001/00000/00000
+d D 1.1 95/10/17 08:59:18 rous 1 0
+c date and time created 95/10/17 08:59:18 by rous
+e
+u
+U
+f e 0
+t
+T
+I 1
+D 2
+ 
+E 2
+I 2
+#! /bin/sh -e
+#
+set -x
+set -v
+case $# in
+0) echo "Usage: dbuild target"; exit 1;;
+1) ;;
+2) echo "Usage: dbuild target"; exit 1;;
+*) echo "Usage: dbuild target"; exit 1;;
+esac
+base=`echo $1 | awk '{print $1}' RS="." | head -1`
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+trap '' 1 2 3
+#
+trap 'echo "DBUILD: No build allowed during your other builds"; umask 22; cd $savedir; exit' 0
+umask 222
+( echo "  " > $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/dbuild.rbs ) 2> /dev/null
+umask 22
+#
+set -e 
+trap 'echo "DBUILD: Error during make" >> dbuildlog$$.rbs; echo "DBUILD: Error during dbuild"; rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/dbuild.rbs; cd $savedir ; rm -f doc/target/doc.make.rbs ; exit' 0
+#
+rm -f dactions_.rbs
+echo "#! /bin/sh -e" > dactions_.rbs
+#
+echo "#dbuild: $1" >> dactions_.rbs
+#
+buildtarget=`$RBS_DIR/get_fname RBS_logicals doc $1`
+if test -z "$buildtarget"
+then buildtarget=doc/target/$1
+fi
+#
+#
+docmake=`$RBS_DIR/get_fname RBS_logicals doc doc.make`
+if test -z "$docmake"
+then docmake=doc/target/$1
+fi
+#
+#
+rm -f doc/target/doc.make.rbs
+cat $docmake | sed "s/(filename)/$base/g" > doc/target/doc.make.rbs$$ 
+$RBS_DIR/genmake RBS_logicals doc doc.make.rbs$$ > doc/target/doc.make.rbs
+#
+echo "DBUILD: inspecting make file....."
+set -e
+make -n -f doc/target/doc.make.rbs $buildtarget  >> dactions_.rbs
+#
+chmod u+x dactions_.rbs
+dactions_.rbs
+#
+rm -f $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/dbuild.rbs
+#rm -f doc/target/doc.make.rbs$$
+cd $savedir
+trap 0
+
+E 2
+E 1

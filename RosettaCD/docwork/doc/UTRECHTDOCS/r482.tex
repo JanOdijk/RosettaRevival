@@ -1,0 +1,946 @@
+
+
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.linguistics.Dutch}
+   \RosTitle{Dutch M-rules:subgrammar CNformation}
+   \RosAuthor{Franciska de Jong}
+%Lisette Appelo}
+   \RosDocNr{482}
+   \RosDate{December 13, 1991}
+   \RosStatus{approved}
+   \RosSupersedes{}
+%concept of September 4, 1989}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{Dutch, M-rules, CNformation, number, CNmodification}
+   \MakeRosTitle
+\def\ra{$\rightarrow$ }
+%
+%
+\input{[dejong.mrules]mrudocdef}
+\input{[dejong]definitions}
+
+\section{Introduction}
+
+Other than the subgrammars deriving clausal structures, 
+the subgrammars crucial for the derivation of NPs
+each pertain to a relatively isolated part of phrase structure.
+This document deals with the rules accounting for the 
+configuration dominated by the node CN.
+
+
+A head is not obligatory for S-trees of the category NP 
+but if there is one it is either a CN, a category that may be preceded by 
+a determiner sisternode (DETP or otherwise), or the NP is a determinerless 
+phrase headed by a pronominal expression or a proper name. 
+The subgrammar NPformation generating the level NP is discussed in 
+doc:r480 (FdeJ).
+Together NPformation and CNformation
+are the two major subgrammars involved in the generation of NPs.
+
+Due to the relatively close relation between the derivational 
+history of NPs and their S-tree structure
+the division of labour between the subgrammars CNformation and NPformation 
+can be pictured strightfowardly. Separate subgrammars deal with the derivation of 
+characteristic input, such as DETPformation, and the various sugrammars yielding
+ouput that may serve as input for the modification and complemenation of 
+NOUNs.\\
+
+
+\begin{verbatim}
+               NP             -output of NPformation
+           /       \
+    detrel-
+   expression        CN       -output of subgrammar CNformation
+  (optional)          |
+                     NOUN
+                      |
+                    SUBNOUN   -output of derivation-subgrammar
+                      |
+                     BNOUN
+\end{verbatim}
+
+\noindent
+Separate documentation is available on the treatment of 
+possessive modification. Cf. doc:r413 (FdeJ).\\
+Separate documentation on the treatment of number can be found in section 
+\ref{number}.
+
+The subgrammar NPformation has not been attuned to any other subgrammar.
+
+%\section{Phenomena not covered}
+
+\section{Subgrammar Specification}
+
+The formation of CNs is dealt with by 
+the subgrammar CNformation:\\
+
+
+\begin{description}
+  \item[Head] SUBNOUN, EN 
+  \item[Export] CN
+  \item[Import] ADVP, ADJPPROP, PREPPPROP, NP, SENTENCE, NPVAR, SENTENCEVAR, 
+  \item[File] dutch:npsubgrammars.mrule (mrules67)
+\end{description}
+
+\section{Control Expression}
+The control expression has been defined as follows:
+
+\begin{verbatim}
+
+    [( RSUBNOUNTONOUN1/1 | RSUBNOUNTONOUN2/2)]
+
+   .( RCNFORMATION1/3 | RCNFORMATION2/4 | RCNFORMATION3/5 | RCNFORMATION4/6  )
+
+   . (RCNPresentSuperdeixis/100   | RCNPastSuperdeixis/101)
+
+   . {RNNcompounds/28 | RVNcompounds/29}
+
+   . [RNOUNargmod1/110 | RNOUNargmod2/111]
+
+   . [RCNmodbareNP/23]
+
+   . [RCNspecProperName/24]
+
+   .{ RCNMODADJP/7       | RCNMODNUM/8    
+      | RCNMODPP/12 | RCNMODADVP1/27 | RCNMODADVP2/26 | RCNMODRELSENT1/13 
+      | RCNMODPOSS1/9   | RCNMODPOSS2/10 | RCNMODPOSS3/11 
+      | RCNMODANTEREL1/22 | RCNmodinfrel/30
+    }            
+
+   . FCNNOUNposs/35 .  [TCNNOUNposs/34] 
+
+   .(FPreinfrelcontrol/32)
+   .{Tinfrelcontrol/31}
+   .(Finfrelcontrol/33)
+   . Ftempadjcheck/25
+
+   . [Rnoundim/30]
+
+\end{verbatim}
+
+\section{Rules and transformations}
+
+
+\begin{mruleclass}{RC\_NOUNformation}
+\begin{classdescr}
+\kind optional rule class (does not apply in case of an empty nominal head)
+\classtask The formation of a NOUN level dominating SUBNOUN and the
+assignment of a value to the attribute NOUN.number.
+\classremarks
+
+Together the two rules of this ruleclass must deal with the following three 
+cases:\\
+\begin{itemize}
+  \item count singular
+  \item mass singular
+  \item count plural
+\end{itemize}
+
+\noindent
+The question which alternative should apply is determined in part
+by a parameter that keeps record of the number of the 
+number used in the source language. If the same number value is available for 
+the target language the number value is preserved under translation. 
+In case of non-matching properties with respect the attributes NOUN.$posscomas$
+and NOUN.$plurforms$ an alternative number assignment is available.
+Separate documentation on the translation of number can be found in 
+section~\ref{number}.
+
+\nofilters
+
+\nospeedrules
+
+\noplannedrules
+
+\norulesnotince
+
+\rulelist
+
+\end{classdescr}
+
+\begin{members}
+
+\begin{member}
+\rulename RSUBNOUNtoNOUN1
+\ruletask Introducing the level NOUN and determining the value for the 
+attribute NOUN.number for 
+count nouns which can occur in singular both in source and
+in target language.
+\file dutch:cnformation.mrule (mrules49)
+\semantics number assignment
+\example {\em tuin, tafel, boek, vent}
+\remarks\mbox{}
+NB. for Spanish and English the corresponding 
+rule also deals with onlyplurals; so {\em een
+schaar} is correctly mapped onto {\em scissors}
+                             and {\em tijeras}. 
+For Dutch no  example has been 
+found yet that would motivate a similar
+extension.
+
+\end{member}
+\begin{member}
+\rulename RSUBNOUNtoNOUN2
+\ruletask 
+\begin{enumerate} 
+\item Assigning plural number to nouns 
+that can occur as plural including singular unitnouns.
+\item Assigning singular number to mass nouns 
+\end{enumerate}
+\file dutch:cnformation.mrule (mrules49)
+\semantics number assignment 
+\example {\em tuinen,  hersenen, speelgoed, brood}
+\remarks No remarks
+\end{member}
+\end{members}
+
+\end{mruleclass}
+\begin{mruleclass}{CNformation}
+\begin{classdescr}
+\kind obligatory rule class
+%\kind \nokind
+\classtask The formation of the syntactic level CN
+\classremarks
+
+\nofilters
+\nospeedrules
+\noplannedrules
+\norulesnotince
+\begin{comments}
+\end{comments}
+\rulelist
+
+\end{classdescr}
+
+\begin{members}
+
+\begin{member}
+\rulename CNformation1
+\ruletask Making a CN out of a NOUN 
+\file dutch:cnformation.mrule (mrules49)
+\semantics LCNformation1
+\example all NOUNs dominating a lexical noun
+\remarks\mbox{}
+\begin{enumerate}
+\item The two subrules of this rule each apply twice to singular 
+nouns with unitnoun in .subcs, such as {\em uur}. 
+The CNrec1 has either [singular] as value for .numbers, or [plural].
+In combination with what is said below this 
+latter value is needed to guarantee that only plural determiners are 
+combined with a unitnoun that has passed the plural rule RSUBNOUNtoNOUN2.
+\item This rule is deviant as it involves number-assignment to a record that
+in general is supposed to reflect lexical values. The strategy followed
+here is more efficient than to
+consider singular unitnouns ambiguous between a singular and a plural form.
+There is a more elegant alternative to keep track of the number of the NP as a
+whole, namely by defining a special path through the control expression that 
+guarantees application of RSUBNOUNtoNOUN2 in case of a singular unitnoun  with 
+a plural determiner.
+\item *{\em de (vele) uur} vs. {\em de drie uur}; *{\em (vele) uur} vs. 
+{\em drie uur};
+"plural" unitnouns require a plural count indefinite determiner. 
+\item *$uur$ vs. $uren$; "plural" unitnouns do not occur as bare plural;
+\end{enumerate}
+
+
+\end{member}
+\begin{member}
+\rulename CNformation2
+\ruletask
+Makes a CN (mass) out of an EN (key: massENkey)
+\file dutch:cnformation.mrule (mrules49)
+\semantics LCNformationmassplur
+\example EN $\rightarrow$ CN[head/EN] ({\em veel} EN)
+\remarks No remarks
+\end{member}
+\begin{member}
+\rulename CNformation3
+\ruletask Making a CN (count, singular) out of an EN (key: countENkey)
+
+\file dutch:cnformation.mrule (mrules49)
+\semantics LCNformationcountsing
+\example EN $\rightarrow$ CN[head/EN] ({\em een EN})
+
+\remarks No remarks
+\end{member}
+\begin{member}
+\rulename CNformation4
+\ruletask Making a CN (count, plural) out of an EN (key: countENkey)
+\file dutch:cnformation.mrule (mrules49)
+\semantics LCNformationmassplur
+\example EN $\rightarrow$ CN[head/EN] ({\em  twee EN})
+\remarks No remarks
+
+\end{member}
+\end{members}
+\end{mruleclass}
+
+\begin{mruleclass}{RC\_CNsuperdeixis}
+\begin{classdescr}
+\kind obligatory rule class
+%\kind \nokind
+\classtask Accounting for the value of CN.superdeixis
+\classremarks
+
+\nofilters
+\nospeedrules
+\noplannedrules
+\norulesnotince
+\begin{comments}
+\end{comments}
+\rulelist
+
+\end{classdescr}
+
+\begin{members}
+
+
+\begin{member}
+\rulename RCNPresentsuperdeixis
+\ruletask In generation: set value for superdeixis at presentdeixis.\\
+               In analysis: set value for superdeixis at omegadeixis.    
+\file dutch:cnformation.mrule (mrules49)
+\semantics LCNpresentsuperdeixis
+\example all CNs
+\end{member}
+\begin{member}
+\rulename RCNPastsuperdeixis
+\ruletask In generation: set value for superdeixis at pastdeixis.\\
+               In analysis: set value for superdeixis at omegadeixis.    
+\file dutch:cnformation.mrule (mrules49)
+\semantics LCNpastsuperdeixis
+\example all CNs
+
+\end{member}
+\end{members}
+\end{mruleclass}
+
+
+\begin{mruleclass}{RC\_compounds}
+\begin{classdescr}
+\kind optional rule class
+%\kind \nokind
+\classtask The formation of compounds 
+\classremarks
+
+\begin{enumerate}
+  \item 
+
+This ruleclass is for robustness. 
+It does not apply if a compound has an entry
+in the lexicon.  (Relevant condition in morphology.)
+\item 
+There are special reasons why this rule class takes CNs as input.
+\end{enumerate}
+\nofilters
+\nospeedrules
+\noplannedrules
+\norulesnotince
+\begin{comments}
+\end{comments}
+\rulelist
+
+\end{classdescr}
+
+\begin{members}
+
+\begin{member}
+\rulename RNNcompounds
+\ruletask To form a complex CN out of two CNs.
+\file dutch:npcnvaria.mrule (mrules60)
+\semantics LNNcompounds
+\example {\em tafel} + {\em poot} \ra {\em tafelpoot}
+\remarks No remarks
+\end{member}
+
+\begin{member}
+\rulename RVNcompounds
+\ruletask To form a complex CN out of a CN and a SUBVERB.
+\file dutch:npcnvaria.mrule (mrules60)
+\semantics LVNcompounds
+\example {\em werk} + {\em tafel} \ra {\em werktafel}
+\remarks No remarks
+\end{member}
+\end{members}   
+\end{mruleclass}
+
+
+\begin{mruleclass}{RC\_NOUNargmod}
+\begin{classdescr}
+\kind optional rule class
+%\kind \nokind
+\classtask The introduction of VARs of which the occurrence is dependent on the 
+value of a non-default value for  attribute NOUN.thetanp.
+\classremarks 
+The name of this RC indicates the hybrid nature of the phenomenon 
+it deals with.
+The fact that the expressions introduced are always optionally present seems to 
+argue for a modifier status, while the dependency of the NOUN attributes 
+$.thetanp$ and $nounpatterns$ suggests an argument-like nature. Perhaps the 
+notion of adjunct would be more appropriate. 
+Cf. also doc. nr. 364 (LEXIC-document).
+\nofilters
+\nospeedrules
+\noplannedrules
+\norulesnotince
+\begin{comments}
+\end{comments}
+\rulelist
+
+\end{classdescr}
+
+\begin{members}
+
+\begin{member}
+\rulename RNOUNargmod1
+\ruletask To introduce an NPVAR to occur in a prepositional object.
+\file dutch:npcnvaria.mrule (mrules130)
+\semantics restrictive modification/complementation
+\example\mbox{}
+\begin{enumerate}
+  \item 
+{\em antwoord} $\rightarrow$ CN[head/{\em antwoord} prepobjrel/VARPREPP[op 
+NPVAR]]] (het antwoord op de brief)
+  \item
+{\em vraag} $\rightarrow$ CN[head/{\em vraag} prepobjrel/VARPREPP[naar salami]]
+ (de vraag naar salami)
+\end{enumerate}
+\remarks No remarks
+\end{member}
+\begin{member}
+\rulename RNOUNargmod2
+\ruletask To introduce a SENTENCEVAR as complement.
+\file dutch:npcnvaria.mrule (mrules130)
+\semantics restrictive modification/complementation
+\example\mbox{}
+\begin{enumerate}
+  \item 
+{\em feit} $\rightarrow$ CN[head/{\em feit } complrel/SENTENCEVAR] (dat het 
+regent)
+  \item
+{\em vraag} $\rightarrow$ CN[head/{\em vraag} complrel/SENTENCEVAR] (of het 
+regent)
+\end{enumerate}
+\remarks The term 'appositive' rather than complement 
+is sometimes used to indicate these kinds of sentential expressions.
+\end{member}
+
+
+\end{members}   
+\end{mruleclass}
+
+
+\begin{mruleclass}{RC\_CNbareNP}
+\begin{classdescr}
+\kind optional rule class
+%\kind \nokind
+\classtask The introduction of a bare NP specifying the content of the head 
+noun denotation.
+\classremarks
+
+\nofilters
+\nospeedrules
+\noplannedrules
+\norulesnotince
+\begin{comments}
+\end{comments}
+\rulelist
+
+\end{classdescr}
+
+\begin{members}
+\begin{member}
+\rulename RCNmodbareNP
+\ruletask To specify the content of the head NOUN of the CN, by
+introducing an NP in postnominal position.
+\file dutch:cnformation.mrule (mrules49)
+\semantics modification
+\example
+
+\begin{enumerate} 
+  \item $fles$, NP[{\em melk}] $\rightarrow$ CN[head/$fles$ postmodrel/NP[$melk$]] (de fles melk
+)
+  \item $emmer$, NP[{\em bramen}] $\rightarrow$ CN[head/$emmer$ postmodrel/NP[$bramen$]] (twee 
+emmers bramen)
+  \item $uur$, NP[{\em werk}] $\rightarrow$ CN[head/$uur$ postmodrel/NP[$werk$]] (drie uur werk)
+\end{enumerate}
+\remarks The corresponding construction in English and Spanish have a PP rather 
+than a bare NP as a postnominal  modifier. The prepositions ($van/de$)
+are therefore 
+introduced syncategorematically.
+\end{member}
+\end{members}   
+\end{mruleclass}
+
+
+\begin{mruleclass}{RC\_CNspecPROPERName}
+\begin{classdescr}
+\kind optional rule class
+%\kind \nokind
+\classtask The introduction of a PROPERNOUN as specifying modifier.
+\classremarks
+This rule class should carefully be distinghuished from RC\_NPapposition.
+\nofilters
+\nospeedrules
+\noplannedrules
+\norulesnotince
+\begin{comments}
+\end{comments}
+\rulelist
+
+\end{classdescr}
+
+\begin{members}
+\begin{member}
+\rulename RCNspecProperName
+\ruletask To add a specifying propername to a nominal head.
+\file dutch:cnformation.mrule (mrules49)
+\semantics restrictive modification
+\example 
+\begin{enumerate} 
+\item
+CN[project] + PROPERNOUN[Rosetta] $\rightarrow$ CN[project postmodrel/Rosetta]
+({\em het project Rosetta})
+\item
+CN[$zus$] + PROPERNOUN[{\em Margreet}] $\rightarrow$ CN[{\em zus} 
+postmodrel/{\em Margreet}]
+({\em mijn zus Margreet})
+\end{enumerate}
+\remarks No derivation available for {\em het Rosetta project}, a form which is 
+often
+considered incorrect.
+\end{member}
+
+\end{members}   
+\end{mruleclass}
+
+
+\begin{mruleclass}{RC\_CNmodification}
+\begin{classdescr}
+\kind optional rule class
+%\kind \nokind
+\classtask The introduction of prenominal 
+and postnominal modifiers that occur as daugther to CN.
+\classremarks
+Some of the rules can only be applied once. This is guaranteed by additonal 
+constraints on relations.
+\begin{filters}
+
+\begin{members}
+\begin{member}
+\rulename FTempadjcheck
+\ruletask To filter in generation a path in CNmodadjp for temporal adjp 
+and temporal CN in which the CN did not receive the temporal attributes of the 
+adjp. Note that this assignment also could have been done in a separate 
+transformation of which this would be the filter.
+\file dutch:cnformation.mrule (mrules49)
+\end{member}
+\end{members}
+\end{filters}
+
+\nospeedrules
+\noplannedrules
+\norulesnotince
+\begin{comments}
+\end{comments}
+\rulelist
+
+\end{classdescr}
+
+\begin{members}
+
+\begin{member}
+\rulename RCNmodADJP
+\ruletask Modification of a CN (with head = NOUN or EN)  by an ADJP(PROP).
+\file dutch:cnformation.mrule (mrules49)
+\semantics substitution/modification
+\example ADJPPROP[subjrel/VAR head/ADJP] + CN[.. head/NOUN ..]
+$\rightarrow$ CN[modrel/ADJP .. head/NOUN ..] 
+({\em mooie boek, lange man}, etc.)
+\remarks This rule may apply more than once. The modifier that is 
+added last is supposed to have widest scope.
+\end{member}
+\begin{member}
+\rulename CNmodNUM
+\ruletask Making a {\em definite} CN out of a CN (with CN.definite =
+omegadef) and a NUM.
+\file dutch:cnformation.mrule (mrules49)
+\semantics modification
+\example\mbox{}
+
+\begin{enumerate}
+  \item 
+CN[{\em (Spaanse) dames}] + {\em drie} $\rightarrow$ CN[modrel/{\em drie} 
+(modrel/$Spaanse $) head/$dames$]
+  \item
+CN[{\em blonde (domme) heren}] + talloze $\rightarrow$ CN[modrel/$talloze$ 
+modrel/{\em blonde} (modrel/{\em domme}) head/{\em heren}]
+
+\end{enumerate}
+
+\remarks\mbox{}
+\begin{enumerate}
+\item 
+A CN into which a numerical modifier is inserted is assigned the value 
+for .$definite$ that is eventually expected to be the value for the entire NP: 
+$def$. This assignment must block the introduction of an indefinite determiner, 
+as in *{\em vele drie heren}, *{\em drie enkele heren}. 
+\item 
+The solution requires that all determiners that may be preceded by a definite 
+article are considered expressions of the category NUM. 
+In additon to the cardinals this holds for {\em verscheidene, verschillende} (
+unless it is taken as an adjective), {\em enkele}, {\em vele}.
+\item 
+A distinction must be made between {\em vele} and {\em veel}:\\
+\begin{verbatim}
+       -  veel/vele boeken.
+       -  de vele boeken.
+         *de veel boeken.
+\end{verbatim}
+Solution:     (i) $veel$ = BDET; $vele$ = NUM, or 
+              (ii) $veel$ = BDET; $vele$ = BDET and  ADJ.
+Soluton (i) is presently implemented. Some problems relating to the status of {
+\em veel} and {\em vele} (and {\em weinig/weinige} are discussed in doc.483 
+(FdeJ; in 
+preparation ).
+\end{enumerate}
+
+\end{member}
+\begin{member}
+\rulename CNmodPP
+\ruletask modification of a CN (with head = NOUN or EN) by a PREPPPROP.
+\file dutch:cnformation.mrule (mrules49)
+\semantics modification/substitution
+\example PREPPPROP[subjrel/VAR head/PREPP] + CN[.. head/NOUN ..]
+$\rightarrow$ CN[.. head/NOUN .. postmodrel/PREPP] 
+({\em man met de hoed}
+\remarks No derivation for temporal PREPPs as CN-modifier.
+\end{member}
+
+\begin{member}
+\rulename CNmodADVP1
+\ruletask modification of a CN by a non-temporal ADVPPROP.
+\file dutch:cnmodification.mrule (mrules109)
+\semantics modification/substitution
+\example (die lange) man {\em daar}
+\remarks\mbox{}
+
+\end{member}
+\begin{member}
+\rulename CNmodADVP2
+\ruletask modification of a CN by introduction of a temporal ADVP.
+\file dutch:cnmodification.mrule (mrules109)
+\semantics modification/substitution
+\example (de) vergadering 
+gisteren, maandag aanstaande (under the assumption that postnominal 
+{\em aanstaande} 
+adverbium is without flection; Cf.  het aanstaand weekend vs. het weekend 
+aanstaande. 
+\remarks There is no succesful  path for this kind of adverbial 
+modification yet. 
+The subgrammar ADVPformation is in need of refinement.
+\end{member}
+
+\begin{member}
+\rulename RCNmodRELSENT1
+\ruletask To substitue CNVAR in sentences by CN in order to realize 
+modification of a CN by a restrictive, finite, relative SENTENCE.
+\file dutch:cnmodification.mrule (mrules109)
+\semantics substitution/modification 
+\example\mbox{}
+ 
+man + [x2 hij zag ] $\rightarrow$ [man [die hij zag],]\\
+huis + [x2 hij zag ] $\rightarrow$ [huis [dat hij zag],]\\
+{\em de stad waarvan ik droom} (in relsent RADV takes the place of CNVAR)\\
+{\em de stad waar ik van droom} (in relsent RADV takes the place of CNVAR)\\
+{\em de stad waar ik woon} (in relsent RADV takes the place of CNVAR; 
+preposition is deleted)\\
+{\em de man van wie ik droom} (in relsent WHPRO takes the place of CNVAR)\\
+
+\remarks
+\begin{enumerate}
+\item 
+Subrules have taken over the role of the original modrelsent1-5. 
+\item 
+With respect to superdeixis 
+the deixis value for the relative clause is given a value in 
+generation and set to omega in analysis. This is done for the surface parser. 
+It is the same task as is carried out for complement sentences in the 
+superdeixisadaptation transformations.\\
+\item 
+In addition to {\em de man van wie ik droom}, 
+{\em de man waarvan ik droom} is accepted in analysis, but only the former
+will be  generated.
+
+\end{enumerate}
+
+\end{member}
+
+\begin{member}
+\rulename CNmodposs1
+\ruletask
+Introduction of postnominal possessive $van$-modifiers into CNs headed by NOUN.
+\file dutch:cnformation.mrule (mrules49)
+\semantics modification
+\example CN[$boek$] + NP[$Jan$] $\rightarrow$ CN {\em boek van Jan}; 
+\remarks For comments and more examples, see 
+separate documentation on possessives in doc. r413 (FdeJ).
+\end{member}
+\begin{member}
+\rulename CNmodposs2
+\ruletask
+Introduction of postnominal possessive $van$-modifiers into CNs headed by EN.
+\file dutch:cnformation.mrule (mrules49)
+\semantics modification
+\example EN + NP[$Jan$] $\rightarrow$ EN {\em van Jan}; 
+relevant for the 
+derivation of {\em die van Jan}.
+\remarks For comments and more examples, see 
+separate documentation on possessives in doc. r413 (FdeJ).
+\end{member}
+\begin{member}
+\rulename CNmodposs3
+\ruletask
+Introduction of possessive modifiers that end up in prenominal position
+via NPformation.  \\ \\
+\file dutch:cnformation.mrule (mrules49)
+\semantics modification
+\example
+CN[.. head/.. ..]  + NP  $\rightarrow$ CN[.. head/.. posrel/NP] \\
+({\em boek ik/mijn vader} (via NPformation) $\rightarrow$ {\em 
+mijn/mijn vaders boek}
+\remarks For comments and more examples, see 
+separate documentation on possessives in doc. r413 (FdeJ).
+
+\end{member}
+
+\begin{member}
+\rulename CNmodanterel1
+\ruletask To modify a CN by an anterelative sentence containing
+a present or past participle.
+\file dutch:cnformation.mrule (mrules49)
+\semantics modification
+\example
+kind + [x1 lopend zijnd] $\rightarrow$ [lopend zijnd kind]\\
+man  + [x1 z'n kinderen hatend zijnd] $\rightarrow$ [z'n kinderen hatend zijnd man]\\
+ossen + [x1 door Piet gekocht ] $\rightarrow$ [door Piet gekocht ossen]\\
+\remarks No remarks
+\end{member}
+
+\begin{member}
+\rulename RCNmodInfrel
+\ruletask to substitue CNVAR in sentences by CN; 
+\file dutch:cnmodification.mrule (mrules109)
+\semantics modification/substitution
+\example  
+de boeken {\em om te lezen} (liggen op tafel);\\
+de auto's {\em om mee te spelen} (liggen op tafel);\\
+de plaats {\em om te wonen} is A'dam;\\
+de dag {\em om te komen} is woensdag;\\
+\remarks
+With respect to superdeixis the deixis value for the relative clause is given a value in 
+generation and set to omega in analysis. This is done for the surface parser. 
+It is the same task as is carried out for complement sentences in the 
+superdeixisadaptation transformations.
+\end{member}
+
+\begin{member}
+\rulename CNmodPostParticiplemod
+\ruletask modification of a CN by a non-temporal participle.
+\file dutch:cnmodification.mrule (mrules109)
+\semantics modification
+\example (die lange) man {\em komend van links}
+\remarks\mbox{}
+\begin{enumerate} 
+  \item This rule is written, but not in the subgrammar
+\item Presently the sentence grammar  cannot deal with this participle.
+  \item The distribution of comma's is still to be accounted for
+\end{enumerate}
+
+
+\end{member}
+\end{members}
+\end{mruleclass}
+
+
+\begin{mruleclass}{TC\_CNNOUNpos}
+\begin{classdescr}
+\kind optional rule class
+%\kind \nokind
+\classtask Accounting for the value of $.possgeni$ in analysis.
+\classremarks
+\begin{filters}
+\begin{member}
+\rulename FCNNOUNposs
+\ruletask To guarantee the correct application of TCNNOUNposs in analysis.
+\file dutch:npcnvaria.mrule (mrules130)
+\end{member}
+\end{filters}
+\nospeedrules
+\noplannedrules
+\norulesnotince
+\begin{comments}
+\end{comments}
+\rulelist
+
+\end{classdescr}
+\begin{members}
+\begin{member}
+\rulename TCNNOUNposs
+\ruletask Analysis only: replacing the value $false$ 
+for CN.possgeni by 
+the value of the NOUN, anticipating the set of rules that in analysis 
+peels off postnominal modifiers. 
+\file dutch:npcnvaria.mrule (mrules130)
+\semantics \nosemantics
+\example CN's with a postnominal modifier:
+{\em de vrouw uit de film}, {\em de vrouw die loopt}.
+\remarks This transformation is a correction on the fact that the modification 
+rules originally did not account for the shift of .$posgeni$.
+\end{member}
+
+\end{members}
+
+\end{mruleclass}
+
+\begin{mruleclass}{TC\_infrelcontrol}
+\begin{classdescr}
+\kind optional rule class
+%\kind \nokind
+\classtask 
+\classremarks
+\begin{filters}
+\begin{members}
+\begin{member}
+\rulename Finfrelcontrol
+\ruletask To guarantee the correct application of Tinfrelcontrol
+\file dutch:npcnvaria.mrule (mrules111)
+\end{member}
+\end{members}
+\end{filters}
+\begin{speedrules}
+\begin{members}
+\begin{member}
+\rulename Fpreinfrelcontrol
+\ruletask To speed up analysis
+\file dutch:npcnvaria.mrule (mrules111)
+\end{member}
+\end{members}
+\end{speedrules}
+\noplannedrules
+\norulesnotince
+\begin{comments}
+\end{comments}
+\rulelist
+
+\end{classdescr}
+\begin{members}
+\begin{member}
+\rulename Tinfrelcontrol
+\ruletask  Deleting BIGPRO in infinitival relative sentences
+\file dutch:npcnvaria.mrule (mrules131)
+\semantics \nosemantics
+\example {\em de boeken om te lezen}, 
+{\em het mes om de kaas mee te snijden}
+\end{member}
+
+\end{members}
+
+\end{mruleclass}
+
+\begin{mruleclass}{RC\_noundim}
+\begin{classdescr}
+\kind optional rule class
+%\kind \nokind
+\classtask 
+\classremarks
+\nofilters
+\nospeedrules
+\noplannedrules
+\norulesnotince
+\begin{comments}
+\end{comments}
+\rulelist
+
+\end{classdescr}
+\begin{members}
+\begin{member}
+\rulename Rnoundim
+\ruletask Deriving a diminutive form for a noun. 
+\file dutch:npcnvaria.mrule (mrules60)
+\semantics modification
+\example {\em boek} \ra {\em boekje}
+\remarks In Spanish and English the corresponding rule introduces an adjective 
+expressing diminutivity.
+\end{member}
+
+\end{members}
+
+\end{mruleclass}
+\section{The translation of number}
+\label{number}
+
+The main issue to solve is the fact that number is not necessarily preserved 
+under
+translation: some singular NPs may translate into plurals and vice versa.
+Pending a more extensive documentation on this subject, a pointwise 
+"summary" of the most important assumptions for the treatment of number is 
+given here, applied to Dutch and English.
+
+TRANSFER\\ 
+
+\begin{tabular}{|lllll|} \hline
+Dutch && IL & &  English \\ \hline \hline
+
+singular & $\leftrightarrow$  & S  & $\leftrightarrow$ & singular \\ \hline
+ 
+plural/mass & $\leftrightarrow$  &  PM  & $\leftrightarrow$  & plural/mass
+ \\ \hline
+\end{tabular}\\ \\
+
+CRUCIAL ATTRIBUTES:
+\begin{description}
+\item[.number] for NOUN; values: singular, plural
+\item[.pluralforms] for SUBNOUN;  especially the values Noplural and OnlyPlural 
+(Dutch) and singandplur (English)
+\item[.posscomas] for  SUBNOUN; values: [count], [mass]
+([count] for nouns that combine with the indefinite article {\em een}, [mass] 
+for the other nouns)
+\end{description}
+
+
+EXAMPLES\\ 
+
+\begin{tabular}{|l|l|l|} \hline
+boek          & S &  book\\        
+boeken       & PM &    books\\ \hline
+
+vent               & S &     bloke \\
+kerels              & PM &      blokes\\ \hline
+
+schoen              & S&    shoe\\
+schoeisel, schoenen              & PM &     shoes\\ \hline
+               
+politie (noplur, mass) & PM & police (onlyplur, mass)\\ \hline
+
+speelgoed,speeltjes              & PM &    toys\\ 
+?speeltje              & S & toy  \\ \hline
+
+melk              &PM &    milk\\ \hline
+
+kaas1              & PM &     cheese1\\
+kaas2              & S &     cheese2\\ \hline
+
+brood1              & PM  &    bread1\\
+brood2              &  S &    (loaf of bread2)\\
+broden2             & PM &    (loaves of bread2)\\ \hline
+
+hersenen1 (onlyplur, mass)               & PM &   brains1  \\
+((een stel) hersenen2)                   & S &   (a) brain2 \\
+((twee stel) hersenen2)              & PM &    (two) brains2\\ \hline
+\end{tabular}
+
+
+\end{document}

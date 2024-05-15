@@ -1,0 +1,618 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  rosetta3.software
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Domain compiler
+
+         Author       :  Rene@' Leermakers
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  128
+
+         Date         :  09/09/86
+
+         Status       :  concept
+
+         Supersedes   :  ...
+
+         Distribution :  project
+
+         Clearance    :  project
+
+         Keywords     :  domainT, compiler
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright (c) Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 128                     date:09/09/86
+$LD 4
+$Np 1
+$CH 1,Introduction
+$QM
+In many places in the Rosetta system, knowledge of the domain T of strees
+is required. For instance, M-rules, surface-rules, and lextree rules pre-
+supposed the existence of all kinds of features. Also in the software in
+many instances knowledge of the domain is needed, e.g. in rule-compilers and
+in tree-print modules. It would be very convenient to be able
+to specify the domain in a concise way, without having to write pascal modules.
+We devised a syntax for doing so, and a compiler doing the translation of the
+information to pascal modules.This document describes this 
+syntax and the domain compiler.
+$NL
+The generated modules are named LSDOMAINT, which defines the language 
+dependent fields of s-trees, MAKE.env and MAKE.pas, which define make functions
+of records, to be used in the software, and finally COPY.env and COPY.pas
+which define copy functions for records, to be used in various (linguistic) 
+syntax rules.
+$NL
+In future, both the syntax of the input file and the functionality
+of the compiler will be extended. In section 2, the grammar is given; in the
+appendix the attributed form is listed. Attributes are not used for the syntax
+definition, only for a table administration of information; the resultant
+tables are then used for code generation. In section 3, a realistic example is 
+given, for english nouns and verbs, together with some explanatory elaborations
+on the syntax and semantics of the input file. Because of lack of time, these
+elaborations are not very elaborate, but I hope the example is illustrative
+enough in practise.
+
+$Ch 2,Grammar
+$UM
+
+utt              =(DUTCH|ENGLISH|SPANISH)."DomainT".[affixspec].[typespec].
+                  [recordspec]..[relationspec].[categoriespec].[copyspec]."END"
+
+affixspec        ="AFFIXKEYS"."="."(".identifier.{",".identifier}.")".";"
+typespec         ="TYPES".":".{typedefinition}
+recordspec       ="RECORDS".":".{recorddefinition}
+relationspec     ="RELATIONS".":"."(".identifier.{",".identifier}.")"
+categoriespec    ="CATEGORIES".":".{catdefinition}
+copyspec       ="COPY".{functionname."="."FROM".recordname."TO".recordname}
+
+typedefinition   =(enumdef|subrangedef|integerdef|booleandef|setdef)
+enumdef          =typename."="."(".identifier.{,identifier}.")".";"
+subrangedef      =typename."=".identifier.".",".".identifier.";"
+integerdef       =typename."="."INTEGER".";"
+booleandef       =typename."="."BOOLEAN".";"
+setdef           =typename."="."SET"."OF".typename.";"
+typename         =identifier
+
+recorddefinition =recordname."="."<".{attribname.":".typename.":".defaultvalue}
+                  .["KEY"].">"
+attribname       =identifier
+defaultvalue     =identifier
+recordname       =identifier
+
+catdefinition    ="<".{catlist}.">".
+catlist          =catname.{,catname}.":".recordname
+catname          =identifier
+
+functionname     =identifier
+$CH 3,Explanations
+$QM
+Below we list an example input file, and the resulting output. It describes
+the domain of verbs and nouns, as they are used in the English lextree-rules.
+Furthermore, using the example as a reference, I will explain the semantics of 
+the syntax.
+$CH 3.1,Example input file
+$UM
+ENGLISH DOMAINT_T
+
+AFFIXKEYS =   (SFKam,SFKis,SFKwas,SFKare,SFKwere,SFKirrpp,SFKirring,
+	       SFKirrptpp,SFKirrS,SFKmodpt,SFKirrnc,SFKirrpt,SFKirrpt2,
+               SFKirrpp2,SFKirrpp3,SFKregptpp,SFKcdptpp,SFKcding,SFKreging,
+	       SFKregS,SFKregEs,SFKvoicingS,SFKirrplur,SFKlatplur,SFKirrcomp,
+	       SFKirrsuper,SFKirrcomp2,SFKirrsuper2,SFKcdcomp,SFKcdsuper,
+               SFKregcomp,SFKregsuper,
+               SFKacc,SFKposs,SFKpredposs,PFKanti1,PFKanti2,PFKex,PFKhyper,
+               PFKpro,PFKre,PFKvice,SFKregable,SFKtruncable,SFKcdable
+              );
+TYPES:
+        conjclasstype = SET OF conjclass; conjclass = 0..14;
+        ingformtype   = (reging,cding,cdreging,noing,irring);
+        sformtype      = (regS,regEs,noS,irrS);
+        formstype     = SET OF form; form = (PresS1F, PresS2F, PresS3F, 
+                                             PresPluralF,PastS1F, PastS2F, 
+                                             PastS3F, PastPluralF, ProgF, PPF,
+                                             InfF);
+        affixtype     = (anti1,anti2,pro,re,vice,ex,hyper,able,omegaaffix);
+        plurformstype = SET OF plurclass;plurclass = (onlyplur,noplur,irrplur,
+                                                      regplur,regEplur,latplur,
+                                                      voicingplur,singandplur);
+        numbertype    = (singular,plural,omeganumber);
+        
+RECORDS:
+        BVERBrecord   = <conjclasses:conjclasstype:0
+                         ingform:ingformtype:noing
+                         sform:sformtype:noS
+                         forms:formstype:[]
+                         affix:affixtype:omegaafix
+                         KEY
+                        >
+        VERBrecord    = <conjclasses:conjclasstype:0
+                         ingform:ingformtype:noing
+                         sform:sformtype:noS
+                         forms:formstye:[]
+                         affix:affixtype:omegaafix
+                        >
+        BNOUNrecord   = <plurforms:plurformstype:noplur
+                         number:numbertype:omeganumber
+                         affix:affixtype
+                         KEY
+                        >
+        NOUNrecord    = <plurforms:plurformstype:noplur
+                         number:numbertype:omeganumber
+                         affix:affixtype
+                        >
+RELATIONS : (head,compl,pref)
+
+CATEGORIES :  <BVERB:BVERBrecord>
+              <VERB,SUBVERB:VERBrecord>
+              <BNOUN:BNOUNrecord>
+              <NOUN,SUBNOUN:NOUNrecord>
+
+COPY:   bverbtoverb = FROM BVERBrecord TO VERBrecord
+        bnountonoun = FROM BNOUNrecord TO NOUNrecord
+
+END
+$CH 3.2,Semantics
+$QM
+The AFFIXKEYS,TYPES,RECORDS,RELATIONS,CATEGORIES, and COPY sections must be
+specified in this order. The order of items within these sections, is free.
+For instance, type definitions (under TYPES) may be written in any order.
+$NL
+The affixkeys are defined as integer constants, in the domain output file.
+Also, if KEY appears in a record definition, a key feature of integer type
+is included in the record definition in the output file.
+In this way all keys are made to be integer. 
+$NL
+Record definitions contain triples attribute:typename:defaultvalue.
+Record definitions (under RECORDS) may only use typenames defined under
+TYPES, or the standard BOOLEAN or INTEGER.
+Default values are obligatory and are used to define make functions for
+records.
+$NL
+Under CATEGORIES the categories are defined together with their record types.
+Various categories may have the same record type. If two categories have
+a very similar record type, it is possible to specify, under COPY, that
+a copy procedure should be generated. Such a specification looks like
+functionname = FROM record1 TO record2. A procedure with the name 
+COPY_functionname is generated. It can be called in (for instance) lextree
+rules and M-rules as COPY_functionname(rec1,rec2), and copies corresponding
+attributes, i.e. attributes with the same name and type, from rec1 to rec2.
+No copy functions are needed for identical records; a simple assignment can
+used in the rules.
+$NL
+All reserved words, i.e. AFFIXKEYS..COPY,KEY,FROM,TO,SET,OF,END must be 
+written with capital letters. 
+$NP
+$CH 3.3,Output modules
+The compiler generates the following output form the above input file. First
+there is the Pascal domain definition module:
+$UM
+
+[ENVIRONMENT('ENGLISH:lsdomaint')]
+MODULE LSDOMAINT;
+CONST
+       SFKam =    1;
+       SFKis =    2;
+       SFKwas =    3;
+       SFKare =    4;
+       SFKwere =    5;
+       SFKirrpp =    6;
+       SFKirring =    7;
+       SFKirrptpp =    8;
+       SFKirrS =    9;
+       SFKmodpt =   10;
+       SFKirrnc =   11;
+             .
+             .
+             .
+          
+TYPE
+     LSDOMAIN_synrel = (head,compl,pref);
+     LSDOMAINT_ingformtype = (reging,cding,cdreging,noing,irring);
+     LSDOMAINT_sformtype = (regS,regEs,noS,irrS);
+     LSDOMAINT_form = (PresS1F,PresS2F,PresS3F,PresPluralF,PastS1F,PastS2F,
+PastS3F,PastPluralF,ProgF,PPF,InfF);
+     LSDOMAINT_affixtype = (anti1,anti2,pro,re,vice,ex,hyper,able,omegaaffix);
+     LSDOMAINT_plurclass = (onlyplur,noplur,irrplur,regplur,regEplur,latplur,
+voicingplur,singandplur);
+     LSDOMAINT_numbertype = (singular,plural,omeganumber);
+     LSDOMAINT_conjclass = 0..14;
+     LSDOMAINT_conjclasstype = SET OF LSDOMAINT_conjclass;
+     LSDOMAINT_formstype = SET OF LSDOMAINT_form;
+     LSDOMAINT_plurformstype = SET OF LSDOMAINT_plurclass;
+     LSDOMAINT_pBVERBrecord = ^LSDOMAINT_BVERBrecord;
+     LSDOMAINT_BVERBrecord = 
+         RECORD
+                  conjclasses:conjclasstype;
+                      ingform:ingformtype;
+                        sform:sformtype;
+                        forms:formstype;
+                        affix:affixtype;
+           key:integer
+           END;
+     LSDOMAINT_pVERBrecord = ^LSDOMAINT_VERBrecord;
+     LSDOMAINT_VERBrecord = 
+         RECORD
+                  conjclasses:conjclasstype;
+                      ingform:ingformtype;
+                        sform:sformtype;
+                        forms:formstye;
+                        affix:affixtype;
+           END;
+     LSDOMAINT_pBNOUNrecord = ^LSDOMAINT_BNOUNrecord;
+     LSDOMAINT_BNOUNrecord = 
+         RECORD
+                    plurforms:plurformstype;
+                       number:numbertype;
+                        affix:affixtype;
+           key:integer
+           END;
+     LSDOMAINT_pNOUNrecord = ^LSDOMAINT_NOUNrecord;
+     LSDOMAINT_NOUNrecord = 
+         RECORD
+                    plurforms:plurformstype;
+                       number:numbertype;
+                        affix:affixtype;
+           END;
+     LSDOMAINT_syntcat = (BVERB,VERB,SUBVERB,BNOUN,NOUN,SUBNOUN);
+
+LSDOMAINT_pLSrecord = ^LSDOMAIN_LSrecord;
+LSDOMAINT_LSrecord =
+         RECORD
+            CASE cat:LSDOMAINT_syntcat of
+                  BVERB:
+                     (BVERBfield:LSDOMAINT_pBVERBrecord);
+                  VERB,SUBVERB:
+                     (SUBVERBfield:LSDOMAINT_pVERBrecord);
+                  BNOUN:
+                     (BNOUNfield:LSDOMAINT_pBNOUNrecord);
+                  NOUN,SUBNOUN:
+                     (SUBNOUNfield:LSDOMAINT_pNOUNrecord);
+           END;
+
+END{LSDOMAINT}.
+
+$NP
+Furthermore, copy functions are generated, as specified in the input file.
+One definition and one implementation module is generated:
+
+[ENVIRONMENT('ENGLISH:copy'),INHERIT('ENGLISH:lsdomaint')]
+MODULE COPY;
+[EXTERNAL] PROCEDURE COPY_bverbtoverb(
+    VAR rec1:LSDOMAINT_pBVERBrecord,rec2:LSDOMAINT_pVERBrecord);   EXTERN;
+[EXTERNAL] PROCEDURE COPY_bnountonoun(
+    VAR rec1:LSDOMAINT_pBNOUNrecord,rec2:LSDOMAINT_pNOUNrecord);   EXTERN;
+END{COPY}.[INHERIT('ENGLISH:copy','ENGLISH:lsdomaint')]
+
+MODULE COPY;
+[GLOBAL] PROCEDURE COPY_bverbtoverb(
+     rec1:LSDOMAINT_BVERBrecord; VAR rec2:LSDOMAINT_VERBrecord);
+BEGIN
+WITH rec2 DO
+     BEGIN
+     conjclasses:= rec1.conjclasses;
+     ingform:= rec1.ingform;
+     sform:= rec1.sform;
+     affix:= rec1.affix
+     END
+END;
+[GLOBAL] PROCEDURE COPY_bnountonoun(
+     rec1:LSDOMAINT_BNOUNrecord; VAR rec2:LSDOMAINT_NOUNrecord);
+BEGIN
+WITH rec2 DO
+     BEGIN
+     plurforms:= rec1.plurforms;
+     number:= rec1.number;
+     affix:= rec1.affix
+     END
+END;
+END{COPY}.
+
+
+$NP
+Finally, make functions are generated:
+
+[ENVIRONMENT('ENGLISH:make')]
+MODULE MAKE;
+[EXTERNAL] PROCEDURE LSDOMAINT_mkomegaBVERBrec(
+    VAR rec:LSDOMAINT_pBVERBrecord);   EXTERN;
+[EXTERNAL] PROCEDURE LSDOMAINT_mkomegaVERBrec(
+    VAR rec:LSDOMAINT_pVERBrecord);   EXTERN;
+[EXTERNAL] PROCEDURE LSDOMAINT_mkomegaSUBVERBrec(
+    VAR rec:LSDOMAINT_pVERBrecord);   EXTERN;
+[EXTERNAL] PROCEDURE LSDOMAINT_mkomegaBNOUNrec(
+    VAR rec:LSDOMAINT_pBNOUNrecord);   EXTERN;
+[EXTERNAL] PROCEDURE LSDOMAINT_mkomegaNOUNrec(
+    VAR rec:LSDOMAINT_pNOUNrecord);   EXTERN;
+[EXTERNAL] PROCEDURE LSDOMAINT_mkomegaSUBNOUNrec(
+    VAR rec:LSDOMAINT_pNOUNrecord);   EXTERN;
+END{MAKE}.
+
+[INHERIT('ENGLISH:make')]
+MODULE MAKE;
+[GLOBAL] PROCEDURE LSDOMAINT_mkomegaBVERBrec(
+    VAR rec:LSDOMAINT_pBVERBrecord);
+BEGIN
+new(rec);
+rec^.conjclasses:=0;
+rec^.ingform:=noing;
+rec^.sform:=noS;
+rec^.forms:=[];
+rec^.affix:=omegaafix;
+key:=0
+END;
+[GLOBAL] PROCEDURE LSDOMAINT_mkomegaVERBrec(
+    VAR rec:LSDOMAINT_pVERBrecord);
+BEGIN
+new(rec);
+rec^.conjclasses:=0;
+rec^.ingform:=noing;
+rec^.sform:=noS;
+rec^.forms:=[];
+rec^.affix:=omegaafix
+END;
+[GLOBAL] PROCEDURE LSDOMAINT_mkomegaSUBVERBrec(
+    VAR rec:LSDOMAINT_pVERBrecord);
+BEGIN
+new(rec);
+rec^.conjclasses:=0;
+rec^.ingform:=noing;
+rec^.sform:=noS;
+rec^.forms:=[];
+rec^.affix:=omegaafix
+END;
+[GLOBAL] PROCEDURE LSDOMAINT_mkomegaBNOUNrec(
+    VAR rec:LSDOMAINT_pBNOUNrecord);
+BEGIN
+new(rec);
+rec^.plurforms:=noplur;
+rec^.number:=omeganumber;
+rec^.affix:=omegaafix;
+key:=0
+END;
+[GLOBAL] PROCEDURE LSDOMAINT_mkomegaNOUNrec(
+    VAR rec:LSDOMAINT_pNOUNrecord);
+BEGIN
+new(rec);
+rec^.plurforms:=noplur;
+rec^.number:=omeganumber;
+rec^.affix:=omegaafix
+END;
+[GLOBAL] PROCEDURE LSDOMAINT_mkomegaSUBNOUNrec(
+    VAR rec:LSDOMAINT_pNOUNrecord);
+BEGIN
+new(rec);
+rec^.plurforms:=noplur;
+rec^.number:=omeganumber;
+rec^.affix:=omegaafix
+END;
+END{MAKE}.
+
+$CH 4,Appendix: attributed grammar
+$UM
+1:utt =Dutchcat%8%.Englishcat%9%.Spanishcat%10%.DomainTcat%1%.[affixspec%2%].
+   [typespec%3%].[recordspec%4%]..[relationspec%5%].[categoriespec%6%].
+   [copyspec%7%].ENDcat%1%
+Hinit:dutch:=false;english:=false;spanish:=false
+1,2,3,4,5,6,7:void
+8:loccond:true
+  globcond:dutch:=true
+9:loccond:true
+  globcond:english:=true
+10:loccond:true
+  globcond:spanish:=true
+Hfinal:mkutt
+
+2:affixspec =AFFIXKEYScat%1%.IScat%1%.roundopen%1%.identifier%2%.
+			{comma%1%.identifier%2%}.roundclose%1%.dotcomma%1%
+Hinit:initsetofidents(affixkeystablevar)
+1:void
+2:loccond:true
+  globcond:appendident(str,affixkeystablevar)
+Hfinal:mkaffixspec;affixkeystable:=affixkeystablevar
+
+3:typespec =TYPEScat%1%.dotdot%1%.{typedefinition%2%}
+
+Hinit:
+1,2:void
+Hfinal:mktypespec
+
+4:recordspec =RECORDScat%1%.dotdot%1%.{recorddefinition%2%}
+
+Hinit:
+1,2:void
+Hfinal:mkrecordspec
+
+5:relationspec =RELATIONScat%1%.dotdot%1%.roundopen%1%.identifier%2%.
+                                       {comma%1%.identifier%2%}.roundclose%1%
+Hinit:initsetofidents(relationtablevar)
+1:void
+2:loccond:true
+  globcond:appendident(str,relationtablevar)
+Hfinal:relationspec;relationtable:=relationtablevar
+
+6:categoriespec =CATEGORIEScat%1%.dotdot%1%.{catdefinition%2%}
+
+Hinit:
+1,2:void
+Hfinal:mkcategoriespec
+
+7:typedefinition =(enumdef%1%|subrangedef%2%|integerdef%3%|booleandef%4%|
+                   setdef%5%)
+Hinit:
+1,2,3,4,5:void
+Hfinal:mktypedefinition
+
+8:enumdef =typename%2%.IScat%1%.roundopen%1%.identifier%3%.
+			{comma%1%.identifier%3%}.roundclose%1%.dotcomma%1%
+Hinit:new(enumentryvar);enumentryvar^.typename='';
+      initsetofidents(enumentryvar^.idents)
+1:void
+2:loccond:true
+  globcond:enumentryvar^.typename:=str
+3:loccond:true
+  globcond:appendident(str,enumentryvar^.idents)
+Hfinal:mkenumdef;appendenum(enumentryvar,enumtable)
+
+9:subrangedef =typename%2%.IScat%1%.identifier%3%.dot%1%.dot%1%.identifier%4%.
+								dotcomma%1%
+
+Hinit:new(subrangeentryvar);subrangeentryvar^.typename:='';
+      subrangeentryvar^.ident1:='';subrangeentryvar^.ident2:='';
+1:void
+2:loccond:true
+  globcond:subrangeentryvar^.typename:=str
+3:loccond:true
+  globcond:subrangeentryvar^.ident1:=str
+4:loccond:true
+  globcond:subrangeentryvar^.ident2:=str
+Hfinal:mksubrangedef;appendsubrange(subrangeentryvar,subrangetable)
+
+10:integerdef =typename%2%.IScat%1%.INTEGERcat%1%.dotcomma%1%
+
+Hinit:integerentryvar:=''
+1:void
+2:loccond:true
+  globcond:integerentryvar:=str
+Hfinal:mkintegerdef;appendident(integerentryvar,integertable)
+
+11:booleandef =typename%2%.IScat%1%.BOOLEANcat%1%.dotcomma%1%
+
+Hinit:booleanentryvar:=''
+1:void
+2:loccond:true
+  globcond:booleanentryvar:=str
+Hfinal:mkbooleandef;appendident(booleanentryvar,booleantable)
+
+12:setdef =typename%2%.IScat%1%.SETcat%1%.OFcat%1%.typename%3%.dotcomma%1%
+
+Hinit:new(SETOFentryvar);SETOFentryvar^.typename1:='';
+      SETOFentryvar^.typename2:=''
+1:void
+2:loccond:true
+  globcond:SETOFentryvar^.typename1:=str
+3:loccond:true
+  globcond:SETOFentryvar^.typename2:=str
+Hfinal:mksetdef;appendSETOF(SETOFentryvar,settable)
+
+13:typename =identifier%1%
+Hinit:stringvar:=''
+1:loccond:true
+  globcond:stringvar:=str
+Hfinal:mktypename;str:=stringvar
+
+14:recorddefinition =recordname%2%.IScat%1%.leftarrow%1%.{attribname%3%.
+		dotdot%1%.typename%4%.dotdot%1%.defaultvalue%5%}.
+						[KEYcat%6%].rightarrow%1%
+Hinit:new(recordentryvar);recordentryvar^.recordname:='';
+     initsetofattribs(recordentryvar^.attribs);recordentryvar^.keypresent:=false
+1:void
+2:loccond:true
+  globcond:recordentryvar^.recordname:=str
+3:loccond:true
+  globcond:new(attribvar);attribvar^.attribname:=str;attribvar^.typename:='';
+           atribvar^.value:=''
+4:loccond:true
+  globcond:attribvar^.typename:=str
+5:loccond:true
+  globcond:attribvar^.value:=str
+6:loccond:true
+  globcond:recordentryvar^.keypresent:=true
+Hfinal:mkrecorddefinition;appendrecord(recordentryvar,recordtable)
+
+15:attribname =identifier%1%
+Hinit:stringvar:=''
+1:loccond:true
+  globcond:stringvar:=str
+Hfinal:mkattribname;str:=stringvar
+
+16:defaultvalue =identifier%1%
+
+Hinit:stringvar:=''
+1:loccond:true
+  globcond:stringvar:=str
+Hfinal:mkdefaultvalue;str:=stringvar
+
+17:recordname =identifier%1%
+
+Hinit:stringvar:=''
+1:loccond:true
+  globcond:stringvar:=str
+Hfinal:mkrecordname;str:=stringvar
+
+18:catdefinition =leftarrow%1%.{catlist%1%}.rightarrow%1%
+
+Hinit:
+1:void
+Hfinal:mkcatdefinition
+
+19:catlist =catname%2%.{comma%1%.catname%2%}.dotdot%1%.recordname%3%
+
+Hinit:new(catlistentryvar);initsetofidents(catlistentryvar^.catnames);
+      catlistentryvar^.recordname:=''
+1:void
+2:loccond:true
+  globcond:appendident(str,catlistentryvar^.catnames)
+3:loccond:true
+  globcond:catlistentryvar^.recordname:=str
+Hfinal:mkcatlist;appendcatdef(catlistentryvr,categorytable)
+
+20:catname = identifier%1%
+
+Hinit:stringvar:=''
+1:loccond:true
+  globcond:stringvar:=str
+Hfinal:mkcatname;str:=stringvar
+
+21:functionname = identifier%1%
+
+Hinit:stringvar:=''
+1:loccond:true
+  globcond:stringvar:=str
+Hfinal:mkfunctionname;str:=stringvar
+
+22:copyspec = copycat%1%.dotdot%1%.{functionname%2%.iscat%1%.fromcat%1%.
+                    recordname%3%.tocat%1%.recordname%4%}
+Hinit:new(copyentryvar);copyentryvar^.functionname:='';
+      copyentryvar^.recordname1:='';copyentryvar^.recordname2:=''
+1:void
+2:loccond:true
+  globcond:copyentryvar^.functionname:=str;
+3:loccond:true
+  globcond:copyentryvar^.recordname1:=str;
+4:loccond:true
+  globcond:copyentryvar^.recordname2:=str;
+Hfinal:mkcopyspec;appendcopy(copyentryvar,copiestable)

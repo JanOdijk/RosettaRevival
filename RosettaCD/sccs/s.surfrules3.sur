@@ -1,0 +1,3227 @@
+h28776
+s 00032/00032/03091
+d D 1.3 92/02/21 15:45:40 rous 3 2
+c 
+e
+s 00000/00000/03123
+d D 1.2 91/06/17 09:43:03 leermake 2 1
+c 
+e
+s 03123/00000/00000
+d D 1.1 91/05/23 13:14:21 leermake 1 0
+c date and time created 91/05/23 13:14:21 by leermake
+e
+u
+U
+f e 0
+t
+T
+I 1
+
+%DUTCH
+&
+
+%DatumNP
+REGULAREXPRESSION:
+
+NP = ([[NP/8] . DETP/1] . PROPERNOUN/2 . [NP/3])  |
+     ([CARD/4 . PUNC/5]. CARD/6 . [PUNC/5 . NP/7] )
+
+CONDITIONSANDACTIONS:
+
+VAR  
+    reqvar              :: polarityEFFSETtype;
+    envvar              :: polarityEFFSETtype;
+    superdeixisvar      :: deixistype;
+    classvar            :: timeadvclasstype;
+    deixisvar           :: deixistype;
+    aspectvar           :: aspecttype;
+    retrovar            :: retrotype;
+    definitevar         :: deftype;
+    personvar           :: persontype;
+    numbervar           :: numbertype;
+    casesvar            :: caseSETtype;
+    gendersvar          :: genderSETtype;
+    sexesvar            :: sexSETtype;
+    actsubcsvar         :: nounsubcEFFSETtype;
+    temporalvar         :: temporaltype;
+    possgenivar         :: possgenitype;
+    animatevar          :: animatetype;
+    humanvar            :: humantype;
+    actcomasvar         :: posscomaSETtype;
+    thetanpvar          :: thetanptype;
+    nounpatternefsvar   :: synpatternEFFSETtype;
+    posspredvar         :: posspredtype;
+    possnietnpvar       :: possnietnptype;
+    moodvar             :: xpmoodtype;
+    genericvar          :: generictype;
+    possRformvar        :: possRformtype;
+    syntquantvar        :: syntquanttype;
+    NPheadvar           :: NPheadtype;
+    specQvar            :: specQtype;
+    coordvar            :: coordtype;
+    yearnumberfound     :: BOOLEAN;
+    daynumberfound      :: BOOLEAN;
+    numberheadfound     :: BOOLEAN;
+?
+HELP
+
+FUNCTION CardunderDetP(t1:LSSTREE_pstree):BOOLEAN;  
+     VAR result:BOOLEAN;
+         sonlist:LSSTREE_prelnode;
+BEGIN
+  result:=FALSE;
+  sonlist:=t1^.sons;
+  WHILE NOT (result) AND (sonlist<>NIL) DO
+    BEGIN
+      result :=  sonlist^.node^.cat=CARD;
+      sonlist:=sonlist^.brother
+    END;
+  CARDunderDETP:=result;
+END; !(*CARDunderDETP*)
+?
+
+
+<* 
+
+HINIT: BEGIN
+    reqvar              := [pospol, omegapol, negpol];
+    envvar              := [pospol, omegapol, negpol];
+    superdeixisvar      := omegadeixis;
+    classvar            := omegatimeadvclass;
+    deixisvar           := omegadeixis;
+    aspectvar           := omegaaspect;
+    retrovar            := false;
+    definitevar         := omegadef;
+    personvar           := 3;
+    numbervar           := omeganumber;
+    casesvar            := [];
+    gendersvar          := [omegagender];
+    sexesvar            := [];
+    actsubcsvar         := [othernoun];
+    temporalvar         := false;
+    possgenivar         := false;
+    animatevar          := omegaanimate;
+    humanvar            := omegahuman;
+    actcomasvar         := [];
+    thetanpvar          := omegathetanp;
+    nounpatternefsvar   := [];
+    posspredvar         := false;
+    possnietnpvar       := false;
+    moodvar             := declxpmood;
+    genericvar          := omegageneric;
+    possRformvar        := false;
+    syntquantvar        := omegaquant;
+    NPheadvar           := otherNP;
+    specQvar            := omegaspec;
+    coordvar            := nocoord;
+    yearnumberfound     := false;
+    daynumberfound      := false;
+    numberheadfound     := false;
+
+       END;
+ 
+
+1: 
+       <*
+         LOCALCONDITION: CARDunderDETP(b)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := detrel;
+                            END
+       *>
+
+2: 
+       <*
+         LOCALCONDITION: (%PROPERNOUN.subc = monthnoun)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL     := head;
+                              classvar   := %PROPERNOUN.class;
+                              deixisvar  := %PROPERNOUN.deixis;
+                              aspectvar  := %PROPERNOUN.aspect;
+                              retrovar   := %PROPERNOUN.retro;
+                              gendersvar := %PROPERNOUN.genders;
+                              actsubcsvar := [%PROPERNOUN.subc];
+                              temporalvar := %PROPERNOUN.temporal;
+                              possgenivar := %PROPERNOUN.possgeni;
+                              animatevar  := %PROPERNOUN.animate;
+                              humanvar    := %PROPERNOUN.human;
+                              actcomasvar := [count];
+                              posspredvar := true;
+                            END
+       *>
+
+3: 
+       <*
+         LOCALCONDITION: (%NP.NPhead = cardNP)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := postmodrel;
+                            END
+       *>
+
+4: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := modrel;
+                              daynumberfound := true;
+                            END
+       *>
+
+5: 
+       <*
+         LOCALCONDITION:(%PUNC.key = KEY_forwslashPUNCkey)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := puncrel;
+ 
+                            END
+       *>
+
+6: 
+       <*
+         LOCALCONDITION:true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+                              numberheadfound := true;
+                              temporalvar := true;
+                              classvar    := reference;
+                              aspectvar   := perfective
+                            END
+       *>
+
+7: 
+       <*
+         LOCALCONDITION: (%NP.NPhead = cardNP)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := postmodrel;
+                              yearnumberfound := true;
+                            END
+       *>
+
+8: 
+       <*
+         LOCALCONDITION: daynoun IN %NP.actsubcs
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := modrel;
+                            END
+       *>
+HFINAL: #CONDITION: (numberheadfound <= (daynumberfound OR yearnumberfound))
+        #ACTION: BEGIN
+                    MAKET_NP;
+                    $NP.req            := reqvar;
+                    $NP.env            := envvar;
+                    $NP.superdeixis    := superdeixisvar;
+                    $NP.class          := classvar;
+                    $NP.deixis         := deixisvar;
+                    $NP.aspect         := aspectvar;
+                    $NP.retro          := retrovar;
+                    $NP.definite       := def;
+                    $NP.person         := 3;
+                    $NP.number         := singular;
+                    $NP.cases          := [nominative, accusative, dative];
+                    $NP.genders        := gendersvar;
+                    $NP.sexes          := sexesvar;
+                    $NP.actsubcs       := actsubcsvar;
+                    $NP.temporal       := temporalvar;
+                    $NP.possgeni       := possgenivar;
+                    $NP.animate        := animatevar;
+                    $NP.human          := humanvar;
+                    $NP.actcomas       := actcomasvar;
+                    $NP.thetanp        := thetanpvar;
+                    $NP.nounpatternefs := nounpatternefsvar;
+                    $NP.posspred       := posspredvar;
+                    $NP.possnietnp     := possnietnpvar;
+                    $NP.mood           := moodvar;
+                    $NP.generic        := genericvar;
+                    $NP.possRform      := possRformvar;
+                    $NP.syntquant      := syntquantvar;
+                    $NP.NPhead         := otherNP;
+                    $NP.specQ          := yesspec;
+                    $NP.coord          := nocoord;
+                  END
+*>
+END;
+& 
+
+
+
+
+
+
+
+%NPcardrule
+
+REGULAREXPRESSION:
+
+NP = CARD/1
+                                                         
+
+CONDITIONSANDACTIONS:
+  VAR  
+       retropar   :: retrotype;  !(*can it be left out, syntactically??*)
+
+
+
+
+<*
+ HINIT:BEGIN
+         retropar := false;
+      END;
+
+1     :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                          END
+        *>
+
+
+HFINAL: #CONDITION: TRUE
+        #ACTION: BEGIN
+                   MAKET_NP;
+                   $NP.definite := def;
+                   $NP.cases    := [nominative, accusative, dative];
+                   $NP.temporal := true;
+                   $NP.animate  := noanimate;
+                   $NP.human    := nohuman;
+                   $NP.posspred := true;
+                   $NP.generic  := omegageneric;
+                   $NP.NPhead   := cardNP;
+                   $NP.specQ    := yesspec;
+                   $NP.class    := reference;
+                   $NP.aspect   := perfective;
+                   END;
+*>
+END;
+&                           
+
+
+
+
+%ADJP1srule
+
+REGULAREXPRESSION:
+ 
+ADJP = ADVP/1 . ADJP/2
+
+CONDITIONSANDACTIONS:
+
+
+VAR  preADVfound ::: BOOLEAN;
+     reqvar :: polarityEFFSETtype;
+     envvar :: polarityEFFSETtype;
+     classvar :: timeadvclasstype;
+     deixisvar :: deixistype;
+     aspectvar :: aspecttype;
+     retrovar :: retrotype;
+     actuseefsvar :: adjuseEFFSETtype;
+     eformationvar :: eformationtype;
+     enominalisedvar :: enominalisedtype;
+     formvar :: adjadvformtype;
+     eORenFormvar :: eorenformtype;
+     temporalvar :: temporaltype;
+     actsubcefsvar :: adjsubceffsettype;
+     thetaadjvar :: thetaadjtype;
+     adjpatternefsvar :: synpatterneffsettype;
+     reflexivityvar :: reflexivetype;
+     moodvar :: xpmoodtype;
+ 
+
+<*
+ 
+HINIT: BEGIN
+         preADVfound := false;
+         reqvar := [omegapol, pospol, negpol];
+         envvar := [omegapol, pospol, negpol];
+         classvar := omegaTimeAdvClass;
+         deixisvar := omegadeixis;
+         aspectvar := omegaAspect;
+         retrovar := false;
+         actuseefsvar := [];
+         eformationvar := RegEformation;
+         enominalisedvar := regeNominalised;
+         formvar := positive;
+         eORenFormvar := eform;
+         temporalvar := false;
+         actsubcefsvar := [otheradj];
+         thetaadjvar := omegathetaadjp;
+         adjpatternefsvar := [];
+         reflexivityvar := notreflexive;
+         moodvar := declxpmood;
+
+       END;
+
+1: 
+       <*
+         LOCALCONDITION: (preXPAdv in %ADVP.actsubcefs)  AND
+                         (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := modrel;
+                              preADVfound := true
+                   
+                            END
+       *>
+
+2: 
+       <*
+         LOCALCONDITION: (%ADJP.coord <> corrcoord)
+         GLOBAL: #CONDITION: preADVfound = true
+
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+			      reqvar := %ADJP.req;
+			      envvar := %ADJP.env;
+			      classvar := %ADJP.class;
+			      deixisvar := %ADJP.deixis;
+			      aspectvar := %ADJP.aspect;
+			      retrovar := %ADJP.retro;
+			      actuseefsvar := %ADJP.actuseefs;
+			      eformationvar := %ADJP.eformation;
+			      enominalisedvar := %ADJP.enominalised;
+			      formvar := %ADJP.form;
+			      eORenFormvar := %ADJP.eORenform;
+			      actsubcefsvar := %ADJP.actsubcefs;
+			      thetaadjvar := %ADJP.thetaadj;
+			      adjpatternefsvar := %ADJP.adjpatternefs;
+			      temporalvar := %ADJP.temporal;
+			      reflexivityvar := %ADJP.reflexivity;
+                            END
+       *>
+
+HFINAL: #CONDITION: TRUE
+        #ACTION: BEGIN
+                    MAKET_ADJP;
+         	    $ADJP.req := reqvar;
+		    $ADJP.class := classvar;
+		    $ADJP.deixis := deixisvar;
+		    $ADJP.aspect := aspectvar;
+		    $ADJP.retro := retrovar;
+		    $ADJP.actuseefs := actuseefsvar;
+		    $ADJP.eformation := eformationvar;
+		    $ADJP.eNominalised := enominalisedvar;
+		    $ADJP.form := formvar;
+		    $ADJP.eORenform := eORenFormvar;
+		    $ADJP.actsubcefs := actsubcefsvar;
+		    $ADJP.thetaadj := thetaadjvar;
+		    $ADJP.adjpatternefs := adjpatternefsvar;
+		    $ADJP.mood := moodvar;                     
+                    $ADJP.temporal := temporalvar;         
+                 END
+*>
+END;
+& 
+
+
+%ADJP2srule
+
+REGULAREXPRESSION:
+
+
+ADJP = 
+     ({ADJSTADV | ADJLOCADV | REFLPRO/1 | NP/2 | PREPP/3 | PREPP/4 | PREPP/22
+      | PREPP/5}) 
+D 3
+      . [NP/6] . [QP/7 | QP/77 | ADVP/8 | NP/9 | NP/25] 
+E 3
+I 3
+      . [NP/6] . [QP/7 | QP/77 | ADVP/8 | ADVP/88 | NP/9 | NP/25] 
+E 3
+      . ([PREPP/10 | PREPP/11]) . [ART/12 ] . ADJ/13 . [QP/14 | ADJP/21]
+      . ({ PREPP/15 | PREPP/23| PREPP/24 | PREPP/27 | SENTENCE/17 | THANP/18 
+           | SENTENCE/19 | SENTENCE/26})
+      . [SENTENCE/20]
+
+
+ADJSTADV = NEG/31 | POS/32 
+        | ADVP/33 | PREPP/34 | ADVP/35 | PREPP/36
+        | NP/37 | ADJQADV 
+
+ADJLOCADV = ADVP/38 | PREPP/ 39 | RADVP/40
+
+ADJQADV = ADVP/41
+
+
+CONDITIONSANDACTIONS:
+
+!(* MET locargrel is nog geen rekening gehouden *) 
+
+VAR 
+     teller : integer;
+     AANPREPPfound ::: BOOLEAN;
+     COMPARATIVEexpected ::: BOOLEAN; !(* om optreden van bijv. 'iets' in
+                                          'iets mooier' afhankelijk te maken
+                                        van '-er'. *)
+     COMPARATIVEfound :: BOOLEAN;    !(* idem *)   
+     COMPARATIVEcomplexpected ::: BOOLEAN; !(* Bedoeld om 
+                                        - het optreden van ADVP `zo'
+                                          (datcompl) zonder complement
+                                          uit te sluiten *)
+     COMPARATIVEcomplfound :: BOOLEAN;    !(* idem *)   
+     vancomplpossible ::: BOOLEAN;      !(* bedoeld om optreden van compl to 
+                                            meest(e) te beregelen *)
+     THANPpossible ::: BOOLEAN;             !(* bedoeld om optreden van THANP
+                                               te beregelen *)   
+     SUPERLATIVEexpected :: BOOLEAN; 
+                                     !(* Bedoeld om optreden van `het' zonder 
+                                        `meest' te koppelen aan aanwezigheid 
+                                        van superlative ADJ. NB: In dit geval
+                                        is er geen sprake van een QP. *)
+     SUPERLATIVEfound :: BOOLEAN;    !(* idem *)   
+     DEGREECOMPLfound ::: BOOLEAN;  !(* funtioneert nog niet echt *)
+     DEGREEMODexpected ::: BOOLEAN; !(* Deze parameter wordt gebruikt om
+                                      te zorgen dat voor PREPPs maar 
+                                      preadjectival positie is. *)
+     DEGREEMODfound ::: BOOLEAN;    !(* Deze parameter is multi-functioneeel: 
+                                      hij wordt niet alleen gebruikt om te 
+                                      voorkomen dat er twee of meer degree-
+                                      modifiers optreden. in combinatie met
+                                      DEGREEmodexpected wordt ook de distri-
+                                      butie van PP's ermee beregeld. *)
+     DONPfound ::: BOOLEAN;
+     erPREPPfound :: BOOLEAN;       !(* om not-stranded, not er-(pa)PREPobjs 
+                                       uit te sluiten als alleen prepsent-
+                                       patterns kunnen
+                                    *)
+     strandedPREPPfound :: BOOLEAN;  !(* idem *) 
+     HEADexpected ::: BOOLEAN;    !(* HEADexpected: eerstvolgende string is head  
+                                    van ADJP, dus ADJ. Bedoeld om de condities
+                                    op gestrande preposities te vangen. *)
+     ALSCOMPLADVfound ::: BOOLEAN; !(* om bij te houden of 'zo' als degreeadv 
+                                     gevonden is; example: zo spoedig mogelijk
+                                  *)
+     IONPfound ::: BOOLEAN;
+     NEGORPOSfound ::: BOOLEAN;
+     omcomplexpected ::: BOOLEAN;
+     PAOBJfound  ::: BOOLEAN;     !(* Om bij te houden of er een prepobj in 
+                                    PostAdjectival position is gevonden *)
+     erposPAOBJfound  ::: BOOLEAN;  !(* Om bij te houden of er een PAprepobj in 
+                                    erposrel is gevonden *)
+     PASENTCOMPLfound  :: BOOLEAN; !(* Om bij te houden of er een sententieel
+                                    complement  in 
+                                    PostAdjectival position is gevonden *)
+     PREPOBJexpected ::: BOOLEAN;
+     PREPOBJfound  ::: BOOLEAN;
+     
+     HOPexpected :: BOOLEAN;
+     HOPfound  ::: BOOLEAN;
+     PROOBJSENTfound ::: BOOLEAN;
+     REFLRELfound ::: BOOLEAN;
+     STADVfound ::: BOOLEAN;
+     COMPLfound :: BOOLEAN;
+     VOORobjmodfound ::: BOOLEAN;
+     reqvar :: polarityEFFSETtype;
+     envvar :: polarityEFFSETtype;
+     classvar :: timeadvclasstype;
+     deixisvar :: deixistype;
+     aspectvar :: aspecttype;
+     retrovar :: retrotype;
+     actuseefsvar :: adjuseEFFSETtype;
+     eformationvar :: eformationtype;
+     enominalisedvar :: enominalisedtype;
+     formvar :: adjadvformtype;
+     eORenFormvar :: eorenformtype;
+     temporalvar :: temporaltype;
+     actsubcefsvar ::: adjsubceffsettype;
+     thetaadjvar :: thetaadjtype;
+     adjpatternefsvar :: synpatterneffsettype;
+     prepkeyvar ::: keytype;
+     reflexivityvar :: reflexivetype;
+     moodvar :: xpmoodtype;
+?
+HELP
+
+PROCEDURE reduceadjpatterns(VAR adjps::synpatternEFFSETtype);
+BEGIN 
+   IF DONPfound
+   THEN adjps := adjps * AUX_objadjps;
+   IF IONPfound
+   THEN adjps := adjps * AUX_indobjadjps;
+   IF AANPREPPfound
+   THEN adjps := adjps * AUX_aanobjadjps;
+   IF (PREPOBJfound OR PAOBJfound)
+   THEN adjps := adjps * (AUX_prepobjadjps + AUX_aanobjadjps + AUX_PAadjps);
+   IF erposPAOBJfound
+   THEN adjps := adjps *  AUX_PAadjps;
+   IF PASENTCOMPLfound
+   THEN adjps := adjps * AUX_sentcomplvps;
+END !(*reduceadjpatterns*);
+ 
+PROCEDURE reduceadjsubcs(VAR actsubcs::adjsubcEFFSETtype);
+BEGIN
+    IF ((PROOBJSENTfound) AND (NOT DEGREEMODfound))
+    THEN actsubcs := actsubcs * [subjectiveadj]
+END !(*reduceadjsubcs*);
+
+
+FUNCTION artunderqp(t1:LSSTREE_pstree):BOOLEAN;  
+                            !(* This condition is supposed to be 
+                              met if there is an artrel (definite
+                              article 'het' in the QP.
+                              It is relevant to determine the value 
+                              of actuseefs of the ADJP *)
+     VAR result:BOOLEAN;
+         sonlist:LSSTREE_prelnode;
+     BEGIN
+     result:=FALSE;
+     sonlist:=t1^.sons;
+     WHILE NOT (result) AND (sonlist<>NIL) DO
+       BEGIN
+       IF sonlist^.node^.cat=ART THEN 
+        IF sonlist^.relation=artrel THEN
+         BEGIN
+         IF sonlist^.node^.ls^.artfield^.key = KEY_hetARTkey THEN result:= TRUE;
+         END;
+       sonlist:=sonlist^.brother
+       END;
+     artunderqp:=result;
+     END; !(*artunderqp*)
+
+
+FUNCTION mogelijkkey(b:LSSTREE_pstree):BOOLEAN;
+VAR stree:LSSTREE_pstree;
+BEGIN
+IF (b^.sons^.relation =head) THEN BEGIN
+  stree:=b^.sons^.node;
+  IF (stree^.sons^.relation=head) THEN BEGIN 
+    stree:=stree^.sons^.node;
+    IF (stree^.sons^.relation=head) THEN BEGIN
+      stree:=stree^.sons^.node;
+      IF stree^.ls^.BADJfield^.key=KEY_s_mogelijkbadj THEN
+      mogelijkkey:=TRUE ELSE mogelijkkey:=FALSE
+      END;
+    END;
+  END;
+END;
+?
+
+
+<*
+ 
+HINIT: BEGIN
+         teller := 0;
+         AANPREPPfound := false;
+         ALSCOMPLADVfound := false; 
+         erPREPPfound := false;   
+         strandedPREPPfound := false;   
+         COMPARATIVEexpected := false;
+         COMPARATIVEfound := false;
+         COMPARATIVEcomplexpected := false;
+         COMPARATIVEcomplfound := false;
+         THANPpossible := false;
+         vancomplpossible := false;
+         SUPERLATIVEexpected := false;
+         SUPERLATIVEfound := false;
+         DEGREECOMPLfound := false;
+         DEGREEMODexpected := false;  
+         DEGREEMODfound := false;  
+         DONPfound := false;
+         HEADexpected := false;  
+         HOPexpected := false;  
+         HOPfound := false;  
+         IONPfound := false;
+         omcomplexpected := false;
+         NEGORPOSfound := false;
+         erposPAOBJfound := false;
+         PAOBJfound := false;
+         VOORobjmodfound := false;
+         PASENTCOMPLfound := false;
+         COMPLfound := false;
+         PREPOBJexpected := true;
+         PREPOBJfound := false;
+         PREPOBJexpected := true;
+         REFLRELfound := false;
+         STADVfound := false;
+         reqvar := [omegapol, pospol, negpol];
+         envvar := [omegapol, pospol, negpol];
+         classvar := omegaTimeAdvClass;
+         deixisvar := omegadeixis;
+         aspectvar := omegaAspect;
+         retrovar := false;
+         actuseefsvar := [];
+         eformationvar := RegEformation;
+         enominalisedvar := regeNominalised;
+         formvar := positive;
+         eORenFormvar := eform;
+         temporalvar := false;
+         actsubcefsvar := [otheradj];
+         thetaadjvar := omegathetaadjp;
+         adjpatternefsvar := [];
+         prepkeyvar := 0; 
+         reflexivityvar := notreflexive;
+         moodvar := declxpmood;
+
+       END;
+
+1:    !(* this part is a partial copy of node 25 in SENTENCEsrule (J.O.) *)
+       <*
+         LOCALCONDITION: (NOT %REFLPRO.zelf)
+         GLOBAL: #CONDITION: (NOT STADVfound) AND
+                             (NOT REFLRELfound)   
+                 #ACTION:   BEGIN
+                              SYNREL := reflrel;
+                              REFLRELfound := true;
+                           END
+       *>
+
+2: 
+       <*
+         LOCALCONDITION: (dative in %NP.cases) AND
+                         (%NP.NPhead <> reducedpersproNP) AND
+                         (%NP.NPhead <> hetNP) AND
+                         (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: NOT IONPfound 
+
+                 #ACTION:   BEGIN
+                              SYNREL := indobjrel;
+                              IONPfound := true;
+                              COMPLfound := true;
+                            END
+       *>
+
+3: 
+       <*
+         LOCALCONDITION: (NOT %PREPP.stranded) AND
+                         (%PREPP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT HEADexpected)
+                 #ACTION:   BEGIN
+                              SYNREL := erposrel;
+                              erposPAOBJfound := true;
+                              COMPLfound := true;
+                              IF %PREPP.radvkey <> 0
+                              THEN erPREPPfound := true;
+                            END
+       *>
+
+22: 
+       <*
+         LOCALCONDITION: (%PREPP.headkey = KEY_voorioprepkey) AND
+                         (NOT %PREPP.stranded) AND
+                         (%PREPP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT HEADexpected)
+                 #ACTION:   BEGIN
+                              SYNREL := erposrel;
+                              VOORobjmodfound := true;
+                            END
+       *>
+
+4: 
+       <*
+         LOCALCONDITION: (%PREPP.headkey = KEY_aanioprepkey) AND
+                         (NOT %PREPP.stranded) AND
+                         (%PREPP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT AANPREPPfound) AND ( NOT HEADexpected)
+                 #ACTION:   BEGIN
+                              SYNREL := erposrel;
+                              AANPREPPfound := true;
+                              COMPLfound := true;
+                              DEGREEMODexpected := true;
+                            END
+       *>
+5: 
+       <*
+         LOCALCONDITION: (%PREPP.coord <> corrcoord) AND
+                         (NOT %PREPP.stranded) 
+         GLOBAL: #CONDITION: (NOT PREPOBJfound) AND ( NOT HEADexpected)
+                 #ACTION:   BEGIN
+                              SYNREL := erposrel;
+                              PREPOBJfound := true;
+                              COMPLfound := true;
+                              DEGREEMODexpected := true;
+                              IF %PREPP.radvkey <> 0
+                              THEN erPREPPfound := true;
+                            END
+       *>
+6: !(* eventueel conditie toevoegen die vereist het hoofd van de ADJP een 
+      measure-adj is *)
+       <*
+         LOCALCONDITION: (accusative in %NP.cases) AND
+                         (%NP.NPhead <> reducedpersproNP) AND
+                         (%NP.NPhead <> hetNP)  AND
+                         (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT DONPfound) AND (NOT HEADexpected)
+                 #ACTION:   BEGIN
+                              SYNREL := objrel;
+                              DONPfound := true;
+                              COMPLfound := true;
+                            END
+       *>
+
+7:  
+
+       <*
+         LOCALCONDITION: %QP.hop = false AND
+                         NOT artunderqp(b) (* excludes 'het meest' *)
+
+         GLOBAL: #CONDITION: (NOT DEGREEMODfound) AND (NOT HEADexpected)
+                 #ACTION:   BEGIN
+                              SYNREL := degreemodrel;
+                              DEGREEMODfound := true;
+                              moodvar := %QP.mood;
+                              If %QP.thanas = omcompl
+                                  THEN omcomplexpected := true;
+                              IF %QP.thanas = omegacompl
+                              THEN COMPARATIVEexpected := true; 
+                                 (* to exclude: veel/wat mooie als ADJP *)
+                              IF %QP.thanas IN  [alscompl, dancompl]
+                              THEN BEGIN 
+                                   THANPpossible := true;
+                                   HEADexpected := true
+                                   END;
+                              IF %QP.thanas IN  [ vancompl] 
+                              THEN BEGIN 
+                                   vancomplpossible := true;
+                                   HEADexpected := true
+                                   END;
+                              IF %QP.thanas IN  [ vancompl] 
+                              THEN BEGIN 
+                                   actuseefsvar :=
+                                               [attributive, nominalised]
+                                                  (* meest zonder 'het' *)
+                                   END;
+
+                            END
+       *>
+
+77:  
+
+       <*
+         LOCALCONDITION: %QP.hop = false AND
+                         artunderqp(b) (* het meest *)
+
+         GLOBAL: #CONDITION: (NOT DEGREEMODfound) AND (NOT HEADexpected)
+                 #ACTION:   BEGIN
+                              SYNREL := degreemodrel;
+                              DEGREEMODfound := true;
+                              moodvar := %QP.mood;
+                              IF %QP.thanas IN  [ vancompl] (* meest *)
+                              THEN BEGIN 
+                                   vancomplpossible := true;
+                                   HEADexpected := true
+                                   END;
+                              IF %QP.thanas IN  [ vancompl] (* meest *)
+                              THEN BEGIN 
+                                   actuseefsvar := [predicative]
+                                   END;
+                            END
+       *>
+
+8: 
+       <*
+D 3
+         LOCALCONDITION: (%ADVP.actsubcefs * [degreeadv, Numadv] <> []) AND
+E 3
+I 3
+         LOCALCONDITION: (%ADVP.actsubcefs * [degreeadv] <> []) AND
+E 3
+                         (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT DEGREEMODfound) AND (NOT HEADexpected)
+                 #ACTION:   BEGIN
+D 3
+                              IF Numadv IN %ADVP.actsubcefs  (* bijna *)
+                              THEN BEGIN
+                                   SYNREL := premodrel;
+                                   HOPexpected := true;
+                                   END;
+
+                              IF degreeadv IN %ADVP.actsubcefs 
+                              THEN SYNREL := degreemodrel;
+                              IF degreeadv IN %ADVP.actsubcefs 
+                              THEN DEGREEMODfound := true;
+E 3
+I 3
+                              SYNREL := degreemodrel;
+                              DEGREEMODfound := true;
+E 3
+                           
+                              If %ADVP.thanas = alscompl
+                              THEN ALSCOMPLADVfound := true;
+                              If %ADVP.thanas = alscompl
+                              THEN THANPpossible := true;
+                              If %ADVP.thanas = datcompl
+                              THEN COMPARATIVEcomplexpected := true;
+                              If %ADVP.thanas = omcompl
+                              THEN omcomplexpected := true;
+D 3
+
+E 3
+                              moodvar := %ADVP.mood;
+
+                           END
+       *>
+I 3
+
+88: 
+       <*                                         !(* bijna wit genoeg  *)
+         LOCALCONDITION: (%ADVP.actsubcefs * [Numadv] <> []) AND
+                         (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT DEGREEMODfound) AND (NOT HEADexpected)
+                 #ACTION:   BEGIN
+                            SYNREL := premodrel;
+                            HOPexpected := true;
+                            moodvar := %ADVP.mood;
+                           END
+       *>
+E 3
+9: 
+       <*
+         LOCALCONDITION: (unitnoun IN %NP.actsubcs)  OR
+                         ((%NP.definite = indef) AND
+                          (mass IN %NP.actcomas ) 
+                         ) (* amountnp *)  AND
+                         (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT DEGREEMODfound) AND (NOT HEADexpected)
+                 #ACTION:   BEGIN
+                              SYNREL := degreemodrel;
+                              DEGREEMODfound := true
+                            END
+       *>
+
+D 3
+25: 
+E 3
+I 3
+25:                                   !(* iets ronder *)
+E 3
+       <*
+         LOCALCONDITION: (unitnoun IN %NP.actsubcs) OR
+                         ((%NP.definite = indef) AND
+                          (mass IN %NP.actcomas ) 
+                         ) (* amountnp *) AND 
+                         (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT DEGREEMODfound) AND (NOT HEADexpected)
+                 #ACTION:   BEGIN
+                              SYNREL := premodrel;
+                              comparativeexpected := true;
+                            END
+       *>
+
+
+10: 
+       <*
+         LOCALCONDITION: (%PREPP.headkey = KEY_aanioprepkey) AND
+                         (%PREPP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT AANPREPPfound) AND
+                             (NOT HEADexpected) 
+                 #ACTION:   BEGIN
+                              SYNREL := aanobjrel;
+                              AANPREPPfound := true;
+                              COMPLfound := true;
+                              IF %PREPP.stranded
+                              THEN HEADexpected := true;
+                            END
+       *>
+
+11: 
+       <*
+         LOCALCONDITION: (%PREPP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT PREPOBJfound) AND
+                             (NOT HEADexpected) 
+                 #ACTION:   BEGIN
+                              SYNREL := prepobjrel;
+                              PREPOBJfound := true;
+                              COMPLfound := true;
+                              IF %PREPP.stranded
+                              THEN HEADexpected := true;
+                              IF %PREPP.stranded
+                              THEN strandedPREPPfound := true;
+                              IF %PREPP.radvkey <> 0
+                              THEN erPREPPfound := true;
+                            END
+       *>
+
+12:
+       <*
+         LOCALCONDITION: %ART.key = KEY_hetARTkey
+         GLOBAL: #CONDITION: (NOT DEGREEMODfound) 
+                 #ACTION:   BEGIN
+                              SYNREL := artrel;
+                              SUPERLATIVEexpected := true;
+                              actuseefsvar := [predicative];
+                            END
+       *>
+
+13: 
+       <*
+         LOCALCONDITION: (%ADJ.form <> sPositive)
+                           !(* To exclude ADJP-status for `veel moois'.
+                            If `moois' sec is to be  considered an ADJP, 
+                            the condition should be modified *) 
+                        
+                         
+         GLOBAL: #CONDITION: (erposPAOBJfound <= 
+                              (%ADJ.adjpatterns  * AUX_PAadjps <> [])) AND
+                             (PREPOBJfound <= 
+                              (%ADJ.adjpatterns  * AUX_prepobjadjps <> [])) AND
+                             (AANPREPPfound <= 
+                              (%ADJ.adjpatterns  * AUX_aanobjadjps <> [])) AND
+                             (VOORobjmodfound <= 
+                              (%ADJ.subcs * [voorsubjectiveadj] <> [])) AND
+                             (DEGREEMODexpected <= DEGREEmodfound )        AND
+                             ((%ADJ.form =comparative) 
+                                                <= (NOT DEGREEMODfound))  AND
+                             ((%ADJ.form =superlative) <= (NOT DEGREEMODfound))
+                 #ACTION:   BEGIN
+                              teller := teller + 1;
+                              SYNREL := head;
+                              IF %ADJ.prepkey = 0
+                              THEN PREPOBJexpected := false;
+                              IF %ADJ.form = comparative
+                              THEN  BEGIN
+                                      THANPpossible := true;
+                                      DEGREEMODfound := true
+                                    END;
+                              IF %ADJ.form = comparative
+                              THEN  BEGIN
+                                      comparativefound:= true
+                                    END;
+                              IF %ADJ.form = superlative
+                                 THEN SUPERLATIVEfound := true;
+                              IF %ADJ.form = superlative
+                                 THEN BEGIN
+                                        vancomplpossible := true;
+                                        DEGREEMODfound := true
+                                      END;
+			      reqvar := %ADJ.req;
+			      envvar := %ADJ.env;
+			      classvar := %ADJ.class;
+			      deixisvar := %ADJ.deixis;
+			      aspectvar := %ADJ.aspect;
+			      retrovar := %ADJ.retro;
+                              IF actuseefsvar = [] 
+                                 THEN actuseefsvar := %ADJ.uses
+                                 ELSE actuseefsvar := 
+                                            actuseefsvar * %ADJ.uses;
+			      eformationvar := %ADJ.eformation;
+			      enominalisedvar := %ADJ.enominalised;
+			      formvar := %ADJ.form;
+			      eORenFormvar := %ADJ.eORenform;
+			      actsubcefsvar := %ADJ.subcs;
+			      thetaadjvar := %ADJ.thetaadj;
+			      adjpatternefsvar := %ADJ.adjpatterns;
+                              prepkeyvar := %ADJ.prepkey;
+			      temporalvar := %ADJ.temporal;
+			      reflexivityvar := %ADJ.reflexivity;
+                              
+                            END
+       *>
+
+14:    <*
+         LOCALCONDITION: %QP.hop = true
+         GLOBAL: #CONDITION: NOT DEGREEMODfound
+                 #ACTION:   BEGIN
+                              SYNREL := hoprel;
+                              DEGREEMODfound := true;
+                              HOPfound := true;
+                            END
+       *>
+         
+21:    <*
+         LOCALCONDITION: (%ADJP.coord <> corrcoord) AND mogelijkkey(b)
+         GLOBAL: #CONDITION: alscompladvfound 
+                 #ACTION:   BEGIN
+                              SYNREL := zocomplrel;
+                              DEGREECOMPLfound := true;
+                            END
+       *>
+         
+
+15: 
+       <*
+         LOCALCONDITION: (%PREPP.coord <> corrcoord) 
+                         
+         GLOBAL: #CONDITION: (NOT PREPOBJfound) AND
+                             (NOT AANPREPPfound) AND
+                             (NOT erposPAOBJfound) AND
+                             (NOT PAOBJfound) AND
+                             (PREPobjexpected) AND
+                             ((%PREPP.headkey= prepkeyvar) OR
+                              (%PREPP.headkey= KEY_aanioprepkey)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := paprepobjrel;
+                              PAOBJfound := true;
+                              COMPLfound := true;
+                              IF %PREPP.stranded
+                              THEN strandedPREPPfound := true;
+                              IF %PREPP.radvkey <> 0
+                              THEN erPREPPfound := true;
+
+                             END
+       *>
+23: 
+       <*
+         LOCALCONDITION: (%PREPP.headkey = KEY_voorioprepkey) AND
+                         (%PREPP.coord <> corrcoord)
+         GLOBAL: #CONDITION: actsubcefsvar * [voorsubjectiveadj] <> []
+                 #ACTION:   BEGIN
+                              SYNREL := voorobjrel;
+                             END
+       *>
+
+24: 
+       <*
+         LOCALCONDITION: (%PREPP.coord <> corrcoord) AND
+                         (%PREPP.actsubcefs * [loc, caus, temp] <> [])
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := postadjrel;
+                             END
+       *>
+
+27:
+       <*
+         LOCALCONDITION: (%PREPP.coord <> corrcoord) AND
+                         (%PREPP.headkey = KEY_vanprepkey)
+         GLOBAL: #CONDITION: vancomplpossible = true
+                 #ACTION:   BEGIN
+                              SYNREL := vancomplrel;
+                             END
+       *>
+ 
+
+
+17:   !(* (zeer) leuk om te zien ; NB. complementen van degreemodifiers 
+          beginnen als postadjrel *)
+       <*
+         LOCALCONDITION: (%SENTENCE.conjkey  = KEY_omconjkey) AND
+                         (%SENTENCE.coord <> corrcoord) AND
+                         (%SENTENCE.mood = proobjmod)
+         GLOBAL: #CONDITION:(subjectiveadj IN  actsubcefsvar) AND  
+                            (NOT PROOBJSENTfound) AND
+                            (NOT hopfound) (* in: mooi genoeg om te kopen
+                                                  is de om te-zin geen 
+                                                  omtemodrel, maar postadjrel *)
+                 #ACTION:   BEGIN
+                              SYNREL := omtemodrel; 
+                              PROOBJSENTfound := true;
+                            END
+       *>
+
+18: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (THANPpossible) AND
+                             (NOT DEGREECOMPLfound)
+                 #ACTION:   BEGIN
+                              SYNREL := postadjrel; 
+                              DEGREECOMPLfound := true
+                            END
+       *>
+
+
+19:  !(* This subrule is relevant for testing purposes only. In sentential
+       contexts complement sentences occur always outside of the ADJP.*)
+       <*
+         LOCALCONDITION: (%SENTENCE.senttype = subordinateclause) AND
+                         (%SENTENCE.adverbial = false)            AND
+                                          !(* JO,30-AUG-1988 13:51:46 *)
+D 3
+                         (%SENTENCE.mood NOT IN [anterelative, relative]) 
+E 3
+I 3
+                         NOT (%SENTENCE.mood IN [anterelative, relative]) 
+E 3
+                                          !(* 14-JUL-1989 FJ *)      AND
+                         (%SENTENCE.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := postadjrel; 
+                              PASENTCOMPLfound := true;
+                              COMPLfound := true;
+                            END
+       *>
+
+
+20:    !(* for example in: zo mooi dat het vervelend is om te vertrekken zal het 
+          weer hier wel niet worden *)
+       <*
+         LOCALCONDITION: (%SENTENCE.conjkey = KEY_datconjkey)  AND
+                         (%SENTENCE.coord <> corrcoord)
+         GLOBAL: #CONDITION: (DEGREEMODfound) AND
+                             (NOT DEGREECOMPLfound) AND
+                             (COMPARATIVEcomplexpected)
+                 #ACTION:   BEGIN
+                              SYNREL := resultrel;
+                              DEGREECOMPLfound := true;
+                              COMPARATIVEcomplfound := true;
+                            END
+       *>
+
+26: 
+       <*
+         LOCALCONDITION: (%SENTENCE.conjkey  = KEY_omconjkey) AND
+                         (%SENTENCE.coord <> corrcoord) AND
+                         (%SENTENCE.mood IN [declarative, proobjmod])
+         GLOBAL: #CONDITION: NOT DEGREECOMPLfound  AND
+                             (HOPfound OR omcomplexpected)
+                 #ACTION:   BEGIN
+                              SYNREL := postadjrel; 
+                              DEGREECOMPLfound := true
+                            END
+       *>
+
+
+
+!(* the next part is a partial copy of nodes 29-35 and 38-41 
+   in SENTENCEsrule (J.O.) *)
+
+31: !(* 29 *)
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (NOT negorposfound)
+                 #ACTION:   BEGIN
+                              SYNREL := negrel;
+                              negorposfound := true;
+                            END
+       *>
+
+32: !(* 30 *)
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (NOT negorposfound)
+                 #ACTION:   BEGIN
+                              SYNREL := posrel;
+                              negorposfound := true;
+                            END
+       *>
+
+33: !(* 31 *)
+       <*
+         LOCALCONDITION: (%ADVP.actsubcefs *[sentadv, causadv] <> [])  AND
+                         (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := sentadvrel;
+                              stadvfound := true
+                            END
+       *>
+
+
+34: !(* 32 *)
+       <*
+         LOCALCONDITION: (%PREPP.actsubcefs * [according, caus] <> []) AND
+                         (NOT %PREPP.stranded) AND
+                         (%PREPP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := sentadvrel;
+                              stadvfound := true
+                            END
+       *>
+
+
+35: !(* 33 *)
+       <*
+         LOCALCONDITION: (tempadv IN %ADVP.actsubcefs)  AND
+                         (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := tempadvrel;
+                              stadvfound := true
+                            END
+       *>
+
+36: !(* 34 *)
+       <*
+         LOCALCONDITION: (temp IN %PREPP.actsubcefs) AND
+                         (NOT %PREPP.stranded) AND
+                         (%PREPP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := tempadvrel;
+                              stadvfound := true
+                            END
+       *>
+
+37: !(* 35 *)
+       <*
+         LOCALCONDITION: (%NP.temporal = true)  AND
+                         (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := tempadvrel;
+                              stadvfound := true
+                            END
+       *>
+
+
+38: !(* 38 *) 
+       <*
+         LOCALCONDITION: (locadv IN %ADVP.actsubcefs)  AND
+                         (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := locadvrel;
+                            END
+       *>
+
+39: !(* 39 *) 
+       <*
+         LOCALCONDITION: (NOT %PREPP.stranded)        AND
+                         (loc IN %PREPP.actsubcefs) AND
+                         (%PREPP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := locadvrel;
+                            END
+       *>
+
+40: !(* 40 *)
+       <*
+         LOCALCONDITION: (%RADVP.radvkey <> KEY_erRADVkey  ) AND
+                         (%RADVP.radvkey <> KEY_daarRADVkey) AND 
+                         (%RADVP.radvkey <> KEY_hierRADVkey)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := locadvrel;
+                            END
+       *>
+
+41: !(* 41 *)
+       <*
+         LOCALCONDITION: (%ADVP.Qstatus = true )  AND
+                         (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := agvpadvrel;
+                              stadvfound := true;
+                            END
+       *>
+
+
+
+
+
+HFINAL: #CONDITION: ((NOT reflrelfound) OR (reflexivityvar = reflexive))
+                                        !(*JO,  7-NOV-1988 14:26:22 *) AND
+                    (
+D 3
+                     (NOT ((COMPLfound = true) AND 
+                          (adjpatternefsvar * [synnoadjpargs] <> [])
+                         ) !(* FJ, 29/11/88*) OR
+                     (actsubcefsvar * [subjectiveadj] <> []) !(* FJ, 27/07/89;
+                      (met het oog op voorobjmods) *)
+                    )
+E 3
+I 3
+                     COMPLfound <= 
+                        ((adjpatternefsvar * [synnoadjpargs] = [])
+                                        !(* FJ, 29/11/88*) OR
+                         (actsubcefsvar * [subjectiveadj] <> []) 
+                                        !(* FJ, 27/07/89;
+                                           met het oog op voorobjmods *) 
+                        )
+E 3
+                    )   AND
+D 3
+                    (NOT ((PREPOBJexpected = false) AND
+                         (PREPOBJfound OR PAobjfound OR erposPAobjfound)) 
+                    ) !(* FJ, 29/06/89*)  AND
+                    
+                    
+E 3
+I 3
+                    ((PREPOBJexpected = false) <= 
+                         NOT (PREPOBJfound OR PAobjfound OR erposPAobjfound)
+                    ) !(* FJ, 29/06/89 *)  AND
+E 3
+                    (((adjpatternefsvar - AUX_prepsentadjps) = []) <=
+D 3
+                     (erPREPPfound OR strandedPREPPfound)    
+E 3
+I 3
+                      (erPREPPfound OR strandedPREPPfound)    
+E 3
+                    ) 
+D 3
+                    
+E 3
+                   
+       #ACTION: BEGIN
+                   reduceadjpatterns(adjpatternefsvar);
+                   IF  ((PREPOBJfound OR PAOBJfound OR erposPAOBJfound) AND
+                       (NOT (erPREPPfound OR strandedPREPPfound))
+                      ) 
+                   THEN 
+                        adjpatternefsvar := 
+                        (adjpatternefsvar - AUX_sentadjps);
+                   reduceadjsubcs(actsubcefsvar);
+
+                   IF ((adjpatternefsvar <> []) AND
+                       (actsubcefsvar <> [])) AND
+                       (NOT ((COMPARATIVEexpected) 
+                              AND (NOT COMPARATIVEfound))) AND
+                       (NOT ((COMPARATIVEcomplexpected) 
+                              AND (NOT COMPARATIVEcomplfound))) AND
+                       (NOT ((SUPERLATIVEexpected) 
+                              AND (NOT SUPERLATIVEfound)))      AND
+                       (NOT ((HOPexpected)
+                             AND (NOT HOPfound)))
+D 3
+ 
+E 3
+                  THEN 
+                     BEGIN
+                       MAKET_ADJP;
+                       $ADJP.req := reqvar;
+                       $ADJP.class := classvar;
+                       $ADJP.deixis := deixisvar;
+                       $ADJP.aspect := aspectvar;
+                       $ADJP.retro := retrovar;
+                       $ADJP.actuseefs := actuseefsvar;
+                       $ADJP.eformation := eformationvar;
+                       $ADJP.eNominalised := enominalisedvar;
+                       $ADJP.form := formvar;
+                       $ADJP.eORenform := eORenFormvar;
+                       $ADJP.actsubcefs := actsubcefsvar;
+                       $ADJP.thetaadj := thetaadjvar;
+                       $ADJP.adjpatternefs := adjpatternefsvar;
+                       $ADJP.mood := moodvar;                     
+                       $ADJP.temporal := temporalvar;         
+                       $ADJP.reflexivity := reflexivityvar;
+                     END;
+               END
+*>
+END;
+& 
+
+
+
+%THANASPsrule
+
+
+REGULAREXPRESSION:
+
+THANP =   THANAS/1 . (NP/2 | PREPP/3 | ADVP/4 | DETP/5 | ADJP/6) 
+
+
+CONDITIONSANDACTIONS:
+
+VAR
+    reqvar :: polarityEFFSETtype;
+    envvar :: polarityEFFSETtype;
+    thanasvar  :: thanascompltype;
+
+
+
+
+<* 
+HINIT: BEGIN
+         reqvar := [omegapol, pospol, negpol];
+         envvar := [omegapol, pospol, negpol];
+         thanasvar := omegacompl;
+       END;
+
+1: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+                              IF %THANAS.key = KEY_danthanaskey
+                              THEN thanasvar := dancompl;
+                              IF %THANAS.key = KEY_alsthanaskey
+                              THEN thanasvar := alscompl;
+                             END
+
+      *>
+2: 
+       <*
+         LOCALCONDITION: (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := complrel
+                            END
+       *>
+3: 
+       <*
+         LOCALCONDITION: (%PREPP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := complrel
+                            END
+       *>
+4: 
+       <*
+         LOCALCONDITION: (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := complrel
+                            END
+       *>
+
+5: 
+       <*
+         LOCALCONDITION: %DETP.definite = indef
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := complrel
+                            END
+       *>
+
+6: 
+       <*
+         LOCALCONDITION: (%ADJP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := complrel
+                            END
+       *>
+
+HFINAL: #CONDITION: true
+        #ACTION: BEGIN
+                    MAKET_THANP;
+                    $THANP.req := reqvar;
+                    $THANP.env := envvar;
+                    $THANP.thanas := thanasvar;
+                  
+                 END  
+*>
+END;
+& 
+
+
+%QPsrule
+
+REGULAREXPRESSION:
+
+QP = ([ADVP/1 | NP/2 ]) . [ART/3] . Q/4 . [ THANP/5 ]
+ 
+CONDITIONSANDACTIONS:
+
+VAR 
+                     MEESTexpected :: BOOLEAN;
+                     MEESTfound :: BOOLEAN;
+                     COMPLfound ::: BOOLEAN;
+                     reqvar :: polarityEFFSETtype;
+                     envvar :: polarityEFFSETtype;
+                     definitevar :: deftype;
+                     posspredvar :: posspredtype;
+                     possnumbersvar :: numberSETtype;
+                     posscomasvar :: posscomaSETtype;
+                     moodvar :: xpmoodtype;
+                     thanasvar :: thanascompltype;
+                     hopvar :: hoptype;
+ 
+
+
+<* 
+HINIT: BEGIN
+         MEESTexpected := false;
+         MEESTfound := false;
+         COMPLfound := false;
+         reqvar := [pospol, negpol, omegapol];
+         envvar := [pospol, negpol, omegapol];
+         definitevar := omegadef;
+         posspredvar := false;
+         possnumbersvar := [singular];
+         posscomasvar := [count];
+         moodvar := declxpmood;
+         thanasvar := omegacompl;
+         hopvar := false;
+       END;
+
+1:    
+       <*
+         LOCALCONDITION: degreeadv IN %ADVP.actsubcefs  (* te (veel) *)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := premodrel
+                            END
+       *>  
+
+2: 
+       <*
+         LOCALCONDITION: ((%NP.actsubcs * [unitnoun, plurunitnoun] <> []) OR
+                          (%NP.actcomas * [mass] <> []))  AND
+                         (%NP.definite = indef)  (* amountnp *) AND
+                         (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := premodrel
+
+                            END
+       *>  
+
+3: 
+       <*
+         LOCALCONDITION: %ART.key = KEY_hetARTkey
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := artrel;
+                              MEESTexpected := true
+                            END
+       *>  
+
+4: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+                              IF %Q.key = KEY_meestQkey
+                              THEN MEESTfound := true;
+                              reqvar := %Q.req;
+                              envvar := %Q.env;
+                              definitevar := %Q.definite;
+                              posspredvar := %Q.posspred;
+                              possnumbersvar := %Q.possnumbers;
+                              posscomasvar := %Q.posscomas;
+                              moodvar := %Q.mood;
+                              thanasvar := %Q.thanas;
+                              hopvar := %Q.hop;                              
+
+                            END
+       *>
+
+5: 
+       <*
+         LOCALCONDITION: true 
+         GLOBAL: #CONDITION: NOT COMPLfound 
+                 #ACTION:   BEGIN
+                              SYNREL := thanascomplrel;
+                              COMPLfound := true;
+                            END
+       *>
+
+HFINAL: #CONDITION: true
+        #ACTION: BEGIN
+                 MAKET_QP;
+                 IF (NOT ((MEESTexpected) 
+                              AND (NOT MEESTfound)))
+                   THEN 
+                     BEGIN
+                      $QP.req := reqvar;
+                      $QP.env := envvar;
+                      $QP.definite := definitevar;
+                      $QP.posspred := posspredvar;
+                      $QP.possnumbers := possnumbersvar;
+                      $QP.posscomas := posscomasvar;
+                      $QP.mood := moodvar;
+                      $QP.thanas := thanasvar;
+                      $QP.hop := hopvar;
+                     END;
+                 END
+
+           
+*>
+END;
+& 
+
+
+%PPcoord
+REGULAREXPRESSION:
+ 
+PREPP = [COORD/1] .{PREPP/2 .(COORD/3 | PUNC/4)} .PREPP/5 .COORD/6 .PREPP/7
+
+CONDITIONSANDACTIONS:
+
+VAR  
+    actsubcefsvar  ::: prepsubceffsettype;
+    aspectvar      ::: aspecttype;
+    classvar       ::: timeadvclasstype;
+    coordpar       :: coordtype;
+    corr1found     ::: BOOLEAN;
+    deixisvar      :: deixistype;
+    envvar         :: polarityEFFSETtype;
+    expkey         ::: keytype;
+    headkeyvar     ::: keytype;
+    itcommafound   ::: BOOLEAN;
+    itcoordfound   ::: BOOLEAN;
+    iterationfound ::: BOOLEAN;
+    iterationok    ::: BOOLEAN;
+    moodvar        ::: xpmoodtype;
+    postformvar    :: postformtype;
+    postpkeyvar    :: keytype;
+    radvkeyvar     :: keytype;
+    retrovar       ::: retrotype;
+    reqvar         :: polarityEFFSETtype;
+    synppefsvar    :: synpatterneffsettype;
+    specqvar       ::: specqtype;
+    strandedvar    :: BOOLEAN;
+    thetappvar     :: thetapptype;    
+?
+HELP
+
+
+!(* moved to lssurfquo:
+PROCEDURE assqmax(s1::specqtype; VAR s2::specqtype);
+BEGIN
+  IF s1 = yesspec THEN s2 := s1;
+END;*) !(*assqmax*)
+
+?
+
+
+<* 
+
+HINIT: BEGIN
+    actsubcefsvar  := [];
+    aspectvar      := omegaaspect;
+    classvar       := omegatimeadvclass;
+    coordpar       := nocoord;
+    corr1found     := false;
+    deixisvar      := omegadeixis;
+    envvar         := [omegapol, pospol, negpol];
+    expkey         := 0;
+    headkeyvar     := 0;
+    itcommafound   := false;
+    itcoordfound   := false;
+    iterationfound := false;
+    iterationok    := true;
+    moodvar        := declxpmood;
+    postformvar    := pre;
+    postpkeyvar    := 0;
+    radvkeyvar     := 0;
+    retrovar       := false;
+    reqvar         := [omegapol, pospol, negpol];
+    synppefsvar    := [];
+    specqvar       := omegaspec;
+    strandedvar    := false;
+    thetappvar     := omegathetapp;    
+          
+       END;
+ 
+
+1: 
+       <*
+         LOCALCONDITION: (correlative1 IN %COORD.kinds) AND
+                         (ppc IN %COORD.patterns)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              corr1found := true;
+                              expkey     := %COORD.correlative2key;
+                              iterationok := %COORD.iteration;
+                              coordpar   := corrcoord;
+                            END
+       *>
+ 
+
+
+2: 
+       <*
+         LOCALCONDITION: (%PREPP.coord = nocoord) AND
+                         (NOT %PREPP.stranded)
+         GLOBAL: #CONDITION: iterationok                                     AND
+                             (iterationfound <=
+                              ((%PREPP.actsubcefs * actsubcefsvar  <> []) AND
+                               (%PREPP.aspect = aspectvar)                AND
+                               (%PREPP.class = classvar)           AND
+                               (%PREPP.mood = moodvar)                    AND
+                               (%PREPP.retro = retrovar)                  
+                              )
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              IF iterationfound THEN BEGIN
+                                actsubcefsvar  := 
+                                       actsubcefsvar * %PREPP.actsubcefs;
+                                assqmax(%PREPP.specq, specqvar);
+                                IF headkeyvar <> %PREPP.headkey
+                                THEN headkeyvar := 0
+                              END
+                              ELSE BEGIN
+				 actsubcefsvar  := %PREPP.actsubcefs;
+				 aspectvar      := %PREPP.aspect;
+				 classvar       := %PREPP.class;
+				 moodvar        := %PREPP.mood;
+				 retrovar       := %PREPP.retro;
+				 specqvar       := %PREPP.specq;
+                                 headkeyvar     := %PREPP.headkey
+                              END;
+                              iterationfound := true;
+                            END
+       *>
+
+3: 
+       <*
+         LOCALCONDITION: %COORD.iteration                            
+         GLOBAL: #CONDITION: (((NOT corr1found) <=
+                               ( (ppc IN %COORD.patterns) AND
+                                 (simple IN %COORD.kinds)
+                               ) 
+                              )                                           AND
+                              ( corr1found <=
+                                 (( %COORD.key = expkey) AND
+                                  ( correlative2 IN %COORD.kinds)
+                                 )
+                              )                                           AND
+                              (NOT itcommafound)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              IF (NOT corr1found) THEN expkey := %COORD.key;
+                              itcoordfound := true;
+                            END
+       *>
+
+4: 
+       <*
+         LOCALCONDITION: %PUNC.key = KEY_kommaPUNCkey
+         GLOBAL: #CONDITION: (NOT itcoordfound)
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              itcommafound := true;
+                            END
+       *>
+
+
+5: 
+       <*
+         LOCALCONDITION: (%PREPP.coord = nocoord) AND
+                         (NOT %PREPP.stranded)
+         GLOBAL: #CONDITION: (iterationfound <=
+                              ((%PREPP.actsubcefs * actsubcefsvar  <> []) AND
+                               (%PREPP.aspect = aspectvar)                AND
+                               (%PREPP.class = classvar)           AND
+                               (%PREPP.mood = moodvar)                    AND
+                               (%PREPP.retro = retrovar)                  
+                              )
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              IF iterationfound THEN BEGIN
+                                actsubcefsvar  := 
+                                       actsubcefsvar * %PREPP.actsubcefs;
+                                assqmax(%PREPP.specq, specqvar);
+                                IF headkeyvar <> %PREPP.headkey
+                                THEN headkeyvar := 0
+                              END
+                              ELSE BEGIN
+				 actsubcefsvar  := %PREPP.actsubcefs;
+				 aspectvar      := %PREPP.aspect;
+				 classvar       := %PREPP.class;
+				 moodvar        := %PREPP.mood;
+				 retrovar       := %PREPP.retro;
+				 specqvar       := %PREPP.specq;
+                                 headkeyvar     := %PREPP.headkey
+                              END;
+                            END
+       *>
+
+6: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (((NOT corr1found) <=
+                               ( (ppc IN %COORD.patterns) AND
+                                 (simple IN %COORD.kinds)
+                               ) 
+                              )                                           AND
+                              ( corr1found <=
+                                 (( %COORD.key = expkey) AND
+                                  ( correlative2 IN %COORD.kinds)
+                                 )
+                              )                                           AND
+                              (itcoordfound <= 
+                                ((%COORD.key=expkey) AND
+                                 (ppc IN %COORD.patterns)
+                                )
+                              )
+                             )       
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              iterationok := %COORD.iteration;
+                              IF (simple IN %COORD.kinds) AND
+                                 (coordpar = nocoord) THEN
+                                coordpar := simplecoord;
+                            END
+       *>
+
+
+7: 
+       <*
+         LOCALCONDITION: (%PREPP.coord = nocoord) AND
+                         (NOT %PREPP.stranded)
+         GLOBAL: #CONDITION:  ((%PREPP.actsubcefs * actsubcefsvar  <> []) AND
+                               (%PREPP.aspect = aspectvar)                AND
+                               (%PREPP.class = classvar)           AND
+                               (%PREPP.mood = moodvar)                    AND
+                               (%PREPP.retro = retrovar)                  
+                              )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              IF headkeyvar <> %PREPP.headkey
+                              THEN headkeyvar := 0;
+                              actsubcefsvar  := 
+                                       actsubcefsvar * %PREPP.actsubcefs;
+                              assqmax(%PREPP.specq, specqvar);
+                            END
+       *>
+
+
+HFINAL: #CONDITION: iterationfound <= iterationok
+        #ACTION: BEGIN
+                    MAKET_PREPP;
+		    $PREPP.req         := reqvar;
+		    $PREPP.env         := envvar;
+		    $PREPP.actsubcefs  := actsubcefsvar;
+		    $PREPP.mood        := moodvar;
+		    $PREPP.synppefs    := [];
+		    $PREPP.headkey     := headkeyvar;
+		    $PREPP.class       := classvar;
+		    $PREPP.deixis      := deixisvar;
+		    $PREPP.aspect      := aspectvar;
+		    $PREPP.retro       := retrovar;
+		    $PREPP.superdeixis := omegadeixis;
+		    $PREPP.thetapp     := omegathetapp;
+		    $PREPP.radvkey     := 0;
+		    $PREPP.stranded    := false;
+		    $PREPP.specq       := specqvar;
+                    $PREPP.coord       := coordpar;
+                  END
+*>
+END;
+& 
+
+
+
+
+
+%AdvPcoord
+REGULAREXPRESSION:
+ 
+AdvP = [COORD/1] .{AdvP/2 .(COORD/3 | PUNC/4)} .AdvP/5 .COORD/6 .AdvP/7
+
+CONDITIONSANDACTIONS:
+
+VAR  
+    actsubcefsvar  ::: advsubceffsettype;
+    advpatternsefsvar    :: synpatterneffsettype;
+    aspectvar      ::: aspecttype;
+    classvar       ::: timeadvclasstype;
+    coordpar       :: coordtype;
+    corr1found     ::: BOOLEAN;
+    deixisvar      :: deixistype;
+    envvar         :: polarityEFFSETtype;
+    expkey         ::: keytype;
+    itcommafound   ::: BOOLEAN;
+    itcoordfound   ::: BOOLEAN;
+    iterationfound ::: BOOLEAN;
+    iterationok    ::: BOOLEAN;
+    moodvar        ::: xpmoodtype;
+    possnietnpvar  :: possnietnptype;
+    qstatusvar     ::: qstatustype;
+    radvbvar       :: radvtype;
+    retrovar       ::: retrotype;
+    reqvar         :: polarityEFFSETtype;
+    temporalvar    ::: BOOLEAN;
+    thanasvar      :: thanascompltype;
+    thanascomplvar :: compltype;
+    thetaadvvar    :: thetaadvtype;    
+
+
+
+<* 
+
+HINIT: BEGIN
+    actsubcefsvar  := [];
+    advpatternsefsvar := [];
+    aspectvar      := omegaaspect;
+    classvar       := omegatimeadvclass;
+    coordpar       := nocoord;
+    corr1found     := false;
+    deixisvar      := omegadeixis;
+    envvar         := [omegapol, pospol, negpol];
+    expkey         := 0;
+    itcommafound   := false;
+    itcoordfound   := false;
+    iterationfound := false;
+    iterationok    := true;
+    moodvar        := declxpmood;
+    possnietnpvar  := false;
+    qstatusvar     := false;
+    radvbvar       := false;
+    retrovar       := false;
+    reqvar         := [omegapol, pospol, negpol];
+    temporalvar    := false;
+    thanasvar      := omegacompl;
+    thanascomplvar := false;
+    thetaadvvar    := omegathetaadv;
+       END;
+ 
+
+1: 
+       <*
+         LOCALCONDITION: (correlative1 IN %COORD.kinds) AND
+                         (ppc IN %COORD.patterns)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              corr1found := true;
+                              expkey     := %COORD.correlative2key;
+                              iterationok := %COORD.iteration;
+                              coordpar   := corrcoord;
+                            END
+       *>
+ 
+
+
+2: 
+       <*
+         LOCALCONDITION: (%AdvP.coord = nocoord) 
+         GLOBAL: #CONDITION: iterationok                                     AND
+                             (iterationfound <=
+                              ((%AdvP.actsubcefs * actsubcefsvar  <> []) AND
+                               (%AdvP.aspect = aspectvar)                AND
+                               (%AdvP.class = classvar)                  AND
+                               (%AdvP.mood = moodvar)                    AND
+                               (%ADVP.retro = retrovar)                  AND
+                               (%AdvP.temporal = temporalvar)            AND
+                               (%ADVP.Qstatus = Qstatusvar)     
+                              )
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              IF iterationfound THEN BEGIN
+                                actsubcefsvar  := 
+                                       actsubcefsvar * %ADVP.actsubcefs
+                              END
+                              ELSE BEGIN
+				 actsubcefsvar  := %ADVP.actsubcefs;
+				 aspectvar      := %ADVP.aspect;
+				 classvar       := %ADVP.class;
+				 moodvar        := %ADVP.mood;
+				 retrovar       := %ADVP.retro;
+                                 temporalvar    := %ADVP.temporal;
+                                 Qstatusvar     := %ADVP.Qstatus
+                              END;
+                              iterationfound := true;
+                            END
+       *>
+
+3: 
+       <*
+         LOCALCONDITION: %COORD.iteration                            
+         GLOBAL: #CONDITION: (((NOT corr1found) <=
+                               ( (ppc IN %COORD.patterns) AND
+                                 (simple IN %COORD.kinds)
+                               ) 
+                              )                                           AND
+                              ( corr1found <=
+                                 (( %COORD.key = expkey) AND
+                                  ( correlative2 IN %COORD.kinds)
+                                 )
+                              )                                           AND
+                              (NOT itcommafound)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              IF (NOT corr1found) THEN expkey := %COORD.key;
+                              itcoordfound := true;
+                            END
+       *>
+
+4: 
+       <*
+         LOCALCONDITION: %PUNC.key = KEY_kommaPUNCkey
+         GLOBAL: #CONDITION: (NOT itcoordfound)
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              itcommafound := true;
+                            END
+       *>
+
+
+5: 
+       <*
+         LOCALCONDITION: (%ADVP.coord = nocoord) 
+         GLOBAL: #CONDITION: (iterationfound <=
+                              ((%ADVP.actsubcefs * actsubcefsvar  <> []) AND
+                               (%ADVP.aspect = aspectvar)                AND
+                               (%ADVP.class = classvar)                  AND
+                               (%ADVP.mood = moodvar)                    AND
+                               (%ADVP.retro = retrovar)                  AND
+                               (%AdvP.temporal = temporalvar)            AND
+                               (%ADVP.Qstatus = Qstatusvar)     
+                              )
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              IF iterationfound THEN BEGIN
+                                actsubcefsvar  := 
+                                       actsubcefsvar * %ADVP.actsubcefs
+                              END
+                              ELSE BEGIN
+				 actsubcefsvar  := %ADVP.actsubcefs;
+				 aspectvar      := %ADVP.aspect;
+				 classvar       := %ADVP.class;
+				 moodvar        := %ADVP.mood;
+				 retrovar       := %ADVP.retro;
+                                 temporalvar    := %ADVP.temporal;
+                                 qstatusvar     := %ADVP.qstatus
+                              END;
+                            END
+       *>
+
+6: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (((NOT corr1found) <=
+                               ( (ppc IN %COORD.patterns) AND
+                                 (simple IN %COORD.kinds)
+                               ) 
+                              )                                           AND
+                              ( corr1found <=
+                                 (( %COORD.key = expkey) AND
+                                  ( correlative2 IN %COORD.kinds)
+                                 )
+                              )                                           AND
+                              (itcoordfound <= 
+                                ((%COORD.key=expkey) AND
+                                 (ppc IN %COORD.patterns)
+                                )
+                              )
+                             )       
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              iterationok := %COORD.iteration;
+                              IF (simple IN %COORD.kinds) AND
+                                 (coordpar = nocoord) THEN
+                                coordpar := simplecoord;
+                            END
+       *>
+
+
+7: 
+       <*
+         LOCALCONDITION: (%ADVP.coord = nocoord) 
+         GLOBAL: #CONDITION:  ((%ADVP.actsubcefs * actsubcefsvar  <> []) AND
+                               (%ADVP.aspect = aspectvar)                AND
+                               (%ADVP.class = classvar)                  AND
+                               (%ADVP.mood = moodvar)                    AND
+                               (%ADVP.retro = retrovar)                  AND
+                               (%AdvP.temporal = temporalvar)            AND
+                               (%ADVP.Qstatus = Qstatusvar)     
+                              )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              actsubcefsvar  := 
+                                       actsubcefsvar * %ADVP.actsubcefs;
+                            END
+       *>
+
+
+HFINAL: #CONDITION: iterationfound <= iterationok
+        #ACTION: BEGIN
+                    MAKET_ADVP;
+		    $ADVP.req         := reqvar;
+		    $ADVP.env         := envvar;
+		    $ADVP.actsubcefs  := actsubcefsvar;
+		    $ADVP.mood        := moodvar;
+		    $ADVP.advpatternefs := [];
+		    $ADVP.class       := classvar;
+		    $ADVP.deixis      := deixisvar;
+		    $ADVP.aspect      := aspectvar;
+		    $ADVP.retro       := retrovar;
+		    $ADVP.superdeixis := omegadeixis;
+		    $ADVP.thetaadv    := omegathetaadv;
+                    $ADVP.Qstatus     := Qstatusvar;
+                    $ADVP.temporal    := temporalvar;
+                    $ADVP.possnietnp  := false;
+                    $ADVP.radvb       := false;
+                    $ADVP.thanas      := thanasvar;
+                    $ADVP.thanascompl := thanascomplvar;
+                    $ADVP.coord       := coordpar;
+                  END
+*>
+END;
+& 
+
+
+
+
+
+%ADJPcoord
+REGULAREXPRESSION:
+ 
+ADJP = [COORD/1] .{ADJP/2 .(COORD/3 | PUNC/4)} .ADJP/5 .COORD/6 .ADJP/7
+
+CONDITIONSANDACTIONS:
+
+VAR  
+    reqvar           :: polarityEFFSETtype;
+    envvar           :: polarityEFFSETtype;
+    classvar         :: timeadvclasstype;
+    deixisvar        :: deixistype;
+    aspectvar        :: aspecttype;
+    retrovar         :: retrotype;
+    actuseefsvar     ::: adjuseEFFSETtype;
+    eformationvar    :: eFormationtype;
+    enominalisedvar  :: enominalisedtype;
+    formvar          ::: adjadvFormtype;
+    eORenFormvar     :: eORenFormtype;
+    temporalvar      :: temporaltype;
+    actsubcefsvar    :: adjsubcEFFSETtype;
+    thetaadjvar      :: thetaadjtype;
+    adjpatternefsvar :: synpatternEFFSETtype;
+    reflexivityvar   :: reflexivetype;
+    moodvar          ::: xpmoodtype;
+    coordpar         :: coordtype;
+    corr1found       ::: BOOLEAN;
+    expkey           ::: keytype;
+    itcommafound     ::: BOOLEAN;
+    itcoordfound     ::: BOOLEAN;
+    iterationfound   ::: BOOLEAN;
+    iterationok      ::: BOOLEAN;
+
+
+
+<* 
+
+HINIT: BEGIN
+    reqvar           := [pospol, negpol, omegapol];
+    envvar           := [pospol, negpol, omegapol];
+    classvar         := omegatimeadvclass;
+    deixisvar        := omegadeixis;
+    aspectvar        := omegaaspect;
+    retrovar         := false;
+    actuseefsvar     := [];
+    eformationvar    := RegEformation;
+    enominalisedvar  := Regenominalised;
+    formvar          := positive;
+    eORenFormvar     := NoForm;
+    temporalvar      := false;
+    actsubcefsvar    := [otheradj];
+    thetaadjvar      := omegathetaadjp;
+    adjpatternefsvar := [];
+    reflexivityvar   := notreflexive;
+    moodvar          := declxpmood;
+    coordpar         := nocoord;
+    corr1found       := false;
+    expkey           := 0;
+    itcommafound     := false;
+    itcoordfound     := false;
+    iterationfound   := false;
+    iterationok      := true;
+       END;
+ 
+
+1: 
+       <*
+         LOCALCONDITION: (correlative1 IN %COORD.kinds) AND
+                         (apc IN %COORD.patterns)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              corr1found := true;
+                              expkey     := %COORD.correlative2key;
+                              iterationok := %COORD.iteration;
+                              coordpar   := corrcoord;
+                            END
+       *>
+ 
+
+
+2: 
+       <*
+         LOCALCONDITION: (%ADJP.coord = nocoord) 
+         GLOBAL: #CONDITION: iterationok                                     AND
+                             (iterationfound <=
+                              ((%ADJP.actuseefs * actuseefsvar <> []) AND
+                               (%ADJp.mood = moodvar)                 AND
+                               (%ADJP.form = formvar)
+                              )
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              IF iterationfound THEN BEGIN
+                                 actuseefsvar := actuseefsvar * %ADJP.actuseefs
+                              END
+                              ELSE BEGIN
+                                   actuseefsvar := %ADJP.actuseefs;
+                                   moodvar      := %ADJP.mood;
+                                   formvar      := %ADJP.form
+                              END;
+                              iterationfound := true;
+                            END
+       *>
+
+3: 
+       <*
+         LOCALCONDITION: %COORD.iteration                            
+         GLOBAL: #CONDITION: (((NOT corr1found) <=
+                               ( (apc IN %COORD.patterns) AND
+                                 (simple IN %COORD.kinds)
+                               ) 
+                              )                                           AND
+                              ( corr1found <=
+                                 (( %COORD.key = expkey) AND
+                                  ( correlative2 IN %COORD.kinds)
+                                 )
+                              )                                           AND
+                              (NOT itcommafound)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              IF (NOT corr1found) THEN expkey := %COORD.key;
+                              itcoordfound := true;
+                            END
+       *>
+
+4: 
+       <*
+         LOCALCONDITION: %PUNC.key = KEY_kommaPUNCkey
+         GLOBAL: #CONDITION: (NOT itcoordfound)
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              itcommafound := true;
+                            END
+       *>
+
+
+5: 
+       <*
+         LOCALCONDITION: (%ADJP.coord = nocoord) 
+         GLOBAL: #CONDITION: (iterationfound <=
+                              ((%ADJP.actuseefs * actuseefsvar <> []) AND
+                               (%ADJp.mood = moodvar)                 AND
+                               (%ADJP.form = formvar)
+                              )
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              IF iterationfound THEN BEGIN
+                                 actuseefsvar := actuseefsvar * %ADJP.actuseefs
+                              END
+                              ELSE BEGIN
+                                   actuseefsvar := %ADJP.actuseefs;
+                                   moodvar      := %ADJP.mood;
+                                   formvar      := %ADJP.form
+                              END;
+                            END
+       *>
+
+6: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (((NOT corr1found) <=
+                               ( (apc IN %COORD.patterns) AND
+                                 (simple IN %COORD.kinds)
+                               ) 
+                              )                                           AND
+                              ( corr1found <=
+                                 (( %COORD.key = expkey) AND
+                                  ( correlative2 IN %COORD.kinds)
+                                 )
+                              )                                           AND
+                              (itcoordfound <= 
+                                ((%COORD.key=expkey) AND
+                                 (apc IN %COORD.patterns)
+                                )
+                              )
+                             )       
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              iterationok := %COORD.iteration;
+                              IF (simple IN %COORD.kinds) AND
+                                 (coordpar = nocoord) THEN
+                                coordpar := simplecoord;
+                            END
+       *>
+
+
+7: 
+       <*
+         LOCALCONDITION: (%ADJP.coord = nocoord) 
+         GLOBAL: #CONDITION:  ((%ADJP.actuseefs * actuseefsvar <> []) AND
+                               (%ADJp.mood = moodvar)                 AND
+                               (%ADJP.form = formvar)
+                              )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                            END
+       *>
+
+
+HFINAL: #CONDITION: iterationfound <= iterationok
+        #ACTION: BEGIN
+                    MAKET_ADJP;
+                    $ADJP.req           := reqvar;
+                    $ADJP.env           := envvar;           
+                    $ADJP.class         := classvar;
+                    $ADJP.deixis        := deixisvar;
+                    $ADJP.aspect        := aspectvar;
+                    $ADJP.retro         := retrovar;
+                    $ADJP.actuseefs     := actuseefsvar;
+                    $ADJP.eformation    := eformationvar;
+                    $ADJP.enominalised  := enominalisedvar;
+                    $ADJP.form          := formvar;
+                    $ADJP.eORenform     := eORenFormvar;
+                    $ADJP.temporal      := temporalvar;
+                    $ADJP.actsubcefs    := actsubcefsvar;
+                    $ADJP.thetaadj      := thetaadjvar;
+                    $ADJP.adjpatternefs := adjpatternefsvar;
+                    $ADJP.reflexivity   := reflexivityvar;
+                    $ADJP.mood          := moodvar;
+                    $ADJP.coord         := coordpar;
+                  END
+*>
+END;
+& 
+
+
+
+!(*
+X means: incorporated
+Xtemporal attributes: if they are the same for all conjuncts, then
+ copy them, otherwise set these to default values (temporal: false)
+Xdefinite: def overrules indef, adef
+Xperson: 1 overrules 2,4,5; 2,4,5 win over 3
+Xnumber: computenumber
+Xcases: intersection niet leeg
+Xgenders: [omegagender]
+Xsexes: []
+Xactsubcs: intersection if not empty; plurunitnoun if unit/plurunit; empty
+              otherwise
+Xpossgeni: false overrules true
+Xanimate: noanimate overrules animate
+Xhuman: nohuman overrules yeshuman
+Xactcomas: intersection if not empty otherwise []
+Xthetanp: omegathetanp
+Xnounpatternefs:[]
+Xposspred: false overrules true
+Xpossnietnp: false overrules true
+Xmood: must be equal
+Xgeneric: omegageneric
+XpossRform: irrelevant
+Xsyntquant: omegaquant overrules Aquant overrules Equant
+XNPhead: otherNP
+Xspecq: special function!!
+*)
+
+
+%NPcoord
+REGULAREXPRESSION:
+ 
+NP = [COORD/1] .{NP/2 .(COORD/3 | PUNC/4)} .NP/5 .COORD/6 .NP/7
+
+CONDITIONSANDACTIONS:
+
+VAR  
+    reqvar              :: polarityEFFSETtype;
+    envvar              :: polarityEFFSETtype;
+    superdeixisvar      :: deixistype;
+    classvar            :: timeadvclasstype;
+    deixisvar           :: deixistype;
+    aspectvar           :: aspecttype;
+    retrovar            :: retrotype;
+    definitevar         :: deftype;
+    personvar           :: persontype;
+    numbervar           ::: numbertype;
+    casesvar            ::: caseSETtype;
+    gendersvar          :: genderSETtype;
+    sexesvar            :: sexSETtype;
+    actsubcsvar         :: nounsubcEFFSETtype;
+    temporalvar         :: temporaltype;
+    possgenivar         :: possgenitype;
+    animatevar          :: animatetype;
+    humanvar            :: humantype;
+    actcomasvar         :: posscomaSETtype;
+    thetanpvar          :: thetanptype;
+    nounpatternefsvar   :: synpatternEFFSETtype;
+    posspredvar         :: posspredtype;
+    possnietnpvar       :: possnietnptype;
+    moodvar             ::: xpmoodtype;
+    genericvar          :: generictype;
+    possRformvar        :: possRformtype;
+    syntquantvar        :: syntquanttype;
+    NPheadvar           :: NPheadtype;
+    specQvar            :: specQtype;
+    coordpar            :: coordtype;
+    corr1found          ::: BOOLEAN;
+    expkey              ::: keytype;
+    inducednumbersvar   ::: numberSETtype;
+    itcommafound        ::: BOOLEAN;
+    itcoordfound        ::: BOOLEAN;
+    iterationfound      ::: BOOLEAN;
+    iterationok         ::: BOOLEAN;
+?
+HELP
+
+PROCEDURE assqmax(s1::specqtype; VAR s2::specqtype);
+BEGIN
+  IF s1 = yesspec THEN s2 := s1;
+END !(*assqmax*);
+
+PROCEDURE compactcomas(acs::posscomaSETtype; VAR acsv::posscomaSETtype);
+BEGIN
+  IF   (acs * acsv <> []) THEN acsv := acsv * acs
+  ELSE acsv := [];
+END !(*compactcomas*);
+
+PROCEDURE companimate(h::animatetype; VAR hv::animatetype);
+BEGIN
+  IF   (h = noanimate) OR (hv = noanimate) THEN hv := noanimate
+  ELSE hv := yesanimate;
+END !(*companimate*);
+
+PROCEDURE compdef(d::deftype; VAR dv::deftype);
+BEGIN
+  IF       (d = def)    OR (dv = def)  THEN dv := def
+  ELSE IF  (d = adef)   OR (dv = adef) THEN dv := adef
+  ELSE dv := indef;
+END !(*compdef*);
+
+PROCEDURE comphuman(h::humantype; VAR hv::humantype);
+BEGIN
+  IF   (h = nohuman) OR (hv = nohuman) THEN hv := nohuman
+  ELSE hv := yeshuman;
+END !(*comphuman*);
+
+PROCEDURE comppers(p::persontype; VAR pv::persontype);
+BEGIN
+  IF       (p = 1) OR (pv = 1)               THEN pv :=1
+  ELSE IF  (p IN [2,4,5]) OR (pv IN [2,4,5]) THEN pv :=2
+  ELSE pv :=3;
+END !(*comppers*);
+
+PROCEDURE comppossgeni(pg::possgenitype; VAR pgv::possgenitype);
+BEGIN
+IF   (pg = false) OR (pgv = false) THEN pgv := false
+ELSE pgv := true;
+END !(*comppossgeni*);
+
+
+PROCEDURE comppossnietnp(pn::possnietnptype; VAR pnv::possnietnptype);
+BEGIN
+IF   (pn = false) OR (pnv = false) THEN pnv := false
+ELSE pnv := true;
+END !(*comppossnietnp*);
+
+PROCEDURE compposspred(p::posspredtype; VAR pv::posspredtype);
+BEGIN
+IF   (p = false) OR (pv = false) THEN pv := false
+ELSE pv := true;
+END !(*compposspred*);
+
+
+PROCEDURE compsyntquant(s::syntquanttype; VAR sv::syntquanttype);
+BEGIN
+  IF      (s = omegaquant) OR (sv = omegaquant) THEN sv := omegaquant
+  ELSE IF (s = Aquant) OR (sv = Aquant)         THEN sv := Aquant
+  ELSE sv := Equant;
+END !(*compsyntquant*);
+
+PROCEDURE comptemp(
+    VAR temporalvar :: temporaltype;
+    VAR classvar    :: timeadvclasstype;
+    VAR deixisvar   :: deixistype;
+    VAR retrovar    :: retrotype;
+    VAR aspectvar   :: aspecttype
+);
+BEGIN
+  IF   (%NP.temporal = temporalvar) AND
+       (%NP.class    = classvar)    AND
+       (%NP.deixis   = deixisvar)   AND
+       (%NP.retro    = retrovar)    AND
+       (%NP.aspect   = aspectvar)
+  THEN BEGIN 
+    temporalvar := %NP.temporal;
+    classvar    := %NP.class;
+    deixisvar   := %NP.deixis;
+    retrovar    := %NP.retro;
+    aspectvar   := %NP.aspect;
+  END
+  ELSE BEGIN
+    temporalvar := false;
+    classvar    := omegatimeadvclass;
+    deixisvar   := omegadeixis;
+    retrovar    := false;
+    aspectvar   := omegaAspect;
+  END;
+END!(*comptemp*);
+?
+
+
+<* 
+
+HINIT: BEGIN
+    reqvar              := [pospol, omegapol, negpol];
+    envvar              := [pospol, omegapol, negpol];
+    superdeixisvar      := omegadeixis;
+    classvar            := omegatimeadvclass;
+    deixisvar           := omegadeixis;
+    aspectvar           := omegaaspect;
+    retrovar            := false;
+    definitevar         := omegadef;
+    personvar           := 3;
+    numbervar           := omeganumber;
+    casesvar            := [];
+    gendersvar          := [];
+    sexesvar            := [];
+    actsubcsvar         := [];
+    temporalvar         := false;
+    possgenivar         := false;
+    animatevar          := omegaanimate;
+    humanvar            := omegahuman;
+    actcomasvar         := [];
+    thetanpvar          := omegathetanp;
+    nounpatternefsvar   := [];
+    posspredvar         := false;
+    possnietnpvar       := false;
+    moodvar             := declxpmood;
+    genericvar          := omegageneric;
+    possRformvar        := false;
+    syntquantvar        := omegaquant;
+    NPheadvar           := otherNP;
+    specQvar            := omegaspec;
+    coordpar            := nocoord;
+    corr1found          := false;
+    expkey              := 0;
+    inducednumbersvar   := [];
+    itcommafound        := false;
+    itcoordfound        := false;
+    iterationfound      := false;
+    iterationok         := true;
+       END;
+ 
+
+1: 
+       <*
+         LOCALCONDITION: (correlative1 IN %COORD.kinds) AND
+                         (npc IN %COORD.patterns)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              corr1found := true;
+                              expkey     := %COORD.correlative2key;
+                              iterationok := %COORD.iteration;
+                              coordpar   := corrcoord;
+                            END
+       *>
+ 
+
+
+2: 
+       <*
+         LOCALCONDITION: (%NP.coord = nocoord) AND
+D 3
+                         (%NP.NPhead NOT IN [hetNP,jegenNP,zegenNP,
+E 3
+I 3
+                         NOT (%NP.NPhead IN [hetNP,jegenNP,zegenNP,
+E 3
+                                      reducedpersproNP])
+         GLOBAL: #CONDITION: iterationok                                     AND
+                             (iterationfound <=
+                              ((%NP.cases * casesvar <> []) AND
+                               (%NP.mood = moodvar) 
+                              )
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              IF iterationfound THEN BEGIN
+                                 casesvar := casesvar * %NP.cases;
+                              END
+                              ELSE BEGIN
+                                   moodvar := %NP.mood;
+                                   casesvar := %NP.cases
+                              END;
+                              !(* boven item parameters, onder non-item 
+                                  paramers, rene 11-4-90 *)
+                              IF iterationfound THEN BEGIN
+				 comppossgeni(%NP.possgeni, possgenivar );
+				 comphuman(%NP.human, humanvar );
+				 compposspred(%NP.posspred, posspredvar );
+				 comppossnietnp(%NP.possnietnp, possnietnpvar );
+				 compsyntquant(%NP.syntquant, syntquantvar );
+				 assqmax(%NP.specq, specqvar );
+				 companimate(%NP.animate, animatevar );
+				 compactcomas(%NP.actcomas, actcomasvar );
+                                 compdef(%NP.definite, definitevar );
+                                 comppers(%NP.person, personvar );
+				 compnumber( numbervar,
+                                             inducednumbersvar,
+                                             b
+                                           );
+                                 comptemp(
+                                        temporalvar, classvar , deixisvar ,
+                                        retrovar , aspectvar
+                                         );
+                              END
+                              ELSE BEGIN
+                                   possgenivar   := %NP.possgeni;
+                                   humanvar      := %NP.human;
+                                   posspredvar   := %NP.posspred;
+                                   possnietnpvar := %NP.possnietnp;
+                                   syntquantvar  := %NP.syntquant;
+                                   specqvar      := %NP.specq;
+                                   animatevar    := %NP.animate;
+                                   actcomasvar   := %NP.actcomas;
+                                   numbervar     := %NP.number;
+                                   temporalvar   := %NP.temporal;
+                                   deixisvar     := %NP.deixis;
+                                   aspectvar     := %NP.aspect;
+                                   classvar      := %NP.class;
+                                   definitevar   := %NP.definite;
+                                   personvar     := %NP.person;
+                                   retrovar      := %NP.retro;
+                              END;
+                              iterationfound := true;
+                            END
+       *>
+
+3: 
+       <*
+         LOCALCONDITION: %COORD.iteration                            
+         GLOBAL: #CONDITION: (((NOT corr1found) <=
+                               ( (npc IN %COORD.patterns) AND
+                                 (simple IN %COORD.kinds)
+                               ) 
+                              )                                           AND
+                              ( corr1found <=
+                                 (( %COORD.key = expkey) AND
+                                  ( correlative2 IN %COORD.kinds)
+                                 )
+                              )                                           AND
+                              (NOT itcommafound)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              IF (NOT corr1found) THEN expkey := %COORD.key;
+                              itcoordfound := true;
+                              inducednumbersvar:=%COORD.inducednumbers;
+                            END
+       *>
+
+4: 
+       <*
+         LOCALCONDITION: %PUNC.key = KEY_kommaPUNCkey
+         GLOBAL: #CONDITION: (NOT itcoordfound)
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              itcommafound := true;
+                            END
+       *>
+
+
+5: 
+       <*
+         LOCALCONDITION: (%NP.coord = nocoord)  AND
+D 3
+                         (%NP.NPhead NOT IN [hetNP,jegenNP,zegenNP,
+E 3
+I 3
+                         NOT (%NP.NPhead IN [hetNP,jegenNP,zegenNP,
+E 3
+                                      reducedpersproNP])
+         GLOBAL: #CONDITION: (iterationfound <=
+                              ((%NP.cases * casesvar <> []) AND
+                               (%NP.mood = moodvar)
+                              )
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              IF iterationfound THEN BEGIN
+                                 casesvar := casesvar * %NP.cases;
+                              END
+                              ELSE BEGIN
+                                   moodvar := %NP.mood;
+                                   casesvar := %NP.cases
+                              END;
+                              !(* boven item parameters, onder non-item 
+                                  paramers, rene 11-4-90 *)
+                              IF iterationfound THEN BEGIN
+				 comppossgeni(%NP.possgeni, possgenivar);
+				 comphuman(%NP.human, humanvar);
+				 compposspred(%NP.posspred, posspredvar);
+				 comppossnietnp(%NP.possnietnp, possnietnpvar);
+				 compsyntquant(%NP.syntquant, syntquantvar);
+				 assqmax(%NP.specq, specqvar);
+				 companimate(%NP.animate, animatevar);
+				 compactcomas(%NP.actcomas, actcomasvar);
+                                 compdef(%NP.definite, definitevar);
+                                 comppers(%NP.person, personvar);
+				 compnumber( numbervar,
+                                             inducednumbersvar,
+                                             b
+                                           );
+                                 comptemp(
+                                        temporalvar, classvar , deixisvar ,
+                                        retrovar , aspectvar
+                                         );
+                              END
+                              ELSE BEGIN
+                                   possgenivar   := %NP.possgeni;
+                                   humanvar      := %NP.human;
+                                   posspredvar   := %NP.posspred;
+                                   possnietnpvar := %NP.possnietnp;
+                                   syntquantvar  := %NP.syntquant;
+                                   specqvar      := %NP.specq;
+                                   animatevar    := %NP.animate;
+                                   actcomasvar   := %NP.actcomas;
+                                   numbervar     := %NP.number;
+                                   temporalvar   := %NP.temporal;
+                                   deixisvar     := %NP.deixis;
+                                   aspectvar     := %NP.aspect;
+                                   classvar      := %NP.class;
+                                   definitevar   := %NP.definite;
+                                   personvar     := %NP.person;
+                                   retrovar      := %NP.retro;
+                              END;
+                            END
+       *>
+
+6: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (((NOT corr1found) <=
+                               ( (npc IN %COORD.patterns) AND
+                                 (simple IN %COORD.kinds)
+                               ) 
+                              )                                           AND
+                              ( corr1found <=
+                                 (( %COORD.key = expkey) AND
+                                  ( correlative2 IN %COORD.kinds)
+                                 )
+                              )                                           AND
+                              (itcoordfound <= 
+                                ((%COORD.key=expkey) AND
+                                 (npc IN %COORD.patterns)
+                                )
+                              )
+                             )       
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              iterationok := %COORD.iteration;
+                              IF (simple IN %COORD.kinds) AND
+                                 (coordpar = nocoord) THEN
+                                coordpar := simplecoord;
+                              IF (NOT itcoordfound) 
+                              THEN 
+                                inducednumbersvar := %COORD.inducednumbers;
+                            END
+       *>
+
+
+7: 
+       <*
+         LOCALCONDITION: (%NP.coord = nocoord)  AND
+D 3
+                         (%NP.NPhead NOT IN [hetNP,jegenNP,zegenNP,
+E 3
+I 3
+                         NOT (%NP.NPhead IN  [hetNP,jegenNP,zegenNP,
+E 3
+                                      reducedpersproNP])
+         GLOBAL: #CONDITION:  ((%NP.cases * casesvar <> []) AND
+                               (%NP.mood = moodvar)
+                              )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              casesvar := casesvar * %NP.cases;
+			      comppossgeni(%NP.possgeni, possgenivar);
+			      comphuman(%NP.human, humanvar);
+			      compposspred(%NP.posspred, posspredvar);
+			      comppossnietnp(%NP.possnietnp, possnietnpvar);
+			      compsyntquant(%NP.syntquant, syntquantvar);
+			      assqmax(%NP.specq, specqvar);
+			      companimate(%NP.animate, animatevar);
+			      compactcomas(%NP.actcomas, actcomasvar);
+			      compdef(%NP.definite, definitevar);
+			      comppers(%NP.person, personvar);
+		              compnumber( numbervar,
+                                          inducednumbersvar,
+                                          b
+                                        );
+                              comptemp(
+                                       temporalvar, classvar , deixisvar ,
+                                       retrovar , aspectvar
+                                      );
+                            END
+       *>
+
+
+HFINAL: #CONDITION: iterationfound <= iterationok
+        #ACTION: BEGIN
+                    MAKET_NP;
+                    $NP.req            := reqvar;
+                    $NP.env            := envvar;
+                    $NP.superdeixis    := superdeixisvar;
+                    $NP.class          := classvar;
+                    $NP.deixis         := deixisvar;
+                    $NP.aspect         := aspectvar;
+                    $NP.retro          := retrovar;
+                    $NP.definite       := definitevar;
+                    $NP.person         := personvar;
+                    $NP.number         := numbervar;
+                    $NP.cases          := casesvar;
+                    $NP.genders        := gendersvar;
+                    $NP.sexes          := sexesvar;
+                    $NP.actsubcs       := actsubcsvar;
+                    $NP.temporal       := temporalvar;
+                    $NP.possgeni       := possgenivar;
+                    $NP.animate        := animatevar;
+                    $NP.human          := humanvar;
+                    $NP.actcomas       := actcomasvar;
+                    $NP.thetanp        := thetanpvar;
+                    $NP.nounpatternefs := nounpatternefsvar;
+                    $NP.posspred       := posspredvar;
+                    $NP.possnietnp     := possnietnpvar;
+                    $NP.mood           := moodvar;
+                    $NP.generic        := genericvar;
+                    $NP.possRform      := possRformvar;
+                    $NP.syntquant      := syntquantvar;
+                    $NP.NPhead         := NPheadvar;
+                    $NP.specQ          := specQvar;
+                    $NP.coord          := coordpar;
+                  END
+*>
+END;
+& 
+
+
+
+%Scoord
+REGULAREXPRESSION:
+ 
+SENTENCE = [COORD/1] .{SENTENCE/2 .(COORD/3 | PUNC/4)} .SENTENCE/5 
+             .COORD/6 .SENTENCE/7
+
+CONDITIONSANDACTIONS:
+
+VAR  
+                   reqvar::polarityEFFSETtype;
+                   envvar::polarityEFFSETtype;
+                   moodvar:::moodtype;
+                   senttypevar:::senttypetype;
+		   voicevar::voicetype;
+                   PROsubjectvar:::PROsubjecttype;
+		   synvpefsvar::synpatternEFFSETtype;
+                   thetavpvar::thetavptype;
+                   modusvar:::modustype;
+                   aktionsartsvar::aktionsartEFFSETtype;
+                   aspectvar::aspecttype;
+                   deixisvar::deixistype;
+                   retrovar::retrotype;
+                   finitenessvar:::finitenesstype;
+                   infsortvar:::inftype;
+                   superdeixisvar:::deixistype;
+                   VRcomplvar:::VRcompltype;
+                   conjkeyvar::keytype;
+                   adverbialvar:::adverbialtype;
+                   temporalvar:::temporaltype;
+                   conjclassvar:::timeadvclasstype;
+                   conjdeixisvar:::deixistype;
+                   conjaspectvar:::aspecttype;
+                   conjretrovar:::retrotype;
+                   coordpar    :: coordtype;
+                   corr1found          ::: BOOLEAN;
+                   expkey              ::: keytype;
+                   itcommafound        ::: BOOLEAN;
+                   itcoordfound        ::: BOOLEAN;
+                   iterationfound      ::: BOOLEAN;
+                   iterationok         ::: BOOLEAN;
+                   cpvar         ::coordpatternsettype;
+?
+HELP
+
+PROCEDURE reducepatterns(VAR cpvar::coordpatternsettype);
+BEGIN
+  IF senttypevar = mainclause THEN cpvar := cpvar * [Smdc,Smync,Smwhc, Simpc, 
+                                                     Slaten ];
+  IF senttypevar = subordinateclause THEN cpvar := cpvar * [Ssdc,Ssync,Sswhc,
+                         Simpc, Srelfinc, Somtec, Sotec, Sctec,Sprpc, Spapc,
+                         Scond];
+  IF moodvar = declarative THEN cpvar := cpvar * [Smdc,Ssdc,
+                    Somtec, Sotec, Sctec,Sprpc, Spapc ];
+  IF moodvar = yesnointerrogative THEN cpvar := cpvar * [Smync,Ssync];
+  IF moodvar = whinterrogative THEN cpvar := cpvar * [Smwhc,Sswhc];
+  IF moodvar = conditional THEN cpvar := cpvar * [Scond];
+  IF moodvar = latenmood THEN cpvar := cpvar * [Slaten];
+  IF moodvar = relative THEN cpvar := cpvar * [Srelfinc];
+  IF modusvar = prespart THEN cpvar := cpvar * [Sprpc];
+  IF modusvar = pastpart THEN cpvar := cpvar * [Spapc];
+  IF infsortvar IN [teinf,omteinf] THEN cpvar := cpvar * [Somtec,Sotec,Sctec];
+  IF infsortvar IN [omteinf] THEN cpvar := cpvar * [Somtec];
+  IF prosubjectvar = TRUE THEN cpvar := cpvar * [Somtec,Sotec, Sprpc,Spapc];
+  IF prosubjectvar = FALSE THEN cpvar := cpvar * [Smdc,Smync,Smwhc, Ssdc,Ssync,Sswhc,
+                         Simpc, Srelfinc, Sctec,Sprpc, Spapc, Scond, Slaten ]
+END;
+?
+
+<* 
+
+HINIT: BEGIN
+
+                   reqvar          := [pospol, negpol, omegapol];
+                   envvar          := [pospol, negpol, omegapol];
+                   moodvar         := omegamood;
+                   senttypevar     := omegaclause;
+		   voicevar        := omegavoice;
+                   PROsubjectvar   := false;
+		   synvpefsvar     := [];
+                   thetavpvar      := omegathetavp;
+                   modusvar        := omegamodus;
+                   aktionsartsvar  := [];  
+                   aspectvar       := omegaAspect;
+                   deixisvar       := omegadeixis; 
+                   retrovar        := false;
+                   finitenessvar   := omegafin;
+                   infsortvar      := omegainf;        
+                   superdeixisvar  := omegadeixis;
+                   VRcomplvar      := false;
+                   conjkeyvar      := 0;
+                   adverbialvar    := false;
+                   temporalvar     := false;
+                   conjclassvar    := omegaTimeAdvClass;
+                   conjdeixisvar   := omegadeixis;
+                   conjaspectvar   := omegaAspect;
+                   conjretrovar    := false;
+		   coordpar            := nocoord;
+		   corr1found          := false;
+		   expkey              := 0;
+		   itcommafound        := false;
+		   itcoordfound        := false;
+		   iterationfound      := false;
+		   iterationok         := true;
+                   cpvar               := []
+       END;
+ 
+
+1: 
+       <*
+         LOCALCONDITION: (correlative1 IN %COORD.kinds) AND
+                         (%COORD.patterns * (AUX_coordVfcps+ AUX_coordV2cps)<>[])
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              corr1found := true;
+                              expkey     := %COORD.correlative2key;
+                              iterationok := %COORD.iteration;
+                              coordpar   := corrcoord;
+                              cpvar   := %COORD.patterns * 
+                                          (AUX_coordVfcps+ AUX_coordV2cps)
+                            END
+       *>
+ 
+
+
+2: 
+       <*
+         LOCALCONDITION: (%SENTENCE.coord = nocoord) 
+         GLOBAL: #CONDITION: iterationok                                     AND
+                             (iterationfound <=
+				(
+				 (moodvar        = %SENTENCE.mood)       AND
+				 (senttypevar    = %SENTENCE.senttype)   AND
+				 (PROsubjectvar  = %SENTENCE.PROsubject) AND
+				 (modusvar       = %SENTENCE.modus)      AND
+				 (finitenessvar  = %SENTENCE.finiteness) AND
+				 (infsortvar     = %SENTENCE.infsort)    AND
+				 (VRcomplvar     = %SENTENCE.VRcompl)    AND
+				 (adverbialvar   = %SENTENCE.adverbial)  AND
+				 (temporalvar    = %SENTENCE.temporal)   AND
+				 (superdeixisvar = %SENTENCE.superdeixis)AND
+			         (conjclassvar= %SENTENCE.conjclass)    AND
+			         (conjdeixisvar = %SENTENCE.conjdeixis)  AND
+			         (conjaspectvar = %SENTENCE.conjaspect)  AND
+			         (conjretrovar = %SENTENCE.conjretro)    
+				)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              IF (NOT iterationfound) THEN BEGIN
+                                moodvar        := %SENTENCE.mood            ;
+                                senttypevar    := %SENTENCE.senttype        ;
+                                PROsubjectvar  := %SENTENCE.PROsubject      ;
+                                modusvar       := %SENTENCE.modus           ;
+                                finitenessvar  := %SENTENCE.finiteness      ;
+                                infsortvar     := %SENTENCE.infsort         ;
+                                VRcomplvar     := %SENTENCE.VRcompl         ;
+                                adverbialvar   := %SENTENCE.adverbial       ;
+                                temporalvar    := %SENTENCE.temporal        ;
+                                superdeixisvar := %SENTENCE.superdeixis     
+                              END;
+                              IF (NOT iterationfound) THEN
+                                   cpvar  := (AUX_coordVfcps+ AUX_coordV2cps);
+                              reducepatterns(cpvar);
+
+                              iterationfound := true
+                            END
+       *>
+3: 
+       <*
+         LOCALCONDITION: %COORD.iteration                            
+         GLOBAL: #CONDITION: (((NOT corr1found) <=
+                               ( (%COORD.patterns * 
+                                   (AUX_coordVfcps+ AUX_coordV2cps)<>[]) AND
+                                 (simple IN %COORD.kinds)
+                               ) 
+                              )                                           AND
+                              ( corr1found <=
+                                 (( %COORD.key = expkey) AND
+                                  ( correlative2 IN %COORD.kinds)
+                                 )
+                              )                                           AND
+                              (NOT itcommafound)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              IF (NOT corr1found) THEN BEGIN
+                                 expkey := %COORD.key
+                              END;
+                              IF (NOT corr1found) THEN BEGIN
+                                 cpvar := (AUX_coordVfcps+ AUX_coordV2cps)
+                              END;
+                              itcoordfound := true;
+                              reducepatterns(cpvar);
+                            END
+       *>
+
+4: 
+       <*
+         LOCALCONDITION: %PUNC.key = KEY_kommaPUNCkey
+         GLOBAL: #CONDITION: (NOT itcoordfound)
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              itcommafound := true
+                            END
+       *>
+
+
+5: 
+       <*
+         LOCALCONDITION: (%SENTENCE.coord = nocoord)
+         GLOBAL: #CONDITION: (iterationfound <=
+				(
+				 (moodvar        = %SENTENCE.mood)       AND
+				 (senttypevar    = %SENTENCE.senttype)   AND
+				 (PROsubjectvar  = %SENTENCE.PROsubject) AND
+				 (modusvar       = %SENTENCE.modus)      AND
+				 (finitenessvar  = %SENTENCE.finiteness) AND
+				 (infsortvar     = %SENTENCE.infsort)    AND
+				 (VRcomplvar     = %SENTENCE.VRcompl)    AND
+				 (adverbialvar   = %SENTENCE.adverbial)  AND
+				 (temporalvar    = %SENTENCE.temporal)   AND
+				 (superdeixisvar = %SENTENCE.superdeixis)AND
+			         (conjclassvar= %SENTENCE.conjclass)    AND
+			         (conjdeixisvar = %SENTENCE.conjdeixis)  AND
+			         (conjaspectvar = %SENTENCE.conjaspect)  AND
+			         (conjretrovar = %SENTENCE.conjretro)    
+				)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := argrel;
+                              IF iterationfound THEN BEGIN
+                              END
+                              ELSE BEGIN
+                                moodvar        := %SENTENCE.mood            ;
+                                senttypevar    := %SENTENCE.senttype        ;
+                                PROsubjectvar  := %SENTENCE.PROsubject      ;
+                                modusvar       := %SENTENCE.modus           ;
+                                finitenessvar  := %SENTENCE.finiteness      ;
+                                infsortvar     := %SENTENCE.infsort         ;
+                                VRcomplvar     := %SENTENCE.VRcompl         ;
+                                adverbialvar   := %SENTENCE.adverbial       ;
+                                temporalvar    := %SENTENCE.temporal        ;
+                                superdeixisvar := %SENTENCE.superdeixis     
+                              END;
+                            END
+       *>
+
+6: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (((NOT corr1found) <=
+                               ( ((%COORD.patterns * 
+                                   (AUX_coordVfcps+ AUX_coordV2cps)<>[])) AND
+                                 (simple IN %COORD.kinds)
+                               ) 
+                              )                                           AND
+                              ( corr1found <=
+                                 (( %COORD.key = expkey) AND
+                                  ( correlative2 IN %COORD.kinds)
+                                 )
+                              )                                           AND
+                              (itcoordfound <= 
+                                ((%COORD.key=expkey) AND
+                                 (%COORD.patterns * 
+                                   (AUX_coordVfcps+ AUX_coordV2cps)<>[])
+                                )
+                              )
+                             )       
+                 #ACTION:   BEGIN
+                              SYNREL := conjrel;
+                              iterationok := %COORD.iteration;
+                              IF (simple IN %COORD.kinds) AND
+                                 (coordpar = nocoord) THEN
+                                coordpar := simplecoord;
+                              IF (NOT corr1found) THEN BEGIN
+                                 cpvar := %COORD.patterns;
+                                 reducepatterns(cpvar)
+                              END
+                            END
+       *>
+
+
+7: 
+       <*
+         LOCALCONDITION: (%SENTENCE.coord = nocoord) 
+         GLOBAL: #CONDITION:  
+				 (moodvar        = %SENTENCE.mood)       AND
+				 (senttypevar    = %SENTENCE.senttype)   AND
+				 (PROsubjectvar  = %SENTENCE.PROsubject) AND
+				 (modusvar       = %SENTENCE.modus)      AND
+				 (finitenessvar  = %SENTENCE.finiteness) AND
+				 (infsortvar     = %SENTENCE.infsort)    AND
+				 (VRcomplvar     = %SENTENCE.VRcompl)    AND
+				 (adverbialvar   = %SENTENCE.adverbial)  AND
+				 (temporalvar    = %SENTENCE.temporal)   AND
+				 (superdeixisvar = %SENTENCE.superdeixis)AND
+			         (conjclassvar= %SENTENCE.conjclass)    AND
+			         (conjdeixisvar = %SENTENCE.conjdeixis)  AND
+			         (conjaspectvar = %SENTENCE.conjaspect)  AND
+			         (conjretrovar = %SENTENCE.conjretro)    
+                 #ACTION:   BEGIN
+                              SYNREL := argrel
+                            END
+       *>
+
+
+HFINAL: #CONDITION: (iterationfound <= iterationok) AND
+                    (cpvar * (AUX_coordVfcps+ AUX_coordV2cps)<>[])
+        #ACTION: BEGIN
+                   MAKET_SENTENCE;
+                   $SENTENCE.req := reqvar ;
+                   $SENTENCE.env := envvar ;
+                   $SENTENCE.mood := moodvar;
+                   $SENTENCE.senttype := senttypevar ;
+		   $SENTENCE.voice := voicevar ;
+                   $SENTENCE.PROsubject := PROsubjectvar ;
+		   $SENTENCE.synvpefs := synvpefsvar ;
+                   $SENTENCE.thetavp := thetavpvar ;
+                   $SENTENCE.modus := modusvar ;
+                   $SENTENCE.aktionsarts := aktionsartsvar ;
+                   $SENTENCE.aspect := aspectvar ;
+                   $SENTENCE.deixis := deixisvar ;
+                   $SENTENCE.retro := retrovar ;
+                   $SENTENCE.finiteness := finitenessvar ;
+                   $SENTENCE.infsort := infsortvar ;
+                   $SENTENCE.superdeixis := superdeixisvar ;
+                   $SENTENCE.VRcompl := VRcomplvar ;
+                   $SENTENCE.conjkey := conjkeyvar ;
+                   $SENTENCE.adverbial := adverbialvar ;
+                   $SENTENCE.temporal := temporalvar ;
+                   $SENTENCE.conjclass := conjclassvar ;
+                   $SENTENCE.conjdeixis := conjdeixisvar ;
+                   $SENTENCE.conjaspect := conjaspectvar ;
+                   $SENTENCE.conjretro := conjretrovar; 
+                   $SENTENCE.coord := coordpar
+                  END
+*>
+END;
+& 
+
+%%
+E 1

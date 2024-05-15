@@ -1,0 +1,324 @@
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{General}
+   \RosTitle{RESIDE proposal}
+   \RosAuthor{Jeroen Medema}
+   \RosDocNr{198}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Software, Jan Landsbergen}
+   \RosClearance{Project}
+   \RosKeywords{System, Development, Environment}
+   \MakeRosTitle
+
+\setlength{\parskip}{2mm}
+\setlength{\parindent}{0mm}
+
+\section{Introduction}
+This small report discusses motivation for, terminology and requirements of, 
+and a proposal for the extending of the current source management system RBS to 
+a real software developement environment.
+\subsection{Motivation}
+To cope with the many software (source) problems a large software project has, 
+a system development environment is needed to control these problems. Within 
+the Rosetta project, RBS was built for this reason. However, although RBS isn't 
+complete yet, it performs less than sufficient and takes to much time for it.
+Also, RBS only covers parts of an environment as needed. Therefore, a new 
+environment is needed.
+\subsection{Terminology}
+Definitions of used terms:
+\begin{itemize} 
+  \item {\bf system:} the total of systems which are developed (and/or 
+        generated).
+  \item {\bf source:} part of system (generated or hand-written) in a language 
+        supported by the environment.
+  \item {\bf genuine source:} hand-written source (e.g. program-module, 
+        m-rule file, etcetera).
+  \item {\bf target:} out of source generated part of the system (which can be a 
+        source too!).
+  \item {\bf genuine target:} generated part of the system (which is not a 
+        source).
+  \item {\bf compiler:} automatic source(s) to target(s) converter.
+  \item {\bf environment:} the source development environment in which the 
+        system is developed.
+  \item {\bf root:} $\alpha$ is a root of $\beta$ when $\beta$ is dependent of 
+        $\alpha$ ($\beta$ uses one or more parts of the definition of $\alpha$,
+        either direct or indirect).
+\end{itemize}
+
+\section{Requirements}
+The requirements for a complete environment for Rosetta -or the succeeding 
+project- can be divided in three parts: general, source management, and 
+documentation management. These three parts have, however, certain links!
+\subsection{General}
+Most requirements mentioned below do hold for RBS. There are some (like 
+multilinguality) which are not as strictly defined in RBS as wanted.
+Also the user-friendlyness of RBS can be under discussion here.
+ \begin{itemize}
+   \item The environment should be multi-user. It should support the use 
+         by more than one user at the same time.
+   \item It should be multilingual (formal languages; user-definable). This
+         multilinguality applies for the sources. It should support the use of 
+         more of these defined languages at the same time.
+   \item Several software engineering principles should be supported. This
+         implies full support while editing sources and building targets and
+         probably support for testing, debugging, and interpretation. See, for 
+         example, \cite{som:se}.
+   \item It should have a main archive and user-archives all with a history to 
+         go back in time (to previous versions of sources). All these archives 
+         together should be consistent. Current systems for version control 
+         are, for example, CMS for VMS (\cite{dec:cms}) and RCS for UNIX 
+         (\cite{tich:rcs}), but these do not guarantee the consistency of the 
+         archives.
+   \item It should be extendable (e.g., adding formal languages).
+   \item With the aid of the knowledge in Rosetta, it should be possible here 
+         to generate better (clear and fine) messages (like ``There is 
+         one error.'' instead of ``There are 1 errors.'') in more languages -a 
+         multilingual system in more than one way- by storing the message 
+         parts as d-trees. This is more than only user-friendlyness, because, 
+         due to the complexity of the environment, there is a great variety of 
+         messages which can be given to the user. Further, these messages 
+         can be put together of parts of sentences (for which Rosetta certainly 
+         can be used).
+   \item The environment should be user-friendly, and, also after 
+         modifications, stay so.
+ \end{itemize}
+\subsection{Source Management}
+ The management of source can be divided into three parts: intramodule 
+ dependencies management, intermodule dependencies management and compilation 
+ dependencies management. The first two are, under RBS, checked. Only for the 
+ latter of the three RBS is the manager. For none of these three there are any
+ tools to help the user.
+ \begin{itemize}
+   \item Intramodule Dependencies\\
+    These dependencies within one module ought to be checked too. This are 
+    dependencies which, generally, can be detected by a source checker 
+    according to an attribute grammar for the language involved. There can be 
+    syntactical and semantical errors which both must be discovered. Nowadays, 
+    compilers are used for checking these kind of dependencies. Examples 
+    of intramodule dependencies are: used variables have to be declared, 
+    variables have to be initialized, etcetera.
+   \item Intermodule Dependencies\\
+    These dependencies consist of export- and import-lists of sources. This 
+    means, for example, that when changing a procedure interface, new 
+    inconsistencies should be detected and stored for retrieval by the user. 
+    The storing should be done by a kind of assistent of the user for aiding 
+    him/her, e.g., changing the dependent calls of the changed procedure. 
+    Therefore, 
+    dependencies between sources of the system should be detected and stored 
+    automatically. This, however, is only possible within languages which 
+    specify those dependencies. Sources in other languages should be supported 
+    by dependencies given by the user. When changing optional dependencies 
+    (like default parameters in Ada, any parameters in C) the user should only 
+    be {\em recommended}\/ changing the dependants as well. The help of the 
+    assistant to the user to make the system consistent, can be given in three 
+    ways:
+    \begin{itemize}
+      \item Execute no consistency checks (leave those to the compiler).
+            This means that the compiler is used for intermodule checking,
+            and code generation. This is the help one usually gets when 
+            developing software systems. 
+      \item Execute consistency checks, but don't make automatic 
+            modifications. That means: warn user when the system is not 
+            consistent but let the user make the system consistent (with, of 
+            course, the aid of the environment). When the user, for example, 
+            asks the environment to run program which, because of changed 
+            roots, ought to be remade, he should be warned. Here, the compiler 
+            is only a {\em code generator}\/ because the sources are 
+            ``correct''.
+      \item Make the system automatically (as so far as possible) consistent 
+            (Artificial Intelligence). When not possible, help the user as 
+            much as possible to make it consistent (see also previous item). 
+    \end{itemize}
+   \item Compilation Dependencies\\
+    These dependencies are needed when building a new target. It should be 
+    known (for efficiency reasons) which parts of the system should be compiled 
+    and which parts should not. When a root of a source is changed, the root 
+    and the source itself should be recompiled. Current programs that help 
+    achieving this building, are MMS for VMS (\cite{dec:mms} and Make for UNIX
+    (\cite{fel:make}). The requirements for compilation management are:
+    \begin{itemize} 
+      \item Several sources can be needed to make one target. For example, in a 
+            program one can have the need to use both the external modules for
+            files and windows management.
+      \item A source can be used to make more than one target. More programs 
+            can (and, generally, will) make use of the predefined general 
+            modules.
+      \item Dependencies may occur on a multilingual level (i.e. compilers may 
+            convert source in a target language which is supported by the 
+            environment).
+      \item Generating targets (e.g., executeables) of the system must be 
+            done automatically when needed (and, of course, when possible).
+            This according to the lazy evaluation method.
+      \item During the development of the system there is an increasing use of 
+            program generators (compilers). Because of that, files which first 
+            were genuine source may become a target of the system.
+      \item The above mentioned dependencies often can be formalized and 
+            checked. Sometimes update actions can be defined (some to be 
+            checked automatically, some to be checked by the users). This 
+            together can give a gradual change from source to target.
+    \end{itemize}
+ \end{itemize}
+\subsection{Documentation Management}
+ There are two kinds of documentation made during system development: source 
+ documentation which describes (genuine) sources and policy documentation which 
+ more or less gives motivation for chosen policy.
+ \begin{itemize}
+   \item {\bf Source Documentation}\\
+         Source documentation and sources should be 
+         coupled in a way; a source should be dependent of the documentation 
+         which describes it (but optional so only recommendations can be given).
+         A source should {\em not}\/ be compiled because of a documentation 
+         change. This kind of dependency is comparable with the optional 
+         dependencies within sources.
+
+         The best is to integrate both documentation and source totally in the 
+         environment. Then, special functions are needed to extract the text for
+         documents and to extract sources for the compilers.
+   \item {\bf Policy Documentation}\\
+         This can be managed the same way as under 
+         RBS: no link with the sources.
+ \end{itemize}
+\section{Inconsistenies And Recoveries}
+This section is made to make clear that there is quite a range of possible 
+recoveries of inconsistencies. This also depends on the kind of inconsistency:
+\begin{itemize}
+  \item {\bf Obliged} This are inconsistencies which have to be recovered. 
+        Examples are: missing declaration of used variable, type of actual 
+        parameter does not match formal parameter, etc. There are three ways 
+        the environment can take care of these inconsistencies:
+    \begin{enumerate}
+      \item The environment itself makes the system consistent. This is 
+            possible in cases like compulsary recompilation because of changed 
+            implementation of used source(s).
+      \item The environment gives hints to the user of how to deal with these
+            inconsistencies which the user can confirm. These can appear in 
+            cases like a forgotten variable declaration (one of the proposed 
+            actions: add variable at innermost declaration level).
+      \item The environment hasn't got the slightest idea how to deal with the
+            inconsistencies. This could be possible in cases where too much 
+            of them appear.
+    \end{enumerate}
+  \item {\bf Optional} This are inconsistencies which don't have to be 
+        recovered (at once). Examples are: missing default parameter, not 
+        needed recompilation because user wants to run unchanged target. There
+        are two ways the environment can react on these inconsitencies:
+    \begin{itemize}
+      \item Give the user hints to recover the consistency (which actually is
+            destroyed). Examples here are recompilation to targets which is 
+            actually not wanted by the user. 
+      \item Gives user hints how to react on these optional inconsistencies.
+            This is possible in cases like adding default parameters in Ada 
+            (one of the proposed actions: do nothing)
+    \end{itemize}
+\end{itemize}
+\section{Proposal}
+The previous mentioned requirements can be achieved by building a new system 
+from scratch (with the experience of RBS). It is, however, also possible to
+upgrade RBS (the current version) to a new system (named, e.g., RESIDE -- 
+Rosetta Extendable Source Integration Development Environment) by extending and 
+improving it. This can be done in several phases, for example, as described 
+below.
+\begin{itemize}
+  \item {\bf RESIDE1} Make RBS transferable to other operating systems and more 
+        efficient by programming it in either Modula-2, C, or Rosetta-Pascal 
+        (which is an {\em extension} of ISO-Pascal, so not recommended). Make 
+        it one integrated environment where only RESIDE commands can be entered.
+  \item {\bf RESIDE2} Develop own version of MMS or Make to control compilation 
+        dependencies (with, e.g., database). When possible (which depends of 
+        used language), generate compilation dependecies automatically.
+  \item {\bf RESIDE3} Make smarter compilation programs to minimize
+        recompilation. Here, the grain of compilation in, e.g., a programming 
+        language system can be reduced to procedure instead of module level.
+        There are two alternatives for implemention: 
+   \begin{enumerate}
+     \item {\bf Integrated Structure Editor}\\
+           examples of integrated structure editors can be found in 
+           \cite{acm:proc,bss:ipe}. What are the most important advantages of 
+           such a structure editor:
+       \begin{itemize}
+         \item During an edit-session parts of building a target are already 
+               executed. For example, the recompilation graph can be made while
+               editing. This can be done because in an editor there is time 
+               left for these actions. It is useful because it should not be 
+               allowed to edit and build targets at the same moment. Which 
+               means, the more time the build takes, the less time left for 
+               editing.
+         \item Consistency checks are made and stored during editing. This 
+               means that in the editor the consequences of a change can be 
+               viewed instantly. 
+         \item It enforces the user to program syntactical (and perhaps 
+               semantical) correct. This enforcement is given instantly. This 
+               means, because of better programs, less time for the 
+               editing-recompilation-linking cycle.
+       \end{itemize}
+           Of course, there are also several disadvantages using a structure 
+           editor. First, the user is conservative and is only used to use a 
+           screen editor. Secondly, an {\em integrated}\/ structure editor will 
+           take quite a lot of time to make.
+     \item {\bf Separate Check Programs}\\
+           examples of separate check programs can be found in \cite{acm:proc}.
+           What are the most important advantages of such separate check 
+           programs:
+       \begin{itemize}
+         \item They are not very difficult to write.
+         \item A screen editor can still be used.
+       \end{itemize}
+           Of course, there are also several disadvantages using separate check
+           programs. First, information about dependencies and inconsistencies 
+           should be retrieved 
+           after the editing session, which will give noticeable overhead. 
+           Secondly, messages will not be given instantly because of the 
+           checking afterwards.
+   \end{enumerate}
+  \item {\bf RESIDE4} Integrate sources and source documentation. Depending of 
+        the two alternatives of RESIDE3, there are two possibilities: 
+     \begin{enumerate}
+       \item Expand the structure editor with the following mechanism: in the 
+             editor the user should also be able to give a description of 
+             several statements. This is a kind of stepwise refinement and 
+             should be allowed nested.
+       \item It is more difficult to integrate source documentation and sources 
+             here. The possible solution is to make them both sources with 
+             optional dependency.
+     \end{enumerate}
+  \item {\bf RESIDE5} Use formal specifications as source documentation and to 
+         check several dependencies of source documentation and sources. When 
+         using formal specifications several aspects of programs can be checked 
+         when a documentation (specification) change occurs. This is, again, 
+         easiest to integrate when using a structure editor.
+\end{itemize}
+
+The parts of the environment implementation can be totally {\em integrated}\/ in
+one modular (object-oriented) system. That means, for example, for the user 
+that he/she always remains in an editor where every RESIDE command can be 
+entered (e.g. retrieval of documentation, editing sources, running targets). 
+This is like the DCL-level of RBS. 
+However, more convenient than with DCL, one really can edit the commands (or 
+add several). All the entered commands are remembered (it {\em is}\/ an editor) 
+until they are explicitly deleted (by means of an editor command). Execution of 
+statements is done by means of a special editor command. Within this operating 
+system level editor, modules in any defined language can be, for instance, 
+modified by calling their edit-method (object-oriented methodology) which 
+activates the appropriate program(s).
+
+\begin{thebibliography}{MMM99m}
+ \bibitem[ACM87]{acm:proc} {\bf Proceedings of the ACM SIGSOFT/SIGPLAN Software 
+  Engineering Symposium on Practical Software Development Environments}, {\em 
+  SIGPLAN Notices,}\/ Volume~22~No.~1, 1987.
+ \bibitem[BSS86]{bss:ipe} D.R.Barstow \& H.E.Shrobe \& E.Sandewall, 
+  {\bf Interactive Programming Environments}, {\em McGraw-Hill,}\/ 1986.
+ \bibitem[DEC84a]{dec:cms} {\bf Code Management System}, {\em Digital 
+  Equipment Company,}\/ Document No. AA-L372B-TE, 1984.
+ \bibitem[DEC84b]{dec:mms} {\bf Module Management System}, {\em Digital 
+  Equipment Company,}\/ Document No. AA-P119B-TE, 1984.
+ \bibitem[FEL79]{fel:make} S.I.Feldman, {\bf Make -- a program for maintaining 
+  computer programs}, {\em Software -- Practice and Experience,}\/ 1979.
+ \bibitem[SOM85]{som:se} I.Sommerville, {\bf Software Engineering}, 
+  International Computer Science Series, {\em Addison-Wesley,}\/ 1985.
+ \bibitem[TIC85]{tich:rcs} W.F.Tichy, {\bf RCS -- A System for Version Control},
+  {\em Software -- Practice and Experience,}\/ 1985.
+\end{thebibliography}
+
+\end{document}

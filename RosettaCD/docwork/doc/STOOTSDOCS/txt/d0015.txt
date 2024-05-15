@@ -1,0 +1,189 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta2
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  DICTIONARIES IN ROSETTA2
+
+         Author       :  Jan Landsbergen
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  0015
+
+         Date         :  85/12/13
+
+         Status       :  approved
+
+         Supersedes   :  
+
+         Distribution :  project
+
+         Clearance    :  Philips
+
+         Keywords     :  dictionary, lexicon, key, idiom
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Copyright  Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta                     Doc.nr: 0015                date:85/12/13
+$NP 1
+$UC _
+$SC &%
+$LD 4
+
+
+                 _DICTIONARIES IN ROSETTA2_
+
+
+$ At several places in the Rosetta2 system dictionaries are used. This
+short document gives an overview of these dictionaries. Though the document
+is not intended to discuss implementation details, it is unavoidable
+that they play a certain role here. In the theory we only have sets
+and functions. However, certain sets and functions will have to be 
+specified by means of extensive enumerations, which may require
+a special kind of implementation. In that case we speak of dictionaries.$
+
+$ If we look at the definition of an M-grammar in R0011 and the
+specification of the morphological component in R0008, we see the
+following parts in which dictionaries play a role.$
+
+$ - In the syntactic component: the set B of basic S-trees.$
+    Each basic expression has a unique name, called its key. In Rosetta2
+    a basic S-tree is always a terminal S-tree. Each basic S-tree has
+    a category in BASICCATS. For each basic category C the corresponding
+    set of attributes ATS%C% contains the attribute "key", of which
+    the value is the unique key of the basic S-tree.
+
+$ - In the semantic component:$
+    1. the set of basic meanings of IL,
+    2. A-TR%B%: a function from (names of) basic expressions to sets of 
+       (names of) basic meanings. From now on we will speak of keys
+       instead of names. A basic key is the unique name of a basic
+       S-tree, in the case of basic meanings we will speak of meaning keys.
+       (in case of ambiguities meaning descriptions may be coupled to
+       the various meaning keys, for the interactive version)
+    3. G-TR%B%: a function from meaning keys to sets of basic keys.
+       (in principle this is redundant, it is the reverse of A-TR%B%)
+    4. There is a dictionary that specifies for each meaning key of IL the
+       corresponding type and the expected types of the arguments (for 
+       functions).
+       (this may be not exactly in accordance with the current implementation,
+        because originally the type information was coupled to the functions
+        A-TR%B% and G-TR%B%)
+
+$ - In the morphological component: (See R0008)$
+    1. MDICT (morphological dictionary): a set of triples < a, K, CC >, 
+       where a is a string, K a key and CC a context condition.
+       With AMDICT two functions are defined: AMDICT and GMDICT (See R0008).
+       If we want an efficient implementation of AMDICT and GMDICT, 
+       the difference in direction is important. E.g. in AMDICT the triples 
+       may be ordered alphabetically w.r.t the strings, in GMDICT w.r.t. 
+       the keys.
+    3. M-LEX (morphological lexicon): a set of pairs < K, t >, where K is a 
+       key and t is an S-tree. M-LEX consists of two subdictionaries: B-LEX
+       and IRR-LEX. 
+       B-LEX (basic lexicon) is in principle the same as B, but now implemented
+       as a set of pairs < K, t > in which K is the key of t, in such a way
+       that it can be implemented efficiently as a function from basic keys to
+       basic expressions (e.g. ordered w.r.t. the keys).
+       IRR-LEX (irregular lexicon) is a set of pairs < K, t > in which K 
+       is an "irregular key" and t is an (non basic) S-tree. It is used for 
+       inflected forms of words that are irregular with respect to that 
+       inflection. (IRR-LEX is a complicated part of the morphological 
+       components and is planned to be replaced in the future by some other 
+       mechanism.)
+       IRR-LEX defines a function A-IRR-LEX from irregular keys to S-trees 
+       and a function G-IRR-LEX from S-trees to sets of irregular keys. 
+    4. ID-LEX (idiom lexicon) is a set of pairs < K, < K%1%, . . . , K%n% > >,
+       where K%1%, . . . , K%n% are "idpart" keys, which are not names of 
+       S-trees but names of strings that are part of a ("fixed") idiom. K is 
+       the key of the idiom as a whole and is the name of an S-tree.
+       ID-LEX defines a function A-ID-LEX from tuples of idpart keys to sets of
+       keys and a function G-ID-LEX from keys to sets of tuples of idpart keys.
+    5. There are some other parts of the morphological components that
+       may be called dictionaries, the marker lexicon and the affix lexicon,
+       but they will be ignored here.   
+
+
+$ The introduction of keys in the system was originally motivated by
+the implementation, but gradually they have conquered a modest place in the
+theory as well. The leaves of derivation trees used to be basic expressions,
+now they are names of basic expressions, i.e. keys. $
+$ The main reason for introducing keys was that the dictionaries in the
+transfer components can now be implemented by means of simple tables of keys
+and that B-LEX, which is the largest dictionary of the system, has to be
+defined only once and can be used both in A-MORPH and in 
+M-GENERATOR.$
+
+$ We will now run through the system in "processing order", from A-MORPH
+to G-MORPH and discuss the role of the dictionaries informally.$
+
+1. A-MORPH.
+$  AMDICT translates words (stems) into keys: basic
+keys, irregular keys or idpart-keys.$
+$  A-ID-LEX translates tuples of 
+idpart-keys into keys.$ 
+$ B-LEX translates basic keys into
+basic S-trees.$ 
+$ A-IRR-LEX translates irregular keys into S-trees.$  
+
+2. S-PARSER. No dictionary involved.
+
+$ 3. M-PARSER. In theory M-PARSER needs a dictionary in order to check
+whether an S-tree is a basic expression and to translate it into its key. 
+In practice this is not necessary, because it can be decided whether or
+not an S-tree is a basic expression by looking at its category and its
+attibute values and because the key is one of the attributes.$
+
+$ 4. A-TRANSFER. Here the dictionary A-TR%B% is used for the translation
+of basic keys into sets of meaning keys.$
+$ At the "end" of A-TRANSFER the type test is done with the help of the
+IL dictionary.$
+
+$ 5. G-TRANSFER. Here the dictionary G-TR%B% is used for the translation of
+meaning keys into sets of basic keys.$
+
+$ 6. M-GENERATOR. The generation process
+starts with the translation of basic keys into
+the corresponding basic expressions with the help of B-LEX.$
+
+$ 7. LEAVES. No dictionary involved.$
+
+$ 8. G-MORPH. 
+$ Basic S-trees are translated into keys without the help of a dictionary,
+because the key is an attribute of the basic S-tree itself.$
+$ Irregular S-trees are translated into keys by means of G-IRR-LEX.$
+$ G-ID-LEX translates keys of idioms into tuples of idpart-keys.$
+$ GMDICT translates keys into strings.$
+
+

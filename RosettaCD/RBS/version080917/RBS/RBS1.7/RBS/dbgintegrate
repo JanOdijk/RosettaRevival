@@ -1,0 +1,38 @@
+#! /bin/sh -e
+#
+# dbgintegrate [<platform>]
+#
+#
+case $# in
+0) ;;
+1) ;;
+*) echo "Usage: integrate [<platform>]"; exit 1;;
+esac
+#
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+#
+#set -x
+#set -v
+rm -f intusers.rbs
+#
+echo "What is the intended effect of your integration? (one-liner)"
+read effect
+#
+if ( test -r inteffect.rbs )
+then chmod o+rw inteffect.rbs
+fi
+echo "    $effect" > $RBS_USER_ROOT$RBS_USER$RBS_RELEASE/inteffect.rbs
+#
+#
+echo "Which users should be informed? (list of usernames seperated by a space)"
+read usernames
+for u in $USER $usernames ; do
+   echo " $u" >> intusers.rbs
+done
+#
+chmod o+rw intusers.rbs
+#
+if ( test -s $RBS_ENV )
+then rsh $RBS_MACHINE "source $RBS_ENV; $RBS_DIR/batchintegrate debug $1 &"
+else rsh $RBS_MACHINE "$RBS_DIR/batchintegrate debug $1 &"
+fi

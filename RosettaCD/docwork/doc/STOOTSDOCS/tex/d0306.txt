@@ -1,0 +1,2261 @@
+LEXRULES.tex
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.morphology}
+   \RosTitle{Rosetta3 English Morphology: Lextree Rules}
+   \RosAuthor{Margreet Sanders}
+   \RosDocNr{306}
+   \RosDate{\today}
+   \RosStatus{concept}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{English, morphology, Lextree rules, documentation}
+   \MakeRosTitle
+
+% \input{english:lexrules1.lex}
+% \input{english:lexrules2.lex}
+% \input{english:lexrules3.lex}
+
+%ENGLISH1
+%&
+
+\section{Introduction}
+The Lextree rules are morphological rules that come between the segmentation 
+rules 
+and the M-grammar. In analysis, they build a lexical S-tree on the basis of
+the stem plus the affixes found by the segmentation rules. This is the last 
+part of morphology; the resulting trees are input for the first syntactic 
+component of the M-grammar, the Surface Parser. In generation, the Lextree
+rules take the leaves from the syntactic surface tree produced by M-grammar 
+and turn these leaves (which in fact are lexical S-trees) into stems and
+suffix keys. 
+
+Note that the application of the parts {\em comp\/} and {\em decomp\/} in the 
+lextree rules is precisely reversed when compared to the rules in the 
+M-grammar. Here, {\em comp\/} indicates the composition of a lexical tree, 
+which is done when analysing a source language word, while in M-grammar, 
+{\em comp\/} is the 
+part which composes a syntactic structure, which is done when generating a
+target language structure.
+
+The present document contains all lextree rules written for English, together 
+with some comments. It can be seen as an 
+updated version of section 10 of document 115 by Agnes Mijnhout. In that 
+document, a full description was given of English morphology as it was 
+implemented in Rosetta3 at the end of 1986. Since then, there have been very
+few major changes. All major changes are expicitly indicated in the present 
+document. Minor changes and improvements have not been not mentioned explicitly.
+
+The lextree rules are grouped into three files, called {\bf Lexrules1.lex, 
+Lexrules2.lex} and {\bf Lexrules3.lex}. {\bf Lexrules1.lex} contains all lextree 
+rules for verbs, {\bf Lexrules2.lex} contains the rules for nouns and propernouns
+and for adjectives and adverbs,
+and {\bf Lexrules3.lex} contains the rules for the different pronouns and the 
+determiners. In the 
+present document, all these groups of rules will be treated in separate 
+sections.
+
+In many rules, use is made of a copy function. This function copies the 
+attribute values of the argument of the function (usu.\ the daughter) to the 
+new node (usu. the mother), for all attributes shared by both nodes. Attributes
+which are specific to the newly created (mother) node are always assigned a 
+default value, which is 
+determined by the Domain T. They can also be given a value in the rule itself.
+This value will overwrite the default value. The Lextree rules are not fully 
+reversible, since there is no analytic counterpart of the copy function in 
+morphology.
+
+\newpage
+\section{Verbs}
+In the Rosetta system, verbs are derived in two steps. First, there is a 
+derivation level, changing a dictionary entry BVERB into a SUBVERB. Then, the 
+subverb enters the inflection level and gets its inflectional affixes (if any),
+which is indicated by a setting of the relevant attributes.
+The output of the inflection level is called VERB. 
+
+\subsection{Derivation}
+\begin{verbatim}
+%LBVerb
+
+m1: BVERB{BVERBrec1}
+
+m: SUBVERB{SUBVERBrec1}[head/BVERB{BVERBrec1}]
+
+comp:
+
+C1: true
+A1: SUBVERBrec1 := copyT_bverbtosubverb(BVERBrec1)
+
+decomp: 
+
+C1: true
+A1: @
+
+&
+\end{verbatim}
+This rule is for verbs to which no derivation applies. English does not seem 
+to need derivation rules for verbs: there are no incorporated particles.
+The attribute {\bf affix} of the SUBVERB is automatically set at its default 
+value, {\em noaffix\/}.
+
+\newpage
+\subsection{Inflection}
+To spell out the proper form of the verb, use is made of a combination of the
+suffix key provided by the segmentation rules (generatively speaking) and 
+the verb attribute 
+{\bf conjclasses}, indicating the conjugation class the verb belongs to.
+Each class has its own peculiarities. Classes 10 and 11 are for regular verbs,
+with and without consonant doubling respectively (e.g.\ {\em enter - entered\/}
+vs.\ {\em bar - barred\/}). Classes 12, 13 and 14 are for modals: the `regular' 
+modals are 
+in 12 (e.g.\ {\em can\/}), 13 is for modals without past tense (e.g.\ {\em 
+must\/}, and 14 is for modals without present tense (i.e.\ {\em used (to)}).
+The other conjugation classes cover various kinds of irregularities in past
+tense and/or past participle, with classes 5, 6 and 7 indicating that there 
+is a second (or third) form available next to the form indicated by another
+conjugation class. Class 0 is for the verb {\em be\/}. 
+
+English has a rather simple inflectional system. There are only a few rules,
+covering the whole field. No persons 4 or 5 exist; Dutch {\em U\/} and {\em
+gij\/} are mapped onto English {\em you\/}, with the simple inflection of a 
+second person. No rules have been written for verb forms going with the 
+archaeic {\em thou\/}. Note that a distinction is made between singular and
+plural {\em you\/}: although it will not show in the verb itself, it may show 
+in a reflexive going with the verb ({\em you must perjure yourself/yourselves
+\/}), and a choice was made to disambiguate the verb already in morphology.
+
+The attributes that are new when going from a SUBVERB to a VERB are all filled 
+explicitly. They are {\bf modus, tense, persons} and {\bf numbers}.
+
+\subsubsection{Present Tense, Infinitive, Subjunctive}
+\begin{verbatim}
+%LVerbBaseform
+
+m1: SUBVERB{SUBVERBrec1}[mu1]
+
+m: VERB{VERBrec1}[head/SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+
+C1: true
+
+  C2: [1, 2, 3, 4, 8, 9, 10, 11] * SUBVERBrec1.conjclasses <> []
+
+    C3: true
+    A3: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+        VERBrec1.modus := indicative;
+        VERBrec1.tense := presenttense;
+        VERBrec1.persons := [1,2];
+        VERBrec1.numbers := [singular]
+
+    C4: true
+    A4: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+        VERBrec1.modus := indicative;
+        VERBrec1.tense := presenttense;
+        VERBrec1.persons := [1,2,3];
+        VERBrec1.numbers := [plural]
+
+    C5: true
+    A5: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+        VERBrec1.modus := infinitive;
+        VERBrec1.tense := omegatense;
+        VERBrec1.persons := [];
+        VERBrec1.numbers := []
+
+    C6: true
+    A6: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+        VERBrec1.modus := subjunctive;
+        VERBrec1.tense := presenttense;
+        VERBrec1.persons := [1,2,3];
+        VERBrec1.numbers := [singular, plural]
+
+  A2: @
+
+  C7: [12, 13] * SUBVERBrec1.conjclasses <> []
+  A7: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+      VERBrec1.modus := indicative;
+      VERBrec1.tense := presenttense;
+      VERBrec1.persons := [1,2,3];
+      VERBrec1.numbers := [singular, plural]
+
+  C8: 14 in SUBVERBrec1.conjclasses
+  A8: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+      VERBrec1.modus := indicative;
+      VERBrec1.tense := pasttense;
+      VERBrec1.persons := [1,2,3];
+      VERBrec1.numbers := [singular, plural]
+
+  C9: 0 in SUBVERBrec1.conjclasses
+  A9: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+      VERBrec1.modus := infinitive;
+      VERBrec1.tense := omegatense;
+      VERBrec1.persons := [];
+      VERBrec1.numbers := []
+
+  C10: 0 in SUBVERBrec1.conjclasses
+  A10: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+       VERBrec1.modus := subjunctive;
+       VERBrec1.tense := presenttense;
+       VERBrec1.persons := [1,2,3];
+       VERBrec1.numbers := [singular, plural]
+
+A1: @
+
+decomp:
+
+C1: true
+
+  C2: [1, 2, 3, 4, 8, 9, 10, 11] * VERBrec1.conjclasses <> []
+
+    C3: VERBrec1.modus = indicative and
+        VERBrec1.tense = presenttense and
+        [1,2] * VERBrec1.persons <> [] and
+        singular in VERBrec1.numbers 
+    A3: @
+
+    C4: VERBrec1.modus = indicative and
+        VERBrec1.tense = presenttense and
+        [1,2,3] * VERBrec1.persons <> [] and
+        plural in VERBrec1.numbers 
+    A4: @
+
+    C5: VERBrec1.modus = infinitive and
+        VERBrec1.tense = omegatense and
+        VERBrec1.persons = [] and
+        VERBrec1.numbers = [] 
+    A5: @
+
+    C6: VERBrec1.modus = subjunctive and
+        VERBrec1.tense = presenttense and
+        [1,2,3] * VERBrec1.persons <> [] and
+        [singular, plural] * VERBrec1.numbers <> [] 
+    A6: @
+
+  A2: @
+
+  C7: VERBrec1.modus = indicative and
+      VERBrec1.tense = presenttense and
+      [1,2,3] * VERBrec1.persons <> [] and
+      [singular, plural] * VERBrec1.numbers <> [] and
+      [12, 13] * VERBrec1.conjclasses <> []
+  A7: @  
+
+  C8: VERBrec1.modus = indicative and
+      VERBrec1.tense = pasttense and
+      [1,2,3] * VERBrec1.persons <> [] and
+      [singular, plural] * VERBrec1.numbers <> [] and
+      14 in VERBrec1.conjclasses
+  A8: @
+
+  C9: VERBrec1.modus = infinitive and
+      VERBrec1.tense = omegatense and
+      VERBrec1.persons = [] and
+      VERBrec1.numbers = [] and
+      0 in VERBrec1.conjclasses
+  A9: @
+
+  C10: VERBrec1.modus = subjunctive and
+       VERBrec1.tense = presenttense and
+       [1,2,3] * VERBrec1.persons <> [] and
+       [singular, plural] * VERBrec1.numbers <> [] and
+       0 in VERBrec1.conjclasses
+
+  A10: @
+
+A1: @
+
+&
+
+\end{verbatim}
+English does not have a separate spelling for imperatives: they always assume 
+the base form of the verb, like infinitives. Hence, no imperative rules have 
+been written. Subjunctives also look like infinitives, but they have been given 
+a special attribute value for {\bf modus}.
+
+Note that the present rule also works for infinitive and subjunctive of the 
+verb {\em be\/}. For modals, the present rule also produces the third person
+singular, since modals do not take an inflectional {\em s\/}.
+
+\newpage
+\subsubsection{Present Tense S-Form}
+\begin{verbatim}
+%LVerbSform
+
+m1: SUBVERB{SUBVERBrec1}[mu1]
+m2: SFCAT{SFCATrec1}
+
+m: VERB{VERBrec1}[head/SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKregS and SUBVERBrec1.sform = regS
+  A2: @ 
+       
+  C3: SFCATrec1.key = SFKregEs and SUBVERBrec1.sform = regEs 
+  A3: @ 
+       
+  C4: SFCATrec1.key = SFKirrS and SUBVERBrec1.sform = irrS 
+  A4: @
+
+A1: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+    VERBrec1.modus := indicative;
+    VERBrec1.tense := presenttense;
+    VERBrec1.persons := [3];
+    VERBrec1.numbers := [singular]
+
+decomp:
+
+C1: VERBrec1.modus = indicative and
+    VERBrec1.tense = presenttense and
+    3 in VERBrec1.persons and
+    singular in VERBrec1.numbers
+
+  C2: VERBrec1.sform = regS
+  A2: SFCATrec1.key := SFKregS
+
+  C3: VERBrec1.sform = regEs
+  A3: SFCATrec1.key := SFKregEs
+
+  C4: VERBrec1.sform = irrS
+  A4: SFCATrec1.key := SFKirrS
+
+A1: @
+
+&
+\end{verbatim}
+This rule makes the third person singular for all verbs taking an inflectional 
+{\em s\/} or some variant thereof. The verb {\em be\/} is not dealt with here.
+
+\newpage
+\subsubsection{Past Tense}
+\begin{verbatim}
+%LVerbPasttense
+
+m1: SUBVERB{SUBVERBrec1}[mu1]
+m2: SFCAT{SFCATrec1}
+
+m: VERB{VERBrec1}[head/SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKirrpt and 
+      [1,8] * SUBVERBrec1.conjclasses <> [] 
+  A2: @
+ 
+  C3: SFCATrec1.key = SFKirrpt2 and 
+      5 in SUBVERBrec1.conjclasses 
+  A3: @
+
+  C4: SFCATrec1.key = SFKirrptpp 
+      and 2 in SUBVERBrec1.conjclasses 
+  A4: @
+
+  C5: SFCATrec1.key = SFKirrnc and 
+      [3,9] * SUBVERBrec1.conjclasses <> [] 
+  A5: @
+
+  C6: SFCATrec1.key = SFKregptpp and 
+      [4,10] * SUBVERBrec1.conjclasses <> [] 
+  A6: @
+
+  C7: SFCATrec1.key = SFKcdptpp and 
+      11 in SUBVERBrec1.conjclasses 
+  A7: @
+
+  C8: SFCATrec1.key = SFKmodpt and 
+      12 in SUBVERBrec1.conjclasses
+  A8: @
+
+A1: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+    VERBrec1.modus := indicative;
+    VERBrec1.tense := pasttense;
+    VERBrec1.persons := [1,2,3];
+    VERBrec1.numbers := [singular, plural]
+
+decomp:
+
+C1: VERBrec1.modus = indicative and
+    VERBrec1.tense = pasttense and
+    [1,2,3] * VERBrec1.persons <> [] and
+    [singular, plural] * VERBrec1.numbers <> []
+
+  C2: [1,8] * VERBrec1.conjclasses <> []
+  A2: SFCATrec1.key := SFKirrpt
+
+  C3: 5 in VERBrec1.conjclasses
+  A3: SFCATrec1.key := SFKirrpt2
+
+  C4: 2 in VERBrec1.conjclasses
+  A4: SFCATrec1.key := SFKirrptpp
+
+  C5: [3,9] * VERBrec1.conjclasses <> []
+  A5: SFCATrec1.key := SFKirrnc
+
+  C6: [4,10] * VERBrec1.conjclasses <> []
+  A6: SFCATrec1.key := SFKregptpp
+
+  C7: 11 in VERBrec1.conjclasses
+  A7: SFCATrec1.key := SFKcdptpp
+
+  C8: 12 in VERBrec1.conjclasses
+  A8: SFCATrec1.key := SFKmodpt
+
+A1: @
+
+&
+\end{verbatim}
+This rule makes the past tense of both regular and irregular verbs, including 
+the `extra' forms of conjugation class 5. The verb {\em be\/} is not covered 
+here, however.
+
+\newpage
+\subsubsection{Past Participle}
+\begin{verbatim}
+%LVerbPastparticiple
+
+m1: SUBVERB{SUBVERBrec1}[mu1]
+m2: SFCAT{SFCATrec1}
+
+m: VERB{VERBrec1}[head/SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKirrpp and 
+      [0,1,4,9] * SUBVERBrec1.conjclasses <> []
+  A2: @
+
+  C3: SFCATrec1.key = SFKirrptpp and 
+      2 in SUBVERBrec1.conjclasses 
+  A3: @
+
+  C4: SFCATrec1.key = SFKirrpp2 and 
+      6 in SUBVERBrec1.conjclasses 
+  A4: @
+
+  C5: SFCATrec1.key = SFKirrpp3 and 
+      7 in SUBVERBrec1.conjclasses 
+  A5: @
+
+  C6: SFCATrec1.key = SFKirrnc and 
+      [3,8] * SUBVERBrec1.conjclasses <> []
+  A6: @
+
+  C7: SFCATrec1.key = SFKregptpp and 
+      10 in SUBVERBrec1.conjclasses 
+  A7: @
+
+  C8: SFCATrec1.key = SFKcdptpp and 
+      11 in SUBVERBrec1.conjclasses 
+  A8: @
+
+A1: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+    VERBrec1.modus := participle;
+    VERBrec1.tense := omegatense;
+    VERBrec1.persons := [];
+    VERBrec1.numbers := []
+
+decomp:
+
+C1: VERBrec1.modus = participle and
+    VERBrec1.tense = omegatense and
+    VERBrec1.persons = [] and
+    VERBrec1.numbers = []
+
+  C2: [0,1,4,9] * VERBrec1.conjclasses <> []
+  A2: SFCATrec1.key := SFKirrpp
+
+  C3: 2 in VERBrec1.conjclasses
+  A3: SFCATrec1.key := SFKirrptpp
+
+  C4: 6 in VERBrec1.conjclasses
+  A4: SFCATrec1.key := SFKirrpp2
+
+  C5: 7 in VERBrec1.conjclasses
+  A5: SFCATrec1.key := SFKirrpp3
+
+  C6: [3,8] * VERBrec1.conjclasses <> []
+  A6: SFCATrec1.key := SFKirrnc
+
+  C7: 10 in VERBrec1.conjclasses
+  A7: SFCATrec1.key := SFKregptpp
+
+  C8: 11 in VERBrec1.conjclasses
+  A8: SFCATrec1.key := SFKcdptpp
+
+A1: @
+
+&
+\end{verbatim}
+This rule makes the past participle form for all verbs that have one, i.e.\
+only the modals are excluded. The verb {\em be\/} is dealt with here, too.
+The extra forms produced by classes 7 and 8 are also covered by this rule.
+
+\newpage
+\subsubsection{Ing-Form}
+\begin{verbatim}
+%LVerbIngform
+
+m1: SUBVERB{SUBVERBrec1}[mu1]
+m2: SFCAT{SFCATrec1}
+
+m: VERB{VERBrec1}[head/SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKreging and 
+      SUBVERBrec1.ingform = reging 
+  A2: @
+
+  C3: SFCATrec1.key = SFKreging and
+      SUBVERBrec1.ingform = cdreging 
+  A3: @
+
+  C4: SFCATrec1.key = SFKcding and 
+      SUBVERBrec1.ingform = cding 
+  A4: @
+
+  C5: SFCATrec1.key = SFKcding and 
+      SUBVERBrec1.ingform = cdreging 
+  A5: @
+
+  C6: SFCATrec1.key = SFKirring and 
+      SUBVERBrec1.ingform = irring 
+  A6: @
+
+A1:  VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+     VERBrec1.modus := ingform;
+     VERBrec1.tense := omegatense;
+     VERBrec1.persons := [];
+     VERBrec1.numbers := []
+
+decomp:
+
+C1: VERBrec1.modus = ingform and
+    VERBrec1.tense = omegatense and
+    VERBrec1.persons = [] and
+    VERBrec1.numbers = []
+
+  C2: VERBrec1.ingform = reging
+  A2: SFCATrec1.key := SFKreging
+
+  C3: VERBrec1.ingform = cdreging
+  A3: SFCATrec1.key := SFKreging
+
+  C4: VERBrec1.ingform = cding
+  A4: SFCATrec1.key := SFKcding
+
+  C5: VERBrec1.ingform = cdreging
+  A5: SFCATrec1.key := SFKcding
+
+  C6: VERBrec1.ingform = irring
+  A6: SFCATrec1.key := SFKirring
+
+A1: @
+
+&
+\end{verbatim}
+This rule works for all verbs that allow an ing-form, including {\em be\/}.
+The modals are not explicitly excluded on the basis of their conjugation class;
+they simply do not have the correct value for the attribute {\bf ingform}.
+
+\newpage
+\subsection{Inflection of the verb `Be'}
+\begin{verbatim}
+%LVerbBe
+
+m1: SUBVERB{SUBVERBrec1}[mu1]
+m2: SFCAT{SFCATrec1}
+
+m: VERB{VERBrec1}[head/SUBVERB{SUBVERBrec1}[mu1]]
+
+comp:
+
+C1: 0 in SUBVERBrec1.conjclasses
+
+  C2: SFCATrec1.key = SFKam
+  A2: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+      VERBrec1.modus := indicative;
+      VERBrec1.tense := presenttense;
+      VERBrec1.persons := [1];
+      VERBrec1.numbers := [singular]
+
+  C3: SFCATrec1.key = SFKis
+  A3: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+      VERBrec1.modus := indicative;
+      VERBrec1.tense := presenttense;
+      VERBrec1.persons := [3];
+      VERBrec1.numbers := [singular]
+    
+  C4: SFCATrec1.key = SFKare
+
+    C5: true
+    A5: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+        VERBrec1.modus := indicative;
+        VERBrec1.tense := presenttense;
+        VERBrec1.persons := [2];
+        VERBrec1.numbers := [singular]
+
+    C6: true
+    A6: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+        VERBrec1.modus := indicative;
+        VERBrec1.tense := presenttense;
+        VERBrec1.persons := [1,2,3];
+        VERBrec1.numbers := [plural]
+
+  A4: @
+
+  C7: SFCATrec1.key = SFKwas
+  A7: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+      VERBrec1.modus := indicative;
+      VERBrec1.tense := pasttense;
+      VERBrec1.persons := [1,3];
+      VERBrec1.numbers := [singular]
+
+  C8: SFCATrec1.key = SFKwere
+
+    C9: true
+    A9: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+        VERBrec1.modus := indicative;
+        VERBrec1.tense := pasttense;
+        VERBrec1.persons := [2];
+        VERBrec1.numbers := [singular]
+
+    C10: true
+    A10: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+         VERBrec1.modus := indicative;
+         VERBrec1.tense := pasttense;
+         VERBrec1.persons := [1,2,3];
+         VERBrec1.numbers := [plural]
+
+    C11: true
+    A11: VERBrec1 := copyT_subverbtoverb(SUBVERBrec1);
+         VERBrec1.modus := subjunctive;
+         VERBrec1.tense := pasttense;
+         VERBrec1.persons := [1,2,3];
+         VERBrec1.numbers := [singular, plural]
+
+  A8: @
+
+A1: @
+
+decomp:
+
+C1: 0 in VERBrec1.conjclasses
+
+  C2: VERBrec1.modus = indicative and
+      VERBrec1.tense = presenttense and
+      1 in VERBrec1.persons and
+      singular in VERBrec1.numbers
+  A2: SFCATrec1.key := SFKam
+
+  C3: VERBrec1.modus = indicative and
+      VERBrec1.tense = presenttense and
+      3 in VERBrec1.persons and
+      singular in VERBrec1.numbers
+  A3: SFCATrec1.key := SFKis
+
+  C4: true
+ 
+    C5: VERBrec1.modus = indicative and
+        VERBrec1.tense = presenttense and
+        2 in VERBrec1.persons and
+        singular in VERBrec1.numbers
+    A5: @
+
+    C6: VERBrec1.modus = indicative and
+        VERBrec1.tense = presenttense and
+        [1,2,3] * VERBrec1.persons <> [] and
+        plural in VERBrec1.numbers
+    A6: @
+
+  A4: SFCATrec1.key := SFKare
+
+  C7: VERBrec1.modus = indicative and
+      VERBrec1.tense = pasttense and
+      [1,3] * VERBrec1.persons <> [] and
+      singular in VERBrec1.numbers
+  A7: SFCATrec1.key := SFKwas
+
+  C8: true
+
+    C9: VERBrec1.modus = indicative and
+        VERBrec1.tense = pasttense and
+        2 in VERBrec1.persons and
+        singular in VERBrec1.numbers
+    A9: @
+
+    C10: VERBrec1.modus = indicative and
+         VERBrec1.tense = pasttense and
+         [1,2,3] * VERBrec1.persons <> [] and
+         plural in VERBrec1.numbers
+    A10: @
+
+    C11: VERBrec1.modus = subjunctive and
+         VERBrec1.tense = pasttense and
+         [1,2,3] * VERBrec1.persons <> [] and
+         [singular, plural] * VERBrec1.numbers <> []
+    A11: @
+
+  A8: SFCATrec1.key := SFKwere
+
+A1: @
+
+&
+\end{verbatim}
+The current rule spells out the different verb forms of the verb {\em be\/} 
+for those cases that have not been covered by previous rules. Note that {\em
+be\/} is the only verb which has a past subjunctive.
+%ENGLISH2
+%&
+
+\newpage
+\section{Nouns and Propernouns}
+In Rosetta3, nouns and propernouns have much in common. They 
+especially share many attributes. However, they cannot
+simply be translated into one another. It is assumed that propernouns do not
+have a derivation level, while nouns do. Furthermore, it was decided that 
+propernouns may only 
+occur in their base form, and have no plural form. This is 
+a major change when compared to the system described in document 115. The main
+reason for this decision was to simplify the grammar. In a plural form, the 
+difference between a propernoun and a noun cannot easily be determined by the
+grammar, if it can be determined at all. To be able
+to deal with plurals and modification of propernouns, a special propernoun
+derivation rule has been added, which turns a BPROPERNOUN into a SUBNOUN,
+copying all the attributes.
+From then on, the form can do everything an ordinary noun can. Those 
+propernouns that are inherently plural, like {\em (the) Hebrides\/}, are 
+entered in the dictionary as nouns from the start.
+
+\subsection{Nouns}
+As for verbs, the rules for nouns are divided in two classes. First, there 
+is the derivation level, which turns a lexical entry BNOUN into a SUBNOUN by
+adding the relevant affixes (if any), and then the rules of the inflection 
+level change the SUBNOUN into a NOUN. 
+
+\subsubsection{Derivation}
+\begin{verbatim}
+%LBNoun
+
+m1: BNOUN{BNOUNrec1}
+
+m: SUBNOUN{SUBNOUNrec1}[head/BNOUN{BNOUNrec1}]
+
+comp:
+
+C1: true
+A1: SUBNOUNrec1 := copyT_bnountosubnoun(BNOUNrec1)
+
+decomp:
+
+C1: true
+A1: @
+
+&
+\end{verbatim}
+This rule is for nouns to which no derivation applies. English has no 
+incorporated diminutive (like Dutch {\em -je\/}), and there does not seem to
+be any noun formation suffix that is fully regular over all languages Rosetta 
+deals with. Hence, no noun derivation rules have been written.
+
+\newpage
+\subsubsection{Singular or Base Form}
+\begin{verbatim}
+%LNounBaseform
+
+m1: SUBNOUN{SUBNOUNrec1}[mu1]
+
+m:  NOUN{NOUNrec1}[head/SUBNOUN{SUBNOUNrec1}[mu1]]
+
+comp:
+
+C1: true
+
+  C2: not (onlyplur in SUBNOUNrec1.plurforms)
+  A2: NOUNrec1 := copyT_subnountonoun(SUBNOUNrec1);
+      NOUNrec1.numbers := [singular]
+
+  C3: onlyplur in SUBNOUNrec1.plurforms
+  A3: NOUNrec1 := copyT_subnountonoun(SUBNOUNrec1);
+      NOUNrec1.numbers := [plural]
+
+  C4: singandplur in SUBNOUNrec1.plurforms
+  A4: NOUNrec1 := copyT_subnountonoun(SUBNOUNrec1);
+      NOUNrec1.numbers := [plural]
+
+A1: @
+
+decomp:
+
+C1: true
+
+  C2: singular in NOUNrec1.numbers and 
+      not (onlyplur in NOUNrec1.plurforms)
+  A2: @
+
+  C3: plural in NOUNrec1.numbers and 
+      onlyplur in NOUNrec1.plurforms
+  A3: @
+
+  C4: plural in NOUNrec1.numbers and 
+      singandplur in NOUNrec1.plurforms
+  A4: @
+
+A1: @
+
+&
+\end{verbatim}
+Note that nouns which do not show a change of form when occurring in the 
+plural, like {\em sheep\/},  have the value {\em singandplur\/} for the 
+attribute {\bf plurforms}.
+They pass both subrules 2 and 4. Nouns that are inherently plural, like {\em
+police\/}, are dealt with here too. They have the value {\em onlyplur\/}.
+
+\newpage
+\subsubsection{Plural form}
+\begin{verbatim}
+%LNounPlural
+
+m1:  SUBNOUN{SUBNOUNrec1}[mu1]
+m2:  SFCAT{SFCATrec1}
+
+m:   NOUN{NOUNrec1}[head/SUBNOUN{SUBNOUNrec1}[mu1]]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKregS and 
+      regplur in SUBNOUNrec1.plurforms
+  A2: @        
+
+  C3: SFCATrec1.key = SFKregEs and 
+      regEplur in SUBNOUNrec1.plurforms
+  A3: @      
+
+  C4: SFCATrec1.key = SFKirrS and 
+      irrSplur in SUBNOUNrec1.plurforms
+  A4: @
+
+  C5: SFCATrec1.key = SFKirrplur and 
+      irrplur in SUBNOUNrec1.plurforms
+  A5: @
+
+  C6: SFCATrec1.key = SFKlatplur and latplur in SUBNOUNrec1.plurforms
+  A6: @        
+
+  C7: SFCATrec1.key = SFKvoicingS and voicingplur in SUBNOUNrec1.plurforms
+  A7: @
+
+A1: NOUNrec1 := copyT_subnountonoun(SUBNOUNrec1);
+    NOUNrec1.numbers := [plural]
+
+decomp: 
+
+C1: plural in NOUNrec1.numbers
+
+  C2: regplur in NOUNrec1.plurforms
+  A2: SFCATrec1.key := SFKregS
+
+  C3: regEplur in NOUNrec1.plurforms
+  A3: SFCATrec1.key := SFKregEs
+
+  C4: irrSplur in NOUNrec1.plurforms
+  A4: SFCATrec1.key := SFKirrS
+
+  C5: irrplur in NOUNrec1.plurforms
+  A5: SFCATrec1.key := SFKirrplur
+
+  C6: latplur in NOUNrec1.plurforms
+  A6: SFCATrec1.key := SFKlatplur
+
+  C7: voicingplur in NOUNrec1.plurforms
+  A7: SFCATrec1.key := SFKvoicingS
+
+A1: @
+
+& 
+\end{verbatim}
+Nouns that are inherently plural, like {\em police\/}, are not treated here, 
+since there is no suffix key connected with them. They are covered by the rule 
+for the base form of nouns. 
+
+English does not have an inflectional genitive (like Dutch {\em mijn vaders 
+boek\/}), hence no more rules are needed here.
+
+\newpage
+\subsection{Propernouns}
+Most of the assumptions concerning propernouns have already been stated at the
+beginning of this section. There is no derivation level within the category 
+PROPERNOUN, and there is no plural formation.
+
+\subsubsection{Singular or Base Form}
+\begin{verbatim}
+%LPropernounBaseform
+
+m1: BPROPERNOUN{BPROPERNOUNrec1}
+
+m: PROPERNOUN{PROPERNOUNrec1}[head/BPROPERNOUN{BPROPERNOUNrec1}]
+
+comp:
+
+C1: true
+A1: PROPERNOUNrec1 := copyT_bproperntopropern(BPROPERNOUNrec1);
+    PROPERNOUNrec1.numbers := [singular]
+
+decomp:
+
+C1: singular in PROPERNOUNrec1.numbers
+A1: @
+
+&
+\end{verbatim}
+This rule is different from the rule for nouns in that it is assumed that 
+every proper noun can be singular. Remember that propernouns which are 
+inherently plural are entered in the dictionary as nouns. The attribute 
+{\bf numbers} as a set value is a relic from the time propernouns were allowed 
+to form their own plurals.
+
+\newpage
+\subsubsection{Propernoun to Noun Derivation}
+For all forms of propernouns that are different from the base form, they have to
+be transformed to subnouns first. In the M-grammar it is assumed that 
+propernouns which are modified in any way (e.g.\ by an article) are SUBNOUNs 
+too.
+
+\begin{verbatim}
+%LBPropernounToSubnoun
+
+m1: BPROPERNOUN{BPROPERNOUNrec1}
+
+m: SUBNOUN{SUBNOUNrec1}[head/BPROPERNOUN{BPROPERNOUNrec1}]
+
+comp:
+
+C1: true
+A1: SUBNOUNrec1 := copyT_bproperntosubnoun(BPROPERNOUNrec1)
+
+decomp:
+
+C1: true
+A1: @
+
+&
+\end{verbatim}
+The attributes that are specific to the subnoun recieve their default value.
+
+\newpage
+\section{Adjectives and Adverbs}
+The rules for adjectives and adverbs are very similar. For both categories, 
+there is a derivation level and an inflectional level, the latter for 
+realization of comparatives and superlatives.
+
+
+\subsection{Adjectives}
+\subsubsection{Derivation}
+\begin{verbatim}
+%LBadj
+
+m1: BADJ{BADJrec1}
+
+m: SUBADJ{SUBADJrec1}[head/BADJ{BADJrec1}]
+
+comp:
+
+C1: true
+A1: SUBADJrec1 := copyT_badjtosubadj(BADJrec1)
+
+decomp:
+
+C1: true
+A1: @
+
+&
+\end{verbatim}
+\newpage
+\subsubsection{Adjective to Adverb Derivation}
+This rule has been added to deal with regular derivation of adverbs from 
+adjectives by means of the suffix {\em -ly\/}. For Dutch, a corresponding 
+rule exists, using an abstract suffix.
+
+\begin{verbatim}
+%LAdjToAdvDeriv
+
+m1: SUBADJ{SUBADJrec1}[mu1]
+m2: SFCAT{SFCATrec1}
+
+m : SUBADV{SUBADVrec1}[complrel/SUBADJ{SUBADJrec1}[mu1],
+                       head/BADVSUFF(lyBADVSUFFkey){BADVSUFFrec1}
+                      ]
+
+comp:
+
+C1: SUBADJrec1.advformation <> noAdv
+
+  C2: SUBADJrec1.compformations <> [noComp]
+   
+    C31: SFCATrec1.key = SFKregly and 
+         SUBADJrec1.advformation = regAdv 
+    A31: @
+    C32: SFCATrec1.key = SFKirregly and
+         SUBADJrec1.advformation = irregAdv
+    A32: @
+
+  A2: SUBADVrec1.compformations := [moreComp]
+
+  C4: SUBADJrec1.compformations = [noComp]
+   
+    C51: SFCATrec1.key = SFKregly and 
+         SUBADJrec1.advformation = regAdv 
+    A51: @
+    C52: SFCATrec1.key = SFKirregly and
+         SUBADJrec1.advformation = irregAdv
+    A52: @
+
+  A4: SUBADVrec1.compformations := [noComp]
+
+A1: SUBADVrec1.affix := lyaffix;
+    SUBADVrec1.req := SUBADJrec1.req;
+    SUBADVrec1.env := SUBADJrec1.env;
+    SUBADVrec1.subcs := BADVSUFFrec1.subcs;
+    SUBADVrec1.class := SUBADJrec1.class;
+    SUBADVrec1.deixis := SUBADJrec1.deixis;
+    SUBADVrec1.aspect := SUBADJrec1.aspect;
+    SUBADVrec1.retro := SUBADJrec1.retro;
+    SUBADVrec1.mood :=  BADVSUFFrec1.mood;
+    SUBADVrec1.thetaadv := BADVSUFFrec1.thetaadv;
+    SUBADVrec1.advpatterns := BADVSUFFrec1.advpatterns;
+    SUBADVrec1.prepkey := BADVSUFFrec1.prepkey;
+    SUBADVrec1.position := BADVSUFFrec1.position;
+    SUBADVrec1.possnietnp := BADVSUFFrec1.possnietnp;
+    SUBADVrec1.thanas := BADVSUFFrec1.thanas;
+    SUBADVrec1.temporal := BADVSUFFrec1.temporal
+
+
+decomp:
+
+C1: SUBADVrec1.affix = lyaffix and
+    SUBADVrec1.req = SUBADJrec1.req and
+    SUBADVrec1.env = SUBADJrec1.env and
+    SUBADVrec1.subcs = BADVSUFFrec1.subcs and
+    SUBADVrec1.class = SUBADJrec1.class and
+    SUBADVrec1.deixis = SUBADJrec1.deixis and
+    SUBADVrec1.aspect = SUBADJrec1.aspect and
+    SUBADVrec1.retro = SUBADJrec1.retro and
+    SUBADVrec1.mood =  BADVSUFFrec1.mood and
+    SUBADVrec1.thetaadv = BADVSUFFrec1.thetaadv and
+    SUBADVrec1.advpatterns = BADVSUFFrec1.advpatterns and
+    SUBADVrec1.prepkey = BADVSUFFrec1.prepkey and
+    SUBADVrec1.position = BADVSUFFrec1.position and
+    SUBADVrec1.possnietnp = BADVSUFFrec1.possnietnp and
+    SUBADVrec1.thanas = BADVSUFFrec1.thanas and
+    SUBADVrec1.temporal = BADVSUFFrec1.temporal and
+    SUBADJrec1.advformation <> noAdv
+
+  C2: SUBADJrec1.compformations <> [noComp] and
+      SUBADVrec1.compformations = [moreComp]
+
+    C31: SUBADJrec1.advformation = regAdv
+    A31: SFCATrec1.key := SFKregly
+
+    C32: SUBADJrec1.advformation = irregAdv
+    A32: SFCATrec1.key := SFKirregly
+
+  A2: @
+
+  C4: SUBADJrec1.compformations = [noComp] and
+      SUBADVrec1.compformations = [noComp]
+
+    C51: SUBADJrec1.advformation = regAdv
+    A51: SFCATrec1.key := SFKregly
+
+    C52: SUBADJrec1.advformation = irregAdv
+    A52: SFCATrec1.key := SFKirregly
+
+  A4: @
+
+A1: @
+
+&
+\end{verbatim}
+Note that no conditions on advformation have been related to adjpatterns or 
+thetaadj yet. The position attribute of 
+the BADVSUFF is set at default value in the lexicon; probably, there should be 
+a relation between subcs and position.
+
+The attribute {\bf compformations} of the adjective cannot simply be copied
+to the adverb, since adverbs on {\em -ly\/} usually do not take an inflectional
+comparative or superlative, while adjectives may do so (e.g.\ {\em loud - 
+louder; $^{*}$loudlier\/}. Therefore, the value
+of {\bf compformations} of the adverb is set at [moreComp] if the adjective
+does allow some kind of comparative, and at [noComp] if the adjective does not.
+
+If the -y suffix is also used in Rosetta for derivation (from nouns 
+to adjs: 
+storm - stormy), care has to be taken that the value of the attribute
+`advformation' of the resulting adj is set at the correct value; however, I know
+no general rules to decide what the correct value is (storm - stormy - 
+*stormily; dream - dreamy - dreamily).
+
+\newpage
+\subsubsection{Base Form}
+\begin{verbatim}
+%LAdjBaseform
+
+m1: SUBADJ{SUBADJrec1}[mu1]
+
+m: ADJ{ADJrec1}[head/SUBADJ{SUBADJrec1}[mu1]]
+
+comp:
+
+C1:  true
+
+A1:  ADJrec1 := copyT_subadjtoadj(SUBADJrec1);
+     ADJrec1.compform := basic
+
+decomp:
+
+C1:  ADJrec1.compform = basic
+
+A1:  @
+
+&
+\end{verbatim}
+\newpage
+\subsubsection{Comparative}
+\begin{verbatim}
+%LAdjComp
+
+m1: SUBADJ{SUBADJrec1}[mu1]
+m2: SFCAT{SFCATrec1}
+
+m: ADJ{ADJrec1}[head/SUBADJ{SUBADJrec1}[mu1]]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKregcomp and 
+      regcomp in SUBADJrec1.compformations
+  A2: @        
+
+  C3: SFCATrec1.key = SFKcdcomp and 
+      cdcomp in SUBADJrec1.compformations
+  A3: @          
+
+  C4: SFCATrec1.key = SFKirrcomp and 
+      irrcomp in SUBADJrec1.compformations
+  A4: @        
+
+  C5: SFCATrec1.key = SFKirrcomp2 and 
+      irrcomp2 in SUBADJrec1.compformations
+  A5: @       
+
+A1: ADJrec1 := copyT_subadjtoadj(SUBADJrec1);
+    ADJrec1.compform := compar
+
+decomp:
+
+C1: ADJrec1.compform = compar
+
+  C2: regcomp in ADJrec1.compformations
+  A2: SFCATrec1.key := SFKregcomp
+
+  C3: cdcomp in ADJREC1.compformations
+  A3: SFCATrec1.key := SFKcdcomp
+
+  C4: irrcomp in ADJrec1.compformations
+  A4: SFCATrec1.key := SFKirrcomp
+
+  C5: irrcomp2 in ADJrec1.compformations
+  A6: SFCATrec1.key := SFKirrcomp2
+
+A1: @
+
+&
+\end{verbatim}
+\newpage
+\subsubsection{Superlative}
+\begin{verbatim}
+%LAdjSuper
+
+m1: SUBADJ{SUBADJrec1}[mu1]
+m2: SFCAT{SFCATrec1}
+
+m: ADJ{ADJrec1}[head/SUBADJ{SUBADJrec1}[mu1]]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKregsuper and 
+      regcomp in SUBADJrec1.compformations
+  A2: @       
+
+  C3: SFCATrec1.key = SFKcdsuper and 
+      cdcomp in SUBADJrec1.compformations
+  A3: @         
+
+  C4: SFCATrec1.key = SFKirrsuper and 
+      irrcomp in SUBADJrec1.compformations
+  A4: @         
+
+  C5: SFCATrec1.key = SFKirrsuper2 and 
+      irrcomp2 in SUBADJrec1.compformations
+  A5: @
+
+A1: ADJrec1 := copyT_subadjtoadj(SUBADJrec1);
+    ADJrec1.compform := super
+
+decomp:
+
+C1: ADJrec1.compform = super
+
+  C2: regcomp in ADJrec1.compformations
+  A2: SFCATrec1.key := SFKregsuper
+
+  C3: cdcomp in ADJrec1.compformations
+  A3: SFCATrec1.key := SFKcdsuper
+
+  C4: irrcomp in ADJrec1.compformations
+  A4: SFCATrec1.key := SFKirrsuper
+
+  C5: irrcomp2 in ADJrec1.compformations
+  A5: SFCATrec1.key := SFKirrsuper2
+
+A1: @
+
+&
+\end{verbatim}
+English does not have a counterpart for the Dutch {\em aller-}superlative. It 
+is translated into an ordinary superlative.
+
+\newpage
+\subsection{Adverbs}
+\subsubsection{Derivation}
+\begin{verbatim}
+%LBadV
+
+m1: BADV{BADVrec1}
+
+m: SUBADV{SUBADVrec1}[head/BADV{BADVrec1}]
+
+comp:
+
+C1: true
+A1: SUBADVrec1 := copyT_badvtosubadv(BADVrec1)
+
+decomp:
+
+C1: true
+A1: @
+
+&
+\end{verbatim}
+\newpage
+\subsubsection{Base Form}
+\begin{verbatim}
+%LAdvBaseform
+
+m1: SUBADV{SUBADVrec1}[mu1]
+
+m: ADV{ADVrec1}[head/SUBADV{SUBADVrec1}[mu1]]
+
+comp:
+
+C1: true
+
+A1: ADVrec1 := copyT_subadvtoadv(SUBADVrec1);
+    ADVrec1.compform := basic
+
+decomp:
+
+C1: ADVrec1.compform = basic
+
+A1: @
+
+&
+\end{verbatim}
+\newpage
+\subsubsection{Comparative}
+\begin{verbatim}
+%LAdvComp
+
+m1: SUBADV{SUBADVrec1}[mu1]
+m2: SFCAT{SFCATrec1}
+
+m: ADV{ADVrec1}[head/SUBADV{SUBADVrec1}[mu1]]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKregcomp and 
+      regcomp in SUBADVrec1.compformations
+  A2: @        
+
+  C3: SFCATrec1.key = SFKcdcomp and 
+      cdcomp in SUBADVrec1.compformations
+  A3: @        
+
+  C4: SFCATrec1.key = SFKirrcomp and 
+      irrcomp in SUBADVrec1.compformations
+  A4: @       
+
+  C5: SFCATrec1.key = SFKirrcomp2 and 
+      irrcomp2 in SUBADVrec1.compformations
+  A5: @
+
+A1: ADVrec1 := copyT_subadvtoadv(SUBADVrec1);
+    ADVrec1.compform := compar
+
+decomp:
+
+C1: ADVrec1.compform =compar
+
+  C2: regcomp in ADVrec1.compformations
+  A2: SFCATrec1.key := SFKregcomp
+
+  C3: cdcomp in ADVREC1.compformations
+  A3: SFCATrec1.key := SFKcdcomp
+
+  C4: irrcomp in ADVrec1.compformations
+  A4: SFCATrec1.key := SFKirrcomp
+
+  C5: irrcomp2 in ADVrec1.compformations
+  A5: SFCATrec1.key := SFKirrcomp2
+
+A1: @
+
+&
+\end{verbatim}
+\newpage
+\subsubsection{Superlative}
+\begin{verbatim}
+%LAdvSuper
+
+m1: SUBADV{SUBADVrec1}[mu1]
+m2: SFCAT{SFCATrec1}
+
+m: ADV{ADVrec1}[head/SUBADV{SUBADVrec1}[mu1]]
+
+comp:
+
+C1: true
+
+  C2: SFCATrec1.key = SFKregsuper and 
+      regcomp in SUBADVrec1.compformations
+  A2: @         
+
+  C3: SFCATrec1.key = SFKcdsuper and 
+      cdcomp in SUBADVrec1.compformations
+  A3: @         
+
+  C4: SFCATrec1.key = SFKirrsuper and 
+      irrcomp in SUBADVrec1.compformations
+  A4: @         
+
+  C5: SFCATrec1.key = SFKirrsuper2 and 
+      irrcomp2 in SUBADVrec1.compformations
+  A5: @
+         
+A1: ADVrec1 := copyT_subadvtoadv(SUBADVrec1);
+    ADVrec1.compform := super
+
+decomp:
+
+C1: ADVrec1.compform = super
+
+  C2: regcomp in ADVrec1.compformations
+  A2: SFCATrec1.key := SFKregsuper
+
+  C3: cdcomp in ADVrec1.compformations
+  A3: SFCATrec1.key := SFKcdsuper
+
+  C4: irrcomp in ADVrec1.compformations
+  A4: SFCATrec1.key := SFKirrsuper
+
+  C5: irrcomp2 in ADVrec1.compformations
+  A5: SFCATrec1.key := SFKirrsuper2
+
+A1: @
+
+&
+\end{verbatim}
+%ENGLISH3
+%&
+
+\newpage
+\section{Pronouns}
+Most pronoun rules in English are extremely simple. Hence, little comment has
+been provided. Note that English does not have af rule for Indefinite Pronouns, 
+although there is such a rule in Dutch. In the M-grammar, a SUBINDEFPRO level
+has been defined, which is the same as the INDEFPRO level. Hence, morphology
+need not bother with it.
+
+\subsection{Personal Pronouns (PersPro)}
+\subsubsection{Nominative}
+\begin{verbatim}
+%LPersproNom
+
+m1: BPERSPRO{BPERSPROrec1}
+
+m: PERSPRO{PERSPROrec1}[head/BPERSPRO{BPERSPROrec1}]
+
+comp:
+
+C1: true
+A1: PERSPROrec1 := copyT_bpersprotoperspro(BPERSPROrec1);
+    PERSPROrec1.persprocase := nominative
+
+decomp:
+
+C1: PERSPROrec1.persprocase = nominative
+A1: @
+
+&
+\end{verbatim}
+\newpage
+\subsubsection{Accusative}
+\begin{verbatim}
+%LPersproAcc
+
+m1: BPERSPRO{BPERSPROrec1}
+m2: SFCAT{SFCATrec1}
+
+m: PERSPRO{PERSPROrec1}[head/BPERSPRO{BPERSPROrec1}]
+
+comp:
+
+C1: SFCATrec1.key = SFKacc
+A1: PERSPROrec1 := copyT_bpersprotoperspro(BPERSPROrec1);
+    PERSPROrec1.persprocase := accusative
+
+decomp:
+
+C1: PERSPROrec1.persprocase = accusative
+A1: SFCATrec1.key := SFKacc
+
+&
+\end{verbatim}
+Note that the accusative of the PERSPRO {\em you\/} is dealt with here too,
+although there is only an abstract case suffix. Since the attribute
+{\bf persprocase} does not have a set as possible value, this is the only 
+solution.
+
+In Rosetta, English uses the term {\em accusative\/} for what traditionally is
+called {\em oblique case\/}. There is no deeper motivation behind this choice:
+it is just easy.
+
+\newpage
+\subsection{Adjectival Possessive Pronouns (PossAdj)}
+\begin{verbatim}
+%LPossadj
+
+m1: BPERSPRO{BPERSPROrec1}
+m2: SFCAT{SFCATrec1}
+
+m: POSSADJ{POSSADJrec1}[head/BPERSPRO{BPERSPROrec1}]
+
+comp:
+
+C1: SFCATrec1.key = SFKposs
+A1: POSSADJrec1.mood := nowh
+
+decomp:
+
+C1: POSSADJrec1.mood = nowh
+A1: SFCATrec1.key := SFKposs
+
+&
+\end{verbatim}
+In Rosetta2, POSSADJs also had attributes {\bf number}, {\bf person} and 
+{\bf gender}. However, they are not needed. In Rosetta3, there is a new
+attribute {\bf mood} for POSSADJs instead, which has two values: {\em wh\/}
+and {\em nowh\/}. This is
+necessary to differentiate {\em my\/} etc.\ from {\em whose\/}, which is now 
+no longer a 
+Wh-POSSADJ, but a POSSADJ as well, with value {\em wh\/} for the attribute 
+{\bf mood}.
+
+\newpage
+\subsection{Nominalised Possessive Pronouns (PossPro)}
+\begin{verbatim}
+%LPosspro
+
+m1: BPERSPRO{BPERSPROrec1}
+m2: SFCAT{SFCATrec1}
+
+m: POSSPRO{POSSPROrec1}[head/BPERSPRO{BPERSPROrec1}]
+
+comp:
+
+C1: BPERSPROrec1.predpos = true and
+    SFCATrec1.key = SFKpredposs  
+A1: @
+
+decomp:
+
+C1: BPERSPROrec1.predpos = true
+A1: SFCATrec1.key := SFKpredposs
+
+&
+\end{verbatim}
+The attribute {\bf predpos} is used to prevent the PERSPRO {\em it\/} from 
+going through this rule: there is no form $^{*}${\em its\/} similar to {\em
+hers\/}, {\em mine\/} etc.
+
+\newpage
+\subsection{Wh-Pronouns (WhPro)}
+\subsubsection{Base Form}
+\begin{verbatim}
+%LWhpro
+
+m1: BWHPRO{BWHPROrec1}
+
+m: WHPRO{WHPROrec1}[head/BWHPRO{BWHPROrec1}]
+
+comp:
+
+C1: true
+
+  C2: BWHPROrec1.whcase = true
+  A2: WHPROrec1 := copyT_bwhprotowhpro(BWHPROrec1);
+      WHPROrec1.cases := [nominative, accusative]
+
+  C3: BWHPROrec1.whcase = false
+  A3: WHPROrec1 := copyT_bwhprotowhpro(BWHPROrec1)
+
+A1: @
+
+decomp:
+
+C1: true
+
+  C2: BWHPROrec1.whcase = true and 
+      WHPROrec1.cases <> [accusative]
+  A2: @
+
+  C3: BWHPROrec1.whcase = false and 
+      WHPROrec1.cases = []
+  A3: @
+
+A1: @
+
+&
+\end{verbatim}
+This rule assigns nominative and accusative case to {\em who\/}. It does not
+change the default case setting (which is []) of {\em what\/}. Note that 
+accusative case for {\em who\/} is also assigned by the next rule. If the 
+M-grammar assigns an unambiguous [accusative] to {\em who\/}, it will be 
+realized as {\em whom\/} by the next rule. If the setting is [nominative,
+accusative], the form will be realized as {\em who\/} by the current rule, 
+and as {\em whom\/} by the next.
+
+\newpage
+\subsubsection{Accusative}
+\begin{verbatim}
+%LWhproAcc
+
+m1: BWHPRO{BWHPROrec1}
+m2: SFCAT{SFCATrec1}
+
+m: WHPRO{WHPROrec1}[head/BWHPRO{BWHPROrec1}]
+
+comp:
+
+C1: SFCATrec1.key = SFKacc and 
+    BWHPROrec1.whcase = true
+A1: WHPROrec1 := copyT_bwhprotowhpro(BWHPROrec1);
+    WHPROrec1.cases := [accusative]
+
+decomp:
+
+C1: accusative in WHPROrec1.cases and 
+    BWHPROrec1.whcase = true
+A1: SFCATrec1.key := SFKacc
+
+&
+\end{verbatim}
+See the comment in the previous rule.
+
+\newpage
+\subsection{Adjectival Wh Possessive Pronoun (Wh-PossAdj)}
+\begin{verbatim}
+%LWhpossadj
+
+m1: BWHPRO{BWHPROrec1}
+m2: SFCAT{SFCATrec1}
+
+m: POSSADJ{POSSADJrec1}[head/BWHPRO{BWHPROrec1}]
+
+comp:
+
+C1: SFCATrec1.key = SFKposs and 
+    BWHPROrec1.poss = true
+A1: POSSADJrec1. mood := wh
+
+decomp:
+
+C1: POSSADJrec1.mood = wh and 
+    BWHPROrec1.poss = true
+A1: SFCATrec1.key := SFKposs
+
+&
+\end{verbatim}
+The only example is {\em whose\/}.
+
+\newpage
+\section{Determiners}
+This is a whole new class, compared to the system described in document 115.
+The reason why it was added is isomorphism with Dutch, where there is inflection
+for determiners ({\em veel - vele - velen}). In this case, it was decided to 
+change morphology rather than define a fictitious SUBDET level in the English
+M-grammar, the way it was done for INDEFPROs. The BDET and DET  records are
+fully identical.
+
+\begin{verbatim}
+%LDet
+
+m1: BDET{BDETrec1}
+
+m: DET{DETrec1}[head/BDET{BDETrec1}]
+
+comp:
+
+C1: true
+A1: DETrec1 := COPYT_bdetTOdet(BDETrec1)
+
+decomp:
+
+C1: true
+A1: @
+
+&
+\end{verbatim}
+
+\end{document}
+ROSETTA.sty
+\typeout{Document Style 'Rosetta'. Version 0.4 - released  24-DEC-1987}
+% 24-DEC-1987:  Date of copyright notice changed
+\def\@ptsize{1}
+\@namedef{ds@10pt}{\def\@ptsize{0}}
+\@namedef{ds@12pt}{\def\@ptsize{2}} 
+\@twosidetrue
+\@mparswitchtrue
+\def\ds@draft{\overfullrule 5pt} 
+\@options
+\input art1\@ptsize.sty\relax
+
+
+\def\labelenumi{\arabic{enumi}.} 
+\def\theenumi{\arabic{enumi}} 
+\def\labelenumii{(\alph{enumii})}
+\def\theenumii{\alph{enumii}}
+\def\p@enumii{\theenumi}
+\def\labelenumiii{\roman{enumiii}.}
+\def\theenumiii{\roman{enumiii}}
+\def\p@enumiii{\theenumi(\theenumii)}
+\def\labelenumiv{\Alph{enumiv}.}
+\def\theenumiv{\Alph{enumiv}} 
+\def\p@enumiv{\p@enumiii\theenumiii}
+\def\labelitemi{$\bullet$}
+\def\labelitemii{\bf --}
+\def\labelitemiii{$\ast$}
+\def\labelitemiv{$\cdot$}
+\def\verse{
+   \let\\=\@centercr 
+   \list{}{\itemsep\z@ \itemindent -1.5em\listparindent \itemindent 
+      \rightmargin\leftmargin\advance\leftmargin 1.5em}
+   \item[]}
+\let\endverse\endlist
+\def\quotation{
+   \list{}{\listparindent 1.5em
+      \itemindent\listparindent
+      \rightmargin\leftmargin \parsep 0pt plus 1pt}\item[]}
+\let\endquotation=\endlist
+\def\quote{
+   \list{}{\rightmargin\leftmargin}\item[]}
+\let\endquote=\endlist
+\def\descriptionlabel#1{\hspace\labelsep \bf #1}
+\def\description{
+   \list{}{\labelwidth\z@ \itemindent-\leftmargin
+      \let\makelabel\descriptionlabel}}
+\let\enddescription\endlist
+
+
+\def\@begintheorem#1#2{\it \trivlist \item[\hskip \labelsep{\bf #1\ #2}]}
+\def\@endtheorem{\endtrivlist}
+\def\theequation{\arabic{equation}}
+\def\titlepage{
+   \@restonecolfalse
+   \if@twocolumn\@restonecoltrue\onecolumn
+   \else \newpage
+   \fi
+   \thispagestyle{empty}\c@page\z@}
+\def\endtitlepage{\if@restonecol\twocolumn \else \newpage \fi}
+\arraycolsep 5pt \tabcolsep 6pt \arrayrulewidth .4pt \doublerulesep 2pt 
+\tabbingsep \labelsep 
+\skip\@mpfootins = \skip\footins
+\fboxsep = 3pt \fboxrule = .4pt 
+
+
+\newcounter{part}
+\newcounter {section}
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\def\thepart{\Roman{part}} \def\thesection {\arabic{section}}
+\def\thesubsection {\thesection.\arabic{subsection}}
+\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\theparagraph {\thesubsubsection.\arabic{paragraph}}
+\def\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+
+
+\def\@pnumwidth{1.55em}
+\def\@tocrmarg {2.55em}
+\def\@dotsep{4.5}
+\setcounter{tocdepth}{3}
+\def\tableofcontents{\section*{Contents\markboth{}{}}
+\@starttoc{toc}}
+\def\l@part#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{2.25em plus 1pt}
+   \begingroup
+      \@tempdima 3em \parindent \z@ \rightskip \@pnumwidth \parfillskip
+      -\@pnumwidth {\large \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}}
+      \par \nobreak
+   \endgroup}
+\def\l@section#1#2{
+   \addpenalty{-\@highpenalty}
+   \addvspace{1.0em plus 1pt}
+   \@tempdima 1.5em
+   \begingroup
+      \parindent \z@ \rightskip \@pnumwidth 
+      \parfillskip -\@pnumwidth 
+      \bf \leavevmode #1\hfil \hbox to\@pnumwidth{\hss #2}
+      \par
+   \endgroup}
+\def\l@subsection{\@dottedtocline{2}{1.5em}{2.3em}}
+\def\l@subsubsection{\@dottedtocline{3}{3.8em}{3.2em}}
+\def\l@paragraph{\@dottedtocline{4}{7.0em}{4.1em}}
+\def\l@subparagraph{\@dottedtocline{5}{10em}{5em}}
+\def\listoffigures{
+   \section*{List of Figures\markboth{}{}}
+   \@starttoc{lof}}
+   \def\l@figure{\@dottedtocline{1}{1.5em}{2.3em}}
+   \def\listoftables{\section*{List of Tables\markboth{}{}}
+   \@starttoc{lot}}
+\let\l@table\l@figure
+
+
+\def\thebibliography#1{
+   \addcontentsline{toc}
+   {section}{References}\section*{References\markboth{}{}}
+   \list{[\arabic{enumi}]}
+        {\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+         \advance\leftmargin\labelsep\usecounter{enumi}}}
+\let\endthebibliography=\endlist
+
+
+\newif\if@restonecol
+\def\theindex{
+   \@restonecoltrue\if@twocolumn\@restonecolfalse\fi
+   \columnseprule \z@
+   \columnsep 35pt\twocolumn[\section*{Index}]
+   \markboth{}{}
+   \thispagestyle{plain}\parindent\z@
+   \parskip\z@ plus .3pt\relax
+   \let\item\@idxitem}
+\def\@idxitem{\par\hangindent 40pt}
+\def\subitem{\par\hangindent 40pt \hspace*{20pt}}
+\def\subsubitem{\par\hangindent 40pt \hspace*{30pt}}
+\def\endtheindex{\if@restonecol\onecolumn\else\clearpage\fi}
+\def\indexspace{\par \vskip 10pt plus 5pt minus 3pt\relax}
+
+
+\def\footnoterule{
+   \kern-1\p@ 
+   \hrule width .4\columnwidth 
+   \kern .6\p@} 
+\long\def\@makefntext#1{
+   \@setpar{\@@par\@tempdima \hsize 
+   \advance\@tempdima-10pt\parshape \@ne 10pt \@tempdima}\par
+   \parindent 1em\noindent \hbox to \z@{\hss$^{\@thefnmark}$}#1}
+
+
+\setcounter{topnumber}{2}
+\def\topfraction{.7}
+\setcounter{bottomnumber}{1}
+\def\bottomfraction{.3}
+\setcounter{totalnumber}{3}
+\def\textfraction{.2}
+\def\floatpagefraction{.5}
+\setcounter{dbltopnumber}{2}
+\def\dbltopfraction{.7}
+\def\dblfloatpagefraction{.5}
+\long\def\@makecaption#1#2{
+   \vskip 10pt 
+   \setbox\@tempboxa\hbox{#1: #2}
+   \ifdim \wd\@tempboxa >\hsize \unhbox\@tempboxa\par
+   \else \hbox to\hsize{\hfil\box\@tempboxa\hfil} 
+   \fi}
+\newcounter{figure}
+\def\thefigure{\@arabic\c@figure}
+\def\fps@figure{tbp}
+\def\ftype@figure{1}
+\def\ext@figure{lof}
+\def\fnum@figure{Figure \thefigure}
+\def\figure{\@float{figure}}
+\let\endfigure\end@float
+\@namedef{figure*}{\@dblfloat{figure}}
+\@namedef{endfigure*}{\end@dblfloat}
+\newcounter{table}
+\def\thetable{\@arabic\c@table}
+\def\fps@table{tbp}
+\def\ftype@table{2}
+\def\ext@table{lot}
+\def\fnum@table{Table \thetable}
+\def\table{\@float{table}}
+\let\endtable\end@float
+\@namedef{table*}{\@dblfloat{table}}
+\@namedef{endtable*}{\end@dblfloat}
+
+
+\def\maketitle{
+   \par
+   \begingroup
+      \def\thefootnote{\fnsymbol{footnote}}
+      \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}} 
+      \if@twocolumn \twocolumn[\@maketitle] 
+      \else \newpage \global\@topnum\z@ \@maketitle
+      \fi
+      \thispagestyle{plain}
+      \@thanks
+   \endgroup
+   \setcounter{footnote}{0}
+   \let\maketitle\relax
+   \let\@maketitle\relax
+   \gdef\@thanks{}
+   \gdef\@author{}
+   \gdef\@title{}
+   \let\thanks\relax}
+\def\@maketitle{
+   \newpage
+   \null
+   \vskip 2em
+   \begin{center}{\LARGE \@title \par}
+      \vskip 1.5em
+      {\large \lineskip .5em \begin{tabular}[t]{c}\@author \end{tabular}\par} 
+      \vskip 1em {\large \@date}
+   \end{center}
+   \par
+   \vskip 1.5em} 
+\def\abstract{
+   \if@twocolumn \section*{Abstract}
+   \else
+      \small 
+      \begin{center} {\bf Abstract\vspace{-.5em}\vspace{0pt}} \end{center}
+      \quotation 
+   \fi}
+\def\endabstract{\if@twocolumn\else\endquotation\fi}
+
+
+\mark{{}{}} 
+\if@twoside
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenhead{\rm\thepage\hfil \sl \rightmark}
+      \def\@oddhead{\hbox{}\sl \leftmark \hfil\rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\else
+   \def\ps@headings{
+      \def\@oddfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@evenfoot{Rosetta Doc. \@RosDocNr\hfil \@RosDate}
+      \def\@oddhead{\hbox{}\sl \rightmark \hfil \rm\thepage}
+      \def\sectionmark##1{\markboth {}{}}
+      \def\subsectionmark##1{}}
+\fi
+\def\ps@myheadings{
+   \def\@oddhead{\hbox{}\sl\@rhead \hfil \rm\thepage}
+   \def\@oddfoot{}
+   \def\@evenhead{\rm \thepage\hfil\sl\@lhead\hbox{}}
+   \def\@evenfoot{}
+   \def\sectionmark##1{}
+   \def\subsectionmark##1{}}
+
+
+\def\today{
+   \ifcase\month\or January\or February\or March\or April\or May\or June\or
+      July\or August\or September\or October\or November\or December
+   \fi
+   \space\number\day, \number\year}
+
+
+\ps@plain \pagenumbering{arabic} \onecolumn \if@twoside\else\raggedbottom\fi 
+
+
+
+
+% the Rosetta title page
+\newcommand{\MakeRosTitle}{
+   \begin{titlepage}
+      \begin{large}
+	 \begin{figure}[t]
+	    \begin{picture}(405,100)(0,0)
+	       \put(0,100){\line(1,0){404}}
+	       \put(0,75){Project {\bf Rosetta}}
+	       \put(93.5,75){:}
+	       \put(108,75){Machine Translation}
+	       \put(0,50){Topic}
+	       \put(93.5,50){:}
+	       \put(108,50){\@RosTopic}
+	       \put(0,30){\line(1,0){404}}
+	    \end{picture}
+	 \end{figure}
+	 \bigskip
+	 \bigskip
+	 \begin{list}{-}{\setlength{\leftmargin}{3.0cm}
+			 \setlength{\labelwidth}{2.7cm}
+			 \setlength{\topsep}{2cm}}
+	    \item [{\rm Title \hfill :}] {{\bf \@RosTitle}}
+	    \item [{\rm Author \hfill :}] {\@RosAuthor}
+	    \bigskip
+	    \bigskip
+	    \bigskip
+	    \item [{\rm Doc.Nr. \hfill :}] {\@RosDocNr}
+	    \item [{\rm Date \hfill :}] {\@RosDate}
+	    \item [{\rm Status \hfill :}] {\@RosStatus}
+	    \item [{\rm Supersedes \hfill :}] {\@RosSupersedes}
+	    \item [{\rm Distribution \hfill :}] {\@RosDistribution}
+	    \item [{\rm Clearance \hfill :}] {\@RosClearance}
+	    \item [{\rm Keywords \hfill :}] {\@RosKeywords}
+	 \end{list}
+      \end{large}
+      \title{\@RosTitle}
+      \begin{figure}[b]
+	 \begin{picture}(404,64)(0,0)
+	    \put(0,64){\line(1,0){404}}
+	    \put(0,-4){\line(1,0){404}}
+	    \put(0,59){\line(1,0){42}}
+	    \begin{small}
+	    \put(3,48){\sf PHILIPS}
+	    \end{small}
+	    \put(0,23){\line(0,1){36}}
+	    \put(42,23){\line(0,1){36}}
+	    \put(21,23){\oval(42,42)[bl]}
+	    \put(21,23){\oval(42,42)[br]}
+	    \put(21,23){\circle{40}}
+	    \put(4,33){\line(1,0){10}}
+	    \put(9,28){\line(0,1){10}}
+	    \put(9,36){\line(1,0){6}}
+	    \put(12,33){\line(0,1){6}}
+	    \put(29,13){\line(1,0){10}}
+	    \put(34,8){\line(0,1){10}}
+	    \put(28,10){\line(1,0){6}}
+	    \put(31,7){\line(0,1){6}}
+
+	    \put(1,21){\line(1,0){0.5}}
+	    \put(1.5,21.3){\line(1,0){0.5}}
+	    \put(2,21.6){\line(1,0){0.5}}
+	    \put(2.5,21.9){\line(1,0){0.5}}
+	    \put(3,22.1){\line(1,0){0.5}}
+	    \put(3.5,22.3){\line(1,0){0.5}}
+	    \put(4,22.5){\line(1,0){0.5}}
+	    \put(4.5,22.7){\line(1,0){0.5}}
+	    \put(5,22.8){\line(1,0){0.5}}
+	    \put(5.5,22.9){\line(1,0){0.5}}
+	    \put(6,23){\line(1,0){0.5}}
+	    \put(6.5,22.9){\line(1,0){0.5}}
+	    \put(7,22.8){\line(1,0){0.5}}
+	    \put(7.5,22.7){\line(1,0){0.5}}
+	    \put(8,22.5){\line(1,0){0.5}}
+	    \put(8.5,22.3){\line(1,0){0.5}}
+	    \put(9,22.1){\line(1,0){0.5}}
+	    \put(9.5,21.9){\line(1,0){0.5}}
+	    \put(10,21.6){\line(1,0){0.5}}
+	    \put(10.5,21.3){\line(1,0){0.5}}
+
+	    \put(1,23){\line(1,0){0.5}}
+	    \put(1.5,23.3){\line(1,0){0.5}}
+	    \put(2,23.6){\line(1,0){0.5}}
+	    \put(2.5,23.9){\line(1,0){0.5}}
+	    \put(3,24.1){\line(1,0){0.5}}
+	    \put(3.5,24.3){\line(1,0){0.5}}
+	    \put(4,24.5){\line(1,0){0.5}}
+	    \put(4.5,24.7){\line(1,0){0.5}}
+	    \put(5,24.8){\line(1,0){0.5}}
+	    \put(5.5,24.9){\line(1,0){0.5}}
+	    \put(6,25){\line(1,0){0.5}}
+	    \put(6.5,24.9){\line(1,0){0.5}}
+	    \put(7,24.8){\line(1,0){0.5}}
+	    \put(7.5,24.7){\line(1,0){0.5}}
+	    \put(8,24.5){\line(1,0){0.5}}
+	    \put(8.5,24.3){\line(1,0){0.5}}
+	    \put(9,24.1){\line(1,0){0.5}}
+	    \put(9.5,23.9){\line(1,0){0.5}}
+	    \put(10,23.6){\line(1,0){0.5}}
+	    \put(10.5,23.3){\line(1,0){0.5}}
+
+	    \put(1,25){\line(1,0){0.5}}
+	    \put(1.5,25.3){\line(1,0){0.5}}
+	    \put(2,25.6){\line(1,0){0.5}}
+	    \put(2.5,25.9){\line(1,0){0.5}}
+	    \put(3,26.1){\line(1,0){0.5}}
+	    \put(3.5,26.3){\line(1,0){0.5}}
+	    \put(4,26.5){\line(1,0){0.5}}
+	    \put(4.5,26.7){\line(1,0){0.5}}
+	    \put(5,26.8){\line(1,0){0.5}}
+	    \put(5.5,26.9){\line(1,0){0.5}}
+	    \put(6,27){\line(1,0){0.5}}
+	    \put(6.5,26.9){\line(1,0){0.5}}
+	    \put(7,26.8){\line(1,0){0.5}}
+	    \put(7.5,26.7){\line(1,0){0.5}}
+	    \put(8,26.5){\line(1,0){0.5}}
+	    \put(8.5,26.3){\line(1,0){0.5}}
+	    \put(9,26.1){\line(1,0){0.5}}
+	    \put(9.5,25.9){\line(1,0){0.5}}
+	    \put(10,25.6){\line(1,0){0.5}}
+	    \put(10.5,25.3){\line(1,0){0.5}}
+
+	    \put(11,21){\line(1,0){0.5}}
+	    \put(11.5,20.7){\line(1,0){0.5}}
+	    \put(12,20.4){\line(1,0){0.5}}
+	    \put(12.5,20.1){\line(1,0){0.5}}
+	    \put(13,19.9){\line(1,0){0.5}}
+	    \put(13.5,19.7){\line(1,0){0.5}}
+	    \put(14,19.5){\line(1,0){0.5}}
+	    \put(14.5,19.3){\line(1,0){0.5}}
+	    \put(15,19.2){\line(1,0){0.5}}
+	    \put(15.5,19.1){\line(1,0){0.5}}
+	    \put(16,19){\line(1,0){0.5}}
+	    \put(16.5,19.1){\line(1,0){0.5}}
+	    \put(17,19.2){\line(1,0){0.5}}
+	    \put(17.5,19.3){\line(1,0){0.5}}
+	    \put(18,19.5){\line(1,0){0.5}}
+	    \put(18.5,19.7){\line(1,0){0.5}}
+	    \put(19,19.9){\line(1,0){0.5}}
+	    \put(19.5,20.1){\line(1,0){0.5}}
+	    \put(20,20.4){\line(1,0){0.5}}
+	    \put(20.5,20.7){\line(1,0){0.5}}
+
+	    \put(11,23){\line(1,0){0.5}}
+	    \put(11.5,22.7){\line(1,0){0.5}}
+	    \put(12,22.4){\line(1,0){0.5}}
+	    \put(12.5,22.1){\line(1,0){0.5}}
+	    \put(13,21.9){\line(1,0){0.5}}
+	    \put(13.5,21.7){\line(1,0){0.5}}
+	    \put(14,21.5){\line(1,0){0.5}}
+	    \put(14.5,21.3){\line(1,0){0.5}}
+	    \put(15,21.2){\line(1,0){0.5}}
+	    \put(15.5,21.1){\line(1,0){0.5}}
+	    \put(16,21){\line(1,0){0.5}}
+	    \put(16.5,21.1){\line(1,0){0.5}}
+	    \put(17,21.2){\line(1,0){0.5}}
+	    \put(17.5,21.3){\line(1,0){0.5}}
+	    \put(18,21.5){\line(1,0){0.5}}
+	    \put(18.5,21.7){\line(1,0){0.5}}
+	    \put(19,21.9){\line(1,0){0.5}}
+	    \put(19.5,22.1){\line(1,0){0.5}}
+	    \put(20,22.4){\line(1,0){0.5}}
+	    \put(20.5,22.7){\line(1,0){0.5}}
+
+	    \put(11,25){\line(1,0){0.5}}
+	    \put(11.5,24.7){\line(1,0){0.5}}
+	    \put(12,24.4){\line(1,0){0.5}}
+	    \put(12.5,24.1){\line(1,0){0.5}}
+	    \put(13,23.9){\line(1,0){0.5}}
+	    \put(13.5,23.7){\line(1,0){0.5}}
+	    \put(14,23.5){\line(1,0){0.5}}
+	    \put(14.5,23.3){\line(1,0){0.5}}
+	    \put(15,23.2){\line(1,0){0.5}}
+	    \put(15.5,23.1){\line(1,0){0.5}}
+	    \put(16,23){\line(1,0){0.5}}
+	    \put(16.5,23.1){\line(1,0){0.5}}
+	    \put(17,23.2){\line(1,0){0.5}}
+	    \put(17.5,23.3){\line(1,0){0.5}}
+	    \put(18,23.5){\line(1,0){0.5}}
+	    \put(18.5,23.7){\line(1,0){0.5}}
+	    \put(19,23.9){\line(1,0){0.5}}
+	    \put(19.5,24.1){\line(1,0){0.5}}
+	    \put(20,24.4){\line(1,0){0.5}}
+	    \put(20.5,24.7){\line(1,0){0.5}}
+
+	    \put(21,21){\line(1,0){0.5}}
+	    \put(21.5,21.3){\line(1,0){0.5}}
+	    \put(22,21.6){\line(1,0){0.5}}
+	    \put(22.5,21.9){\line(1,0){0.5}}
+	    \put(23,22.1){\line(1,0){0.5}}
+	    \put(23.5,22.3){\line(1,0){0.5}}
+	    \put(24,22.5){\line(1,0){0.5}}
+	    \put(24.5,22.7){\line(1,0){0.5}}
+	    \put(25,22.8){\line(1,0){0.5}}
+	    \put(25.5,23.9){\line(1,0){0.5}}
+	    \put(26,23){\line(1,0){0.5}}
+	    \put(26.5,22.9){\line(1,0){0.5}}
+	    \put(27,22.8){\line(1,0){0.5}}
+	    \put(27.5,22.7){\line(1,0){0.5}}
+	    \put(28,22.5){\line(1,0){0.5}}
+	    \put(28.5,22.3){\line(1,0){0.5}}
+	    \put(29,22.1){\line(1,0){0.5}}
+	    \put(29.5,21.9){\line(1,0){0.5}}
+	    \put(30,21.6){\line(1,0){0.5}}
+	    \put(30.5,21.3){\line(1,0){0.5}}
+
+	    \put(21,23){\line(1,0){0.5}}
+	    \put(21.5,23.3){\line(1,0){0.5}}
+	    \put(22,23.6){\line(1,0){0.5}}
+	    \put(22.5,23.9){\line(1,0){0.5}}
+	    \put(23,24.1){\line(1,0){0.5}}
+	    \put(23.5,24.3){\line(1,0){0.5}}
+	    \put(24,24.5){\line(1,0){0.5}}
+	    \put(24.5,24.7){\line(1,0){0.5}}
+	    \put(25,24.8){\line(1,0){0.5}}
+	    \put(25.5,24.9){\line(1,0){0.5}}
+	    \put(26,25){\line(1,0){0.5}}
+	    \put(26.5,24.9){\line(1,0){0.5}}
+	    \put(27,24.8){\line(1,0){0.5}}
+	    \put(27.5,24.7){\line(1,0){0.5}}
+	    \put(28,24.5){\line(1,0){0.5}}
+	    \put(28.5,24.3){\line(1,0){0.5}}
+	    \put(29,24.1){\line(1,0){0.5}}
+	    \put(29.5,23.9){\line(1,0){0.5}}
+	    \put(30,23.6){\line(1,0){0.5}}
+	    \put(30.5,23.3){\line(1,0){0.5}}
+
+	    \put(21,25){\line(1,0){0.5}}
+	    \put(21.5,25.3){\line(1,0){0.5}}
+	    \put(22,25.6){\line(1,0){0.5}}
+	    \put(22.5,25.9){\line(1,0){0.5}}
+	    \put(23,26.1){\line(1,0){0.5}}
+	    \put(23.5,26.3){\line(1,0){0.5}}
+	    \put(24,26.5){\line(1,0){0.5}}
+	    \put(24.5,26.7){\line(1,0){0.5}}
+	    \put(25,26.8){\line(1,0){0.5}}
+	    \put(25.5,26.9){\line(1,0){0.5}}
+	    \put(26,27){\line(1,0){0.5}}
+	    \put(26.5,26.9){\line(1,0){0.5}}
+	    \put(27,26.8){\line(1,0){0.5}}
+	    \put(27.5,26.7){\line(1,0){0.5}}
+	    \put(28,26.5){\line(1,0){0.5}}
+	    \put(28.5,26.3){\line(1,0){0.5}}
+	    \put(29,26.1){\line(1,0){0.5}}
+	    \put(29.5,25.9){\line(1,0){0.5}}
+	    \put(30,25.6){\line(1,0){0.5}}
+	    \put(30.5,25.3){\line(1,0){0.5}}
+
+	    \put(31,21){\line(1,0){0.5}}
+	    \put(31.5,20.7){\line(1,0){0.5}}
+	    \put(32,20.4){\line(1,0){0.5}}
+	    \put(32.5,20.1){\line(1,0){0.5}}
+	    \put(33,19.9){\line(1,0){0.5}}
+	    \put(33.5,19.7){\line(1,0){0.5}}
+	    \put(34,19.5){\line(1,0){0.5}}
+	    \put(34.5,19.3){\line(1,0){0.5}}
+	    \put(35,19.2){\line(1,0){0.5}}
+	    \put(35.5,19.1){\line(1,0){0.5}}
+	    \put(36,19){\line(1,0){0.5}}
+	    \put(36.5,19.1){\line(1,0){0.5}}
+	    \put(37,19.2){\line(1,0){0.5}}
+	    \put(37.5,19.3){\line(1,0){0.5}}
+	    \put(38,19.5){\line(1,0){0.5}}
+	    \put(38.5,19.7){\line(1,0){0.5}}
+	    \put(39,19.9){\line(1,0){0.5}}
+	    \put(39.5,20.1){\line(1,0){0.5}}
+	    \put(40,20.4){\line(1,0){0.5}}
+	    \put(40.5,20.7){\line(1,0){0.5}}
+
+	    \put(31,23){\line(1,0){0.5}}
+	    \put(31.5,22.7){\line(1,0){0.5}}
+	    \put(32,22.4){\line(1,0){0.5}}
+	    \put(32.5,22.1){\line(1,0){0.5}}
+	    \put(33,21.9){\line(1,0){0.5}}
+	    \put(33.5,21.7){\line(1,0){0.5}}
+	    \put(34,21.5){\line(1,0){0.5}}
+	    \put(34.5,21.3){\line(1,0){0.5}}
+	    \put(35,21.2){\line(1,0){0.5}}
+	    \put(35.5,21.1){\line(1,0){0.5}}
+	    \put(36,21){\line(1,0){0.5}}
+	    \put(36.5,21.1){\line(1,0){0.5}}
+	    \put(37,21.2){\line(1,0){0.5}}
+	    \put(37.5,21.3){\line(1,0){0.5}}
+	    \put(38,21.5){\line(1,0){0.5}}
+	    \put(38.5,21.7){\line(1,0){0.5}}
+	    \put(39,21.9){\line(1,0){0.5}}
+	    \put(39.5,22.1){\line(1,0){0.5}}
+	    \put(40,22.4){\line(1,0){0.5}}
+	    \put(40.5,22.7){\line(1,0){0.5}}
+
+	    \put(31,25){\line(1,0){0.5}}
+	    \put(31.5,24.7){\line(1,0){0.5}}
+	    \put(32,24.4){\line(1,0){0.5}}
+	    \put(32.5,24.1){\line(1,0){0.5}}
+	    \put(33,23.9){\line(1,0){0.5}}
+	    \put(33.5,23.7){\line(1,0){0.5}}
+	    \put(34,23.5){\line(1,0){0.5}}
+	    \put(34.5,23.3){\line(1,0){0.5}}
+	    \put(35,23.2){\line(1,0){0.5}}
+	    \put(35.5,23.1){\line(1,0){0.5}}
+	    \put(36,23){\line(1,0){0.5}}
+	    \put(36.5,23.1){\line(1,0){0.5}}
+	    \put(37,23.2){\line(1,0){0.5}}
+	    \put(37.5,23.3){\line(1,0){0.5}}
+	    \put(38,23.5){\line(1,0){0.5}}
+	    \put(38.5,23.7){\line(1,0){0.5}}
+	    \put(39,23.9){\line(1,0){0.5}}
+	    \put(39.5,24.1){\line(1,0){0.5}}
+	    \put(40,24.4){\line(1,0){0.5}}
+	    \put(40.5,24.7){\line(1,0){0.5}}
+	    \begin{large}
+	       \put(60,45){Philips Research Laboratories}
+	       \put(60,30){\copyright\ 1988 Nederlandse Philips Bedrijven B.V.}
+	    \end{large}
+	 \end{picture}
+      \end{figure}
+      \newpage
+      \pagenumbering{roman}
+      \tableofcontents
+      \newpage
+      \pagenumbering{arabic}
+   \end{titlepage}
+}
+\title{}
+\topmargin 0pt
+\oddsidemargin 36pt
+\evensidemargin 36pt
+\textheight 600pt
+\textwidth 405pt
+\pagestyle{headings}
+\newcommand{\@RosTopic}{General}
+\newcommand{\@RosTitle}{-}
+\newcommand{\@RosAuthor}{-}
+\newcommand{\@RosDocNr}{}
+\newcommand{\@RosDate}{\today}
+\newcommand{\@RosStatus}{informal}
+\newcommand{\@RosSupersedes}{-}
+\newcommand{\@RosDistribution}{Project}
+\newcommand{\@RosClearance}{Project}
+\newcommand{\@RosKeywords}{}
+\newcommand{\RosTopic}[1]{\renewcommand{\@RosTopic}{#1}}
+\newcommand{\RosTitle}[1]{\renewcommand{\@RosTitle}{#1}}
+\newcommand{\RosAuthor}[1]{\renewcommand{\@RosAuthor}{#1}}
+\newcommand{\RosDocNr}[1]{\renewcommand{\@RosDocNr}{#1}}
+\newcommand{\RosDate}[1]{\renewcommand{\@RosDate}{#1}}
+\newcommand{\RosStatus}[1]{\renewcommand{\@RosStatus}{#1}}
+\newcommand{\RosSupersedes}[1]{\renewcommand{\@RosSupersedes}{#1}}
+\newcommand{\RosDistribution}[1]{\renewcommand{\@RosDistribution}{#1}}
+\newcommand{\RosClearance}[1]{\renewcommand{\@RosClearance}{#1}}
+\newcommand{\RosKeywords}[1]{\renewcommand{\@RosKeywords}{#1}}
+

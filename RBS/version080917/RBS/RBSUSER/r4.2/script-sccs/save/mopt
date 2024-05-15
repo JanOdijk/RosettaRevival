@@ -1,0 +1,29 @@
+set -e
+trap "cd $savedir; exit 1" 0
+if test -z "$3"
+then
+  dbg=""
+  ext=".exe"
+else
+  if test "$3" = "debug"
+  then dbg="dbg_"
+  else dbg=""
+       ext=".exe"
+  fi
+fi 
+if test -z "$4"
+then ext=".exe"
+else ext="$4"
+fi 
+savedir=`pwd`
+cd $RBS_USER_ROOT$RBS_USER$RBS_RELEASE
+if test -s $1/target/$dbg$2.opt
+   then  rm -f $1/target/$dbg$2.opt
+fi
+echo "language  $1" >> RBS_logicals
+echo "domain  $1" >> RBS_logicals
+$RBS_DIR/genmake RBS_logicals $RBS_MAKECOMP $RBS_MAKEFILE $dbg$2$ext | sed "s/;/ \\\/g" > $1/target/$2.opt
+cd $savedir
+trap 0
+
+

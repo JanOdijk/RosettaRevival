@@ -1,0 +1,2406 @@
+
+\documentstyle{Rosetta}
+\begin{document}
+   \RosTopic{Rosetta3.doc.Mrules.English}
+   \RosTitle{Rosetta3 English Mrules: CLAUSEtoSENTENCE}
+   \RosAuthor{Margreet Sanders, Lisette Appelo}
+   \RosDocNr{370}
+   \RosDate{December 11, 1989}
+   \RosStatus{approved}
+   \RosSupersedes{-}
+   \RosDistribution{Project}
+   \RosClearance{Project}
+   \RosKeywords{English, documentation, Mrules, CLAUSEtoSENTENCE}
+   \MakeRosTitle
+%
+%
+
+\section{Introduction}
+The English sentence grammar is divided in three parts, in the same way as all
+other main category grammars. First, there is a subgrammar providing the 
+PROP-structure, 
+called {\bf VerbppropFormation}. Then, {\bf XPPROPtoCLAUSE} turns this prop
+into a clause. Finally, {\bf ClauseToSentence} makes a full sentence of this
+clause. Around the Sentence grammar there are two other, very small grammars.
+Prior to VerbppropFormation, there is the {\bf VerbDerivation} grammar, and
+following ClauseToSentence, there is the {\bf Utterance} grammar.
+
+The current document describes the contents of 
+the third Sentence subgrammar, CLAUSEtoSENTENCE (the first sentence subgrammar 
+has been described in doc.\ 310, {\em Rosetta3 English Mrules: 
+Verbppropformation\/}, and the second one in doc.\ 326, {\em Rosetta3 English 
+Mrules: XPPROPtoCLAUSE\/}). The subgrammar consists of 
+a number of rule classes and transformation classes. A rule class in its turn
+consists of a number of rules and a transformation class of a number of 
+transformations. The relative ordering of the rules and transformations in the
+(sub)grammar is indicated by a {\em control expression}. A summary of this
+control expression (i.e.\ a listing of the ordering of the rule classes, 
+without explicit mentioning of the rules themselves) is also included here, 
+and the initial (= head), import and export categories are given. Basically, 
+the document describes the system as it was when the document was first 
+written, viz.\ in June 1989. Modifications that took place later have been 
+added in footnotes.
+
+In the section on the rules and transformations, only the rule names are given, 
+but not the exact rule formulation. What is attempted 
+is to provide a detailed overview of the workings of the subgrammar, and 
+how the different rule classes achieve this,
+together with some comments on the problems still to be solved, the reasons 
+behind certain choices, and perhaps possible alternatives. For every rule, an 
+example is given. If it is uncertain whether the example is correct (either 
+because it may not be an example of the phenomenon in question, or because it 
+may not be correct English), it is preceded by a question mark. Note that all 
+explanation of rules and transformations is given from a generative viewpoint
+only, unless explicitly stated otherwise. Often, the information given in this 
+document is based strongly on the comment already present in the documentation 
+of the rules themselves. Discrepancies between what is stated here and what is 
+said in the rule itself are usually caused by the fact that the rule file has 
+not  been updated, although insights have changed. The semantics of the rules 
+has been left unspecified in the current documentation, since it is not at all 
+clear.
+
+Whenever the current implementation differs widely from the strategy that was 
+devised in the definition phase of Rosetta3 (as laid down for English in docs.\ 
+150, {\em Subgrammars of English\/}, 153, {\em Rule and Transformation Classes 
+of English\/}, and 155, {\em Rule and Transformation Classes common to all 
+languages\/}, all written by Jan Odijk), this will be indicated explicitly in 
+the current document. Conditions on crucial orderings of rule classes will be 
+repeated here, even if they do not differ from the original strategy, to make 
+the document as self-contained as possible.
+
+Finally note that the rules described in this document have NOT been tested 
+properly. English analysis is not possible yet (there is no Surface Parser), and 
+English generation has only been tested in as far as the construction was the 
+translation of a Dutch sentence to be tested.
+
+In principle, the authors of the rule classes have documented their own 
+classes: Lisette Appelo wrote the sections on TC\_TempEMPTYdeletion, 
+TC\_DeixisRetro\-Adap\-tation and TC\_FinalTempTransf, and Andr\'{e} 
+Schenk checked the description of the three idiom substitution rules.
+The rest of the document was written by Margreet Sanders.
+
+
+\newpage
+\section{CLAUSEtoSENTENCE}
+In this last sentence subgrammar, all CLAUSEs are turned into a SENTENCE. This 
+is done in the moodrules, which form an essential part of this subgrammar.
+Also, there are rules to introduce negations and to mark relatives, and there 
+are substitution rules and 
+punctuation rules. Transformations take care of shifting, incorporation of 
+negations, several temporal phenomena, and some final brushing up of the 
+finished sentence, including inversion and {\em do\/}-deletion.
+
+The organisation of the CLAUSEtoSENTENCE subgrammar has changed somewhat when 
+compared to the general lay-out as presented in doc.\ 150. Especially,
+the rules for reciprocals and reflexives that precede substitution have been 
+moved to the previous subgrammar, while the second set of these rules, that 
+must follow substitution, has not been provided for yet (for sentences like 
+{\em They saw a picture of themselves\/}). The AdvControlRules 
+have also been moved to the previous subgrammar (see TC\_ConjSentControl in 
+doc.\ 326). Furthermore, all substitution rules have been collapsed to one 
+large class, for both wh- and non wh-arguments. This class follows the shift 
+rules. No rules have been written yet to allow for the shift of wh-elements 
+from a larger constituent ({\em Whom did you see a picture of?\/}). Just as 
+for embedded reflexives which can be found only after 
+substitution, it is impossible in the current framework to change things in an 
+NP or move something out of it before substitution, and it is unattractive to 
+double the rules (in a more complicated form too) to do many 
+things that have been done on the NPVAR level once again after substitution for 
+NPs.
+
+A new rule class is RC\_PosNegVar, which introduces variables for negatives and 
+(emphatic) positives. For the need for this rule class, see its documentation 
+below. RC\_Punc is new too, although its functions (to provide 
+punctation marks) were of course foreseen. RC\_RelMarking is new too: it marks 
+the variable that is to be shifted. Many new transformation classes 
+appeared to be necessary. TC\_NegAdaptation takes care of incorporation of a 
+negation into a following word. This is needed because words like {\em nobody\/
+} are no longer considered basic expressions, but a combination of a negation 
+and a positive form ({\em somebody\/}). TC\_NegAuxAdapt glues the negation to 
+the auxiliary verb, so that both can be moved together ({\em Can't you watch 
+your step!\/}). Three different temporal transformation 
+classes were needed to provide a correct surface structure: 
+TC\_TempEMPTYdeletion, TC\_DeixisRetroAdaptation, and TC\_FinalTempTransf. For 
+more information on the need for
+these rule classes, see docs.\ 263, {\em Documentation of the rules 
+for the translation of temporal expressions in Rosetta3, part I\/}, and 320, {
+\em Superdeixis in Rosetta3\/}, both by Lisette Appelo. The transformation 
+class TC\_PronounOK as yet contains only one rule, but more will have to be 
+added (see its documentation below). Finally, there are two 
+transformation classes to delete the auxiliary {\em do\/} in cases where it is 
+not needed, and there is a transformation class which prunes the VP if 
+possible (needed to make analysis, esp.\ the Surface Parser, simpler). The 
+subgrammar ends with TC\_CommaIncorp, which also performs a task meant to 
+relieve the burden placed on the Surface Parser.
+
+The transformation class TC\_PPorSoutofNPADJP, which was foreseen in doc.\ 150, 
+is still planned. It should follow TC\_NegAdaptation, but has not been written 
+yet. 
+
+\newpage
+\section{Subgrammar Specification}
+The subgrammar definition can be found in file {\bf CLAUSEtoSENTENCE.mrule}, 
+which is {\em mrules5.mrule\/}.
+
+\begin{verbatim}
+%SUBGRAMMAR CLAUSEtoSENTENCE
+
+
+    ( TC_PROstatus: mrules22 )
+.   [ RC_RelMarking: mrules85 ]
+.   ( TC_WhShift: mrules21,20 )
+.   [ RC_PosNegVar: mrules83 ]
+.   { RC_Substitution: mrules16-15 }
+.   { TC_NegAdaptation: mrules8 }
+    (* no TC_PPorSoutofNPADJP yet: mrules7 *)
+.   ( TC_PronounOK: mrules6 )
+    (* no TC_TopicCleft yet: mrules96 *)
+.   ( RC_MoodDetermination: mrules14-12 )
+      . ( TC_ConjThatDel: end mrules14 )
+.   [ RC_ConjSent: mrules92 ]
+.   [ TC_TempEMPTYDeletion: mrules77 ]
+.   [ TC_DeixisRetroAdaptation: mrules75 ]
+.   [ TC_FinalTempTransf: mrules34 ]
+.   ( TC_DoBeDeletion: mrules82, begin )
+    (* no TC\_ShallWillSwap yet: mrules82, end *)
+.   [ TC_NegAuxAdapt: mrules11, begin ]
+.   ( TC_AuxToComp: mrules11, end )
+    (* no TC_CanNegIncorp yet: mrules11 *)
+.   ( TC_DoDeletion: mrules82, middle )
+.   ( TC_VPDeletion: mrules10 )
+.   ( RC_Punc: begin mrules9 )
+.   [ TC_CommaIncorp: end mrules9 ]
+\end{verbatim}
+
+\begin{description}
+  \item[Head]     CLAUSE \ \ \ \ \    FROM (XPPROPtoCLAUSE)
+  \item[Export] SENTENCE, NP, PREPP, CLOSEDVERBPPROP
+  \item[Import] ADVP, PREPP, NP, PROSENT, POS, NEG, CONJ, PREP 
+\end{description}
+
+
+\newpage
+\section{Rules and Transformations}
+
+\subsection{TC\_PROstatus}
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] To mark the {\bf PROsubject} attribute of the clause as either {\em 
+false\/} (for a closed sentence) or {\em true\/} (for an open sentence). 
+In generation, there is a free choice between the two rules 
+for infinite clauses (finite clauses will always be closed). In the Proposition 
+Substitution rules of the next cycle, a choice between the closed and the open
+version will be made, depending on the variable dictated by the verbpattern
+of the main verb of the higher sentence. 
+
+In Dutch, this transformation class was moved to the previous subgrammar, since 
+there the closed/open information was needed earlier. In English, the class has 
+remained where it was planned.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TNoProStatus 
+\item[Task] Vacuous rule, leaving the {\bf PROsubject} attribute of a clause at
+its default value, {\em false\/}, indicating that the clause will be closed. 
+This rule is always applicable in generation.
+\item[File] english:TC\_ProStatus.mrule (mrules22.mrule)
+\item[Semantics] --
+\item[Example] [x2 do prevent this]$_{PROsubj=false}$ 
+ (We talked about how we could prevent this).
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TProStatus 
+\item[Task] To mark an infinite clause as open, by setting the {\bf PROsubject} 
+attribute to {\em true\/}.
+\item[File] english:TC\_ProStatus.mrule (mrules22.mrule)
+\item[Semantics] --
+\item[Example] [x2 to prevent this]$_{PROsubj=false}$ $\rightarrow$ 
+[x2 to prevent this]$_{PROsubj=true}$ (We talked about how to prevent this)
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_RelMarking}
+\begin{description}
+\item[Kind] Optional Rule Class
+\item[Task] To mark the NPVAR (and the VARPREPP it is in, if any), the ADVPVAR 
+or the PREPPVAR that is to be spelled out as a relative with the 
+appropriate mood ({\em relativexpmood\/}). In order to identify which variable 
+will become a relative, the rules take a parameter, {\bf indexpar}, which 
+carries the index of the variable to the target language. There are four 
+different rules, for the different positions the variable may be in. Note that 
+these rules violate the constraint that the record of a variable remains 
+unchanged throughout the derivation. Because the PreAction has 
+already taken place, the substitution rules for these NPVARs (i.e. the 
+relative rules in the NPgrammar) must specify how the mood attribute of the 
+VAR and the NP differ. Note that most relatives are CNVARs; NPVARs are needed 
+for modification with a relative subsentence of e.g.\ INDEFPROs and PERSPROs 
+(which do not have a CN-level), and for nonrestrictive `appositive' relative 
+clauses.
+
+The shifting of the relative will be done in the following transformation 
+class, TC\_WhShift.
+
+The rules will also be used to mark variables that will shift because of 
+topicalization. Once that is implemented, they must use the mood, relative or 
+topicalized, as a parameter\footnote{This had been done by the time this 
+document was approved. The parameter is called {\bf xpmoodpar}.}. 
+It is assumed that topicalized NPs are unlikely; 
+hence, a topicalized NPVAR must be assigned a very low bonus in these rules. 
+In analysis, any application of these rules must receive a lowered bonus for 
+topicalized readings anyway, to make sure that first all non-topicalized 
+meanings are translated. In analysis, subjects and constituents in 
+leftdislocrel are never considered 
+topicalized; in generation, this parameter value must always be accepted,
+but it will 
+not reset the mood attribute of a subject or a constituent in leftdislocrel, 
+since it must remain where it is, and not be moved by the transformations of 
+TC\_WhShift.
+
+A filter, FNoTopic, must be added to stop any structure still harbouring 
+a topicmood or relativemood constituent (for a problem with PREPPVARs, see the 
+footnote to RSRelmarking) that cannot have come from an embedded sentence (for 
+modals). This filter is NOT a speed filter, since it checks attribute values of 
+variables that will not be checked anywhere else in the derivation\footnote{The 
+filter had been added by the time the document was approved.}.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSRelMarking
+\item[Task] To mark the {\bf mood} attribute of an NPVAR, PREPPVAR or 
+ADVPVAR of the correct 
+index (determined by the rule parameter) as {\em relativexpmood\/} (or as {\em 
+topicmood\/}, once the mood parameter has been added). The 
+variable must be under S.
+\item[File] english:RC\_Relmarking.mrule (mrules85.mrule)
+\item[Semantics] 
+\item[Example] x1$_{nowh}$ did come in from x2 $\rightarrow$ 
+x1$_{relativexpmood}$ did come in from x2 (The man who came in from the cold)
+\item[Remarks] There is a major problem for PREPPVARs: it is assumed in the 
+grammar (see e.g.\ the startrules for PREPPs) that a
+(VAR)PREPP having a CN(VAR) object always has the value {\em relativexpmood\/} 
+for its {\bf mood} attribute, but has the value {\em nowh\/} when it has an 
+NP(VAR) object, even when that was a relative. In analysis, the surface parser 
+assigns relative mood to all relative PREPPs. The substitution 
+rules then remove the (VAR)PREPP, and leave a bare PREPPVAR, which still has 
+{\em relativexpmood\/}. Now, the current rule must decide whether to reset 
+this mood to {\em nowh\/} (correct if there was an NP(VAR)) or leave it as it 
+was (correct if there was a CN(VAR)), but it has no longer access to what the
+object was. Hence, both paths are possible, and all relative PREPPs become 
+ambiguous. This must still be solved.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RVPRelMarking
+\item[Task] To mark the {\bf mood} attribute of an NPVAR, PREPPVAR or ADVPVAR
+ of the correct 
+index (determined by the rule parameter) as {\em relativexpmood\/} (or as {\em 
+topicmood\/}, once the mood parameter has been added). The 
+variable must be in the VP.
+\item[File] english:RC\_Relmarking.mrule (mrules85.mrule)
+\item[Semantics]
+\item[Example] x1 did have x2$_{nowh}$ $\rightarrow$ x1 did have 
+x2$_{relativexpmood}$ (I gave him a book which he already had)
+\item[Remarks] For a problem with relative PREPPs, see the remark made in the 
+previous rule.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RPPSRelMarking
+\item[Task] To mark the {\bf mood} attributes of an NPVAR (or a PREPPVAR or 
+ADVPVAR, although they are unliky as object of a PREPP!) of the correct 
+index (determined by the rule parameter) and of its governing (VAR)PREPP as 
+{\em relativexpmood\/} (or as {\em 
+topicmood\/}, once the mood parameter has been added).
+ The (VAR)PREPP is directly under S\footnote{By the  
+time this document had been approved, the rule had been split up in two rules, 
+one for PREPPs, and one for VARPREPPs. The latter rule is called 
+RVarPPSRelMarking.}.
+\item[File] english:RC\_Relmarking.mrule (mrules85.mrule)
+\item[Semantics]
+\item[Example] Before x3$_{nowh}$ x1 must have arrived $\rightarrow$ Before 
+x3$_{relativexpmood}$ x1 must have arrived (The time before which you must 
+have arrived)
+\item[Remarks] PREPPs directly under S are uncommon (only PREPPVARs occur 
+there, in case of locative and temporal expressions, and these are covered in 
+RSRelMarking), but perhaps may occur in 
+cases of topicalization. It is unclear whether topicalized relatives exist in 
+English.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RPPVPRelMarking
+\item[Task] To mark the {\bf mood} attributes of an NPVAR (or a PREPPVAR or 
+ADVPVAR, although they are unliky as object of a PREPP!) of the correct 
+index (determined by the rule parameter) and of its governing (VAR)PREPP as 
+{\em relativexpmood\/} (or as {\em 
+topicmood\/}, once the mood parameter has been added).
+ The (VAR)PREPP is in the VERBP\footnote{By the  
+time this document had been approved, the rule had been split up in two rules, 
+one for PREPPs, and one for VARPREPPs. The latter rule is called 
+RVarPPVPRelMarking.}.
+\item[File] english:RC\_Relmarking.mrule (mrules85.mrule)
+\item[Semantics]
+\item[Example] x1 must give x2 to x3$_{nowh}$ $\rightarrow$ x1 must give x2 to 
+x3$_{relativexpmood}$ (The man to whom you must give this)
+\item[Remarks] 
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_WhShift}
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] To shift any wh-element or relative (the name of the transformation 
+class has gone out of date) to a special clause-initial {\em shiftrel\/} 
+position. This includes shifting a shiftrel from an embedded (declarative) 
+sentence. Once RC\_Relmarking also works for topicalization (see what was said 
+on that rule class in the previous subsection), constituents that 
+have the value {\em topicmood\/} must also be shifted\footnote{This had been 
+implemented by the time this document was approved.}. They will be moved from 
+shiftrel to leftdislocrel in another transformation class (see TC\_TopicCleft).
+
+In doc.\ 150, it was assumed that the shiftrules would follow the set of 
+substitution rules dealing with non-wh elements. This would make it possible to 
+deal with e.g.\ wh-elements within larger NPs or PREPPs, as in {\em Whom did you 
+hear stories about?\/}, where first there is substitution of the PREPP {\em 
+stories about x1\/}, then x1 is shifted, and finally there is wh-substitution.
+However, on closer inspection there appeared to be many problems with this 
+approach, and it was decided to skip all phenomena dealing with extraction of 
+elements from a larger NP or PREPP constituent for the time being. Thus, there 
+is only one substitution rule class and one shift rule class, the former
+following the latter.
+
+In generation, some extra rules may be needed to account for different surface 
+positions than those provided for by the ordinary rules. This would be needed 
+to comply with the substititution order required because of analysis. 
+An example may be the sentence {\em There 
+is someone that he did not see\/} as translation of the Dutch {\em Hij zag 
+iemand niet\/}, so with the negation following the object NP i.s.o.\ the 
+`ordinary' {\em He did not see someone\/}. A file 
+has been reserved for this purpose (TC\_ScopeShift.mrule (mrules19.mrule)), but
+the rules have not been written yet. (Note that this sentence is not so 
+ordinary anyway, 
+since the polarity requirements only accept {\em anybody\/} in a negative 
+context; therefore, extra measures would be needed to translate the Dutch 
+sentence anyway).
+
+Finally, no rule has been written yet for the shift of an object from a THANP: {
+\em who(m) are you bigger than?\/}. This rule will be added. The rule for 
+shifting a {\em vpadvrel\/} element (which is not a VAR!) is not written yet.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TNoWhshift
+\item[Task] to let clauses in which there is nothing to shift (i.e.\ there is a 
+modal or there is no wh- or relative element and no CNVAR) pass this 
+transformation class
+\item[File] english:TC\_WhShift1.mrule (mrules21.mrule)
+\item[Semantics] --
+\item[Example] x1 did leave, x1 do not know who has left, etc.
+\item[Remarks] 
+Although wh-NPs are not excluded from the present `default' rule, they will 
+never cause a sensible analysis: if they are part of the main sentence, they 
+should have been desubstituted, and if they are part of an embedded sentence, 
+they must be put back there (see TComplWhShift and TExtrapWhShift).
+Therefore, the rule must be changed to exclude wh-NPs here.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TWhShift
+\item[Task] To shift wh- and relative elements from their original position to 
+the shiftrel position\footnote{When this document was approved, the 
+transformation also worked for topicalized elements.}. 
+The different subrules work for subjrel and (ind)objrel 
+NP/CNVARs, 
+predrel ADJP/NP(VAR)/PREPPs, loc/dirargrel PREPP/
+ADVPs (and complrel PREPPs), locadvrel PREPP/ADVPVARs, prepobj/
+byobjrel VARPREPPs, and 
+tempadvrel PREPP/ADVPVARs
+\item[File] english:TC\_WhShift2.mrule (mrules20.mrule)
+\item[Semantics] --
+\item[Example] \mbox{}\\
+x1 have bought x2$_{wh}$ $\rightarrow$ x2$_{wh}$ x1 have bought 
+(What have you bought?)\\
+x1 have voted [against x2]$_{relativexpmood}$ $\rightarrow$ [against x2]$_{
+relativexpmood}$ x1 have voted (The proposal against which we had all voted)\\
+x1 did go x2$_{wh}$ $\rightarrow$ x2$_{wh}$ x1 did go (Where did she go?)\\
+etc.
+\item[Remarks] The shifting of relatives is only allowed for VARs (except 
+ADVPVARs and identificational NPVARs) and for PREPPs\footnote{The shifting of 
+topicalized elements parallels that for relative elements, but is allowed 
+for ADVPVARs too.}. For 
+prepobjrels, see also the remark made under TStrandedWhShift below.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TExtrapWhShift
+\item[Task] To shift wh- and relative elements from a shiftrel in an extraposed 
+sentence to shiftrel in the higher clause\footnote{When this document was 
+approved, the transformation also worked for topicalized elements.}.
+\item[File] english:TC\_WhShift1.mrule (mrules21.mrule)
+\item[Semantics]
+\item[Example] x1 did [see] [whom that he hit] $\rightarrow$ whom x1 did 
+[see] [that he hit] (Whom did you see that he hit?)
+\item[Remarks] The rule does not work for wh-NPs. This causes a problem 
+for predrel/NPs, as in {\em Who do you think that
+he is?\/}, because these will not be substituted at all. However, it is 
+impossible to relax the present rule to work for NPs as well, because 
+then `ordinary' (not predicative) embedded sentences like in {\em What 
+did you think Pete saw\/} would receive two analyses: 
+there would be a free choice in the order of application of substitution 
+and shift.\\
+The rule does not pose any restrictions on what elements may be present or
+absent between the VERBP and the extraposed SENTENCE, and in the SENTENCE
+itself. Hence, a sentence like {\em Who did you say yesterday that was ill\/}
+is accepted here in analysis. The rule supposes that TConjThatDel (see far
+below) will make sure that this path is never presented (that rule does not
+accept a sentence with a conjunction {\em that\/} and a shifted subject). 
+The restrictions on what kind of sentences may occur in extraposrel (sentences 
+starting with {\em that\/} and, in analysis, opentoinfs) are laid down in 
+TExtrapos1 in the SentOK rules (see previous subgrammar), so if the Surface 
+Parser allows other options, they will only be stopped there, but not in the 
+present rule.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TComplWhShift
+\item[Task] To shift wh- and relative elements from a shiftrel or a subjrel 
+(the latter in declarative infinites, cf.\ TNoWhInfShift below) in an embedded
+complement sentence to shiftrel in the higher clause\footnote{When 
+this document was 
+approved, the transformation also worked for topicalized elements in shiftrel.}.
+\item[File] english:TC\_WhShift1.mrule (mrules21.mrule)
+\item[Semantics]
+\item[Example] x1 did [see [whom him hit]] x4=yesterday $\rightarrow$ whom x1 
+did [see [him hit]] x4=yesterday (Whom did you see him hit yesterday?)\\
+x1 did [see [whom escape]] x4=yesterday $\rightarrow$ whom x1 did [see 
+[escape]] x4=yesterday
+\item[Remarks] The rule does not work for wh-NPs. See the rule above for 
+comment.\\
+The rule excludes shifting of subjects in case the thetavp of the clause is 
+vp010. For raising verbs, the subject will be moved in the ObjectOK rules (see 
+TSubjToSubjRaising in the previous subgrammar).
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TNoWhInfShift
+\item[Task] To let infinitives which have a wh- or relative subject pass 
+this transformation 
+class. The wh-subject must not be shifted, because it will be moved in the next 
+cycle, either in the ObjectOKrules (see previous subgrammar) when it is the 
+complement of a subject raising verb, or in TComplWhShift (see above), after 
+having received case in TExceptCaseAssign (see again previous subgrammar). Note 
+that TExceptCaseAssign also has a subrule to assign case to a shifted subject, 
+in case the strategy for dealing with these subjects changes.
+\item[File] english:TC\_WhShift1.mrule (mrules21.mrule)
+\item[Semantics]
+\item[Example] x1$_{wh}$ to have done x2 ((seem) who to have done it; Who seems 
+to have done it)
+\item[Remarks] The rule need not be adapted to work for topicalization, 
+since subjects never should be topicalized.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TStrandedWhShift
+\item[Task] To shift the wh- or relative NP/CNVAR object from a (VAR)PREPP in 
+the VERBP
+to the initial shiftrel, leaving the PREP stranded in the 
+VERBP\footnote{When this document was 
+approved, the transformation also worked for topicalized NP/CNVARs.}.
+The rule works 
+for (VAR)PREPPs in prepobjrel, locargrel and dirargrel.
+\item[File] english:TC\_WhShift1.mrule (mrules21.mrule)
+\item[Semantics]
+\item[Example] x1 do move to x2$_{wh}$ $\rightarrow$ x2$_{wh}$ x1 do move to 
+(Which house did you move to?)
+\item[Remarks] This rule is an alternative to the subrule in TWhShift that 
+moves the entire PREPP to shiftrel. No decision has been taken yet which path 
+should be preferred in generation (since no bonus system exists for generation, 
+one of the two rules should only work in analysis if only one translation must 
+be produced).
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_PosNegVar}
+\begin{description}
+\item[Kind] Optional Rule Class
+\item[Task] To introduce variables for emphatic positives and negations, so 
+that these may influence the substitution order conditions (see 
+RC\_Substitution below), to account for scope phenomena of esp.\ negatives.
+The variables inserted are not `real' variables: they are not basic expressions, 
+and will not be part of the derivation tree (note that they are not in the 
+VARCATset defined in the English LSDOMAINT). Hence, they also do not have the
+index-attribute that ordinary variables have and thus, they cannot use the 
+LEVEL parameter. For more information on the 
+treatment of variables and scope, see doc.\ 368, {\em Scope in Rosetta3\/}, 
+by Jan Odijk.
+
+There are rules for every possible position of the POSVARs and NEGVARs, 
+with an extra version for negations, to mark whether they will melt with the 
+following word (the function {\em FirstIsAPossNietNP\/} checks whether the 
+following 
+word can incorporate a negation; in case of a (VAR)PREPP, the search is for 
+the word following the PREP). Melting NEGVARs are placed in a special {\em 
+meltnegrel\/}. The actual melting will only take place after substitution, in a 
+separate transformation class, TC\_NegAdaptation.
+The rules have been formulated in such a way that only one order of 
+introduction of the VARs is possible. There are a number of conditions on the 
+co-occurrence of posrels and (melt)negrels, but because Spanish cannot handle 
+two of them in the same sentence, the rule class has been made optional 
+instead of 
+iterative. Note that all var-introduction rules are mapped onto each other, 
+irrespective of the position of the variable in the source language (in VP or 
+directly under S). The correct scope of the negation must be taken care of by 
+the substorder condition.
+
+In doc.\ 150, this rule class was not mentioned, since it was thought that 
+(positives and) negations would be introduced in the sentence without there 
+first being a variable. However, this does not allow a scope sensitive 
+treatment of negations. Words that have an incorporated 
+negation, like {\em nobody\/}, are considered a melting of two basic 
+expressions, the positive form and a negation, so that the translation of {\em 
+niemand\/} can be {\em not anybody\/}, and need not always be {\em nobody\/}.
+
+When an English Surface Parser is written, a PreFilter must be added to speed 
+up analysis: no POSVAR or NEGVAR may remain. No decision has been taken yet 
+which rules should receive lower bonus, the rules for incorporated negations 
+or the 
+rules that spell out a full {\em not\/}. Perhaps, this should depend on the 
+position of the negation: in subject position, a melted form seems best ({\em 
+Nobody listened, $^{*}$Not anybody listened\/}), elsewhere a full {\em not\/} 
+is better ({\em I did not see anybody, I saw nobody\/}).
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSentNegVar
+\item[Task] To introduce a NEGVAR directly under S, for those cases where the 
+NEG will not melt with the following word.
+\item[File] english:RC\_PosNegVar.mrule (mrules83.mrule)
+\item[Semantics]
+\item[Example] \mbox{}\\
+x1 probably did [hear x2] $\rightarrow$ x1 probably did NEGVAR [hear x2] \\ 
+{[Go there]} $\rightarrow$ NEGVAR [go there] (Not to go there would be 
+foolish)\\
+x1 did x4=ever solve x2 $\rightarrow$ x1 did NEGVAR x4=ever solve x2 (They did 
+not ever solve it)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSentMeltNegVar
+\item[Task] To introduce a NEGVAR directly under S, for those cases where the 
+NEG will melt with the following word, which is also in S.
+\item[File] english:RC\_PosNegVar.mrule (mrules83.mrule)
+\item[Semantics] 
+\item[Example] 
+x1 do lie x4=ever $\rightarrow$ x1 do lie NEGVAR x4=ever (Peter never lies)
+\item[Remarks] The rule now explicitly refers to the predicate: the NEGVAR is 
+introduced only preceding the predicate. This condition must be removed to 
+allow for melting of {\em not\/} with a temporal adverb (tempadvrel follows 
+predrel)\footnote{This had been implemented by the time the document was 
+approved.}. 
+It has not been decided yet at what point in the grammar the movement 
+rules for temporal adverbials will be located.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RVPNegVar
+\item[Task] To introduce a NEGVAR in the VERBP, in case it will melt with the 
+following word there.
+\item[File] english:RC\_PosNegVar.mrule (mrules83.mrule)
+\item[Semantics]
+\item[Example] x1 did [look at x2=somebody] $\rightarrow$ x1 did [look NEGVAR 
+at x2=somebody] (He looked at nobody in particular)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSentPosVar
+\item[Task] To introduce a POSVAR under S.
+\item[File] english:RC\_PosNegVar.mrule (mrules83.mrule)
+\item[Semantics]
+\item[Example] x1 did [give x3 x2] $\rightarrow$ x1 did POSVAR [give x3 x2] 
+(But I did give all the children some sweets at the party)
+\item[Remarks] There is no basic expression connected to the English POSVAR 
+(cf.\ Dutch, which has the word {\em wel\/}). The effect of introducing a 
+POSVAR in English is prevention of {\em do\/}-deletion, as in the example 
+above. It is assumed in the rule that POSVARs cannot occur if the VP has a 
+negation in it: $^{*}${\em I did see nothing\/}.
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_Substitution}
+\begin{description}
+\item[Kind] Iterative Rule Class
+\item[Task] To substitute expressions for their variable, in the order dictated 
+by analysis and consistent with the Substitution Order Conditions (the latter 
+must assure that scope is accounted for correctly).
+
+The rules use the system parameter LEVEL, to check whether the index of the 
+variable is consistent with the (level of the) variable that is to be 
+substituted for according to the rule parameter.
+
+In English, the generative Substition Order Conditions have not been 
+implemented yet. They always return the value {\em true\/}. That means that 
+scope is not accounted for yet in generation. For more information on the 
+function of these conditions, see doc.\ 368, {\em Scope in Rosetta3\/}, by Jan 
+Odijk\footnote{By the time this document was approved, the functions for 
+generative substitution order had been implemented. For more information, see 
+also the document on LSMRUQUO by Jan Odijk (to appear).}.
+
+There may be a need to arrive in this rule class with different surface 
+structures than those provided for by the ordinary rules, esp.\
+to comply with the substititution order required because of analysis. 
+See what was said above in the comment on TC\_WhShift about a rule class 
+TC\_ScopeShift. When the functions checking generative substitution order 
+work, no translation will be produced in case of a scope problem!
+
+No rules have been written yet for PREPPs that have a PREP which is to be 
+deleted (e.g.\ {\em He left early {\em on} that morning\/}). Also, rules for 
+vpadvrel/PREPPs still must be written.
+
+The superdeixis of the substituees (if they have one) is adjusted in the 
+substitution rules:
+it is checked against the (super)deixis of the clause and set to {\em omega\/} 
+in generation, and copied from the CLAUSE 
+(super)deixis in analysis. Rules that were written later use the functions {\em 
+DeixisMax\/} and {\em AssDeixisMax\/} for this. 
+The rules use the function {\em AssignCase\/} to 
+pass the case of the VAR on to the elements in the substituee, if necessary.
+
+For generic NPs, more constraints on the input model hold than for nongeneric 
+ones.
+However, the appropriate rules have not been formulated yet (since no generic 
+NPs are made yet anyway). The current NP rules only work for non-generic ones.
+Also note that the Surface Parser always assigns the value {\em omegageneric\/} 
+to NPs. Therefore, in generation the current rules reset the genericity 
+value of the NP to {\em omegageneric\/} (i.e.\ in analysis, the value {\em 
+nogeneric\/} is assigned).
+
+In the NP rules, several elements are excluded explicitly: reflexives, 
+reciprocals, sentence-like NPs and NPs containing an incorporated negation (the 
+latter is checked by means of the function {\em NegPhrase\/}).
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RTempAdvSubstitution1
+\item[Task] To substitute a temporal ADVP or a frequential NP for their VAR
+\item[File] english:RC\_TempVar.mrule (mrules36.mrule)
+\item[Semantics]
+\item[Example] x1 did dance x4 + yesterday $\rightarrow$ x1 did dance yesterday
+\item[Remarks] For ADVPs, the Aktionsarts of the clause are reduced on 
+desubstitution, so that only one element remains in the set.\\
+An extra rule will have to be written to account for substitution of temporal 
+ADVPs and frequential NPs that have been shifted (wh-mood and 
+topicmood)\footnote{This had been done by the time the document was approved. 
+The rule is called RTemp\-Adv\-SubstShift1.}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RTempAdvSubstitution2
+\item[Task] To substitute a temporal PREPP or VARPREPP for its VAR
+\item[File] english:RC\_Tempvar.mrule (mrules36.mrule)
+\item[Semantics]
+\item[Example] x1 danced x4 + For three hours $\rightarrow$ x1 danced for three 
+hours
+\item[Remarks]
+An extra rule will have to be written to account for substitution of temporal 
+(VAR)PREPPs that have been shifted (wh-mood, relatives and 
+topicmood)\footnote{This had been done by the time the document was approved. 
+The rule is called RTemp\-Adv\-SubstShift2.}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RObjNPSubst
+\item[Task] To substitute a nongeneric NP for its (ind)objrel or predrel VAR 
+in the VERBP
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x1 see x2$_{accusative}$ + he $\rightarrow$ x1 see him\\
+This is x1 + John $\rightarrow$ This is John
+\item[Remarks] 
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSubjNPSubst
+\item[Task] To substitute a nongeneric NP for its subjrel or shiftrel VAR
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x1 do see him + She $\rightarrow$ She do see him
+\item[Remarks] The rule excludes substitution when the main verb (or a modal 
+preceding it, except {\em will\/}) has vp010, because then substitution should 
+take place in a later cycle (important for analysis).\\
+The rule will be split up into two rules: one for substitution 
+of subjects, and one for substitution of shifted elements (wh or 
+topicalized)\footnote{This had been done by the time this document was 
+approved. The new rule is called {\em RShiftNPSubst\/}. For topicalized 
+elements, the {\bf mood} attribute is reset to {\em nowh\/}, because the 
+surface parser cannot recognize topicalized elements.}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RPrepNPSubst
+\item[Task] To substitute a nongeneric NP for the object NPVAR of a PREPP in 
+the VERBP. The PREPP may be in locargrel, dirargrel, complrel or 
+instr\-adv\-rel.
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x1 do jump [off x2] + the fence $\rightarrow$ x1 do jump [off 
+the fence]
+\item[Remarks] 
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RVarPrepNPSubst
+\item[Task] To substitute a nongeneric NP for the object NPVAR of a VARPREPP 
+in the VERBP. The VARPREPP may be in prepobjrel or byobjrel.
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x1 count [on x2] + Mary $\rightarrow$ x1 count on Mary\\
+x2 be quickly turned on by x1$_{accusative}$ + she $\rightarrow$ x2 be quickly 
+turned on by her
+\item[Remarks] 
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RShiftPrepNPSubst
+\item[Task] To substitute a nongeneric NP for the object VAR of a shifted PREPP 
+in S.
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] In x1 did you put it + which drawer $\rightarrow$ In which 
+drawer did you put it
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RShiftVarPrepNPSubst
+\item[Task] To substitute a nongeneric NP for the object VAR of a shifted 
+VARPREPP in S.
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] By x1$_{accusative}$ you were hit + who $\rightarrow$ By whom 
+you were hit (By whom were you hit?)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RLocAdvSubst
+\item[Task] To substitute a (VAR)PREPP or ADVP for its locadvrel VAR
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x1 train x4 + indoors $\rightarrow$ x1 train indoors
+\item[Remarks] An extra rule will have to be written for locatives in 
+shiftrel\footnote{By the time this document was approved, the rule had 
+been written: {\em RShiftLocAdvSubst\/}. It also works for topicalized 
+elements, and resets their mood to {\em nowh\/}, because the surface parser 
+cannot recognize topicalized elements.}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSentAdvSubst
+\item[Task] To substitute a sentadv or causadv ADVP for its VAR in 
+leftdislocrel, and to introduce a separating comma between the ADVP and the 
+rest of the clause.
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x4 he do smoke + probably $\rightarrow$ Probably, he do smoke
+\item[Remarks] No hoprules or alternative positions for sentadvs have been 
+defined yet, and the attribute {\em position\/} of the Adv is not used yet.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSentPreppSubst
+\item[Task] To substitute a causative PREPP for its VAR in leftdislocrel,
+and to introduce a separating comma between the PREPP and the 
+rest of the clause.
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x4 he do smoke + for that reason $\rightarrow$ For that reason, 
+he do smoke
+\item[Remarks] No hoprules or alternative positions for sentprepps have been 
+defined yet.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RPROSentSubst
+\item[Task] To substitute an abstract PROSENT for its VAR, resulting in total 
+deletion of the category.
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] \mbox{}\\
+x1 do wonder x2 + PROSENT $\rightarrow$ x1 do wonder\\
+x1 do x4=not know x2 + PROSENT $\rightarrow$ x1 do x4=not know 
+\item[Remarks] The translation of PROSENTs (and their negation) in Dutch is 
+still not quite clear. Currently, all PROSENTs are translated into {\em het 
+(niet) \/}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSoPROSentSubst
+\item[Task] To substitute a soPROSENT for its VAR (which is a complement in the 
+VERBP)
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x1 do x4=not think x2 + so $\rightarrow$ x1 do x4=not think so\\
+x1 did tell x3 x2 $\rightarrow$ x1 did tell x3 so
+\item[Remarks] \mbox{}
+\begin{itemize}
+\item For the moment, only the complement {\em so\/} in the VERBP can be dealt 
+with. Initial {\em So\/} is not accounted for yet ({\em So I understand\/}).
+\item The translation of English {\em so\/} seems to depend on the kind of verb 
+it goes with: verbs of believe best translate in {\em van wel\/} ({\em I hope 
+so\/} $\rightarrow$ {\em Ik hoop van wel\/}), or perhaps simply in {\em het\/} 
+({\em Ik hoop het\/}), and other verbs, esp.\ verbs of 
+saying, best take {\em Dat\/} + inversion ({\em I told you so\/} $\rightarrow$ 
+{\em Dat zei ik je\/}, or perhaps again simply {\em het\/}: {\em Ik zei het je
+\/}). However, the negation of {\em so\/} is not just {
+\em niet\/} + {\em van wel\/} or {\em het\/} + {\em niet\/}: 
+$^{*}${\em Ik denk niet van wel\/}, $^{*}${\em Ik zei het je niet\/}. 
+Therefore,
+Dutch has postponed implementing any rules for the translation of soPROSENTs, 
+until it is clear how they should be dealt with.
+\end{itemize}
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RNotProSentSubst
+\item[Task] To substitute a notPROSENT for its VAR, resulting in the word {\em 
+not\/}.
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x1 do think x2 + not $\rightarrow$ x1 do think not
+\item[Remarks] This use of the notPROSENT should only be allowed for verbs of 
+belief (indicated by having a NOTProSent in their verbpatterns). The mapping to 
+Dutch seems simple: always to {\em van niet\/}: {\em I think not\/} 
+$\rightarrow$ {\em Ik denk van niet\/}. It is not checked whether Spanish has a 
+similar solution. The Dutch rule with {\em van niet\/} has NOT been implemented 
+yet, however.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RPosSubst
+\item[Task] To substitute an abstract element POS for its VAR. In the 
+DoDeletion rules (see below), either POS or {\em do\/} will be deleted.
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x1 do x4 love you + POS $\rightarrow$ x1 do POS love you\\
+x1 have x4 seen that movie + POS $\rightarrow$ x1 have POS seen that movie
+\item[Remarks] Remember that POSVAR is not a real VAR (see RC\_PosNegVar), and 
+that hence this rule is not a real substitution rule but an introduction rule.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSentNegSubst
+\item[Task] To substitute the negation {\em not\/} for its VAR under S.
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x1 did x4 come + not $\rightarrow$ x1 did not come
+\item[Remarks] In the rule, the Aktionsarts of the CLAUSE are set to {\em 
+[stative]\/} in generation. In analysis, they are set to the set of all 
+possible values. Should this cause ambiguities in the AktionsArt rules, then 
+perhaps the function AssignAktArts can be used to determine a more restrictive 
+set.
+
+Remember that NEGVAR is not a real VAR (see RC\_PosNegVar), and 
+that hence this rule is not a real substitution rule but an introduction rule.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RSentMeltNegSubst
+\item[Task] To substitute a negation {\em not\/} that will melt with the 
+following word for its VAR under S. The actual melting will be done in 
+TC\_NegAdaptation (see below).
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x1 do x4 ever [go away] + not $\rightarrow$ x1 do not ever [go 
+away]
+\item[Remarks] In the rule, the Aktionsarts of the CLAUSE are set to {\em 
+[stative]\/} in generation. In analysis, they are set to the 
+set of all possible values. See RSentNegSubst for a remark on that.
+
+Remember that NEGVAR is not a real VAR (see RC\_PosNegVar), and 
+that hence this rule is not a real substitution rule but an introduction rule.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RVPMeltNegSubst
+\item[Task] To substitute a negation {\em not\/} that will melt with the 
+following word for its VAR in the VERBP. The actual melting will be done in 
+TC\_NegAdaptation (see below).
+\item[File] english:RC\_Substitution1.mrule (mrules16.mrule)
+\item[Semantics]
+\item[Example] x1 did [look x4 at somebody] + not $\rightarrow$ x1 did [look 
+not at somebody]
+\item[Remarks] In the rule, the Aktionsarts of the CLAUSE are set to {\em 
+[stative]\/} in generation. In analysis, they are set to the 
+set of all possible values. See RSentNegSubst for a remark on that.
+
+Remember that NEGVAR is not a real VAR (see RC\_PosNegVar), and 
+that hence this rule is not a real substitution rule but an introduction rule.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdSubstitution1
+\item[Task] To substitute an NP for its determiner VAR in a higher objrel NP, 
+resulting in a genitive NP determiner or a POSSADJ (of PERSPRO or WHPRO)
+\item[File] english:RC\_Substitution2.mrule (mrules15.mrule)
+\item[Semantics]
+\item[Example] x1 break x2 heart + John/my father/she/who $\rightarrow$ x1 
+break John's/my father's/her/whose heart
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdSubstitution2
+\item[Task] To substitute an NP for its determiner VAR in a higher shiftrel or 
+subjrel NP, resulting in a genitive NP determiner.
+\item[File] english:RC\_Substitution2.mrule (mrules15.mrule)
+\item[Semantics]
+\item[Example] x2 heart be broken + John $\rightarrow$ John's heart be broken
+\item[Remarks] The rule will be extended to cover POSSADJ
+determiners as well\footnote{This had been done by the time this document was 
+approved.}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIdSubstitution3
+\item[Task] To substitute an NP for its determiner VAR in a higher NP which is 
+the obj of a locargrel or dirargrel PREPP in the VERBP, resulting in a genitive 
+NP determiner.
+\item[File] english:RC\_Substitution2.mrule (mrules15.mrule)
+\item[Semantics]
+\item[Example] x1 lay x2 at x3 door + Mary $\rightarrow$ x1 lay x2 at Mary's 
+door
+\item[Remarks] The rule will be extended to cover POSSADJ
+determiners as well\footnote{This had been done by the time this document was 
+approved.}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RxppObjNPsubst
+\item[Task] To substitute a nongeneric NP for its (ind)objrel VAR under a 
+predrel in the VERBP
+\item[File] english:RC\_Substitution2.mrule (mrules15.mrule)
+\item[Semantics]
+\item[Example] ? x1 do [be [against x2] + he $\rightarrow$ x1 do [be [against 
+him]
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RxppVarPrepNPsubst
+\item[Task] To substitute a nongeneric NP for the object VAR of a VARPREPP in 
+prepobjrel, toobjrel, forobjrel, or postadjrel under a predrel in the VERBP.
+\item[File] english:RC\_Substitution2.mrule (mrules15.mrule)
+\item[Semantics]
+\item[Example] x1 do [be [fond [of x2]]] + she $\rightarrow$ x1 do [be [fond 
+[of her]]]
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_NegAdaptation}
+\begin{description}
+\item[Kind] Iterative Transformation Class, followed by Obligatory Filter
+\item[Task] To incorporate a negation that is in {\em meltnegrel\/} into the 
+following word (in fact, the 
+negation and the following word are both thrown away and replaced by another 
+word). No rules have been written yet to yield the word {\em no\/} (neither 
+from {\em not\/} alone, nor from {\em not\/} + {\em a\/}). There are different 
+rules, for the different positions the meltnegrel can be in. The rules have as 
+many subrules as necessary, to deal with all words possible in that specific 
+position. The pairs that are dealt with are:\\
+somebody - nobody; someone - no one; something - nothing; somewhere - nowhere; 
+ever - never.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TSNegAdapt
+\item[Task] To incorporate a negation in a word directly following it, when 
+both are under S.
+\item[File] english:TC\_NegAdaptation.mrule (mrules8.mrule)
+\item[Semantics] --
+\item[Example] not somebody did see me $\rightarrow$ nobody did see me
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVPNegAdapt
+\item[Task] To incorporate a negation in a word directly following it, when 
+both are in the VP.
+\item[File] english:TC\_NegAdaptation.mrule (mrules8.mrule)
+\item[Semantics] --
+\item[Example] I did [give them not something] $\rightarrow$ I did [give them 
+nothing]
+\item[Remarks] 
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TPPSNegAdapt
+\item[Task] To incorporate a negation in a word directly following the prep 
+following it, when both are under S.
+\item[File] english:TC\_NegAdaptation.mrule (mrules8.mrule)
+\item[Semantics] --
+\item[Example] Not to somebody could I tell my story $\rightarrow$ To nobody 
+could I tell my story
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TPPVPNegAdapt
+\item[Task] To incorporate a negation in a word directly following the prep 
+following it, when both are in the VERBP.
+\item[File] english:TC\_NegAdaptation.mrule (mrules8.mrule)
+\item[Semantics] --
+\item[Example] I did [talk not to someone] $\rightarrow$ I did [talk to no one]
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] FPostNegAdapt
+\item[Task] To assure that the iterative (and hence optional) transformation 
+class has worked as often as it should in generation: there may not be a 
+meltnegrel left.
+\item[File] english:TC\_NegAdaptation.mrule (mrules8.mrule)
+\item[Semantics] --
+\item[Example] 
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_PPorSoutofNPADJP}
+\begin{description}
+\item[Kind] Non-existent Transformation Class
+\item[Task] This transformation class is intended to cover things like {
+\em A book appeared by Chomsky\/}. The restrictions that hold for this kind of 
+shift are hard to formulate, and hence this transformation class does 
+not exist yet.
+\end{description}
+
+\newpage
+\subsection{TC\_PronounOK}
+\begin{description}
+\item[Kind] at the moment, just one Obligatory Filter
+\item[Task] To check whether there is an unallowed sequence of a personal 
+pronoun directly following another NP. It is assumed that one day, extra rules 
+will be written to produce a PrepObj variant ({\em to x1\/}) for some verbs 
+that only allow 
+it in this particular context (if there are any; all examples seem to be 
+questionable, for instance the verb {\em teach\/}: although {\em I taught 
+history to them\/} seems doubtful, Longman gives the pattern with {\em to\/} 
+irrespective of the kind of direct object). No solution has been found for 
+structures that are filtered out by this 
+filter, but have no alternative formulation, like {\em permit\/} ($^*$I 
+permitted it them, $^*$I permitted it to them, Ik stond het hun toe).
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] FNoPerspro
+\item[Task] To check whether there is an unallowed sequence of a personal 
+pronoun directly following another NP. 
+\item[File] english:TC\_PronounOK.mrule (mrules6.mrule)
+\item[Semantics] --
+\item[Example] I did give them it
+\item[Remarks] Perhaps the restrictions should be less restrictive, since now 
+also {\em I offered him the new me\/} etc.\ are filtered out. However, it is 
+not clear what the regularities are.
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_TopicCleft}
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] To deal further with topicalized elements. The transformation class 
+has not been written yet, but will at least have to move a topicalized element 
+in shiftrel away to a leftdislocrel position, so that it will not trigger 
+inversion anymore\footnote{A provisional version of this transformation, {\em 
+TMoveTopic\/}, had been written when this document was approved. It moves ALL 
+topicalized elements in a finite `main' sentence (determined by its (super)
+deixis, since the mood rules have not worked yet) to leftdislocrel, so that 
+constructions like {\em No 
+sooner than\/}, which do trigger inversion, cannot be handled yet. The 
+transformation {\em TNoTopicCleft\/} lets all structures that do not have a 
+topicalized element pass this transformation class. Both transformations can be 
+found in file {\bf english: tc\_topiccleft.mrule}, which is {\em 
+mrules96.mrule\/}.}. An 
+alternative rule would be clefting of the topicalized element: {\em My father 
+the house pleased\/} $\rightarrow$ {\em It was my father that the house 
+pleased\/}. However, that rule will be quite complicated, since it will have to 
+determine the correct mood for the subsentence, deal with (super)deixis etc.
+
+\end{description}
+
+\newpage
+\subsection{RC\_MoodDetermination}
+\begin{description}
+\item[Kind] Obligatory Rule Class
+\item[Task] to transform a CLAUSE to a main or subordinate SENTENCE, sentential 
+NP or CLOSEDVERBPPROP, assigning
+a value to the attributes {\bf mood} and {\bf modus} of the sentence. The 
+embedded main verb also receives a value for {\bf modus}. Several moodrules for 
+subordinate sentences have been given conditions on {\bf aspect}, to prevent 
+unlikely or wrong combinations of aspect and mood.
+
+Because the output of the moodrules can be a SENTENCE, an NP or a 
+CLOSEDVERBPPROP, all transformations and rules following this rule class must
+be able to deal with these categories as input. In case the transformation
+class consists of one transformation for special cases plus a filter, there is
+no difficulty, but when complementary rules or transformations must be written,
+they must contain subrules or extra rules/transformations for all of these
+input categories (see for instance the aspect neutralization rules below, in
+TC\_FinalTempTransf). This is not practial at all, and should be prevented as 
+much as possible.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIndicMoodMain
+\item[Task] To form a declarative, indicative main sentence
+\item[File] english:RC\_MoodDetermination1.mrule (mrules14.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[x1 do buy a book] $\rightarrow$ $_S$[x1 does buy a book]
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIndicMoodSub 
+\item[Task] to form a declarative, indicative subordinate sentence, introducing 
+the conjunction {\em THAT\/}.
+\item[File] english:RC\_MoodDetermination1.mrule (mrules14.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[he have seen me] $\rightarrow$ $_S$[that he has seen me] 
+\item[Remarks] If needed (e.g.\ for sentences with a wh-shifted subject),
+the conjunction {\em That\/} is deleted in a separate 
+transformation class, which is called only after the indicative subordinate 
+sentence mood rules. 
+See below, TC\_ConjThatDel.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIndicFutMoodSub1
+\item[Task] Generative rule to form a declarative, indicative subordinate 
+sentence which has 
+the auxiliary {\em will\/} instead of {\em do\/} and which begins with the 
+conjunction {\em that\/}. 
+\item[File] english:RC\_MoodDetermination1.mrule (mrules14.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[he did see me] $\rightarrow$ $_S$[that he would see me]
+(He promised that he would see me)
+\item[Remarks] This rule deals with the finite translation of LInjunSub (the 
+Dutch OpenOmteinfMood: {\em Hij beloofde (om) me op te zoeken\/}. Only examples 
+found so far: {\em beloven - promise, erop staan - insist on\/}). In analysis, 
+a finite subsentence with {\em will\/} should be dealt with by the ordinary 
+finite mood rules, translating into a Dutch finite ({\em .. dat hij me op zou 
+zoeken\/}).
+
+If needed (e.g.\ for sentences with a wh-shifted subject), the conjunction 
+{\em that\/} is deleted in a separate 
+transformation class, which is called only after the indicative subordinate 
+sentence mood rules. See below, TC\_ConjThatDel.
+
+No rules have been written yet for subsentences taking an obligatory {\em 
+should\/} instead of {\em would\/}, like the complements of {\em order\/}: 
+{\em Ik beval hem (om) weg te gaan - I ordered that he should leave\/}.
+
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIndicFutMoodSub2
+\item[Task] Generative rule to form a declarative, indicative subordinate 
+sentence which has the auxiliary {\em will\/} added (there is no {\em do\/}) 
+and which begins with the conjunction {\em that\/}.
+\item[File] english:RC\_MoodDetermination1.mrule (mrules14.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[he had seen the doctor by then] $\rightarrow$ $_S$[that 
+he would have seen the doctor by then]
+\item[Remarks] See above under RIndicFutMoodSub1
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIndicWhMoodMain
+\item[Task] To form an indicative main wh-interrogative sentence
+\item[File] english:RC\_MoodDetermination1.mrule (mrules14.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[who did buy books yesterday] $\rightarrow$ $_S$[who did 
+buy books yesterday] (Who bought books yesterday?)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIndicWhMoodSub
+\item[Task] To form an indicative subordinate wh-interrogative  sentence
+\item[File] english:RC\_MoodDetermination1.mrule (mrules14.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[who did buy books yesterday] $\rightarrow$ $_S$[who did 
+buy books yesterday] (I don't know who bought books yesterday)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIndicYesNoMoodMain
+\item[Task] To form an indicative main yes/no-interrogative  sentence
+\item[File] english:RC\_MoodDetermination1.mrule (mrules14.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[he do ever buy books] $\rightarrow$ $_S$[he does ever 
+buy books]
+\item[Remarks] The inversion will be done below, in TC\_AuxToComp.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RIndicYesNoMoodSub
+\item[Task] To form an indicative subordinate yes/no-interrogative  sentence, 
+introducing the conjunction {\em whether\/}. In analysis, the conjunction {\em 
+if\/} is also accepted.
+\item[File] english:RC\_MoodDetermination1.mrule (mrules14.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[he should go there] $\rightarrow$ $_S$[whether (if) he 
+should go there]
+\item[Remarks] It is assumed that when {\em if\/} is not allowed, it is 
+stopped where that can be decided (e.g.\ in the relevant PropSubst rule).
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RImpMood
+\item[Task] To form an imperative (main) sentence, deleting the subject {\em 
+You\/}. The rule uses a parameter {\bf numberpar} to determine the correct 
+number of imperative (which in English is simply the infinitive form) and 
+subject. Note that an English imperative will always be ambiguous between 
+singular and plural {\em you\/}, unless a reflexive solves the ambiguity.
+\item[File] english:RC\_MoodDetermination1.mrule (mrules14.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[you do buy a book for John] $\rightarrow$ $_S$[do buy a 
+book for John]
+\item[Remarks] No rules have been written in English yet for the `polite' 
+imperative with {\em Do\/}: {\em Do come in, Do wash yourselves\/}. This might 
+be a `PosImpMood', introducing POS (and hence blocking do-deletion). Perhaps 
+there is an interrelation with the {\em U-imperatief\/} in Dutch: {\em Gaat 
+U verder - Do continue\/}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RFinRelMood
+\item[Task] To form an indicative relative subordinate sentence, introducing 
+the conjunction {\em that\/}.
+\item[File] english:RC\_MoodDetermination1.mrule (mrules14.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[x1 he did see] $\rightarrow$ $_S$[x1 that he did see] 
+(Is this the man (whom/that) he saw?)
+\item[Remarks] In RCNmodRELSENT, the conjunction is deleted again and replaced 
+by nothing, or by {\em who/which\/} or the RELPRO {\em that\/}. Thus, the 
+current rule might as well not have introduced a conjunction.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RWhModMood
+\item[Task] To form an indicative (wh-) modifying subordinate sentence
+\item[File] english:RC\_MoodDetermination1.mrule (mrules14.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[Peter could read] $\rightarrow$ $_S$[Peter could read] 
+(He bought more books than Peter could read)
+\item[Remarks] It might well be that English does not need a separate WhMod 
+mood and that relative mood suffices (cf.\ Dutch, where a wh-word surfaces: 
+{\em Hij heeft meer problemen opgelost dan {\em waar} ik op gerekend had\/}). If 
+it is decided to throw the WhMod rules away, and use the ordinary relative 
+rules, the conjunction {\em that\/} must be deleted (either in the relative rule
+(see the remark made there), or in the NPrule introducing a modifier sentence).
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] ROpenInfMood
+\item[Task] To form an (open) subordinate sentence with an infinitive without 
+{\em to\/}. This mood is allowed for perfective clauses only.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[x1 come] $\rightarrow$ $_S$[x1 come] (I can come)
+\item[Remarks] No rule has been written yet to deal with the introduction of 
+{\em to\/} in case the sentence is complement in a passive clause: {\em The 
+sight of all that money made him sing - He was made {\em to} sing\/}. Such a 
+rule might perhaps best be added after the proposition substitution rules, or 
+after the passive clause formation rule.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RClosedInfMood
+\item[Task] To form a (closed) subordinate sentence with an infinitive without {
+\em to\/}.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[he come] $\rightarrow$ $_S$[he come] (I saw him come)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] ROpenToinfMood
+\item[Task] To form an (open) subordinate sentence with an infinitive with {
+\em to\/}.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[x1 buy books] $\rightarrow$ $_S$[x1 to buy books] (I 
+want to buy books)
+\item[Remarks] It is assumed that nothing can come between {\em to\/} and the 
+infinitive, i.e.\ no construction like {\em I wanted to quickly buy books\/} 
+should occur.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RClosedToinfMood
+\item[Task] To form a (closed) subordinate sentence with an infinitive with {
+\em to\/}.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[John have bought books] $\rightarrow$ $_S$[John to have 
+bought books] (I believe John to have bought books)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RWhToinfMood
+\item[Task] To form an (open) subordinate wh-interrogative sentence with an 
+infinitive with {\em to\/}. This mood is allowed for perfective clauses only.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[what step x1 take now] $\rightarrow$ $_S$[what step x1 
+to take now] (I don't know what step to take now)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RToinfRelMood
+\item[Task] To form an (open) subordinate relative sentence with an 
+infinitive with {\em to\/}. This mood is allowed for perfective clauses only.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[x1 read] $\rightarrow$ $_S$[x1 to read] (The books to 
+read are on the table)
+\item[Remarks] 
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RToinfWhModMood
+\item[Task] To form an (open) subordinate (wh-)modifying sentence with an 
+infinitive with {\em to\/}. This mood is allowed for perfective clauses only.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[x1 talk to] $\rightarrow$ $_S$[x1 to talk to] (He was 
+too stubborn to talk to)
+\item[Remarks] See what was said under RWhModMood about the existence of WhMods 
+in English. Of course, for infinitives there is no conjunction {\em that\/}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RFortoInfMood
+\item[Task] To form a (closed) subordinate declarative sentence starting with 
+the 
+conjunction {\em for\/}, and having an infinitive with {\em to\/}. The subject 
+is assigned oblique case. This mood is allowed for perfective clauses only.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[John go] $\rightarrow$ $_S$[for John to go] (I want for 
+John to go)
+\item[Remarks] It is assumed that in case a fortoinf has an {\em ing-form\/}, 
+it must be translated into a Dutch sentence with {\em aan het\/}: {\em I prefer 
+for the children to be playing\/} $\rightarrow$ {\em Ik prefereer dat de 
+kinderen 
+aan het spelen zijn\/}. The same holds for other cases where only perfective 
+aspect is allowed.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RFortoInfRelMood
+\item[Task] To form a (closed) subordinate relative sentence starting with the
+conjunction {\em for\/}, and having an infinitive with {\em to\/}.
+This mood is allowed for perfective clauses only.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[x1 Peter read] $\rightarrow$ $_S$[x1 for Peter to read]
+(The books for Peter to read are on the table)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RFortoinfWhModMood
+\item[Task] To form a (closed) subordinate (wh-)modifying sentence starting 
+with the
+conjunction {\em for\/}, and having an infinitive with {\em to\/}.
+This mood is allowed for perfective clauses only.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[x1 we talk to] $\rightarrow$ $_S$[x1 for us to talk to]
+(He is too stubborn for us to talk to)
+\item[Remarks] See what was said under RWhModMood about the existence of WhMods 
+in English. Of course, for infinitives there is no conjunction {\em that\/}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] ROpenIngMood
+\item[Task] To form an open subordinate declarative sentence with a gerund.
+This mood is allowed for perfective clauses only, so there will not be two {\em 
+-ing\/} forms following each other.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[x1 be called a lady] $\rightarrow$ $_S$[x1 being called 
+a lady] (I like being called a lady)
+\item[Remarks] This rule is an alternative to RNPOpenIngMood, where the same 
+structure is provided but headed by a new NP node, which takes the SENTENCE as 
+its head. The current rule just produces a SENTENCE; it will usually function 
+as the complement of verbs.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RAnterelIngMood
+\item[Task] To form an open subordinate relative sentence with a gerund.
+This mood is allowed for imperfective clauses only. 
+In case the auxiliary of 
+the progressive {\em be\/} is present, it is deleted.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[x1 be falling from that tree] $\rightarrow$ 
+$_S$[x1 falling from that tree] (The leaves falling from that tree 
+indicate acid rain)
+\item[Remarks] The name `anterelative' is retained for the SENTENCE {\bf mood} 
+attribute, although English uses 
+post-relatives (cf.\ Dutch {\em De appels etende ezel\/}).
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RAccIngMood
+\item[Task] To form a closed subordinate declarative sentence with a gerund.
+This mood rule accepts both perfective and imperfective clauses.
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[what he do] $\rightarrow$ $_S$[what he doing] (What did 
+you see him doing?)
+\item[Remarks] The subject will receive case in the next cycle (see 
+TExceptCaseAssign). In case there is an auxiliary of the progressive, the 
+sentence will get two subsequent {\em -ing\/} forms: {\em I heard her being 
+hitting the boy\/}. This will have to be changed.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RPastPartMood
+\item[Task] To form an open subordinate relative sentence with a past 
+participle. If there is an auxiliary of the passive, it is deleted; if there 
+is an auxiliary of the perfect (retrospective reading), it is deleted too. 
+The rule works for passives and ergatives.
+This mood is allowed for perfective clauses only. 
+\item[File] english:RC\_MoodDetermination2.mrule (mrules13.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[x1 be killed by his enemies] $\rightarrow$ $_S$[x1 
+killed by his enemies] (The man killed by his enemies]
+\item[Remarks] The name `anterelative' is retained for the SENTENCE {\bf mood} 
+attribute, although English uses 
+post-relatives (cf.\ Dutch {\em De door zijn vijanden gedode man\/})
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RNPPossIngMood
+\item[Task] To form a closed subordinate declarative sentence with a gerund, 
+and with a possessive as a subject. The sentence is given a new top node, 
+NP. 
+This mood is allowed for perfective clauses only. 
+\item[File] english:RC\_MoodDetermination3.mrule (mrules12.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[My father not know the precise time of arrival] 
+$\rightarrow$ $_{NP}$[$_S$[My father's not knowing the precise time of arrival]
+] (caused many inconveniences)
+\item[Remarks]
+An alternative analysis of PossIng sentences might be one where the possessive 
+is a modifier of the rest of the sentence as an openIng NP (see the rule below),
+together forming 
+one large NP: $_{NP}$[ $_{mod}$[my father's] $_{NP}$[$_S$[not knowing ...]] ].
+However, usually modification takes place at the CN-level.
+\end{description}
+
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RNPOpenIngMood
+\item[Task] To form an open subordinate declarative sentence with a gerund. The 
+sentence is given a new top node, NP.
+This mood is allowed for perfective clauses only. 
+\item[File] english:RC\_MoodDetermination3.mrule (mrules12.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[x1 join the expedition] $\rightarrow$ $_{NP}$[$_S$[x1 
+joining the expedition]] (I still hesitate about joining the expedition)
+\item[Remarks] This rule is an alternative to ROpenIngMood, where the same 
+structure is provided but not headed by a new NP node
+and just producing a SENTENCE; an NP will usually function 
+as the object of a preposition, or as a subject.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RLetsMood
+\item[Task] To form a main sentence starting with {\em Let us ...\/}. 
+This mood is allowed for perfective clauses only. 
+\item[File] english:RC\_MoodDetermination3.mrule (mrules12.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[we do go home] $\rightarrow$ $_S$[Let us go home]
+\item[Remarks] No GLUE for contraction is provided yet ({\em Let's ...\/}),
+although morphology already has a glue-rule for this case\footnote{This had 
+been remedied by the time this document was approved.}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RVPPROPmood
+\item[Task] To reduce a clause to a CLOSEDVERBPPROP. This rule is needed 
+because no separate VERBPPROP-grammar exists (it would simply duplicate many 
+rules of the current sentence grammars).
+This mood is allowed for perfective clauses only. 
+\item[File] english:RC\_MoodDetermination3.mrule (mrules12.mrule)
+\item[Semantics]
+\item[Example] $_{CL}$[the house be built by a famous architect] $\rightarrow$
+\\ 
+$_{CLOSEDVERBPPROP}$[the house built by a famous architect] \\ 
+(He had the house built by him)
+\item[Remarks] The subject must receive case in a next cycle (see 
+TExceptCaseAssign). A ClosedVerbpprop only seems needed as complement to the 
+verbs {\em have\/} and {\em get\/} (if the latter verb is vp010).
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_ConjThatDel}
+\begin{description}
+\item[Kind] Obligatory Transformation Class, called only after RIndicMoodSub,
+RIndicFutMoodSub1, and RIndicFutMoodSub2
+\item[Task] To delete the conjunction {\em that\/} where necessary (i.e.\ when
+the subject is shifted); in analysis, sentences without {\em that\/} are 
+accepted even when there is a subject, and the conjunction is added. Note that 
+sentences which have 
+a finite extraposed subsentence starting without the conjunction {\em that\/}
+will be stopped, analytically speaking, in TExtraposition1, so all sentences 
+coming to this transformation will have the conjunction if they came from an 
+extraposrel. If they came from a complrel, {\em that\/} may be absent if the 
+verb allows it (see RComplSentSubst in the previous subgrammar; note that there 
+is a mistake in the documentation to that rule: reference is made to 
+RIndicWhMoodSub instead of to the current transformation, TConjThatDel. In 
+analysis, RComplSentSubst does not check whether there is a shifted subject).
+The problem mentioned in TCompl\-SentSubst for verbs not allowing 
+{\em that\/}-deletion and trying to make a finite complement sentence with a 
+shifted subject ({\em $^{*}$Who did they acknowledge (that) was defeated?\/})
+has not been solved yet. A sentence like {\em Who did you say that 
+has left\/} will be stopped here, because the embedded sentence contains a 
+shifted subject but still has a conjunction.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TConjThatDeletion 
+\item[Task] To delete the conjunction {\em that\/} when
+the subject is shifted; in analysis, sentences without {\em that\/} are 
+accepted even when there is a subject.
+\item[File] english:RC\_MoodDetermination1.mrule (mrules14.mrule)
+\item[Semantics] --
+\item[Example]  who that gave me this $\rightarrow$ who gave me this (Who do 
+you think gave me this)
+\item[Remarks] Although doc.\ 150 mentions a transformation class 
+TC\_Conjunction-Deletion, this probably is a copying error, and should be 
+replaced by TC\_DoDeletion. Thus, the current class was not foreseen in doc.\ 
+150.
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_ConjSent}
+\begin{description}
+\item[Kind] Optional Rule Class
+\item[Task] To form adverbial subordinate sentences (these were not formed in 
+the mood\-rules: there, 
+only the subordinate sentence was formed, but no conjunction 
+was added yet). In case the sentence consists of a sentential NP and the 
+conjunction is a preposition, the output of this rule class is a PREPP. Hence, 
+all further rule and transformation classes must be able to deal not only with 
+SENTENCEs, NPs and CLOSEDVERBPPROPs, but also with PREPPs.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RConjFinSubsent
+\item[Task] To form an adverbial sentence from a finite subordinate sentence, 
+deleting the conjunction {\em that\/} and introducing a new adverbial 
+conjunction.
+\item[File] english:RC\_ConjSent.mrule (mrules92.mrule)
+\item[Semantics]
+\item[Example] \mbox{}\\
+that he did leave + when $\rightarrow$ when he did leave\\
+ that he had gone mad + as if $\rightarrow$ as if he had gone mad
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RConjIngSubsent
+\item[Task] To form an adverbial sentence from an open infinite subordinate 
+sentence with {\em -ing\/}, introducing an adverbial conjunction.
+\item[File] english:RC\_ConjSent.mrule (mrules92.mrule)
+\item[Semantics]
+\item[Example] x1 coming home + when $\rightarrow$ when x1 coming home (When 
+coming home, I always am anxious about burglars)
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RPrepFinSubsent
+\item[Task] To form an adverbial sentence from a finite subordinate 
+sentence, deleting the conjunction {\em that\/} and introducing a 
+preposition which functions as an adverbial conjunction.
+\item[File] english:RC\_ConjSent.mrule (mrules92.mrule)
+\item[Semantics]
+\item[Example] that he left + before $\rightarrow$ before he left
+\item[Remarks] The rule has two condition-action pairs: if the PREP has the 
+value {\em temp\/} in its {\bf subcs}, a temporal sentence is made; if there is 
+more in the {\bf subcs} of the PREP, then also a non-temporal sentence is made.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RPrepIngSubsent
+\item[Task] To form an adverbial PREPP from an NP heading an (open or 
+closed) infinite 
+subordinate sentence with {\em -ing\/}, introducing a preposition functioning 
+as an adverbial conjunction.
+\item[File] english:RC\_ConjSent.mrule (mrules92.mrule)
+\item[Semantics]
+\item[Example] \mbox{}\\
+x1 leaving + before $\rightarrow$ before x1 leaving\\
+my noticing it + without $\rightarrow$ without my noticing it
+\item[Remarks] The rule has two condition-action pairs: if the PREP has the 
+value {\em temp\/} in its {\bf subcs}, a temporal PREPP is made (indicated by 
+setting the attribute {\bf actsubcefs} of the PREPP at the value {\em 
+[temp]\/}; a PREPP does not have an attribute {\bf temporal}); if there is 
+more in the {\bf subcs} of the PREP, then also a non-temporal PREPP is made.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RConjToinfSubsent
+\item[Task] To form an adverbial sentence from an open infinite subordinate 
+sentence with {\em to\/}, introducing an adverbial conjunction.
+\item[File] english:RC\_ConjSent.mrule (mrules92.mrule)
+\item[Semantics]
+\item[Example] x1 to come + in order $\rightarrow$ in order x1 to come (In 
+order to come, he took some days off)
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_TempEMPTYDeletion}
+\begin{description}
+\item[Kind] Two subsequent Optional Transformations, each followed by an 
+Obligatory Filter
+\item[Task] To delete abstract temporal adverbs (or to insert them, in 
+analysis). This transformation class was 
+not specified in doc.\ 150. For more information, see doc.\ 263, {\em 
+Documentation of the rules for the translation of temporal expressions in 
+Rosetta3, part I\/}.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TRefDeletion
+\item[Task] To delete an abstract temporal (present or past) reference adverb 
+\item[File] english:TC\_TempEMPTYDeletion.mrule (mrules77.mrule)
+\item[Semantics] --
+\item[Example] He does walk REFEMPTY $\rightarrow$ He does walk
+\item[Remarks] This optional transformation is followed by an obligatory 
+filter, to assure its proper application.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] FRefDeletion 
+\item[Task] To assure the proper application in generation of the optional 
+transformation TRefDeletion: all structures that still have an abstract 
+temporal reference adverb left are filtered out.
+\item[File] english:TC\_TempEMPTYDeletion.mrule (mrules77.mrule)
+\item[Example] 
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TRetroDeletion
+\item[Task] To delete an abstract temporal retrospective adverb 
+\item[File] english:TC\_TempEMPTYDeletion.mrule (mrules77.mrule)
+\item[Semantics] --
+\item[Example] He has corrected the first version RETROEMPTY 
+$\rightarrow$ He has corrected the first version
+\item[Remarks] This optional transformation is followed by an obligatory 
+filter, to assure its proper application.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] FRetroDeletion
+\item[Task] To assure the proper application in generation of the optional 
+transformation TRetroDeletion: all structures that still have an abstract 
+temporal retrospective adverb left are filtered out.
+\item[File] english:TC\_TempEMPTYDeletion.mrule (mrules77.mrule)
+\item[Example] 
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_DeixisRetroAdaptation}
+\begin{description}
+\item[Kind] Optional Transformation Class, followed by Obligatory Filter
+\item[Task] To reset the value of the attribute {\bf deixis} of an infinite 
+perfective SENTENCE with {\em have\/},
+which was assigned in special deixis rules (RinfinPastdeixisSpec and 
+RInfinPastSuperdeixisSpec),
+to a default value, and to give the SENTENCE a value {\em true\/} for the 
+attribute {\bf retro}. This is needed for efficiency of the Surface Parser, 
+which cannot recognize special deixis configurations.\\
+(NB.\ The Surface Parser cannot recognize retrospective configurations either. 
+Therefore, Tretroneutralization will reset the value of {\bf retro} to {\em 
+false}.)
+
+This transformation class was 
+not specified in doc.\ 150. For more information, see docs 263, {\em 
+Documentation of the rules for the translation of temporal expressions in 
+Rosetta3, part I\/}, and 320, {\em Superdeixis in Rosetta3\/}.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TDeixisRetroAdaptation1
+\item[Task] To reset the value of the attribute {\bf deixis} of an infinite 
+perfective non-retrospective SENTENCE with {\em have\/}
+to a default value (if there only is a value for {\bf superdeixis}, nothing
+is done), and to give the SENTENCE a value {\em true\/} for the 
+attribute {\bf retro}. 
+\item[File] english:TC\_DeixisRetroAdaptation.mrule (mrules75.mrule)
+\item[Semantics] --
+\item[Example] [Bill to have killed John yesterday]$_{\frac{pastdeixis}
+{retro=false}}$ $\rightarrow$ [Bill to have killed John yesterday]$_{\frac
+{omegadeixis}{retro=true}}$
+\item[Remarks] This optional transformation is followed by an obligatory 
+filter, to assure its proper application.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] FDeixisRetroAdaptation1
+\item[Task] To assure the proper application in generation of the optional 
+transformation TDeixisRetroAdaptation1: all infinite perfective non-
+retrospective sentences with {\em have\/} that still have a non-default value 
+for (super)deixis are filtered out.
+\item[File] english:TC\_DeixisRetroAdaptation.mrule (mrules75.mrule)
+\item[Example] 
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_FinalTempTransf}
+\begin{description}
+\item[Kind] Optional Transformation, followed by an Obligatory Filter, followed 
+by an Obligatory Transformation Class
+\item[Task] To reset a number of attributes to their default values, in order 
+to allow for a more simple Surface Parser. There are rules for the sentence 
+attributes {\bf retro} and {\bf aspect}.
+
+This transformation class was 
+not specified in doc.\ 150. For more information, see doc.\ 263, {\em 
+Documentation of the rules for the translation of temporal expressions in 
+Rosetta3, part I\/}.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TRetroNeutralization
+\item[Task] To reset the value of the attribute {\bf retro} of (infinite) 
+sentences that take {\em have\/} as first auxiliary to {\em false\/}.
+\item[File] english:TC\_FinalTempTransf.mrule (mrules34.mrule)
+\item[Semantics] --
+\item[Example] [Bill to have killed John]$_{retro=true}$ 
+$\rightarrow$ [Bill to have killed John]$_{retro=false}$
+\item[Remarks] This optional transformation is followed by an obligatory 
+filter, to assure its proper application. An extra rule will be added for 
+finite sentences, together with the accompanying filter\footnote{This had been 
+done by the time this document was approved. The original rule is now called 
+TRetroNeutralization1, and TRetroNeutralization2 is added. The original filter 
+was renamed to FRetroNeutralization1, and FRetroNeutralization2 was added.}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] FRetroNeutralization
+\item[Task] To assure the proper application in generation of the optional 
+transformation TRetroNeutralization: all (infinite) 
+retrospective sentences with {\em have\/} as first auxiliary are filtered out.
+\item[File] english:TC\_FinalTempTransf.mrule (mrules34.mrule)
+\item[Example] 
+\item[Remarks] See the footnote to TRetroNeutralization.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TAspectNeutralization
+\item[Task] To reset the value of the sentence attribute {\bf aspect} 
+(which must be 
+{\em perfective, imperfective\/} or {\em habitual\/}) to {\em omegaaspect\/} 
+in generation, and to introduce these non-default values in analysis. For 
+sentences with imperfective aspect, there may not be a duration adverbial.
+\item[File] english:TC\_FinalTempTransf.mrule (mrules34.mrule)
+\item[Semantics] --
+\item[Example] [John works]$_{perfective}$ $\rightarrow$ [John works]$_
+{omegaaspect}$
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TaspectNeutralization2
+\item[Task] To reset the value of the attributes {\bf aspect} of a SENTENCE and 
+of its head NP (which must be 
+{\em perfective, imperfective\/} or {\em habitual\/}) to {\em omegaaspect\/} 
+in generation, and to introduce these non-default values in analysis.
+\item[File] english:TC\_FinalTempTransf.mrule (mrules34.mrule)
+\item[Semantics] --
+\item[Example] [His working]$_{imperfective}$ $\rightarrow$ [His working]$_
+{omegaaspect}$
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TaspectNeutralization3
+\item[Task] To reset the value of the attributes {\bf aspect} of a SENTENCE and 
+of its head NP and of the governing sentential PREPP (the value must be 
+{\em perfective, imperfective\/} or {\em habitual\/}) to {\em omegaaspect\/} 
+in generation, and to introduce these non-default values in analysis.
+\item[File] english:TC\_FinalTempTransf.mrule (mrules34.mrule)
+\item[Semantics] --
+\item[Example] [Without always realising it]$_{habitual}$ $\rightarrow$ 
+[Without always realising it]$_{omegaaspect}$
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TaspectNeutralization4
+\item[Task] To let CLOSEDVERBPPROPs pass this obligatory transformation class
+\item[File] english:TC\_FinalTempTransf.mrule (mrules34.mrule)
+\item[Semantics] --
+\item[Example] [the house built] $\rightarrow$ [the house built]
+\item[Remarks] This is not elegant; there should be a separate subgrammar for 
+VERBPFORMULAtoPROP, in which this transformation class would not 
+exist. 
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_DoBeDeletion}
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] To delete the auxiliary {\em do\/} for verbs that never need it, 
+viz.\ the copula {\em be\/} and (in analysis only) the main verb {\em have\/} 
+(in generation, {\em have\/} is treated as an ordinary main verb). Remember 
+that {\em do\/} was introduced even for {\em be\/}, to provide a uniform 
+structure for all clauses (the main verb always is in the VERBP, and there 
+always is one auxiliary to the left of the VERBP). Imperatives,
+which may require a combination of {\em do\/} and 
+the copula {\em be\/} in case there is a negation, are not 
+provided for yet: {\em Don't (you) be impudent to me, young man!\/}\footnote{
+This had been remedied by the time this document was approved: in case the 
+sentence is imperative and contains a negation in S, {\em do\/} is not 
+deleted.}.
+
+This specific case of {\em do\/}-deletion is crucially ordered before 
+TC\_AuxToComp, or the auxiliary will end up in the Comp-position, instead of 
+the main verb. `Ordinary' {\em do\/}-deletion occurs after TC\_AuxToComp. The 
+transformation class was not foreseen in doc.\ 150. 
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TDoBeDeletion
+\item[Task] To delete the auxiliary {\em do\/} for verbs that never need it, 
+viz.\ the copula {\em be\/} and (in analysis only) the main verb {\em have\/}. 
+The copula is moved out of the VERBP to the position for auxiliaries 
+(leaving the VERBP without a head).
+\item[File] english:TC\_DoBeDeletion.mrule (mrules82.mrule, begin)
+\item[Semantics] --
+\item[Example] He does not be a doctor $\rightarrow$ He is not a doctor\\
+He does have a book $\leftarrow$ He has a book
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TNoDoBeDeletion
+\item[Task] Vacuous rule, to let structures in which there is no {\em do\/} to 
+delete pass this transformation class.
+\item[File] english:TC\_DoBeDeletion.mrule (mrules82.mrule, begin)
+\item[Semantics] --
+\item[Example] He does sing, etc.
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_ShallWillSwap}
+\begin{description}
+\item[Kind] Optional Transformation Class, preceded by Obligatory Filter
+\item[Task] To replace the auxiliary {\em will\/} by the form {\em shall\/} in 
+main sentence present tense questions, in case there is a 1st person subject. 
+In analysis, {\em shall\/} is accepted even when the sentence is not a 
+question. This transformation class has not been written yet\footnote{By the 
+time this document was approved, it had been written. The rule is called {\em 
+TShallWill\/}, and the prefilter is {\em FNoShall\/}. They can be found in file 
+{\bf english:TC\_DoBeDeletion}, which is {\em mrules82.mrule\/}. The 
+transformation is optional, 
+so in generation both {\em shall\/} and {\em will\/} are produced for first 
+person subjects.}.
+
+\end{description}
+
+\newpage
+\subsection{TC\_NegAuxAdapt}
+\begin{description}
+\item[Kind] Optional Transformation Class, preceded by Obligatory Filter
+\item[Task] To contract the negation and a preceding modal or auxiliary.
+This contraction must occur before TC\_AuxToComp, to allow the contracted form 
+to move as a whole. It is crucially ordered after TC\_DoBeDeletion, since 
+otherwise {\em 
+be\/} and {\em not\/} would not be adjacent yet. The transformation class was 
+not thought of in doc.\ 150. No conditions have been added yet to 
+guide generation: both contracted and uncontracted forms are generated. It 
+still has to be decided whether both forms are indeed equivalent, and which one 
+is preferred in generation.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] FPreNegAuxAdapt
+\item[Task] Speed filter, to assure that in analysis the optional TNegAuxAdapt 
+has worked where needed: no contracted negations may be left.
+\item[File] english:TC\_AuxToComp.mrule (mrules11.mrule, begin)
+\item[Example] 
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TNegAuxAdapt
+\item[Task] To contract a negation and the modal or auxiliary just preceding 
+it, forming a new (complex) VERB-node.
+\item[File] english:TC\_AuxToComp.mrule (mrules11.mrule, begin)
+\item[Semantics] --
+\item[Example] They are not at home $\rightarrow$ They aren't at home\\
+He must not see me $\rightarrow$ He mustn't see me
+\item[Remarks] \mbox{}
+\begin{itemize}
+\item A number of glue rules only exist in analysis, e.g.\ {\em can not\/} 
+$\rightarrow$ {\em can't\/}. For 
+the modal {\em may\/}, no glue rule exists at all (correctly, of course).
+Since the
+current rule only excludes {\em am\/} from contraction (only in generation, so 
+that in analysis {\em aren't I?\/} can be dealt with; the rule has not yet been 
+restricted to accept {\em aren't I\/} only in tag questions), 
+other forms for which 
+no rule exists in (generative) segmentation will crash. This still has to be 
+amended!\footnote{This had been done by the time this document was approved: 
+the modal {\em may\/} was excluded from the rule. {\em Might\/} need not be 
+excluded: the form {\em mightn't\/} exists. Furthermore, the glue rule for {\em 
+can't\/} was made reversible. In analysis, restrictions were put on {\em aren't 
+} and {\em ain't\/}: they are accepted only in questions.}
+\item For {\em cannot\/}, no glue rule exists at all; there is an extra problem 
+there, since just specifying {\em can\/} + {\em GLUE\/} + {\em not\/} in the 
+segmentation rules would interfere with the other GLUErule for {\em can\/}, 
+returning {\em can't\/}. Perhaps two different {\em not\/}s must be 
+used\footnote{This had been implemented by the time this document was 
+approved: a reversible
+glue rule for {\em cannot\/} was added, using a `special' {\em n\`{o}t\/}. 
+Since this {\em n\`{o}t\/} has its own s-key, it is not involved in the current 
+transformation. It is used in a new transformation class, {\em 
+TC\_CanNegIncorp\/} (see below).}.
+
+Another point is that a construction like {\em Cannot you be quiet\/} seems 
+awkward, 
+while {\em He cannot come\/} is perfectly OK. Perhaps {\em Cannot\/} must be 
+excluded explicitly from TC\_AuxToComp\footnote{Because {\em Cannot\/} is not 
+formed by the current rule (see the previous footnote), the construction with {
+\em Cannot he come\/} will never be produced. For {\em He cannot come\/}, 
+see the new TC\_CanNegIncorp.}.
+\end{itemize}
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_AuxToComp}
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] To invert subject and finite auxiliary (operator) for yes/no 
+questions and sentences with a shiftrel.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TAuxToComp
+\item[Task] To invert subject and operator (which may be complex) for 
+yes/no questions and sentences with a shiftrel.
+\item[File] english:TC\_AuxToComp.mrule (mrules11.mrule, end)
+\item[Semantics] --
+\item[Example] \mbox{}\\
+Whom you did see leave $\rightarrow$ Whom did you see leave \\
+You didn't leave $\rightarrow$ Didn't you leave \\
+You did not leave $\rightarrow$ Did you not leave
+\item[Remarks] Not all elements are in shiftrel 
+yet that should be there, e.g.\ optative subjunctives {\em Far be it ...\/} and 
+certain topicalized elements (they have all been moved to leftdislocrel): {\em 
+So dark was it that ...\/}. Also, no rules have been written to deal with 
+subject - verb inversion (i.e.\ without any auxiliary), like in the ergative 
+{\em Here comes the bus\/} and in topicalized constructions like {\em So say 
+all of us\/}.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TNoAuxToComp
+\item[Task] Vacuous rule, to let structures which do not need inversion pass 
+this transformation class.
+\item[File] english:TC\_AuxToComp.mrule (mrules11.mrule, end)
+\item[Semantics] --
+\item[Example] Who did go away, how to solve this, I do walk in the garden
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_CanNegIncorp}
+\begin{description}
+\item[Kind] Optional Transformation Class, preceded by Obligatory Filter
+\item[Task] To glue the negation {\em n\`{o}t\/} to the modal {\em can\/}, 
+giving {\em cannot\/},
+in case they are adjacent (only when the sentence is not a question). The 
+transformation class is ordered crucially after TC\_AuxToComp, because 
+structures like {\em Cannot he come?\/} must be prevented. The transformation 
+class has not been written yet, since the glue rules do not have a separate 
+{\em n\`{o}t\/} yet; {\em can\/} + GLUE + {\em not\/} will give {\em 
+can't\/}\footnote{This had been remedied by the time this document was 
+approved. The glue rule was added, and the current transformation class was 
+written. The transformation is called {\em TCanNegIncorp\/}, and the prefilter 
+is 
+{\em FPreCanNegIncorp\/}. They can be found in file {\bf 
+english:TC\_AuxToComp}, which is {\em mrules11.mrule\/}. In generation, both 
+the glued form and the normal form are produced, since the transformation is 
+fully reversible and optional. This must still be adapted.}.
+
+\end{description}
+
+\newpage
+\subsection{TC\_DoDeletion}
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] To delete either the auxiliary {\em do\/} or the abstract POS, 
+where needed. This transformation class is not mentioned in doc.\ 150, but that 
+probably is caused by a copying error (there is mention of a 
+TC\_ConjunctionDeletion, which is a Dutch class). Also, TC\_DoDeletion {\em is 
+\/} mentioned in doc.\ 153.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TDoDeletion
+\item[Task] To delete the auxiliary {\em do\/} in case it is adjacent to the 
+main verb (although certain adverbs may intervene). Person, number, modus and 
+tense of {\em do\/} are copied to the main verb. In analysis, {\em do\/} is 
+inserted if no operator is present while the sentence is finite.
+\item[File] english:TC\_DoDeletion.mrule (mrules82.mrule, end)
+\item[Semantics] --
+\item[Example] she does (almost) [make the day begin] $\rightarrow$ she 
+(almost) [makes the day begin]
+\item[Remarks] Because this rule and TPosDeletion are alternatives, it is 
+impossible to delete both POS and {\em do\/}. Since the current rule does not 
+work if there is a POS intervening, {\em do\/} will remain in the structure.
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TPosDeletion
+\item[Task] To delete the abstract category POS. In analysis, POS is introduced 
+only for those cases where there is a {\em do\/} which cannot be explained 
+otherwise.
+\item[File] english:TC\_DoDeletion.mrule (mrules82.mrule, end)
+\item[Semantics] --
+\item[Example] He did POS go to church $\rightarrow$ He did go to church\\
+(Generation only:) He can POS come $\rightarrow$ He can come
+\item[Remarks] See the remark above under TDoDeletion
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TNoDeletion1
+\item[Task] To let SENTENCEs in which there is no POS or {\em do\/} to delete 
+pass this transformation class
+\item[File] english:TC\_DoDeletion.mrule (mrules82.mrule, end)
+\item[Semantics] --
+\item[Example] He has never seen me, Didn't you know
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TNoDeletion2
+\item[Task] To let other structures than SENTENCEs (i.e.\ NPs, PREPPs and 
+CLOSEDVERBPPROPs) pass this transformation class.
+\item[File] english:TC\_DoDeletion.mrule (mrules82.mrule, end)
+\item[Semantics] --
+\item[Example] (without) (my) knowing this
+\item[Remarks] It is assumed that these structures (derived from infinite 
+sentences) have neither {\em do\/} nor POS.
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_VPDeletion}
+\begin{description}
+\item[Kind] Obligatory Transformation Class
+\item[Task] To prune the VERBP node in case it does not dominate a head/VERB 
+(this only occurs in case of the copula {\em be\/}, and, in analysis, for 
+questions with the main verb {\em have\/}; see TDoBeDeletion)\footnote{By the 
+time this document was approved, the rule had been changed to delete the VERBP 
+only in case it does not dominate anything anymore, i.e.\ when the predicate 
+going with the copula {\em be \/} is wh-shifted, as in {\em How ill is he?, 
+Where are you?\/}.
+This is easier for the Surface Parser.}.
+This transformation is needed for efficiency of the Surface Parser only. The 
+class was not mentioned in doc.\ 150.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TVPDeletion
+\item[Task] To prune the VERBP node in case it does not dominate a head/VERB.
+\item[File] english:TC\_VPDeletion.mrule (mrules10.mrule)
+\item[Semantics] --
+\item[Example] He is [ill] $\rightarrow$ he is ill; (in analysis only:) Has he 
+[a book] $\rightarrow$ Has he a book
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TNoVPDeletion
+\item[Task] To let structures in which the VERBP cannot be deleted pass this 
+transformation class
+\item[File] english:TC\_VPDeletion.mrule (mrules10.mrule)
+\item[Semantics]
+\item[Example] He bought a book, x1 to be ill, etc.
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{RC\_Punc}
+\begin{description}
+\item[Kind] Obligatory Rule Class
+\item[Task] To provide a main sentence with the required (final) punctuation 
+marks. There are no conditions on co-occurrence of punctuation marks yet, i.e.\ 
+a punctuation mark will be added irrespective of whether the sentence already 
+had a final punctuation mark. The correct conditions on co-occurrence still 
+have to be formulated.
+
+This rule class was not mentioned explicitly in doc.\ 150.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RNoPunc
+\item[Task] Default rule, to let structures which do not need a final 
+punctuation mark pass this rule class (i.e.\ for subordinate SENTENCEs, and for 
+NPs, PREPPs and CLOSEDVERBPPROPs)
+\item[File] english:RC\_Punc.mrule (begin of mrules9.mrule)
+\item[Semantics]
+\item[Example] that he left, (my) leaving the house, for you to go there, etc.
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RQuMark
+\item[Task] To introduce a question mark for main sentence questions. In 
+analysis, a question without question mark is also accepted.
+\item[File] english:RC\_Punc.mrule (begin of mrules9.mrule)
+\item[Semantics]
+\item[Example] Did you see her $\rightarrow$ Did you see her ?
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RExclam
+\item[Task] To introduce an exclamation mark for a (main sentence) imperative. 
+The rule is also used to introduce a period for {\em Lets-mood\/} sentences. 
+This is needed because in Dutch, {\em Laten-mood\/} sentences always takes an 
+exclamation mark, and the mapping of punctuation rules in transfer is only 
+one-to-one.
+In analysis, an imperative or {\em lets-mood\/} without punctuation mark is 
+also accepted, and a {\em letsmood\/} with an exclamation mark is accepted too.
+\item[File] english:RC\_Punc.mrule (begin of mrules9.mrule)
+\item[Semantics]
+\item[Example] Go home $\rightarrow$ Go home !\\
+Let's see where she is $\leftarrow$ Let's see where she is.
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] RPeriod
+\item[Task] To introduce a period at the end of a main sentence declarative.
+In analysis, a declarative sentence without punctuation mark is also accepted.
+\item[File] english:RC\_Punc.mrule (begin of mrules9.mrule)
+\item[Semantics]
+\item[Example] That was enough for today $\rightarrow$ That was enough for 
+today.
+\item[Remarks] Periods going with abbreviations might interfere with this rule. 
+No solution has been found for that yet. Also, periods occurring within 
+quotation marks cannot be handled yet.
+\end{description}
+
+\end{description}
+
+\newpage
+\subsection{TC\_CommaIncorp}
+
+\begin{description}
+\item[Kind] Optional Transformation Class, surrounded by two Obligatory Filters
+\item[Task] To separate the comma coming at the end of a (leftdislocrel) 
+sentence or PREPP from it and place it outside the sentence, directly under the 
+higher sentence. In analysis, the 
+comma is incorporated in the embedded sentence. This transformation class is 
+needed for 
+analysis, because the Surface Parser cannot put the comma in the embedded 
+sentence, and the M-grammar may not be able to deal with a `stray' comma 
+(which only is 
+deleted in the ConjSentSubst rules). Note that at present, a
+comma is generated for leftdislocrel adverbial sentences in the proposition 
+substitution rules. 
+
+The transformation class was not foreseen in doc.\ 150.
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] FPreCommaIncorp
+\item[Task] To assure the proper application of the optional TCommaIncorp: in 
+analysis, there may be no `stray' comma left in the higher sentence.
+\item[File] english:RC\_Punc.mrule (end of mrules9.mrule)
+\item[Example] 
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] TCommaIncorp
+\item[Task] To separate the comma coming at the end of a (leftdislocrel) 
+sentence or PREPP from it and place it outside the sentence, directly under the 
+higher sentence. In analysis, the 
+comma is incorporated in the embedded sentence. 
+\item[File] english:RC\_Punc.mrule (end of mrules9.mrule)
+\item[Semantics] --
+\item[Example] [Before he left,] he closed the door. $\rightarrow$ [Before he 
+left], he closed the door.
+\item[Remarks]
+\end{description}
+
+\vspace{1 cm}
+\begin{description}
+\item[Name] FPostCommaIncorp
+\item[Task] To assure the proper application of the optional TCommaIncorp in 
+generation: no structures with an incorporated comma are allowed. (This is to 
+prevent two paths from going to Leaves, one with and one without an 
+incorporated comma).
+\item[File] english:RC\_Punc.mrule (end of mrules9.mrule)
+\item[Example] 
+\item[Remarks]
+\end{description}
+
+\end{description}
+
+\end{document}
