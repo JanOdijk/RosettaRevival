@@ -1,0 +1,776 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project
+ *
+ *  Module Title    : HILtree
+ *  Creation date   : 13-JAN-1988
+ *  Author          : J. Rous
+ *
+ *  Copyright (c) 1986, by Nederlandse Philips Bedrijven BV.
+ *
+ *  Remarks         : This module describes ILtrees as they are used in the
+ *                    transfer components of Rosetta.
+ *
+ *EMP:::===================================================================*)
+
+pragma C_Include('liilrules.pf');
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+
+PACKAGE HILtree;
+WITH LIILRULES;
+
+CONST
+   HNIL = 0;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : HILtree_pLIRecord, HILtree_LIRecord,
+ *                   HILtree_pDtree.
+ *  Description    : the language independent extras only used in the parsers, 
+ *                   Dtree is used to remember from which Dtree this HyperILtree
+ *                   resulted. Done indiquates whether this Dtree has been
+ *                   remembered or not.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   HILtree_pHyperILtree   = INTEGER;
+   HILtree_pDnode         = ^INTEGER;
+   HILtree_pLIRecord      = ^HILtree_LIRecord;
+   HILtree_LIRecord       = RECORD
+                               Dtree : HILtree_pDnode;
+                               done  : BOOLEAN;
+                            END;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : HILtree_pHyperILtree,HyperILtree,pTupleOfHyperILtree,TupleOfHyperILtree,
+ *                   HILtree_pLoHyperILtree, HILtree_LoHyperILtree
+ *  Description    : the types to make a HyperILtree
+ *                   - a HyperILtree node contains a tuple of HyperILtrees
+ *                     for its arguments. Futhermore it contains conceptually
+ *                     a set of rule nodes. This set is implemented as a
+ *                     linked list.
+ *                   - a HyperILtree leave is either an empty HyperILtree (DEPS) or the name
+ *                     of a basic expression or the name of a variable.
+ *                   A tuple of HyperILtrees is implemented by means of a list of
+ *                   HyperILtrees (HILtree_LoHyperILtree).
+ *                   A HyperILtree contains also some information that is only
+ *                   relevant for the implementation of A-Transfer/ G-Transfer,
+ *                   this is hidden in HILtree_pLIRecord^.
+ *
+ *   Note            In order to be able to handle individual ILDtrees in such
+ *                   a HyperILtree the record type HyperILtree is extended with a
+ *                   field (called `cur'). The routine MarkFirstHyperILtree lets
+ *                   this mark field point to the 'first' Dtree in a
+ *                   HyperILtree and the routine MarkNextHyperILtree marks the
+ *                   'next' Dtree.
+ *
+ *
+ *                   ILtree =     ---------------
+ *                                |  R          |
+ *                          ........ args.first |
+ *                          .     |  args.last .......
+ *                          .     ---------------    .
+ *                          .                        .
+ *                      ---------
+ *                      | next .....    etc
+ *                      | arg   |
+ *                      --- . ---
+ *                          .
+ *                      ---------
+ *                      | R     |
+ *                      | args  |
+ *                      ---------
+ *                                       .                 .
+ *                                       .                 .
+ *                                       .                 .
+ *                                       .                 .
+ *                   HyperILtree = -------.-------       ---.----     --------
+ *                                |  Elts.last  |       | nxt  |     |      |
+ *                                |  Elts.first .......... arg ........     |
+ *                                |  nrargs     |       |      |     | R    |
+ *                          ........ args.first |       |      |     |params|
+ *                          .     |  args.last .......  --------     --------
+ *                          .     ---------------    .
+ *                          .                        .
+ *                      --------
+ *                      | next .......    etc
+ *                      | arg  |   
+ *                      ---.----  
+ *                         .           
+ *                         .
+ *    HyperILtree     --------------
+ *                   | Elts       ...
+ *                   | nrargs     |
+ *                   | args.first |
+ *                   | args.last  |
+ *                   --------------
+ *
+ *
+ *  Type name      : HILtree_pLoHyperILtree, HILtree_LoHyperILtree,
+ *                   HILtree_TupleOfHyperILtree
+ *
+ *EMP:::===================================================================*)
+
+{  HILtree_pHyperILtree   = ^HILtree_HyperILtree; }
+   HILtree_pLoHyperILtree = INTEGER;
+   HILtree_LoHyperILtree  = RECORD
+                                   arg:HILtree_pHyperILtree;
+                                   next:HILtree_pLoHyperILtree
+                                END {RECORD};
+   HILtree_TupleOfHyperILtree = RECORD
+                        	     first,last:HILtree_pLoHyperILtree
+                                  END {RECORD};
+   HILtree_SetOfHyperILtree = HILtree_TupleOfHyperILtree;
+
+   HILtree_pHyperNodeElt   = INTEGER;
+   HILtree_pLoHyperNodeElt = INTEGER;
+   HILtree_LoHyperNodeElt  = RECORD
+                                   arg:HILtree_pHyperNodeElt;
+                                   next:HILtree_pLoHyperNodeElt
+                                END {RECORD};
+   HILtree_SetOfHyperNodeElt = RECORD
+                        	     first,last:HILtree_pLoHyperNodeElt;
+                                     cur       : HILtree_pLoHyperNodeElt;
+                                     NrOfElts  : INTEGER;
+                                  END {RECORD};
+   HILtree_pSetOfHyperNodeElt = ^HILtree_SetOfHyperNodeElt;
+   HILtree_NodeKind = ( HILtree_BasicNode,
+                           HILtree_VarNode,
+                           HILtree_SubstRuleNode,
+                           HILtree_RuleNode  );
+
+   HILtree_HyperILtree =
+      RECORD
+         synbonus : INTEGER;
+         LI       : HILtree_pLIrecord;
+         Elts     : HILtree_SetOfHyperNodeElt;
+         CASE IsRuleNode : BOOLEAN OF
+         FALSE: (BasicNodeKind : HILtree_NodeKind);
+         TRUE : (nrOfArgs : INTEGER;
+                 args     : HILtree_TupleOfHyperILtree;
+                 EndOfSg  : BOOLEAN;
+                 CASE RuleNodeKind : HILtree_NodeKind OF
+                 HILtree_RuleNode : ( );
+                 HILtree_SubstRuleNode : ( substituent: INTEGER))
+      END {RECORD};
+
+   HILtree_HyperNodeElt =
+      RECORD
+         sembonus : INTEGER;
+         CASE nodeKind : HILtree_NodeKind OF
+         HILtree_VarNode : (index : INTEGER);
+         HILtree_BasicNode : ( key : INTEGER);
+         HILtree_RuleNode  : (   R          : LIILRules_RuleIndex;
+                                 parameters : LIILRules_LIParameters)
+      END {RECORD};
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_MarkFirstDtree
+ *  Description     : Marks the first Dtree in a HyperILtree.
+ *  Parameters      : VAR d : HILtree_pHyperILtree
+ *  Precondition    : 
+ *  Postcondition   : It is implemented by marking the first Dtree of each
+ *                    'superson' of the top level of HyperILtree d.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_MarkFirstDtree (VAR d : HILtree_pHyperILtree);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HILtree_MarkNextDtree
+ *  Description    : Marks the next Dtree in HyperILtree d. Returns FALSE iff
+ *                   there are no more Dtrees in d, in this case the first Dtree
+ *                   will have been marked again.
+ *                   It is implemented by marking the next Dtree in the first
+ *                   rule node of the top level of HyperILtree d. If this was
+ *                   impossible (all Dtrees in the first rule node list had been
+ *                   marked already and the first is marked again), then the
+ *                   same is tried for the second hyper node, etc. If it was
+ *                   impossible for all the sons, then FALSE is returned.
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HILtree_MarkNextDtree (VAR d : HILtree_pHyperILtree)
+                    : BOOLEAN;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HILtree_ExistsNextDtree
+ *  Description    : Checks the existence of the next Dtree in HyperILtree d. 
+ *                   Returns FALSE iff
+ *                   there are no more Dtrees in d.
+ *                   It is implemented by marking the next Dtree in the first
+ *                   rule node of the top level of HyperILtree d. If this was
+ *                   impossible (all Dtrees in the first rule node list had been
+ *                   marked already and the first is marked again), then the
+ *                   same is tried for the second hyper node, etc. If it was
+ *                   impossible for all the sons, then FALSE is returned.
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HILtree_ExistsNextDtree (VAR d : HILtree_pHyperILtree)
+                    : BOOLEAN;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_NewHyperILtreeLeave
+ *  Description     : Creates a new basic HyperILtree with the appropriate values
+ *  Parameters      : VAR d : HILtree_pHyperILtree
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised basic HyperILtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_NewHyperILtreeLeave (VAR d : HILtree_pHyperILtree);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_NewHyperILtree
+ *  Description     : Creates a non-basic HyperILtree with the appropriate values
+ *  Parameters      : VAR d : HILtree_pHyperILtree
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised basic HyperILtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_NewHyperILtree (VAR d : HILtree_pHyperILtree);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_NewHyperILtreeBxpr
+ *  Description     : Creates a new HyperNode elt with the appropriate values
+ *  Parameters      : VAR d : HILtree_pHyperNodeElt
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised basic HyperILtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_NewHyperILtreeBxpr (VAR d : HILtree_pHyperNodeElt;
+                                            key : INTEGER);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_NewHyperILtreeVar
+ *  Description     : Creates a new HyperNode elt with the appropriate values
+ *  Parameters      : VAR d : HILtree_pHyperNodeElt
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised basic HyperILtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_NewHyperILtreeVar (VAR d : HILtree_pHyperNodeElt;
+                                            index : INTEGER);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_NewHyperILtreeRule
+ *  Description     : Creates a new non-basic HyperNode elt with the 
+ *                    appropriate values.
+ *  Parameters      : VAR d : HILtree_pHyperNodeElt
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised non-basic HyperILtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_NewHyperILtreeRule (VAR d : HILtree_pHyperNodeElt;
+                                       R  : LIILRules_RuleIndex;
+                                       params : LIILRules_LIParameters);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_AddToSet
+ *  Description     : appends HyperILtree d to set ds
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_AddToSet(d:HILtree_pHyperILtree;
+                                      VAR dn:HILtree_SetOfHyperILtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_AddToSynSortSet
+ *  Description     : appends HyperILtree d to set ds. ds is assumed to be
+ *                    sorted on syntactical bonus
+ *  Parameters      : 
+ *  Precondition    : ds is sorted on syntactical bonus
+ *  Postcondition   : ds is sorted on syntactical bonus
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_AddToSynSortSet(d:HILtree_pHyperILtree;
+                                      VAR dn:HILtree_SetOfHyperILtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_TakeFromSet
+ *  Description     : takes HyperNodeElt d from set ds
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_TakeFromSet(VAR d:HILtree_pHyperILtree;
+                                         VAR dn:HILtree_SetOfHyperILtree);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HILtree_IsEmptySet
+ *  Description    : is true iff ds is empty
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HILtree_IsEmptySet(dn:HILtree_SetOfHyperILtree)
+                    :BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_EmptySet
+ *  Description     : creates empty Set of HyperNodeElts
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_EmptySet(VAR dn:HILtree_SetOfHyperILtree);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_AddToNode
+ *  Description     : appends HyperILtree d to set ds
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_AddToNode(d:HILtree_pHyperNodeElt;
+                                      VAR ds:HILtree_SetOfHyperNodeElt);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_TakeFromNode
+ *  Description     : takes HyperNodeElt d from set ds
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_TakeFromNode(VAR d:HILtree_pHyperNodeElt;
+                                         VAR ds:HILtree_SetOfHyperNodeElt);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HILtree_IsEmptyNode
+ *  Description    : is true iff ds is empty
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HILtree_IsEmptyNode(ds:HILtree_SetOfHyperNodeElt)
+                    :BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_EmptyNode
+ *  Description     : creates empty Set of HyperNodeElts
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_EmptyNode(VAR ds:HILtree_SetOfHyperNodeElt);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_EmptyTuple
+ *  Description     : creates empty tuple of HyperILtree
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_EmptyTuple(VAR dn:HILtree_TupleOfHyperILtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_AddToTuple
+ *  Description     : adds HyperILtree 'HyperILtree' to tuple dn
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : HyperILtree d is the last one in dn
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_AddToTuple(d:HILtree_pHyperILtree;
+                                        VAR dn:HILtree_TupleOfHyperILtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_TakeFromTuple
+ *  Description     : takes first HyperILtree from tuple
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : HyperILtree d is no longer in dn
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_TakeFromTuple(VAR d:HILtree_pHyperILtree;
+                                           VAR dn:HILtree_TupleOfHyperILtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HILtree_IsEmptyTuple
+ *  Description    : is true iff dn is the empty tuple
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HILtree_IsEmptyTuple(dn:HILtree_TupleOfHyperILtree)
+                    :BOOLEAN;
+EXTERNAL;
+
+
+{%%%%%%!!!! The functions and procedures in the rest of the file have not
+            been checked on their usefulness nor on their correctness }
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_SaveOrigin
+ *  Description     : Saves the Dtree from which d resulted.
+ *  Parameters      : t : HILtree_pDnode;
+ *                    VAR d : HILtree_pHyperILtree
+ *  Precondition    : 
+ *  Postcondition   : HILtree_IsOriginSaved(d)
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_SaveOrigin (t : HILtree_pDnode;
+                                         VAR d : HILtree_pHyperILtree);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HILtree_IsOriginSaved
+ *  Description    : Tells whether the stree from which this dtree resulted
+ *                   has been saved.
+ *  Parameters     : d : HILtree_pHyperILtree
+ *  Result         : TRUE iff the stree from which this dtree resulted has been
+ *                   saved.
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HILtree_IsOriginSaved (d : HILtree_pHyperILtree)
+                    : BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HILtree_ReturnOrigin
+ *  Description    : Returns the Stree from which this dtree resulted
+ *  Parameters     : d : HILtree_pHyperILtree
+ *  Result         : HILtree_pStree
+ *  Precondition   : HILtree_IsOriginSaved(d)
+ *  Postcondition  : RETURNS ts AND ts CAST LIStree_pSetOfStrees = M-Generator(d)
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HILtree_ReturnOrigin (d : HILtree_pHyperILtree)
+                    : HILtree_pDnode;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_AnInit
+ *  Description     : 
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_AnInit;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_GenInit
+ *  Description     :
+ *  Parameters      :
+ *  Precondition    :
+ *  Postcondition   :
+ *  Side Effects    :
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_GenInit;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_Reset
+ *  Description     : 
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_Reset;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_LoadHyperILtree
+ *  Description     : 
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_LoadHyperILtree(p: HILtree_pHyperILtree;
+                                              VAR d : HILtree_HyperILtree);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_LoadLoHyperILtree
+ *  Description     : 
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_LoadLoHyperILtree(p: HILtree_pLoHyperILTree;
+                                                VAR d : HILtree_LoHyperILtree);
+
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_LoadHyperNodeElt
+ *  Description     : 
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_LoadHyperNodeElt(p: HILtree_pHyperNodeElt;
+                                                VAR d : HILtree_HyperNodeElt);
+
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_LoadLoHyperNodeElt
+ *  Description     : 
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_LoadLoHyperNodeElt(p: HILtree_pLoHyperNodeElt;
+                                                VAR d : HILtree_LoHyperNodeElt);
+
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_StoreHyperILtree
+ *  Description     : 
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_StoreHyperILtree(p: HILtree_pHyperILtree;
+                                              d : HILtree_HyperILtree);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_StoreLoHyperILtree
+ *  Description     : 
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_StoreLoHyperILtree(p: HILtree_pLoHyperILTree;
+                                                d : HILtree_LoHyperILtree);
+
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_StoreHyperNodeElt
+ *  Description     : 
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_StoreHyperNodeElt(p: HILtree_pHyperNodeElt;
+                                               d : HILtree_HyperNodeElt);
+
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HILtree_StoreLoHyperNodeElt
+ *  Description     : 
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HILtree_StoreLoHyperNodeElt(p: HILtree_pLoHyperNodeElt;
+                                                 d : HILtree_LoHyperNodeElt);
+
+EXTERNAL;
+
+PROCEDURE HILtree_AnBuf(CONST str: STRING); EXTERNAL;
+
+PROCEDURE HILtree_GenBuf(CONST str: STRING); EXTERNAL;
+
+
+END {HILtree};

@@ -1,0 +1,630 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project
+ *
+ *  Module Title    : SuperDtree
+ *  Creation date   : 7-OCT-1987
+ *  Author          : Carel Fellinger
+ *
+ *  Copyright (c) 1986, by Nederlandse Philips Bedrijven BV.
+ *
+ *  Remarks         : This module describes Dtrees as they are used in the
+ *                    analysis phase of Rosetta.
+ *
+ *                    Taking something from a set/tuple/list is done in a tricky
+ *                    way, that allows some very convenient and efficient
+ *                    shortcuts, e.g.:
+ *                      a,b : set
+ *                      a:= b
+ *                      then takefromset(a) does not destroy set b
+ *                      but addtoset(a) corrupts set b!
+ *                    To be precise: the first and last fields of a set are
+ *                    private for each set, but the structure that links the
+ *                    elements is shared by all sets containing the same
+ *                    elements.
+ *
+ *EMP:::===================================================================*)
+
+pragma C_Include('ldmrules.pf');
+pragma C_Include('lidomaint.pf');
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+
+PACKAGE SuperDtree;
+WITH LDMRULES, LIDOMAINT;
+
+CONST
+   SuperDtree_MaxBugString = 50;
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : SuperDtree_pLIRecord, SuperDtree_LIRecord,
+ *                   SuperDtree_pStree.
+ *  Description    : the language independent extras only used in the parsers, 
+ *                   Stree is used to remember from which stree this superdtree
+ *                   resulted. Done indiquates whether this stree has been
+ *                   remembered or not.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   SuperDtree_pStree             = ^INTEGER;
+   SuperDtree_pSetOfHyperNodeElt = ^INTEGER;
+   SuperDtree_BugString        = RECORD
+                                 str: PACKED ARRAY[1..SuperDtree_MaxBugString] OF CHAR;
+                                 len: INTEGER
+                              END;
+   SuperDtree_pBugString       = ^SuperDtree_BugString;
+   SuperDtree_Color            = (SuperDtree_Black,SuperDtree_White, 
+                                  SuperDtree_Grey);
+   SuperDtree_pLIRecord        = ^SuperDtree_LIRecord;
+   SuperDtree_LIRecord = 
+      RECORD
+         stree : SuperDtree_pStree;(* used to remember from which Stree
+                                    * this SuperDtree resulted,
+                                    * this is needed during 'interaction' *)
+         done : BOOLEAN;           (* stree has a valid value *)
+         hiltree      : SuperDtree_pSetOfHyperNodeElt;
+         hildone      : BOOLEAN;
+         intmark1     : BOOLEAN;
+         intmark2     : SuperDtree_Color;
+         intnode      : ^INTEGER;
+         bonus        : INTEGER;
+         BugString    : SuperDtree_pBugString
+      END;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : SuperDtree_pSuperDtree,SuperDtree,pTupleOfSuperDtree,TupleOfSuperDtree,
+ *                   SuperDtree_pLoSuperDtree, SuperDtree_LoSuperDtree
+ *  Description    : the types to make a SuperDtree
+ *                   - a SuperDtree node consists of the specification of the rule,
+ *                     i.e. the subgrammar index, the rule index and the
+ *                     parameters, and a tuple of SuperDtrees for its arguments.
+ *                     (see the note below!)
+ *                   - a SuperDtree leave is either an empty SuperDtree (DEPS) or the name
+ *                     of a basic expression.
+ *                   A tuple of SuperDtrees is implemented by means of a list of
+ *                   SuperDtrees (SuperDtree_LoSuperDtree).
+ *                   A SuperDtree contains also some information that is only
+ *                   relevant for the implementation of M-Generator/M-Parser,
+ *                   this is hidden in SuperDtree_pLIRecord^.
+ *
+ * Note            : The SuperDtree's defined here are actual sets of Dtree's.
+ *                   It is implemented so that a son (i.e. an argument) is
+ *                   a set of SuperDtree's instead of a single SuperDtree. This
+ *                   allows for convergention during M-Parser.
+ *                   To define super SuperDtrees TupleOfSuperSon and LoSuperSon have
+ *                   to be defined.
+ *                   In order to be able to handle individual SuperDtrees in such
+ *                   a super SuperDtree the record type SuperSon is extended with a
+ *                   field (called mark). The routine MarkFirstSuperDtree lets
+ *                   this mark field point to the 'first' Dtree in a
+ *                   SuperDtree and the routine MarkNextSuperDtree marks the
+ *                   'next' Dtree.
+ *
+ *
+ *                   Dtree =      ---------------
+ *                                |  key/index/sg,R,params|
+ *                          ........ args.first |
+ *                          .     |  args.last .......
+ *                          .     ---------------   .
+ *                          .                        .
+ *                      ---------
+ *                      | next .....    etc
+ *                      | it    |
+ *                      --- . ---
+ *                          .
+ *                      ---------
+ *                      | key.. |
+ *                      | args  |
+ *                      ---------
+ *
+ *                   SuperDtree = ---------------
+ *                                |  key/index/sg,R,params|
+ *                          ........ args.first |
+ *                          .     |  args.last .......
+ *                          .     ---------------    .
+ *                          .                        .
+ *                      -------------
+ *                      | next .......    etc
+ *                 ...... it.first |
+ *                 .    | it.last ......
+ *                 .    | it.cur   |   .
+ *                 .    ------ . ----   .
+ *                 .           .        .
+ *             ---------
+ *             | next .....    etc
+ *             | it    |
+ *             --- . ---
+ *                 .
+ *             ---------
+ *             | key.. |
+ *             | args  |
+ *             ---------
+ *
+ *
+ *  Type name      : SuperDtree_pLoSuperSon,SuperDtree_LoSuperSon,
+ *                   SuperDtree_TupleOfSuperSon
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   SuperDtree_pSuperDtree = ^SuperDtree_SuperDtree;
+   SuperDtree_pTupleOfSuperDtree = ^SuperDtree_TupleOfSuperDtree;
+   SuperDtree_pLoSuperDtree   = ^SuperDtree_LoSuperDtree;
+   SuperDtree_LoSuperDtree    = RECORD
+                                   it:SuperDtree_pSuperDtree;
+                                   next:SuperDtree_pLoSuperDtree
+                                END {RECORD};
+   SuperDtree_TupleOfSuperDtree = RECORD
+                        	     first,last:SuperDtree_pLoSuperDtree
+                                  END {RECORD};
+
+   SuperDtree_pSuperSon     = ^SuperDtree_SuperSon;
+   SuperDtree_SuperSon      = RECORD
+                                 first,last,cur : SuperDtree_pLoSuperDtree
+                              END {RECORD};
+   SuperDtree_pLoSuperSon   = ^SuperDtree_LoSuperSon;
+   SuperDtree_LoSuperSon    = RECORD
+                                 it:SuperDtree_SuperSon;
+                                 next:SuperDtree_pLoSuperSon
+                              END {RECORD};
+   SuperDtree_pTupleOfSuperSon = ^SuperDtree_TupleOfSuperSon;
+   SuperDtree_TupleOfSuperSon = RECORD
+                      	           first,last:SuperDtree_pLoSuperSon
+                                END {RECORD};
+
+   SuperDtree_NodeKind = (SuperDtree_basicNode, SuperDtree_varNode, SuperDtree_ruleNode);
+   SuperDtree_SuperDtree =
+      RECORD
+      LI            : SuperDtree_pLIrecord;
+      robustmode    : BOOLEAN;
+      CASE nodeKind : SuperDtree_NodeKind OF
+      SuperDtree_basicNode : (key : INTEGER);
+      SuperDtree_varNode   : (varType : LIDOMAINT_syntcat;
+                              index : INTEGER);
+      SuperDtree_ruleNode  : (sg : LDMrules_SubGrammarIndex;
+       	                      R : LDMrules_RuleIndex;
+	                      parameters : LDMrules_LIParameters; (*rule-subspecification*)
+                              nrOfargs : INTEGER;
+	                      args : SuperDtree_TupleOfSuperSon;
+                              EndOfSg : BOOLEAN)
+      END {RECORD};
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : SuperDtree_SetOfSuperDtree
+ *  Description    : the type to make a set of SuperDtree
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   SuperDtree_pSetOfSuperDtree = ^SuperDtree_SetOfSuperDtree;
+   SuperDtree_SetOfSuperDtree = SuperDtree_TupleOfSuperDtree;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_MarkFirstDtree
+ *  Description     : Marks the first Dtree in a SuperDtree.
+ *  Parameters      : VAR d : SuperDtree_pSuperDtree
+ *  Precondition    : 
+ *  Postcondition   : It is implemented by marking the first Dtree of each
+ *                    'superson' of the top level of SuperDtree d.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_MarkFirstDtree (VAR d : SuperDtree_pSuperDtree);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SuperDtree_MarkNextDtree
+ *  Description    : Marks the next Dtree in SuperDtree d. Returns FALSE iff
+ *                   there are no more Dtrees in d, in this case the first Dtree
+ *                   will have been marked again.
+ *                   It is implemented by marking the next Dtree in the first
+ *                   'superson' of the top level of SuperDtree d. If this was
+ *                   impossible (all Dtrees in the first superson had been
+ *                   marked already and the first is marked again), then the
+ *                   same is tried for the second 'superson', etc. If it was
+ *                   impossible for all the sons, then FALSE is returned.
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION SuperDtree_MarkNextDtree (VAR d : SuperDtree_pSuperDtree)
+                    : BOOLEAN;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_NewBasicSuperDtree
+ *  Description     : Creates a new basic SuperDtree with the appropriate values
+ *  Parameters      : VAR d : SuperDtree_pSuperDtree
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised basic SuperDtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_NewBasicSuperDtree (VAR d : SuperDtree_pSuperDtree;
+                                            key : INTEGER);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_NewVarSuperDtree
+ *  Description     : Creates a new var SuperDtree with the appropriate values
+ *  Parameters      : VAR d : SuperDtree_pSuperDtree
+ *                    varType : LIDomainT_syntcat
+ *                    index : INTEGER
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised var SuperDtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_NewVarSuperDtree (VAR d : SuperDtree_pSuperDtree;
+                                                  varType : LIDomainT_syntcat;
+                                                  index : INTEGER);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_NewSuperDtree
+ *  Description     : Creates a new non-basic SuperDtree with the appropriate values
+ *  Parameters      : VAR d : SuperDtree_pSuperDtree
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised non-basic SuperDtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_NewSuperDtree (VAR d : SuperDtree_pSuperDtree;
+                                       sg : LDMrules_SubgrammarIndex;
+                                       R : LDMrules_RuleIndex;
+                                       params : LDMrules_LIParameters);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_EmptySet
+ *  Description     : makes empty set
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_EmptySet(VAR ds:SuperDtree_SetOfSuperDtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_AddToSet
+ *  Description     : appends SuperDtree d to set ds
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_AddToSet(d:SuperDtree_pSuperDtree;
+                                      VAR ds:SuperDtree_SetOfSuperDtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_TakeFromSet
+ *  Description     : takes SuperDtree d from set ds
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_TakeFromSet(VAR d:SuperDtree_pSuperDtree;
+                                         VAR ds:SuperDtree_SetOfSuperDtree);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SuperDtree_IsEmptySet
+ *  Description    : is true iff ds is empty
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION SuperDtree_IsEmptySet(ds:SuperDtree_SetOfSuperDtree)
+                    :BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_EmptyTuple
+ *  Description     : creates empty tuple of SuperDtree
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_EmptyTuple(VAR dn:SuperDtree_TupleOfSuperDtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_AddToTuple
+ *  Description     : adds SuperDtree 'SuperDtree' to tuple dn
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : SuperDtree d is the last one in dn
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_AddToTuple(d:SuperDtree_pSuperDtree;
+                                        VAR dn:SuperDtree_TupleOfSuperDtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_TakeFromTuple
+ *  Description     : takes first SuperDtree from tuple
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : SuperDtree d is no longer in dn
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_TakeFromTuple(VAR d:SuperDtree_pSuperDtree;
+                                           VAR dn:SuperDtree_TupleOfSuperDtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SuperDtree_IsEmptyTuple
+ *  Description    : is true iff dn is the empty tuple
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION SuperDtree_IsEmptyTuple(dn:SuperDtree_TupleOfSuperDtree)
+                    :BOOLEAN;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_EmptyTupleOfSuperSon
+ *  Description     : creates empty tuple of list of SuperDtree
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_EmptyTupleOfSuperSon(VAR dsn:SuperDtree_TupleOfSuperSon);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_AddToTupleOfSuperSon
+ *  Description     : adds set of SuperDtree 'ds' to tuple of supersons
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : set of SuperDtree ds is the last one in dsn
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_AddToTupleOfSuperSon(ds:SuperDtree_SetOfSuperDtree;
+                                            VAR dsn:SuperDtree_TupleOfSuperSon);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_TakeFromTupleOfSSon
+ *                       (SSon instead of SuperSon due to compiler restriction)
+ *  Description     : takes first set of SuperDtree from tuple of supersons
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : set of SuperDtree ds is no longer in dsn
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_TakeFromTupleOfSSon(VAR ds:SuperDtree_SetOfSuperDtree;
+                                               VAR dsn:SuperDtree_TupleOfSuperSon);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SuperDtree_IsEmptyTupleOfSSon
+ *                       (SSon instead of SuperSon due to compiler restriction)
+ *  Description    : is true iff dsn is the empty tuple
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION SuperDtree_IsEmptyTupleOfSSon(dsn:SuperDtree_TupleOfSuperSon)
+                    :BOOLEAN;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SuperDtree_SaveOrigin
+ *  Description     : Saves the Stree from which d resulted.
+ *  Parameters      : t : SuperDtree_pStree;
+ *                    VAR d : SuperDtree_pSuperDtree
+ *  Precondition    : d subset of  MParser(CAST LIStree_pStree(t))
+ *  Postcondition   : SuperDtree_IsOriginSaved(d)
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_SaveOrigin (t : SuperDtree_pStree;
+                                            VAR d : SuperDtree_pSuperDtree);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SuperDtree_IsOriginSaved
+ *  Description    : Tells whether the stree from which this dtree resulted
+ *                   has been saved.
+ *  Parameters     : d : SuperDtree_pSuperDtree
+ *  Result         : TRUE iff the stree from which this dtree resulted has been
+ *                   saved.
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION SuperDtree_IsOriginSaved (d : SuperDtree_pSuperDtree)
+                    : BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SuperDtree_ReturnOrigin
+ *  Description    : Returns the Stree from which this dtree resulted
+ *  Parameters     : d : SuperDtree_pSuperDtree
+ *  Result         : SuperDtree_pStree
+ *  Precondition   : SuperDtree_IsOriginSaved(d)
+ *  Postcondition  : RETURNS ts AND ts CAST LIStree_pSetOfStrees = M-Generator(d)
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION SuperDtree_ReturnOrigin (d : SuperDtree_pSuperDtree)
+                    : SuperDtree_pStree;
+EXTERNAL;
+
+
+
+(*MPP:::===================================================================*
+ *
+ *  proc     Name  : SuperDtree_SaveTrfResult
+ *  Description    : Stores the result of Trf of the current super dtree
+ *                   node.
+ *  Parameters     : e: SuperDtree_pSetOfHyperNodeElt
+ *                   VAR d: SuperDtree_pSuperDtree
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SuperDtree_SaveTrfResult
+                     (e : SuperDtree_pSetOfHyperNodeElt;
+                      VAR d : SuperDtree_pSuperDtree);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function  Name  : SuperDtree_IsTrfResultSaved
+ *  Description     : Returns TRUE of result has been saved
+ *  Parameters      : d : SuperDtree_pSuperDtree
+ *  Result          : BOOLEAN
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION SuperDtree_IsTrfResultSaved
+                    (d : SuperDtree_pSuperDtree): BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SuperDtree_ReturnTrfResult
+ *  Description    : returns Trf result if it has been saved
+ *  Parameters     : d : SuperDtree_pSuperDtree
+ *  Result         : SuperDtree_pSetOfHyperNodeElt
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION SuperDtree_ReturnTrfResult
+                    (d : SuperDtree_pSuperDtree)
+                    : SuperDtree_pSetOfHyperNodeElt;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SuperDtree_MakeSetOfSuperDtree
+ *  Description    : Creates not of type pSetOfSuperDtree
+ *  Result         : SuperDtree_pSetOfSuperDtree
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION SuperDtree_MakeSetOfSuperDtree
+                    : SuperDtree_pSetOfSuperDtree;
+EXTERNAL;
+
+
+END {SuperDtree};

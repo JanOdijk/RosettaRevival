@@ -1,0 +1,126 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : INTERFACE0 
+ *  Creation date   :                                               
+ *  Author          : Joep Rous
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         : Definition of the interface datastructure between
+ *                    components A-LAYOUT and A-MORPH
+ *
+ *EMP:::===================================================================*)
+
+pragma C_include('interface1.pf');
+pragma C_include('limorfdef.pf');
+pragma C_include('string.pf');
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+PACKAGE INTERFACE0;
+WITH
+INTERFACE1,
+LIMORFDEF,
+STRNG;
+
+
+CONST
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  :    INTERFACE0_MAXWORDAMBID
+ *  Description    :    Maximum number of ambiguous segmentations for one
+ *                      word.
+ *
+ *EMP:::===================================================================*)
+
+   INTERFACE0_MAXWORDAMBID             = 63;
+
+
+TYPE
+
+   INTERFACE0_WordAmbIdType   = 0..INTERFACE0_MAXWORDAMBID;
+
+   INTERFACE0_SWNodeType      = ( InputWord, LayoutWord );
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : INTERFACE0_pSeqWords
+ *  Description    : The interface is a double-linked cyclic list. The
+ *                   elements in the list are linked by means of the pointers
+ *                   "nxt" and "prv". Each element in the list corresponds
+ *                   with an input word. The "kind" of the element therefore
+ *                   is "InputWord". The list is closed by means of a trailer
+ *                   element which doesn't correspond with an input word.
+ *                   Furthermore, each element contains the string of the 
+ *                   corresponding inputword ("word"), together with the 
+ *                   ("X","Y") coordinates and its length ("len") in the 
+ *                   inputwindow.
+ *                   Each element in the list has a unique number "wordid".
+ *                   The other record fields, viz. "error", "result", "nxtamb"
+ *                   and "rn" are not relevant in the interface, they are
+ *                   used inside the component AMORPH.
+ *
+ *  		            error : BOOLEAN;  
+ *			    kind  : INTERFACE0_SWNodeType;
+ *			    X,
+ *			    Y,
+ *			    len   : INTEGER;
+ *			    rn,
+ *			    prv,
+ *			    nxt   : INTERFACE0_pSeqWords;
+ *			    result: INTERFACE1_pRowSeqSegmKeys;
+ *			    nxtamb: INTERFACE0_pSeqWords;
+ *			    wordid: integer;
+ *			    word  : STRING_String
+ *
+ *EMP:::===================================================================*)
+
+   INTERFACE0_pSeqWords = ^INTERFACE0_SeqWords;
+   INTERFACE0_SeqWords  = RECORD
+			    error : BOOLEAN;
+			    kind  : INTERFACE0_SWNodeType;
+			    X,
+			    Y,
+			    len   : INTEGER;
+			    rn,
+			    prv,
+			    nxt   : INTERFACE0_pSeqWords;
+			    result: INTERFACE1_pRowSeqSegmKeys;
+			    nxtamb: INTERFACE0_pSeqWords;
+			    wordid: integer;
+{
+			    CC    : LIMORFDEF_ContextConds;
+			    f     : LIMORFDEF_pPhonInfo;
+			    ambid : INTERFACE0_WordAmbidType;
+			    nonsucc: SET OF INTERFACE0_WordAmbidType;
+}
+			    word  : STRING_String
+                          END;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : INTERFACE0_MakeSeqWords
+ *  Description    : creates a node of type INTERFACE0_pSeqWords
+ *  Parameters     : w : STRING_String;
+ *                   n : INTERFACE0_pSeqWords
+ *  Result         : INTERFACE0_pSeqWords
+ *  Precondition   : TRUE
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION INTERFACE0_MakeSeqWords
+                    (w : STRING_String;
+                     n : INTERFACE0_pSeqWords): INTERFACE0_pSeqWords;
+EXTERNAL;
+
+
+END {INTERFACE0};

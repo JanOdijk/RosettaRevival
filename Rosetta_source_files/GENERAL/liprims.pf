@@ -1,0 +1,204 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : LIPRIMS
+ *  Creation date   : March 1987
+ *  Author          : R. Leermakers
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         : This module defines some language independent primitives
+ *                    needed by the surface parser.
+ *                    Value of liprims_hfinal set to 90 by Jan Odijk
+ *
+ *EMP:::===================================================================*)
+
+pragma C_Include('lidomaint.pf');
+pragma C_Include('listree.pf');
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+
+PACKAGE LIPRIMS;
+WITH LIDOMAINT, LISTREE;
+
+CONST LIPRIMS_HINIT = -1;
+      LIPRIMS_HFINAL = 90; 
+      
+TYPE
+   LIPRIMS_Surfrulemode = (loccond, globcond);
+   LIPRIMS_psyntcat     = ^LIDOMAINT_syntcat;
+   LIPRIMS_syntcatset   = SET OF LIDOMAINT_syntcat;
+   LIPRIMS_psurfgraph     = ^LIPRIMS_surfgraphtype;
+   LIPRIMS_psurfgraphnode = ^LIPRIMS_surfgraphnode;
+   LIPRIMS_surfgraphtype  = RECORD
+   			          first,
+   			          last: LIPRIMS_psurfgraphnode
+   		               END;
+   LIPRIMS_nodeid         = LIPRIMS_HINIT..LIPRIMS_HFINAL;
+   LIPRIMS_plonodeid      = ^LIPRIMS_lonodeid;
+   LIPRIMS_lonodeid       = RECORD
+   			          next: LIPRIMS_plonodeid;
+   			          arg : LIPRIMS_nodeid
+   	 	               END;
+   LIPRIMS_plossurfgraphnode 
+                             = ^LIPRIMS_lossurfgraphnode;
+   LIPRIMS_surfgraphnodelist
+                             = RECORD
+   				   first,
+      				   last  : LIPRIMS_plossurfgraphnode;
+   			       END;
+   LIPRIMS_lossurfgraphnode 
+                             = RECORD
+   				   next :  LIPRIMS_plossurfgraphnode;
+   				   arg  :  LIPRIMS_psurfgraphnode
+   			       END;
+   LIPRIMS_surfgraphnode  = RECORD
+      			          left,
+   			          right: LIPRIMS_psurfgraphnode;
+   			          n    : LIPRIMS_nodeid;
+   			          cat  : LIPRIMS_psyntcat;
+   			          nextnodes: LIPRIMS_surfgraphnodelist;
+   			          nextcats,
+   			          nexttops : LIPRIMS_syntcatset;
+   			          completed,
+                                  alreadysearched:BOOLEAN
+   	                       END;
+
+   LIPRIMS_psurfgraphnodelist = ^LIPRIMS_surfgraphnodelist;
+   LIPRIMS_plossurfnodelist = ^LIPRIMS_lossurfnodelist;
+   LIPRIMS_lossurfnodelist = RECORD
+                                      next:LIPRIMS_plossurfnodelist;
+                                      arg:LIPRIMS_surfgraphnodelist
+                                     END;
+   LIPRIMS_listofsurfnodelists = RECORD
+                                          first,last:
+                                           LIPRIMS_plossurfnodelist
+                                         END;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LIPRIMS_absent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LIPRIMS_absent: LIPRIMS_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LIPRIMS_assignabsent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : value of absent is 'value'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LIPRIMS_assignabsent(valeu: LIPRIMS_psurfgraph); EXTERNAL;
+
+
+  (* the functions atom, alt, conc, opt and star to build the
+     syntaxgraphs. For conveniency these are not prefixed by the module name: *)
+ 
+FUNCTION atom (a: LIDOMAINT_syntcat;
+                          b: LIPRIMS_nodeid): LIPRIMS_psurfgraph; EXTERNAL;
+
+FUNCTION alt(a,b: LIPRIMS_psurfgraph): LIPRIMS_psurfgraph; EXTERNAL;
+ 
+FUNCTION conc(a,b: LIPRIMS_psurfgraph): LIPRIMS_psurfgraph; EXTERNAL;
+ 
+FUNCTION opt(a: LIPRIMS_psurfgraph): LIPRIMS_psurfgraph; EXTERNAL;
+ 
+FUNCTION star(a: LIPRIMS_psurfgraph): LIPRIMS_psurfgraph; EXTERNAL;
+ 
+PROCEDURE prod(a: integer; 
+                          b: LIDOMAINT_syntcat; 
+                          c: LIPRIMS_psurfgraph); EXTERNAL;
+
+(*Functions that function as global variables in surface parser:*)
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LIPRIMS_newtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LIPRIMS_newtop: LISTREE_pLoStree; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LIPRIMS_assignnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : value of newtop is 'value'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LIPRIMS_assignnewtop(valeu: LISTREE_pLoStree);EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LIPRIMS_addnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LIPRIMS_addnewtop(a: LISTREE_pStree); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LIPRIMS_status
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LIPRIMS_status:BOOLEAN;EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LIPRIMS_assignstatus
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : value of status is 'value'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LIPRIMS_assignstatus(valeu:BOOLEAN); EXTERNAL;
+
+
+END {LIPRIMS};
+
+

@@ -1,0 +1,215 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : ALAYOUT 
+ *  Creation date   : 11 nov 1986
+ *  Author          : Joep Rous
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  Implementation of the first Rosetta component. Its task
+ *                     is to provide for the userinterface in which the
+ *                     input sentence can be typed in. Furthermore the input
+ *                     sentence is transformed into an internal datastructure
+ *                     which is the interface between ALAYOUT and AMORPH. This
+ *                     interface datastructure is specified in module 
+ *                     INTERFACE0.
+ *  Warning!!!!!    : This module is not meant for separate usage other than
+ *                    intended by the author, as opposed to modules like
+ *                    STRING, STR and WINDOWS.
+ *
+ *EMP:::===================================================================*)
+
+pragma C_include('strings.pf');
+pragma C_include('globdef.pf');
+pragma C_include('string.pf');
+pragma C_include('interfaces.pf');
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+PACKAGE ALAYOUT;
+WITH GLOBDEF, STRNG, INTERFACES, STRINGS;
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : ALAYOUT_WindowWidth, ALAYOUT_WindowLength
+ *  Description    : Define the length and the width of the input window
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   ALAYOUT_WindowWidth  = 100;
+   ALAYOUT_WindowLength =  10;
+
+(*MPP:::===================================================================*
+ *
+ *  Function Name  : ALAYOUT_init
+ *  Description    : Initialization of the ALAYOUT component.
+ *  Parameters     : none
+ *  Precondition   : ALAYOUT_init may not be called before.
+ *  Postcondition  : All functions of module ALAYOUT are available.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE ALAYOUT_init; EXTERNAL;
+
+
+(*MPP:::===================================================================*
+ *
+ *  Function Name  : ALAYOUT_BatchInit
+ *  Description    : Initialization of the ALAYOUT component in BatchMode.
+ *  Parameters     : none
+ *  Precondition   : ALAYOUT_BatchInit may not be called before.
+ *  Postcondition  : module ALAYOUT runs in batchmode, that is reads from
+ *                   a global buffer and not from a window.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE ALAYOUT_BatchInit; EXTERNAL;
+
+
+(*MPP:::===================================================================*
+ *
+ *  Function Name  : ALAYOUT_exit
+ *  Description    : A call of this functions causes the input window to
+ *                   disappear.
+ *  Parameters     : none
+ *  Precondition   : ALAYOUT_init must be called.
+ *  Postcondition  : The ALAYOUT input window has disappeared from the screen.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE ALAYOUT_exit; EXTERNAL;
+
+
+(*MPP:::===================================================================*
+ *
+ *  Function Name  : ALAYOUT_MarkWrongos
+ *  Description    : Some words in the input window, depending on information 
+ *                   in the input datastructure are highlighted.
+ *  Parameters     : w: INTERFACES_IfDescr :: INTERFACE0 datastructure. The
+ *                                   nodes in this datastructure contain the
+ *                                   attribute "error". If this attribute has
+ *                                   the value "TRUE", the corresponding
+ *                                   word is highlighted.
+ *  Precondition   : ALAYOUT_init and ALAYOUT have been called ( in this order)
+ *                   The inputdatastructure w should be a double-linked
+ *                   circular list of nodes.
+ *  Postcondition  : Each word corresponding to a node of which field "error"
+ *                   has the value "TRUE" is highlighted on the screen.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE ALAYOUT_MarkWrongos(w: INTERFACES_IfDescr); EXTERNAL;
+
+
+(*MPP:::===================================================================*
+ *
+ *  Function Name  : ALAYOUT_MarkRegion
+ *  Description    : A region in the input window according to the 
+ *                   input parameters is highlighted.
+ *  Parameters     : X    X coordinate
+ *                   Y    Y coordinate
+ *                   len  length
+ *  Precondition   : ALAYOUT_init and ALAYOUT have been called ( in this order)
+ *  Postcondition  : If the region is in the input window it has been 
+ *                   highlighted.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE ALAYOUT_MarkRegion(X, Y, len: INTEGER); EXTERNAL;
+
+
+(*MPP:::===================================================================*
+ *
+ *  Function Name  : ALAYOUT_UnMarkRegion
+ *  Description    : A region in the input window according to the 
+ *                   input parameters is set to normal intensity.
+ *  Parameters     : X    X coordinate
+ *                   Y    Y coordinate
+ *                   len  length
+ *  Precondition   : ALAYOUT_init and ALAYOUT have been called ( in this order)
+ *  Postcondition  : If the region is in the input window it has been 
+ *                   set to normal intensity.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE ALAYOUT_UnMarkRegion(X, Y, len: INTEGER); EXTERNAL;
+
+
+(*MPP:::===================================================================*
+ *
+ *  Function Name  : ALAYOUT_BlinkRegion
+ *  Description    : A region in the input window according to the 
+ *                   input parameters is put in blinking mode.
+ *  Parameters     : X    X coordinate
+ *                   Y    Y coordinate
+ *                   len  length
+ *  Precondition   : ALAYOUT_init and ALAYOUT have been called ( in this order)
+ *  Postcondition  : If the region is in the input window it has been 
+ *                   highlighted.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE ALAYOUT_BlinkRegion(X, Y, len: INTEGER); EXTERNAL;
+
+
+(*MPP:::===================================================================*
+ *
+ *  Function Name  : ALAYOUT_UnBlinkRegion
+ *  Description    : A region in the input window according to the 
+ *                   input parameters is set to normal intensity.
+ *  Parameters     : X    X coordinate
+ *                   Y    Y coordinate
+ *                   len  length
+ *  Precondition   : ALAYOUT_init and ALAYOUT have been called ( in this order)
+ *  Postcondition  : If the region is in the input window it has been 
+ *                   set to normal intensity.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE ALAYOUT_UnBlinkRegion(X, Y, len: INTEGER); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : ALAYOUT
+ *  Description    : Performs the actual input handling of the input sentences.
+ *                   it calls upon CONTROL for user response; 
+ *                   After the user chose TRANSLATE it transforms the data in 
+ *                   the input window into the interface datastructure.
+ *  Result         : INTERFACES_IfDescr, containing the interface between
+ *                   ALAYOUT and AMORPH.
+ *  Precondition   : ALAYOUT_init has been called
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION ALAYOUT : INTERFACES_IfDescr; EXTERNAL;
+
+
+(*MPP:::===================================================================*
+ *
+ *  Procedure Name : ALAYOUT_GetWord
+ *  Description    : Returns the characters from position (X, Y) to
+ *                   (X+len-1, Y).
+ *  Parameters     : X : INTEGER;
+ *                   Y : INTEGER;
+ *                   len : INTEGER;
+ *                   VAR s : PACKED ARRAY[lb1..ub1:INTEGER] OF CHAR;
+ *                   VAR l : INTEGER;
+ *  Precondition   : ALAYOUT_Init and ALAYOUT have been called.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE ALAYOUT_GetWord(X   : INTEGER;
+                                     Y   : INTEGER;
+                                     len : INTEGER;
+                                     VAR s   : STRING;
+                                     VAR l   : INTEGER);
+EXTERNAL;
+
+END {ALAYOUT};

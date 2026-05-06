@@ -1,0 +1,277 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : SEGMRULES
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  
+ *
+ *EMP:::===================================================================*)
+pragma C_include('strings.pf');
+pragma C_include('string.pf');
+pragma C_include('files.pf');
+pragma C_include('limorfdef.pf');
+
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+PACKAGE SEGMRULES;
+WITH STRNG, FILES, LIMORFDEF, STRINGS;
+
+CONST
+
+   SEGMRULES_MAXVARS          = 20;
+   SEGMRULES_MaxVarStr        = 8;
+   SEGMRULES_MAXVARSINRULE    = 9;
+   SEGMRULES_FixStringLength  = 20;
+   SEGMRULES_GlueStringLength = 30;
+
+TYPE
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : SEGMRULES_FixString
+ *  Description    : Defines the string which is written into the data file
+ *                   for affixes
+ *
+ *EMP:::===================================================================*)
+
+   SEGMRULES_FixString = RECORD str: STRING(SEGMRULES_FixStringLength);
+                                l  : 0..SEGMRULES_FixStringLength
+                         END;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : SEGMRULES_GlueString
+ *  Description    : Defines the string which is written into the data file
+ *                   for glues.
+ *
+ *EMP:::===================================================================*)
+
+   SEGMRULES_GlueString = RECORD str: STRING(SEGMRULES_FixStringLength);
+                                 l  : 0..SEGMRULES_FixStringLength
+                          END;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : SEGMRULES_searchtree
+ *  Description    : Fast implementation of segmentation rule application
+ *
+ *EMP:::===================================================================*)
+
+   SEGMRULES_SIndexType = INTEGER;
+   SEGMRULES_RIndexType = INTEGER;
+   SEGMRULES_searchtree  = RECORD
+                              nrvars : -1..SEGMRULES_MAXVARS;
+                                                  {nr of variables}
+                              result : SEGMRULES_RIndexType; 
+                                                   {index in rule table of
+                                                    actual rule}
+                              chars  : INTEGER;
+                                       { pointer in SEGMRULES_charrecord table}
+                              vars   : INTEGER;
+                                       { pointer in SEGMRULES_varrecord table}
+                              endofvar : BOOLEAN;
+                              exists : SET OF CHAR
+                           END;
+
+   SEGMRULES_CharRecord =  RECORD
+                              ch      : CHAR;
+                              nxt     : SEGMRULES_SIndexType;
+                              nxtchar : INTEGER
+                           END;
+
+   SEGMRULES_VarRecord  =  RECORD
+                              vnr : -1..SEGMRULES_MAXVARSINRULE; 
+                                    {nr of the var: @1, @2...}
+                              v   : SEGMRULES_SIndexType; 
+                                    {index of var in searchtable}
+                              nxt : SEGMRULES_SIndexType;
+                                    {index in searchtable of next
+                                     character or variable }
+                              nxtvar : INTEGER
+                           END;
+
+
+   SEGMRULES_VarStrType   = STRING(SEGMRULES_MaxVarStr);
+   SEGMRULES_VarStrRecord = RECORD
+                               str : SEGMRULES_VarStrType;
+                               len : INTEGER;
+                               nxt : INTEGER
+                            END;
+
+
+   SEGMRULES_FixRule = RECORD 
+                           K    : integer;
+                           r    : SEGMRULES_FixString;
+                           p    : SEGMRULES_FixString;
+                           FON  : LIMORFDEF_PhonMarker;
+                           CC   : LIMORFDEF_ContextConds;
+                           exact: boolean;
+                           nxt  : integer
+                        END;
+
+   SEGMRULES_GLUEdictconsttype = ARRAY[1..LIMORFDEF_maxsplitfactor] OF 
+                                                      SEGMRULES_FixString;
+
+   SEGMRULES_GLUErule = RECORD
+                             M    : 1..LIMORFDEF_MaxSplitFactor;
+                             q    : SEGMRULES_GLUEdictconsttype;
+                             p    : SEGMRULES_GlueString;
+                             exact: boolean;
+                             nxt  : integer
+                          END;
+
+   SEGMRULES_SearchDict = FILE OF SEGMRULES_SearchTree;
+   SEGMRULES_VarDict    = FILE OF SEGMRULES_VarRecord;
+   SEGMRULES_VarStrDict = FILE OF SEGMRULES_VarStrRecord;
+   SEGMRULES_CharDict   = FILE OF SEGMRULES_CharRecord;
+
+   SEGMRULES_Fixdict    = FILE OF SEGMRULES_Fixrule;
+   SEGMRULES_GLUEdict   = FILE OF SEGMRULES_GLUErule;
+
+
+   SEGMRULES_pLayRuleResult   = ^SEGMRULES_LayRuleResult;
+   SEGMRULES_pGlueRuleResult  = ^SEGMRULES_GlueRuleResult;
+   SEGMRULES_pSFruleResult    = ^SEGMRULES_SFruleResult;
+   SEGMRULES_pPFruleResult    = ^SEGMRULES_PFruleResult;
+
+   SEGMRULES_LayRuleResult  = RECORD M : 1..LIMORFDEF_maxlayoutfactor;
+                                     s : ARRAY[1..LIMORFDEF_maxlayoutfactor] OF STRING_String;
+                                     nxtamb : SEGMRULES_pLayRuleResult
+                              END;
+
+   SEGMRULES_GLUEconstituenttype = ARRAY[1..LIMORFDEF_maxsplitfactor] OF 
+                                                      STRING_String;
+
+   SEGMRULES_GlueRuleResult = RECORD M : 0..LIMORFDEF_maxsplitfactor;
+                                     q : SEGMRULES_GLUEconstituenttype;
+                                     a : STRING_String;
+                                     nxtamb : SEGMRULES_pGlueRuleResult
+                              END;
+
+   SEGMRULES_SFRuleResult   = RECORD FON : LIMORFDEF_PhonMarker;
+                                     a1  : STRING_String;
+                                     a   : STRING_String;
+                                     SFK : integer;
+                                     CC  : LIMORFDEF_ContextConds;
+                                     nxtamb : SEGMRULES_pSFruleResult
+                              END;
+
+   SEGMRULES_PFRuleResult   = RECORD FON : LIMORFDEF_PhonMarker;
+                                     a1  : STRING_String;
+                                     a   : STRING_String;
+                                     PFK : integer;
+                                     nxtamb : SEGMRULES_pPFruleResult
+                              END;
+
+
+FUNCTION SEGMRULES_FileOpened: BOOLEAN; EXTERNAL;
+
+PROCEDURE SEGMRULES_FIXruleOpenWrite(
+                    VAR f: SEGMRULES_FIXdict;
+                    CONST name: STRING); EXTERNAL;
+    
+PROCEDURE SEGMRULES_FIXruleOpenRead(
+                    VAR f: SEGMRULES_FIXdict;
+                    CONST name: STRING); EXTERNAL;
+    
+PROCEDURE SEGMRULES_FIXruleWrite(VAR f: SEGMRULES_FIXdict;
+                                r: SEGMRULES_FIXrule); EXTERNAL;
+
+PROCEDURE SEGMRULES_FIXruleRead(VAR f: SEGMRULES_FIXdict;
+                               VAR r: SEGMRULES_FIXrule); EXTERNAL;
+
+PROCEDURE SEGMRULES_FIXruleClose( VAR f: SEGMRULES_FIXdict); EXTERNAL;
+
+PROCEDURE SEGMRULES_GLUEruleOpenWrite(
+                    VAR f: SEGMRULES_GLUEdict;
+                    CONST name: STRING); EXTERNAL;
+    
+PROCEDURE SEGMRULES_GLUEruleOpenRead(
+                    VAR f: SEGMRULES_GLUEdict;
+                    CONST name: STRING); EXTERNAL;
+    
+PROCEDURE SEGMRULES_GLUEruleWrite(VAR f: SEGMRULES_GLUEdict;
+                                r: SEGMRULES_GLUErule); EXTERNAL;
+
+PROCEDURE SEGMRULES_GLUEruleRead(VAR f: SEGMRULES_GLUEdict;
+                               VAR r: SEGMRULES_GLUErule); EXTERNAL;
+
+PROCEDURE SEGMRULES_GLUEruleClose( VAR f: SEGMRULES_GLUEdict); EXTERNAL;
+
+
+PROCEDURE SEGMRULES_SearchOpenWrite(
+                    VAR f: SEGMRULES_SearchDict;
+                    CONST name: STRING); EXTERNAL;
+    
+PROCEDURE SEGMRULES_SearchOpenRead(
+                    VAR f: SEGMRULES_SearchDict;
+                    CONST name: STRING); EXTERNAL;
+    
+PROCEDURE SEGMRULES_SearchWrite(VAR f: SEGMRULES_SearchDict;
+                                r: SEGMRULES_SearchTree); EXTERNAL;
+
+PROCEDURE SEGMRULES_SearchRead(VAR f: SEGMRULES_SearchDict;
+                               VAR r: SEGMRULES_SearchTree); EXTERNAL;
+
+PROCEDURE SEGMRULES_SearchClose( VAR f: SEGMRULES_SearchDict); EXTERNAL;
+
+
+PROCEDURE SEGMRULES_VarOpenWrite(
+                    VAR f: SEGMRULES_VarDict;
+                    CONST name: STRING); EXTERNAL;
+    
+PROCEDURE SEGMRULES_VarOpenRead(
+                    VAR f: SEGMRULES_VarDict;
+                    CONST name: STRING); EXTERNAL;
+    
+PROCEDURE SEGMRULES_VarWrite(VAR f: SEGMRULES_VarDict;
+                   r: SEGMRULES_VarRecord); EXTERNAL;
+
+PROCEDURE SEGMRULES_VarRead(VAR f: SEGMRULES_VarDict;
+                               VAR r: SEGMRULES_VarRecord); EXTERNAL;
+
+PROCEDURE SEGMRULES_VarClose( VAR f: SEGMRULES_VarDict); EXTERNAL;
+
+PROCEDURE SEGMRULES_VarStrOpenWrite(
+                    VAR f: SEGMRULES_VarStrDict;
+                    CONST name: STRING); EXTERNAL;
+    
+PROCEDURE SEGMRULES_VarStrOpenRead(
+                    VAR f: SEGMRULES_VarStrDict;
+                    CONST name: STRING); EXTERNAL;
+    
+PROCEDURE SEGMRULES_VarStrWrite(VAR f: SEGMRULES_VarStrDict;
+                   r: SEGMRULES_VarStrRecord); EXTERNAL;
+
+PROCEDURE SEGMRULES_VarStrRead(VAR f: SEGMRULES_VarStrDict;
+                               VAR r: SEGMRULES_VarStrRecord); EXTERNAL;
+
+PROCEDURE SEGMRULES_VarStrClose( VAR f: SEGMRULES_VarStrDict); EXTERNAL;
+
+PROCEDURE SEGMRULES_CharOpenWrite(
+                    VAR f: SEGMRULES_CharDict;
+                    CONST name: STRING); EXTERNAL;
+    
+PROCEDURE SEGMRULES_CharOpenRead(
+                    VAR f: SEGMRULES_CharDict;
+                    CONST name: STRING); EXTERNAL;
+
+PROCEDURE SEGMRULES_CharWrite(VAR f: SEGMRULES_CharDict;
+                    r: SEGMRULES_CharRecord); EXTERNAL;
+
+PROCEDURE SEGMRULES_CharRead(VAR f: SEGMRULES_CharDict;
+                               VAR r: SEGMRULES_CharRecord); EXTERNAL;
+
+PROCEDURE SEGMRULES_CharClose( VAR f: SEGMRULES_CharDict); EXTERNAL;
+
+
+END {SEGMRULES};

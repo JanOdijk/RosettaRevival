@@ -1,0 +1,987 @@
+$FL 12
+$PL 274,16
+$LD 5
+$OP SH=S,HY=1,la=E,ph=r,pn=c,AN=C
+$NP 
+$UC _
+$SC &%
+$AC @
+$XC ~`
+
+   
+
+            Project ROSETTA : Machine Translation
+
+
+            Topic     :  Rosetta3.software
+
+    ---------------------------------------------------------
+
+
+
+
+
+
+
+         Title        :  Programming Standards
+
+         Author       :  C. Fellinger and J. Rous
+
+
+
+
+
+
+
+
+
+         Doc.Nr       :  64
+
+         Date         :  20/01/86
+
+         Status       :  concept
+
+         Supersedes   :  
+
+         Distribution :  software group
+
+         Clearance    :  Philips
+
+         Keywords     :  standards, naming conventions, 
+                         program layout
+$fn 7
+
+   ---------------------------------------------------------
+    
+    Philips Research Laboratories
+
+    Nederlandse Philips Bedrijven B.V.
+
+$ph Rosetta          Doc.nr: 64                      date:20/01/85
+$LD 4
+$Np 1
+$C1  Introduction
+$NL 1
+$ The purpose of this document is to define a set of standards
+and guidelines for software development in PASCAL, within
+the Rosetta project. All software from Rosetta3 on, must
+comply with this standard.$
+$ This document is a modification of a note written by B.J.A. Hulshof [0] for
+the FPP project.$
+$ The basic idea is to use ISO PASCAL level 1 [1], with some minor restrictions
+and some extensions for module use as provided by VAX/VMS PASCAL. 
+These additional features are kept as small as possible,
+but still powerfull enough to take fully advantage of the modular
+programming approach.$
+$ The aim of this note is to uniform the use of PASCAL and
+of the source-layout in order to
+create a better understanding and readability of each others programs.
+Another aim is to define such a subset of VAX/VMS PASCAL that it is relatively
+easy to translate the modules that are used in one program into one single
+ISO PASCAL program.$
+$ We shall distinguish between two kind of restrictions, the prescribed
+and preferred features. The first give rules which should not be 
+violated. The latter are merely
+guidelines, which are preferred over other constructs. Where
+necessary a reason is given for these restrictions.
+However, there is no
+intention to oppress someones programming style,
+but merely to get some uniformity.$
+$ A modified PASCAL syntax is given in appendix A, by marking the
+deviations from the ISO PASCAL standard, with a "*". 
+
+$C1 Prescribed features.
+$NL 1
+$ The prescribed features are seperated into six aspects :
+some modifications to the ISO PASCAL, the extensions for module use,
+comments, naming, layout and compiler dependent constants.$
+
+$C2 Modifications to ISO PASCAL.
+$ As already mentioned the starting point is the ISO PASCAL 
+standard level 1 [1].
+We take the liberty of presuming that the program is running on an
+ASCII machine.
+However when using typical ASCII properties, this is preferably indicated
+with some comment.
+Furthermore the following restrictions are prescribed :$
+$NL 1
+$HL 3,1) 
+$ Variant records always must have a tag, in order to have an explicit
+indication that
+the proper variant is active when accessing the record.$
+$HL 3,2) 
+$ With the exception of array and file declarations, types for variable
+declaration should be type-identifiers and if types must be
+the same (also for arrays) the same type identifier should be
+used. Examples :$
+    VAR a,b : 1..10;               (* forbidden *)
+        x : ARRAY [INDEX] OF CHAR; (* allowed *)
+        y : ARRAY [INDEX] OF CHAR; (* not allowed, if y
+                                    * is intended to be
+                                    * of same type as x 
+                                    *)
+$ These restrictions prevent most type discrepancies and make it
+easier to visualy check whether types are the same. Of course parameters
+of procedures and functions may only have type-identifier as type,
+as demanded by the ISO standard.$
+$HL 3,3) 
+$ For ARRAY OF CHAR the index range is from one to N to keep it 
+equivalent to a fixed length string.$
+$HL 3,4)
+$ If operating system dependent features have to be used two conditions
+must be obeyed. First of all, functions and procedures should be used
+to hide system dependent features. Secondly, such subroutines should
+be grouped into special modules and high-lighted with comments.$
+$NL 2
+$C2 The use of modules.
+$ The general idea for the use of modules is task division and the abstract 
+data type, which can be manipulated by some externally visible functions or
+procedures. The module system as offered by VAX/VMS PASCAL ( the Inherit and
+Environment mechanism ) is too restricted for our use, because it does not
+allow the seperation of definition and implementation of types, procedures
+and functions. Therefore we enhance the Inherit and 
+Environment mechanism with two facilities:$
+$HL 3,1)
+$ One facility to seperate the declaration of procedure and function
+headings from their bodies.$
+$HL 3,2)
+$ One facility to provide a very restricted form of the generic type 
+mechanism.$
+$NL 1
+$UM
+$ A module consists of a definition module and
+an implementation module, both with the same module name. The definition
+module contains only those declarations that are exported by the module.
+Only functions, procedures, types and constants may be exported. This makes
+it impossible for other modules to modify the data directly, bypassing
+the well defined semantics of functions and procedures. 
+( We use the Environment mechanism of VAX/VMS PASCAL to accomplish this ) $
+$ Each exported procedure or function must be declared 
+[EXTERNAL] in the definition module and [GLOBAL] in the corresponding
+implementation module (facility 1). An implementation module must inherit
+its corresponding definition module.$
+$ For facility 2 the VAX/VMS PASCAL type casting facility is used. Its use
+is restricted to pointer types only and should be used with utmost care !
+Further restrictions will have to be specified.$
+$NL 2
+$C2 Comments.
+$  Comments are most important for understanding a
+program, therefore some standard headings are provided for modules
+and exported functions, see appendices B and C.$
+$ The heading of a module contains the author, the date, the version and
+an informal description of the meaning of the module.$
+$ The definition module contains for each exported function or procedure 
+an explanation of the parameters, results and side effects ( preferably
+in terms of pre- and postconditions or a relation).$
+$ For non-exported functions and procedures,
+depending on the size, a small or larger explanation should be
+provided. Also the declaration of all variables and constants should be
+commented with an explanation of their intended use ( preferably in terms
+of an invariant relation).$
+$ For variables of modules it must be stated whether
+they are state variables (defining the state of the module between
+several calls) or auxiliary variables (used within the module
+for communication between procedures and functions only).$
+$ Parameter lists of forward declared procedures or functions
+must be repeated as comment when defining them.$
+$NL 2
+$C2 Naming.
+$ This section is included to obtain some uniformity in the
+use of identifier names. The following choice has been made :$
+$HL 3,1) 
+$ Keywords and constants ( elements of enumeration types excluded )
+contain only uppercase letters (and digits),
+in order to easily distinguish them from others.$
+$HL 3,2) 
+$ Type-identifiers, variable, function names, procedure and module 
+names ect., may all consist of a mixture of uppercase and lowercase
+letters (and digits), but not consisting of only
+uppercase letters. Preferred style is illustrated in Appendix E.$
+$HL 3,3) 
+$ The names of exported functions and procedures, of types and constants 
+( elements of enumeration types excluded ) are all prefixed with the name 
+of the module by which they are exported, followed by an underscore.$
+$HL 3,4) 
+$ All module names used in one and the same program must be unique.
+$ The module name is also used for the file that contains this module.
+Therefore the maximum length is determined by the VMS operating system
+( 32 characters in VMS 4.0 ).$
+$NL 2
+$C2 Layout.
+$ The readability of a program greatly depends on the layout
+used, therefore some specific rules are defined in appendix D.$
+$NL 2
+$C2 Compiler dependent constants.
+$ In order to be able to compile the programs properly for several systems,
+some constants are fixed :$
+
+    Integer range                   : -MaxInt <= n <= MaxInt, 
+                                      where MaxInt <= 2**31-1
+    Index range of arrays           : 0..MaxInt
+    Set range                       : 256 elements, 
+                                      ordinal value 0..255 
+    Number of record fields         : no limitation
+    Allocation size records/arrays  : MaxInt bits
+    Nesting of procedures/functions : 31 levels
+    Number of arguments             : 254
+    Case range                      : 1000 successive elements
+    Internal identifier length      : 31
+    Exported identifier length      : 31
+
+Reals are probably not used, so no constants are fixed yet.
+
+$C1 Preferred features.
+$NL 1
+$ The preferred features give some guidelines for the programming style.$
+$NL 2
+$C2 Guidelines for programming style.
+$ Do not use the GOTO statement, because it is an obscure, non-structured
+feature.$
+$ Use modules mainly to implement abstract data types.$
+$ Try to keep modules and procedures small and simple, don't try to solve
+every thing in one module or procedure, better give good building blocks.$
+$ Functions preferably have no
+side-effects. This adds some clear semantic to the meaning of a function.
+This also prevents unexpected side effects when using functions in
+expression.$
+$ Do not use any magic constants, but collect them into a commented
+constant declaration at top of the module.$
+$ The pack and unpack procedures are better not used.$
+$ The general approach to statements is "keep them simple!".$
+$ If the nesting level of statements becomes large, it usually means
+that either the algorithm is bad or that more functional units should be
+isolated in a function or procedure body.$
+$ Use FOR loops whenever appropriate in stead of WHILE or REPEAT loops.$
+$ Identifiers should be as self-explaining as possible.$
+$ Do not use attributes in your PASCAL program, the effect of which can also be
+achieved by means of PASCAL command qualifiers.
+$C1 References
+
+ [0] B.J.A. Hulshof, PASCAL STANDARD ( FPP R005 ).
+ [1] ISO Draft International Standard 7185.
+     (Copy available on the VAX/VMS of the group Nijman).
+ [2] F.E.J. Kruseman Aretz, Program portability with PASCAL, and
+     some discrepancies between ISO PASCAL and Jensen and Wirth PASCAL.
+     Nat. Lab. Computer Note Nr. 1983/3.
+ [3] D. Gries, The Science of Programming. Springer 1981.
+
+$A1 Syntax description of extended PASCAL.
+ 
+  The main differences with respect to the ISO PASCAL syntax are :
+$HL 3,1) 
+$ Extension for the module, export/import and include mechanism. See
+exported-func-decl, exported-proc-decl, file-name, imported-func-decl,
+imported-proc-decl, include-directive, module-block, module-heading,
+module-parameters, program, program-block, program-heading,word-symbol.$
+$HL 3,2) 
+$ Restriction on the types of variables. See normal-type, simple-array-type,
+simple-file-type, variable-declaration, variable-type.$
+$HL 3,3) 
+$ A tagfield of a variant record field is no longer optional. See
+variant-selector.$
+$UM
+
+* module = ( main-module | definition-module | implementation-module ) ".".
+
+* main-module = [ "[" inherit-block "]" ] program-heading ";"
+                block.
+
+* definition-module = "[" environment-block [ ","inherit-block ] "]"
+                      module-heading
+                      definition-block. 
+              
+* implementation-module = "[" inherit-block "]" module-heading 
+                          implementation-block.              
+
+* environment-block = "ENVIRONMENT(" module-names ")".
+
+* inherit-block = "INHERIT(" module-names ")".
+
+* module-names = character-string [ "," module-names ].
+
+* module-heading  = "MODULE" identifier [ "(" module-parameters ")" ].
+           
+  program-heading = "PROGRAM" identifier [ "(" program-parameters ")" ].
+
+  program-parameters = identifier-list.
+
+* module-parameters = identifier-list.
+
+* definition-block = [ constant-definition-part ]
+                     [ type-definition-part ]
+                     { ( exported-func-decl | exported-proc-decl ) ";" }
+                     "END".
+           
+* implementation-block = label-declaration-part
+              [ constant-definition-part ]
+              [ type-definition-part ]
+              [ variable-declaration-part ]
+              { ( procedure-declaration | function-declaration |
+                  imported-proc-decl | imported-func-decl ) ";" }
+              statement-part .
+           
+* exported-func-decl = "[EXTERNAL]" function-heading ";" "EXTERN".
+
+* exported-proc-decl = "[EXTERNAL]" procedure-heading ";" "EXTERN".
+           
+* imported-func-decl = "[GLOBAL]" function-heading ";" block.
+
+* imported-proc-decl = "[GLOBAL]" procedure-heading ";" block.
+           
+
+_The modified PASCAL syntax is_:
+
+
+  actual-parameter = expression | variable-access |
+                     procedure-identifier |
+                     function-identifier .
+           
+  actual-parameter-list =
+       "(" actual-parameter { "," actual-parameter } ")" .
+           
+  adding-operator = "+" | "-" | "OR" .
+           
+  apostrophe-image = "''" .
+           
+  array-type = "ARRAY" "[" index-type { "," index-type } "]"
+               "OF" component-type .
+           
+  array-variable = variable-access .
+           
+  assignment-statement =
+       ( variable-access | function-identifier ) ":=" expression .
+           
+  base-type = ordinal-type .
+
+  block = label-declaration-part
+            [ constant-definition-part ]
+              [ type-definition-part ]
+                [ variable-declaration-part ]
+                  procedure-and-function-declaration-part
+                    statement-part .
+           
+  boolean-expression = expression .
+           
+  bound-identifier = identifier .
+           
+  buffer-variable = file-variable "^" .
+           
+  case-constant = constant .
+           
+  case-constant-list = case-constant { "," case-constant } .
+           
+  case-index = expression .
+           
+  case-list-element = case-constant-list ":" statement .
+           
+  case-statement =
+       "CASE" case-index "OF"
+       case-list-element {";" case-list-element } [";"] "END" .
+           
+  character-string = "'" string-element {string-element} "'" .
+
+  component-type = type-denoter .
+           
+  component-variable = indexed-variable | field-designator .
+           
+  compound-statement = "BEGIN" statement-sequence "END" .
+           
+  conditional-statement = if-statement | case-statement .
+
+  conformant-array-parameter-specification = 
+             value-conformant-array-specification |
+             variable-conformant-array-specification.
+
+  conformant-array-schema = packed-conformant-array-schema |
+                            unpacked-conformant-array-schema.
+ 
+  constant = [sign] (unsigned-number | constant-identifier) |
+             character-string
+           
+  constant-definition = identifier "=" constant .
+           
+  constant-definition-part = "CONST" constant-definition ";"
+                             {constant-definition ";"} .
+           
+  constant-identifier = identifier .
+           
+  control-variable = entire-variable .
+           
+  digit = "0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9" .
+           
+  digit-sequence = digit {digit} .
+           
+  directive = letter {letter | digit} .
+           
+  domain-type = type-identifier .
+           
+  else-part = "ELSE" statement .
+           
+  empty-statement = .
+           
+  entire-variable = variable-identifier .
+           
+  enumerated-type = "(" identifier-list ")" .
+
+  expression =
+       simple-expression [ relational-operator simple-expression ] .
+           
+  factor = variable-access | unsigned-constant |
+           bound-identifier | function-designator |
+           set-constructor | "(" expression ")" |
+           "NOT" factor .
+           
+  field-designator = record-variable "." field-specifier |
+                     field-designator-identifier .
+ 
+  field-identifier = identifier .
+           
+  field-list =  [  ( fixed-part [ ";" variant-part ] | variant-part )
+                [ ";" ] ] .
+           
+  field-specifier = field-identifier .
+
+  file-type = "FILE" "OF" component-type .
+           
+  file-variable = variable-access .
+           
+  final-value = expression .
+           
+  fixed-part = record-section { ";" record-section } .
+           
+  for-statement = "FOR" control-variable ":=" initial-value
+                  ( "TO" | "DOWNTO" ) final-value "DO" statement .
+           
+  formal-parameter-list =
+       "(" formal-parameter-section
+       {";" formal-parameter-section} ")" .
+           
+  formal-parameter-section =
+       value-parameter-specification |
+       variable-parameter-specification |
+       procedural-parameter-specification |
+       functional-parameter-specification |
+       conformant-array-parameter-specification.
+           
+  function-block = block .
+
+  function-declaration =
+       function-heading ";" directive |
+       function-identification ";" function-block |
+       function-heading ";" function-block .
+           
+  function-designator = function-identifier
+                        [ actual-parameter-list ] .
+           
+  function-heading =
+       "FUNCTION" identifier [formal-parameter-list]
+       ":" result-type .
+           
+  function-identification =
+       "FUNCTION" function-identifier .
+           
+  function-identifier = identifier .
+           
+  functional-parameter-specification =
+       function-heading .
+           
+  identified-variable = pointer-variable "^" .
+           
+  identifier = letter {letter | digit} .
+           
+  identifier-list = identifier { "," identifier } .
+           
+  if-statement = "IF" boolean-expression "THEN" statement
+                 [ else-part ] .
+
+  index-expression = expression .
+           
+  index-type = ordinal-type .
+
+  index-type-specification = identifier ".." identifier ":" 
+                             ordinal-type-identifier .
+
+  indexed-variable =
+       array-variable "[" index-expression
+       { "," index-expression } "]" .
+           
+  initial-value = expression .
+           
+  label = digit-sequence .
+           
+  label-declaration-part = ["LABEL" label {"," label} ";"] .
+
+  letter = "a"|"b"|"c"|"d"|"e"|"f"|"g"|"h"|"i"|"j"|"k"|"l"|"m"|
+           "n"|"o"|"p"|"q"|"r"|"s"|"t"|"u"|"v"|"w"|"x"|"y"|"z" .
+           
+  member-designator = expression [ ".." expression ] .
+           
+  multiplying-operator = "*" | "/" | "DIV" | "MOD" | "AND" .
+           
+  new-ordinal-type = enumerated-type | subrange-type .
+           
+  new-pointer-type = "^" domain-type .
+           
+  new-structured-type = ["PACKED"] unpacked-structured-type |
+           
+  new-type = new-ordinal-type | new-structured-type |
+             new-pointer-type .
+           
+  ordinal-type = new-ordinal-type |
+                 ordinal-type-identifier .
+
+  ordinal-type-identifier = type-identifier.
+           
+  packed-conformant-array-schema = "PACKED" "ARRAY" "[" 
+                 index-type-specification "]" "OF" type-identifier.
+
+  pointer-type = new-pointer-type | pointer-type-identifier .
+           
+  pointer-type-identifier = type-identifier .
+           
+  pointer variable = variable-access .
+           
+  procedural-parameter-specification = procedure-heading .
+           
+  procedure-and-function-declaration-part =
+       { ( procedure-declaration | function-declaration ) ";" } .
+           
+  procedure-block = block .
+
+  procedure-declaration =
+       procedure-heading ";" directive |
+       procedure-identification ";" procedure-block |
+       procedure-heading ";" procedure-block .
+  
+  procedure-heading =
+       "PROCEDURE" identifier [ formal-parameter-list ] .
+           
+  procedure identification = "PROCEDURE" procedure-identifier .
+           
+  procedure-identifier = identifier .
+           
+  procedure-statement = procedure-identifier ([ actual-parameter-list ] |
+                        read-parameter-list | readln-parameter-list |
+                        write-parameter-list | writeln-parameter-list ) .
+           
+  read-parameter-list =
+       "("[file-variable ","] variable-access
+       {"," variable-access}")" .
+           
+  readln-parameter-list =
+       ["(" (file-variable | variable-access)
+       {"," variable-access} ")"] .
+           
+  record-section = identifier-list ":" type-denoter .
+           
+  record-type = "RECORD" field-list "END" .
+           
+  record-variable = variable-access .
+           
+  record-variable-list =
+       record-variable { "," record-variable } .
+
+  relational-operator =
+       "=" | "<>" | "<" | ">" | "<=" | ">=" | "IN" .
+           
+  repeat-statement = "REPEAT" statement-sequence
+                     "UNTIL" boolean-expression .
+           
+  repetitive-statement = repeat-statement |
+                         while-statement | for-statement .
+           
+* result-type = simple-type-identifier |
+                structured-type |
+                pointer-type-identifier .
+           
+  scale-factor = signed-integer .
+           
+  set-constructor = "[" [ member-designator
+                    { "," member-designator } ] "]" .
+           
+  set-type = "SET" "OF" base-type .
+           
+  sign =  "+" | "-" .
+           
+  signed-integer = [sign] unsigned-integer .
+           
+  signed-number = signed-integer | signed-real .
+           
+  simple-expression = [ sign ] term { adding-operator term } .
+
+  simple-statement =
+       empty-statement | assignment-statement |
+       procedure-statement .
+           
+  simple-type = ordinal-type .
+           
+  simple-type-identifier = type-identifier .
+           
+  special-symbol = "+"|"-"|"*"|"/"|"="|"<"|">"|"["|"]"|
+                   "."|","|":"|";"|"^"|"("|")"|
+                   "<>"|"<="|">="|":="|".."| word-symbol .
+           
+  statement = ( simple-statement | 
+                              structured-statement ) .
+           
+  statement-part = compound-statement .
+           
+  statement-sequence = statement { ";" statement } .
+
+  string-character =
+       one-of-a-set-of-implementation-defined-characters .
+           
+  string-element = apostrophe-image | string-character .
+
+  structured-statement =
+       compound-statement | conditional-statement |
+       repetitive-statement | with-statement .
+ 
+  structured-type = new-structured-type | structured-type-identifier .
+           
+  structured-type-identifier = type-identifier .
+           
+  subrange-type = constant ".." constant .
+           
+  tag-field = identifier .
+           
+  tag-type = ordinal-type-identifier .
+           
+  term = factor { multiplying-operator factor } .
+           
+  type-definition = identifier "=" type-denoter .
+           
+  type-definition-part = "TYPE" type-definition ";" 
+                         {type-definition ";"} .
+           
+  type-denoter = type-identifier | new-type .
+           
+  type-identifier = identifier .
+           
+  unpacked-conformant-array-schema = "ARRAY" "[" 
+                 index-type-specification 
+                 { ";" index-type-specification } "]" "OF" 
+                 ( type-identifier | conformant-array-schema ) .
+
+  unpacked-structured-type = array-type | record-type | set-type |
+                             file-type .
+           
+  unsigned-constant = unsigned-number | character-string |
+                      constant-identifier | "NIL" .
+           
+  unsigned-integer = digit-sequence .
+           
+  unsigned-number = unsigned-integer | unsigned-real .
+           
+  value-conformant-array-specification = identifier-list ":"
+                                         conformant-array-schema .
+
+  value-parameter-specification =
+       identifier-list ":" type-identifier .
+           
+  variable-access = entire-variable | component-variable |
+                    identified-variable | buffer-variable .
+           
+  variable-conformant-array-specification = "VAR" identifier-list ":"
+                                         conformant-array-schema .
+
+  variable-declaration = identifier-list ":" type-denoter.
+           
+  variable-declaration-part = "VAR" variable-declaration ";"
+                              {variable-declaration ";"} .
+           
+  variable-identifier = identifier .
+           
+  variable-parameter-specification =
+       "VAR" identifier-list ":" type-identifier .
+ 
+  variant = case-constant-list ":" "(" field-list ")" .
+
+  variant-part = "CASE" variant-selector "OF"
+                 variant { ";" variant } .
+           
+* variant-selector = tag-field ":" tag-type .
+           
+  while-statement = "WHILE" boolean-expression "DO" statement .
+           
+  with-statement =
+       "WITH" record-variable-list "DO"
+       statement .
+           
+* word-symbol = "AND"|"ARRAY"|"BEGIN"|"CASE"|"CONST"|"DIV"|
+                "DO"|"DOWNTO"|"ELSE"|"END"|"FILE"|"FOR"|
+                "FUNCTION"|"GOTO"|"IF"|"IN"|"LABEL"|"MOD"|
+                "NIL"|"NOT"|"OF"|"OR"|"PACKED"|"PROCEDURE"|
+                "PROGRAM"|"RECORD"|"REPEAT"|"SET"|"THEN"|
+                "TO"|"TYPE"|"UNTIL"|"VAR"|"WHILE"|"WITH"|
+                "INHERIT"|"ENVIRONMENT"|"EXTERN"|"[GLOBAL]"|
+                "[EXTERNAL]"|"MODULE" .
+           
+  write-parameter =
+       expression [":" expression [":" expression ] ] .
+           
+  write-parameter-list =
+       "("[file-variable ","] write-parameter
+       {"," write-parameter]")" .
+           
+  writeln-parameter-list =
+       ["(" (file-variable | write-parameter)
+       {"," write-parameter}")"] .
+$NP
+$A1 Module headings
+
+Definition Module heading :
+
+(*MPI:::=============================================================
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Creation date   :                                               
+ *  Module Title    :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Description     :  Short module description                     
+ .      .                                                           
+ .      .                                                           
+ *                                                                  
+ *  Remarks         : These are optional                            
+ .        .                                                         
+ .        .                                                         
+ *                                                                  
+ *  Any additional copyright information.                            
+ *EMP:::==========================================================*)
+
+(*===================================================================
+ *  Imported modules
+ *==================================================================*)
+$NP
+
+Implementation Module heading :
+
+(*MPD:::=============================================================
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Creation date   :                                               
+ *  Module Title    :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         : These are optional                            
+ .        .                                                         
+ .        .                                                         
+ *                                                                  
+ *  Any additional copyright information.                            
+ *EMP:::==========================================================*)
+
+(*===================================================================
+ *  Imported modules
+ *==================================================================*)
+
+
+$A1 Exported function/procedure heading
+
+
+(*MPF:::===========================================================
+ *
+ *  Function Name  :
+ *  Description    :
+ *  Parameters     :                                                  
+ *    p1  = Explanation                                             
+ *    p2  =      
+ .        .      
+ .        .                                                       
+ *  Result         :  Explanation of function result. Results via 
+ .                    var-parameters should be given in Parameter 
+ .                    section.                       
+ *  Precondition   :
+ *  Postcondition  :
+ *  Relation       :
+ *  Side Effects   :  Explanation of all side effects.
+ .        .                                                       
+ .        .                                                       
+ *EMP:::==========================================================*)
+
+
+$A1 Layout guidelines.
+$ This appendix gives some practical guidelines for the layout of a program.
+For additional aspects, such as expression layout, the choice of a
+proper layout is left open. 
+See also appendix A for the meaning of some symbols.$
+
+_Layout for a program or module_
+
+[ENVIRONMENT(..),
+ INHERIT(..,
+         ..)
+] MODULE ...
+
+heading (see appendix B)
+
+  CONST
+      const1 = ...;          { explanation of const1 }
+      const2 = ...;          {        .              }
+       .                              .
+
+  TYPE
+      type1 = ...;           { explanation of type1 }
+      type2 = ...;           {        .             }
+       .
+
+  VAR
+     (* State variables : *)
+      svar1,.. : type1;      { explanation of svar1,..}
+      svar2,.. : type2;               .
+       .                              .
+
+     (* Auxiliary variables : *)
+      avar1,.. : type1;               .
+       .                              .
+
+  [EXTERNAL/GLOBAL] PROCEDURE/FUNCTION ...
+       .
+
+  PROCEDURE/FUNCTION ...
+       .
+       .
+
+
+BEGIN { module name }         
+
+  statement-sequence             { programs only }
+
+END { program/module-name }.
+
+For the following layouts we assume a relative indentation.
+
+_Layout of comment:_
+
+{ comment within one line }
+
+(*---------------------------------------------------------------------------*
+ * comment
+ * over 
+ * several
+ * lines
+ *---------------------------------------------------------------------------*)
+
+_Layout of record-type:_
+
+RECORD
+  field1    : type1;      { explanation of field1 }
+  field2,                 { explanation of field2 }
+  field3    : type2;      { explanation of field3 }
+    .                                .
+  CASE .... OF
+    const1    : ... ;                .
+    const2,
+    const3    : ... ;                .
+      .                              .
+END;
+
+_Layout of function and procedure declaration _:
+
+Functions or procedures must start at the beginning of a page.
+
+[EXTERNAL/GLOBAL] FUNCTION/PROCEDURE ...
+  function/procedure heading (see also appendix C)
+  VAR 
+      var1,.. : type1; { comment on var1,.. }
+      var2,.. : type2; { comment on var2,.. }
+
+BEGIN { function/procedure name }
+     .
+     .
+END { function/procedure name };
+
+_Layout for compound-statement_:
+
+BEGIN
+  statement-sequence
+END
+
+_Layout for case statement_:
+
+CASE ... OF
+   const1    : simple-statement;
+   const2,
+   const3    : 
+      BEGIN
+        .
+        .
+      END
+END;
+
+_Layouts for if-statement_:
+
+
+IF ... THEN simple-statement;
+
+
+IF ... THEN BEGIN
+       .
+END;
+
+
+IF ... THEN simple-statement ELSE simple-statement;
+
+
+IF ... THEN BEGIN
+       .
+   END
+ELSE BEGIN
+       .
+END;
+
+
+IF ... THEN BEGIN
+       .
+   END
+ELSE IF ... THEN BEGIN
+       .
+   END
+ELSE BEGIN
+       .
+END;
+
+
+_Layouts for for-statement_:
+
+
+FOR ... TO/DOWNTO ... DO simple-statement;
+
+
+FOR ... TO/DOWNTO ... DO BEGIN
+       .
+END
+
+
+_Layouts for repeat-statement_:
+
+
+REPEAT
+  statement-sequence
+UNTIL ...;
+
+
+_Layouts for while-statement_:
+
+
+WHILE ... DO simple-statement;
+
+
+WHILE ... DO BEGIN
+        .
+END;
+
+
+_Layouts for with-statement_:
+
+
+WITH ... DO BEGIN
+        .
+END;
+

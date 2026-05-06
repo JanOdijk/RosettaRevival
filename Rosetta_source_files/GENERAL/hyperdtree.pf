@@ -1,0 +1,652 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project
+ *
+ *  Module Title    : HyperDtree
+ *  Creation date   : 13-OCT-1987
+ *  Author          : J. Rous
+ *
+ *  Copyright (c) 1986, by Nederlandse Philips Bedrijven BV.
+ *
+ *  Remarks         : This module describes Dtrees as they are used in the
+ *                    generation phase of Rosetta.
+ *
+ *EMP:::===================================================================*)
+
+pragma C_Include('ldmrules.pf');
+pragma C_Include('lidomaint.pf');
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+PACKAGE HyperDtree;
+WITH LIDOMAINT, LDMRULES;
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : HyperDtree_pLIRecord, HyperDtree_LIRecord,
+ *                   HyperDtree_pStree.
+ *  Description    : the language independent extras only used in the parsers, 
+ *                   Stree is used to remember from which stree this HyperDtree
+ *                   resulted. Done indiquates whether this stree has been
+ *                   remembered or not.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   HyperDtree_pHyperDtree   = ^HyperDtree_HyperDtree;
+   HyperDtree_pStree = ^INTEGER;
+   HyperDtree_pLostree = ^INTEGER;
+   HyperDtree_pLIRecord = ^HyperDtree_LIRecord;
+   HyperDtree_VarIndexSet = SET OF 1..255;
+   HyperDtree_LIRecord = 
+      RECORD
+         stree : HyperDtree_pStree;(* used to store the defining occurrence
+                                    * of the current variable during
+                                    * the preaction technique *)
+         def   : HyperDtree_pHyperDtree;
+                                   (* used in a node which contains a variable
+                                      to point to the hypernode with the
+                                      defining occurrence of the variable     *)
+         varindices : HyperDtree_VarIndexSet;
+         done : BOOLEAN;           (* first and last have a valid value *)
+         first,
+         last  : HyperDtree_pLoStree
+      END;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : HyperDtree_pHyperDtree,HyperDtree,pTupleOfHyperDtree,TupleOfHyperDtree,
+ *                   HyperDtree_pLoHyperDtree, HyperDtree_LoHyperDtree
+ *  Description    : the types to make a HyperDtree
+ *                   - a HyperDtree node contains a tuple of HyperDtrees
+ *                     for its arguments. Futhermore it contains conceptually
+ *                     a set of rule nodes. This set is implemented as a
+ *                     linked list.
+ *                   - a HyperDtree leave is either an empty HyperDtree (DEPS) or the name
+ *                     of a basic expression or the name of a variable.
+ *                   A tuple of HyperDtrees is implemented by means of a list of
+ *                   HyperDtrees (HyperDtree_LoHyperDtree).
+ *                   A HyperDtree contains also some information that is only
+ *                   relevant for the implementation of M-Generator/M-Parser,
+ *                   this is hidden in HyperDtree_pLIRecord^.
+ *
+ *   Note            In order to be able to handle individual Dtrees in such
+ *                   a HyperDtree the record type HyperDtree is extended with a
+ *                   field (called `cur'). The routine MarkFirstHyperDtree lets
+ *                   this mark field point to the 'first' Dtree in a
+ *                   HyperDtree and the routine MarkNextHyperDtree marks the
+ *                   'next' Dtree.
+ *
+ *
+ *                   Dtree =      ---------------
+ *                                |  sg,R       |
+ *                          ........ args.first |
+ *                          .     |  args.last .......
+ *                          .     ---------------    .
+ *                          .                        .
+ *                      ---------
+ *                      | next .....    etc
+ *                      | arg   |
+ *                      --- . ---
+ *                          .
+ *                      ---------
+ *                      | sg,R  |
+ *                      | args  |
+ *                      ---------
+ *                                       .                 .
+ *                                       .                 .
+ *                                       .                 .
+ *                                       .                 .
+ *                   HyperDtree = -------.-------       ---.----     --------
+ *                                |  Elts.last  |       | nxt  |     |      |
+ *                                |  Elts.first .......... arg ........     |
+ *                                |  nrargs     |       |      |     | sg,R |
+ *                          ........ args.first |       |      |     |params|
+ *                          .     |  args.last .......  --------     --------
+ *                          .     ---------------    .
+ *                          .                        .
+ *                      --------
+ *                      | next .......    etc
+ *                      | arg  |   
+ *                      ---.----  
+ *                         .           
+ *                         .
+ *    HyperDtree     --------------
+ *                   | Elts       ...
+ *                   | nrargs     |
+ *                   | args.first |
+ *                   | args.last  |
+ *                   --------------
+ *
+ *
+ *  Type name      : HyperDtree_pLoHyperDtree, HyperDtree_LoHyperDtree,
+ *                   HyperDtree_TupleOfHyperDtree
+ *
+ *EMP:::===================================================================*)
+
+{  HyperDtree_pHyperDtree   = ^HyperDtree_HyperDtree; }
+   HyperDtree_pLoHyperDtree = ^HyperDtree_LoHyperDtree;
+   HyperDtree_LoHyperDtree  = RECORD
+                                   arg:HyperDtree_pHyperDtree;
+                                   next:HyperDtree_pLoHyperDtree
+                                END {RECORD};
+   HyperDtree_TupleOfHyperDtree = RECORD
+                        	     first,last:HyperDtree_pLoHyperDtree
+                                  END {RECORD};
+   HyperDtree_SetOfHyperDtree = HyperDtree_TupleOfHyperDtree;
+
+   HyperDtree_pLoHNECluster   = ^HyperDtree_LoHNECluster;
+
+
+   HyperDtree_pHyperNodeElt   = ^HyperDtree_HyperNodeElt;
+   HyperDtree_pLoHyperNodeElt = ^HyperDtree_LoHyperNodeElt;
+   HyperDtree_LoHyperNodeElt  = RECORD
+                                   arg:HyperDtree_pHyperNodeElt;
+                                   next:HyperDtree_pLoHyperNodeElt
+                                END {RECORD};
+   HyperDtree_SetOfHyperNodeElt = RECORD
+                        	     first,last:HyperDtree_pLoHyperNodeElt;
+                                     cur       : HyperDtree_pLoHyperNodeElt;
+                                     NrOfElts  : INTEGER;
+                                     sg        : INTEGER;
+                                  END {RECORD};
+   HyperDtree_pSetOfHyperNodeElt = ^HyperDtree_SetOfHyperNodeElt;
+   HyperDtree_LoHNECluster   = RECORD
+                                   next : HyperDtree_pLoHNECluster;
+                                   elts : HyperDtree_SetOfHyperNodeElt;
+                                END {RECORD};
+   HyperDtree_SetOfHNECluster = RECORD
+                                     first, last: HyperDtree_pLoHNECluster;
+                                     cur        : HyperDtree_pLoHNECluster;
+                                     NrOfElts   : INTEGER
+                                END;
+   HyperDtree_NodeKind = ( HyperDtree_BasicNode,
+                           HyperDtree_VarNode,
+                           HyperDtree_SubstRuleNode,
+                           HyperDtree_RuleNode  );
+
+   HyperDtree_HyperDtree =
+      RECORD
+         LI       : HyperDtree_pLIrecord;
+         Elts     : HyperDtree_SetOfHNECluster;
+         CASE IsRuleNode : BOOLEAN OF
+         FALSE: (BasicNodeKind : HyperDtree_NodeKind);
+         TRUE : (nrOfArgs : INTEGER;
+                 args     : HyperDtree_TupleOfHyperDtree;
+                 EndOfSg  : BOOLEAN;
+                 CASE RuleNodeKind : HyperDtree_NodeKind OF
+                 HyperDtree_RuleNode : ( );
+                 HyperDtree_SubstRuleNode : ( substituent: INTEGER))
+      END {RECORD};
+
+   HyperDtree_HyperNodeElt =
+      RECORD
+         bonus : INTEGER;
+         CASE nodeKind : HyperDtree_NodeKind OF
+         HyperDtree_VarNode : (index : INTEGER;
+                               kind  : LIDOMAINT_SyntCat);
+         HyperDtree_BasicNode : ( key : INTEGER);
+         HyperDtree_RuleNode  : (sg         : LDMRules_SubGrammarIndex;
+                                 R          : LDMRules_RuleIndex;
+                                 parameters : LDMRules_LIParameters)
+      END {RECORD};
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_MarkFirstDtree
+ *  Description     : Marks the first Dtree in a HyperDtree.
+ *  Parameters      : VAR d : HyperDtree_pHyperDtree
+ *  Precondition    : 
+ *  Postcondition   : It is implemented by marking the first Dtree of each
+ *                    'superson' of the top level of HyperDtree d.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_MarkFirstDtree (VAR d : HyperDtree_pHyperDtree);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HyperDtree_MarkNextDtree
+ *  Description    : Marks the next Dtree in HyperDtree d. Returns FALSE iff
+ *                   there are no more Dtrees in d, in this case the first Dtree
+ *                   will have been marked again.
+ *                   It is implemented by marking the next Dtree in the first
+ *                   rule node of the top level of HyperDtree d. If this was
+ *                   impossible (all Dtrees in the first rule node list had been
+ *                   marked already and the first is marked again), then the
+ *                   same is tried for the second hyper node, etc. If it was
+ *                   impossible for all the sons, then FALSE is returned.
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HyperDtree_MarkNextDtree (VAR d : HyperDtree_pHyperDtree)
+                    : BOOLEAN;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_NewHyperDtreeLeave
+ *  Description     : Creates a new basic HyperDtree with the appropriate values
+ *  Parameters      : VAR d : HyperDtree_pHyperDtree
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised basic HyperDtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_NewHyperDtreeLeave (VAR d : HyperDtree_pHyperDtree);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_NewHyperDtree
+ *  Description     : Creates a non-basic HyperDtree with the appropriate values
+ *  Parameters      : VAR d : HyperDtree_pHyperDtree
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised basic HyperDtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_NewHyperDtree (VAR d : HyperDtree_pHyperDtree);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_NewHyperDtreeBxpr
+ *  Description     : Creates a new HyperNode elt with the appropriate values
+ *  Parameters      : VAR d : HyperDtree_pHyperNodeElt
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised basic HyperDtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_NewHyperDtreeBxpr (VAR d : HyperDtree_pHyperNodeElt;
+                                            key : INTEGER);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_NewHyperDtreeVar
+ *  Description     : Creates a new HyperNode elt with the appropriate values
+ *  Parameters      : VAR d : HyperDtree_pHyperNodeElt
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised basic HyperDtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_NewHyperDtreeVar (VAR d : HyperDtree_pHyperNodeElt;
+                                            index : INTEGER;
+                                            kind  : LIDOMAINT_SyntCat);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_NewHyperDtreeRule
+ *  Description     : Creates a new non-basic HyperNode elt with the 
+ *                    appropriate values.
+ *  Parameters      : VAR d : HyperDtree_pHyperNodeElt
+ *  Precondition    : 
+ *  Postcondition   : d^ is a proper initialised non-basic HyperDtree
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_NewHyperDtreeRule (VAR d : HyperDtree_pHyperNodeElt;
+                                       sg : LDMrules_SubgrammarIndex;
+                                       R  : LDMrules_RuleIndex;
+                                       params : LDMrules_LIParameters);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_AddToSet
+ *  Description     : appends HyperDtree d to set ds
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_AddToSet(d:HyperDtree_pHyperDtree;
+                                      VAR dn:HyperDtree_SetOfHyperDtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_TakeFromSet
+ *  Description     : takes HyperNodeElt d from set ds
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_TakeFromSet(VAR d:HyperDtree_pHyperDtree;
+                                         VAR dn:HyperDtree_SetOfHyperDtree);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HyperDtree_IsEmptySet
+ *  Description    : is true iff ds is empty
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HyperDtree_IsEmptySet(dn:HyperDtree_SetOfHyperDtree)
+                    :BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_EmptySet
+ *  Description     : creates empty Set of HyperNodeElts
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_EmptySet(VAR dn:HyperDtree_SetOfHyperDtree);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_AddToNode
+ *  Description     : appends HyperDtree d to set ds
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_AddToNode(d:HyperDtree_pHyperNodeElt;
+                                      VAR ds:HyperDtree_SetOfHyperNodeElt);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_TakeFromNode
+ *  Description     : takes HyperNodeElt d from set ds
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_TakeFromNode(VAR d:HyperDtree_pHyperNodeElt;
+                                         VAR ds:HyperDtree_SetOfHyperNodeElt);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HyperDtree_IsEmptyNode
+ *  Description    : is true iff ds is empty
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HyperDtree_IsEmptyNode(ds:HyperDtree_SetOfHyperNodeElt)
+                    :BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_EmptyNode
+ *  Description     : creates empty Set of HyperNodeElts
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_EmptyNode(VAR ds:HyperDtree_SetOfHyperNodeElt);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_MakeNode
+ *  Description     : creates pointer to empty Set of HyperNodeElts
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_MakeNode(VAR ds:HyperDtree_pSetOfHyperNodeElt);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_AddCluster
+ *  Description     : appends HyperDtree d to set ds
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_AddCluster(d:HyperDtree_SetOfHyperNodeElt;
+                                      VAR ds:HyperDtree_SetOfHNECluster);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_TakeCluster
+ *  Description     : takes HNECluster d from set ds
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_TakeCluster(VAR d:HyperDtree_SetOfHyperNodeElt;
+                                         VAR ds:HyperDtree_SetOfHNECluster);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HyperDtree_IsEmptyClusterSet
+ *  Description    : is true iff ds is empty
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HyperDtree_IsEmptyClusterSet(ds:HyperDtree_SetOfHNECluster)
+                    :BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_EmptyClusterSet
+ *  Description     : creates empty Set of HNEClusters
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_EmptyClusterSet(VAR ds:HyperDtree_SetOfHNECluster);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_EmptyTuple
+ *  Description     : creates empty tuple of HyperDtree
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_EmptyTuple(VAR dn:HyperDtree_TupleOfHyperDtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_AddToTuple
+ *  Description     : adds HyperDtree 'HyperDtree' to tuple dn
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : HyperDtree d is the last one in dn
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_AddToTuple(d:HyperDtree_pHyperDtree;
+                                        VAR dn:HyperDtree_TupleOfHyperDtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_TakeFromTuple
+ *  Description     : takes first HyperDtree from tuple
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : HyperDtree d is no longer in dn
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_TakeFromTuple(VAR d:HyperDtree_pHyperDtree;
+                                           VAR dn:HyperDtree_TupleOfHyperDtree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HyperDtree_IsEmptyTuple
+ *  Description    : is true iff dn is the empty tuple
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HyperDtree_IsEmptyTuple(dn:HyperDtree_TupleOfHyperDtree)
+                    :BOOLEAN;
+EXTERNAL;
+
+
+{%%%%%%!!!! The functions and procedures in the rest of the file have not
+            been checked on their usefulness nor on their correctness }
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : HyperDtree_SaveOrigin
+ *  Description     : Saves the Stree from which d resulted.
+ *  Parameters      : t : HyperDtree_pStree;
+ *                    VAR d : HyperDtree_pHyperDtree
+ *  Precondition    : d subset of  MParser(CAST LIStree_pStree(t))
+ *  Postcondition   : HyperDtree_IsOriginSaved(d)
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_SaveOrigin (first, last : HyperDtree_pLoStree;
+                                            VAR d : HyperDtree_pHyperDtree);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : HyperDtree_IsOriginSaved
+ *  Description    : Tells whether the stree from which this dtree resulted
+ *                   has been saved.
+ *  Parameters     : d : HyperDtree_pHyperDtree
+ *  Result         : TRUE iff the stree from which this dtree resulted has been
+ *                   saved.
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION HyperDtree_IsOriginSaved (d : HyperDtree_pHyperDtree)
+                    : BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name : HyperDtree_ReturnOrigin
+ *  Description    : Returns the Stree from which this dtree resulted
+ *  Parameters     : d : HyperDtree_pHyperDtree
+ *  Result         : HyperDtree_pStree
+ *  Precondition   : HyperDtree_IsOriginSaved(d)
+ *  Postcondition  : RETURNS ts AND ts CAST LIStree_pSetOfStrees = M-Generator(d)
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE HyperDtree_ReturnOrigin (d : HyperDtree_pHyperDtree;
+                                         VAR first, last: HyperDtree_pLoStree);
+EXTERNAL;
+
+
+END {HyperDtree};

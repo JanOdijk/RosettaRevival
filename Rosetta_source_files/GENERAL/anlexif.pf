@@ -1,0 +1,233 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project
+ *
+ *  Module Title    : ANLEXIF
+ *  Creation date   :  11-SEP-1986
+ *  Author          : Rene Leermakers
+ *
+ *  Copyright (c) 1986, by Nederlandse Philips Bedrijven BV.
+ *
+ *  Remarks         : interface between morphological component and the
+ *                    lextree rules
+ *
+ *EMP:::===================================================================*)
+
+
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+pragma C_include('lidomaint.pf');
+pragma C_include('listree.pf');
+
+PACKAGE ANLEXIF;
+WITH lidomaint,listree;
+(*MPT:::===================================================================*
+ *
+ *  Type name  : ANLEXIF_lexargstype
+ *  Description    : the type of the args-field of Ruleinfo
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   ANLEXIF_lexargstype = 1..5;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name  : ANLEXIF_lexruletype
+ *  Description    : ordinal type counting the rules
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   ANLEXIF_lexruletype = INTEGER;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name  : ANLEXIF_catstype
+ *  Description    : type containing the argument categories of some rule
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   ANLEXIF_catstype = ARRAY[ANLEXIF_lexargstype] of LIDOMAINT_syntcat;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : ANLEXIF_ruleinfo
+ *  Description    : contains information about a rule,  which has 'args'
+ *                   arguments and 'cat[i]',i<=args, is the category of
+ *                   its i_th argument
+ *                   
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   ANLEXIF_ruleinfo = RECORD
+                       args:ANLEXIF_lexargstype;
+                       cat:ANLEXIF_catstype
+                      END;
+
+TYPE
+   ANLEXIF_pLosRule = ^ANLEXIF_LosRule;
+   ANLEXIF_losRule = RECORD
+                          arg:ANLEXIF_lexruletype;
+                          next:ANLEXIF_pLosRule
+                     END;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : ANLEXIF_setofRules
+ *  Description    : 
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   ANLEXIF_setofRules = RECORD
+                            first,last:ANLEXIF_plosRule
+                           END;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : ANLEXIF_takeRule
+ *  Description     : takes one Rule number out of a set 
+ *  Parameters      : 
+ *  Precondition    : true
+ *  Postcondition   : if setofRules was not empty then 'rule' contains
+ *                    the number of a rule, otherwise rule=0
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+
+ PROCEDURE ANLEXIF_takeRule(VAR rule:ANLEXIF_lexruletype;
+                                        VAR setofRules:ANLEXIF_setofRules
+                                       );
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : ANLEXIF_stillRules
+ *  Description    : test wether setofRules is empty
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : is true iff setofRules is not empty
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION ANLEXIF_stillRules(setofRules:ANLEXIF_setofRules)
+                    :boolean;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : ANLEXIF_maxargs
+ *  Description    : gives maximum value of the args-field of Ruleinfo, i.e.
+ *                   the maximum number of arguments of lextree-rules
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION ANLEXIF_maxargs
+                    : INTEGER;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : ANLEXIF_maxlexrulenr
+ *  Description    : gives maximum value of the L-field of Ruleinfo, i.e
+ *                   the total number of lextree-rules
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION ANLEXIF_maxlexrulenr
+                    : INTEGER;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : ANLEXIF_init
+ *  Description     : inits ANLEXIF. This procedure should be called before
+ *                    invoking others of this module
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE ANLEXIF_init;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : ANLEXIF_switch
+ *  Description    : gives a set of rule numbers of which the first
+ *                   argument expects an stree with the category of t.
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION ANLEXIF_switch(t:LISTREE_pstree)
+                    : ANLEXIF_SetofRules;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : ANLEXIF_info
+ *  Description    : gives ruleinfo of rule number L
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION ANLEXIF_info(L:ANLEXIF_lexruletype)
+                    :ANLEXIF_ruleinfo ;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : ANLEXIF_lexrule
+ *  Description    : gives the set of results of lexrule number 'L' with
+ *                   input 'tuple'.
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+
+ FUNCTION ANLEXIF_lexrule(L:ANLEXIF_lexruletype;
+                                    tuple:LISTREE_tupleofstrees)
+                    : LISTREE_setofstrees;
+EXTERNAL;
+
+END {ANLEXIF};

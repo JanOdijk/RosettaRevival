@@ -1,0 +1,1274 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project
+ *
+ *  Module Title     : Windows
+ *  Creation date    : 1991-05-16
+ *  Modification date: 
+ *  Authors          : H M M van de Schoot
+ *
+ *  Copyright (c) 1991, by Nederlandse Philips Bedrijven BV.
+ *
+ *  Remarks         : This module defines some basic operations on
+ *                    windows. 
+ *EMP:::===================================================================*)
+
+pragma C_include('string.pf');
+pragma C_include('Xid.h');
+pragma C_include('Sid.h');
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+PACKAGE WND;
+WITH STRNG;
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : WND_MaxIO
+ *  Description    : maximum length of input/output buffer
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   WND_MaxIO = 255;
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : WND_MaxColumn
+ *  Description    : maximal number of columns that a window may have
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   WND_MaxColumn = maxint;
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : WND_MaxRow
+ *  Description    : maximal number of rows that a window may have
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   WND_MaxRow = maxint;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : WND_ColumnRange
+ *  Description    : Column range of a window.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   WND_ColumnRange = 1..WND_MaxColumn;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : WND_RowRange
+ *  Description    : row range of a window
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   WND_RowRange = 1..WND_MaxRow;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : WND_IORange
+ *  Description    : index range of input/output buffer
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   WND_IORange = 0..WND_MaxIO;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : WND_IOBuffer
+ *  Description    : Largest possible buffer needed for IO operations.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   WND_IOBuffer = PACKED ARRAY [1..WND_MaxIO] OF Char;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : WND_VideoAttributes
+ *  Description    : The possible video attributes.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   WND_VideoAttributes = (WND_Blink, WND_Bold,
+                          WND_Reverse, WND_Underline, WND_Normal);
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : WND_VideoAttributeSet
+ *  Description    : Set of possible video attributes.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   WND_VideoAttributeSet = SET OF WND_VideoAttributes;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : WND_Xid
+ *  Description    : Window identification; a unique number for each window
+ *                   ( the id's can be found in Xid.h )
+ *
+ *EMP:::===================================================================*)
+
+TYPE 
+   WND_Xid    = integer;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : WND_Sid
+ *  Description    : String identification; a unique number for each string
+ *                   ( the id's can be found in Sid.h )
+ *
+ *EMP:::===================================================================*)
+
+TYPE 
+   WND_Sid    = integer;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : WND_Did
+ *  Description    : Dynamic identification; a unique number for each tree
+ *                   node or attribute
+ *
+ *EMP:::===================================================================*)
+
+TYPE 
+   WND_Did    = integer;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : WND_ScreenType
+ *  Description    : WND_ScreenType defines the possible dynamic screen 
+ *                   types: for tree(s), attributes or hyper-nodes
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   WND_ScreenType = (WND_Tree, WND_Trees, WND_Attr, WND_Hn);
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : WND_LeftJustify
+ *  Description    : WND_LeftJustify determines the ways in which Strings
+ *                   may be justified.
+ *                      TRUE  -> String is padded with blanks
+ *                      FALSE -> String is preceded by blanks
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   WND_LeftJustify = Boolean;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : WND_Done
+ *  Description    : determines the status of the last operation.
+ *  Parameters     : 
+ *  Result         : Boolean
+ *  Precondition   : 
+ *  Postcondition  : RETURNS TRUE IFF the last Read, Open/Close/Move,
+ *                   Initialize action went well. (the ReadAgain routine
+ *                   has no effect in this respect)
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION WND_Done
+                    : Boolean;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : WND_IntegerStatus
+ *  Description    : return the status as an integer (used by VMS)
+ *  Parameters     : None
+ *  Result         : An INTEGER representing the status of the last action
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION WND_IntegerStatus : INTEGER;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_Initialize
+ *  Description     : Initializes this module
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+Procedure WND_Initialize;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_Terminate
+ *  Description     : Terminates the usage of this module
+ *  Parameters      : 
+ *  Precondition    : This module is initialized
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+Procedure WND_Terminate;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_Stop
+ *  Description     : Instructs the window handler to stop its task
+ *  Parameters      : 
+ *  Precondition    : This module is initialized
+ *  Postcondition   : 
+ *  Side Effects    : After this call this module cannot be used anymore
+ *
+ *EMP:::===================================================================*)
+
+Procedure WND_Stop;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_Clear
+ *  Description     : clears a window
+ *  Parameters      : w : WND_Xid
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : w is cleared and the cursor is positioned at
+ *                    (row 1, column 1).
+ *                    WND_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_Clear (w : WND_Xid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_Fetch
+ *  Description     : Fetch the specified window (only necessary for
+ *                    dynamic windows)
+ *  Parameters      : w : WND_Xid
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : The window w exists (can be manipulated)
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_Fetch (w : WND_Xid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_Manage
+ *  Description     : displays the specified window; place w under parent
+ *                    if parent is X_undefined, then w is placed under the
+ *                    current window
+ *  Parameters      : w : WND_Xid
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : The window w is displayed
+ *  Side Effects    : When necessary, manage implies a fetch
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_Manage (w : WND_Xid; parent : WND_Xid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_Unmanage
+ *  Description     : removes a window from the display
+ *  Parameters      : w : WND_Xid
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : Removes the window from the display
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_Unmanage (w : WND_Xid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_StopCommunication
+ *  Description     : Stop communication with window task
+ *  Parameters      : 
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : No communication channel exists anymore with the
+ *                    window task
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_StopCommunication ();
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_SetInputAllowed
+ *  Description     : Define that a widget may (not) be manipulated
+ *  Parameters      : w : WND_Xid, the widget id
+ *                    b : Boolean, when TRUE input will be allowed,
+ *                        when FALSE input will not be allowed
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : b = TRUE  AND input allowed for widget w OR
+ *                    b = FALSE AND input not allowed for widget w
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_SetInputAllowed (w : WND_Xid; b : Boolean);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_ToggleAttention
+ *  Description     : Flip foreground and background colours of widget
+ *  Parameters      : w : WND_Xid
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_ToggleAttention (w : WND_Xid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_RingBell
+ *  Description     : Rings Bell.
+ *  Parameters      : w : WND_Xid
+ *                    count : INTEGER, percentage of volume (-100..100)
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_RingBell(count : INTEGER);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_SetVideoAttr
+ *  Description     : Changes the way in which the specified part of the
+ *                    window is displayed.
+ *  Parameters      : w             : WND_Xid
+ *                    Row           : WND_Range;
+ *                    Rows          : WND_RowRange
+ *                    Column        : WND_ColumnRange
+ *                    Columns       : WND_ColumnRange
+ *                    VideoAttrib   : WND_VideoAttributes
+ *  Precondition    : w is opened.
+ *  Postcondition   : The specified part of the window is displayed using
+ *                    the specified video attribute.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_SetVideoAttr (
+	w            : WND_Xid;
+        Row          : WND_RowRange;
+        Rows         : WND_RowRange;
+        Column       : WND_ColumnRange;
+        Columns      : WND_ColumnRange;
+        VideoAttrib  : WND_VideoAttributes);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : WND_Column
+ *  Description    : returns the current column position
+ *  Parameters     : w : WND_Xid
+ *  Result         : WND_ColumnRange
+ *  Precondition   : w is previously opened AND
+ *                   WND_Initialize has been called
+ *  Postcondition  : RETURNS the current column position
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION WND_Column (w : WND_Xid) : WND_ColumnRange;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : WND_Row
+ *  Description    : returns the current row position
+ *  Parameters     : w : WND_Xid
+ *  Result         : WND_RowRange
+ *  Precondition   : w is previously opened AND
+ *                   WND_Initialize has been called
+ *  Postcondition  : RETURNS the current row position
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION WND_Row (w : WND_Xid) : WND_RowRange;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_NewRowColumn
+ *  Description     : moves the cursor to specified place
+ *  Parameters      : w : WND_Xid
+ *                    Row : WND_RowRange
+ *                    Column : WND_ColumnRange
+ *  Precondition    : w has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : cursor is positioned at (row,column) if possible
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_NewRowColumn (
+	w      : WND_Xid;
+        Row    : WND_RowRange;
+        Column : WND_ColumnRange);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_SetBoolean
+ *  Description     : Set the value of a Boolean widget
+ *  Parameters      : w : WND_Xid
+ *                    b : Boolean, new value
+ *  Precondition    : w has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : widget w has the new value b
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_SetBoolean (w : WND_Xid; b : Boolean);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetBoolean
+ *  Description     : reads a Boolean from the window
+ *  Parameters      : w : WND_Xid
+ *                    VAR b : Boolean
+ *  Precondition    : w is opened
+ *  Postcondition   : i has the boolean value associated with w
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_GetBoolean (w : WND_Xid; VAR b : Boolean);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_SetInteger
+ *  Description     : Set the value of an integer widget
+ *  Parameters      : w : WND_Xid
+ *                    i : integer, the new value
+ *  Precondition    : w has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : widget w has the new value i
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_SetInteger (w : WND_Xid; i : Integer);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetInteger
+ *  Description     : reads an Integer from a window object
+ *  Parameters      : w : WND_Xid
+ *                    VAR i : Integer
+ *  Precondition    : w has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : i has the integer value associated with w
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_GetInteger (w : WND_Xid; VAR i : Integer);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_SetString
+ *  Description     : Set the value of a string widget
+ *  Parameters      : w : WND_Xid
+ *                    const s ; string, the new value
+ *  Precondition    : w has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : widget w has the new value s
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_SetString (w : WND_Xid; const s : String);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_SetStringId
+ *  Description     : Set the value of a string widget via a string_id
+ *  Parameters      : w : WND_Xid
+ *                    id : WND_Sid, the id of the new string value
+ *  Precondition    : w has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : widget w has the new string value, associated with id
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_SetStringId (w : WND_Xid; id : WND_Sid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_SetMessage
+ *  Description     : Send a message to the message area via a string_id
+ *  Parameters      : id : WND_Sid, the new message (string) id
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : the message area shows the string associated with id
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_SetMessage (id : WND_Sid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_ClearMessage
+ *  Description     : Clear the message area
+ *  Parameters      : 
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : the message area is clear
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_ClearMessage ();
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetString
+ *  Description     : Get the string value of a widget
+ *  Parameters      : w : WND_Xid
+ *                    var s : string, the retrieved string
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : s contains the string value of widget w
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_GetString (w : WND_Xid; var s : string);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_SetStringList
+ *  Description     : Define a list of strings for a list widget
+ *  Parameters      : w : WND_Xid, a list widget
+ *                    const sa : array of STRING_string
+ *                    n_strs : integer, number of strings in sa
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : the list of w consists of sa
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_SetStringList (
+	w : WND_Xid; 
+	const sa : array [n0..n1 : integer] of STRING_String;
+        n_strs : integer);
+
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_SetStringListSelected
+ *  Description     : Define a list of selected strings for a widget
+ *  Parameters      : w : WND_Xid, a list widget
+ *                    const sa : array of STRING_string
+ *                    n_strs : integer, number of strings in sa
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : the selected part of the list of w consists of sa
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_SetStringListSelected (
+	w : WND_Xid; 
+	const sa : array [n0..n1 : integer] of STRING_String;
+        n_strs : integer);
+
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetStringList
+ *  Description     : Get the list of a list widget
+ *  Parameters      : w : WND_Xid
+ *                    var sa : array of STRING_string
+ *                    var n_strs : integer, the retrived number of strings
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : sa contains the list of widget w
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_GetStringList (
+	w : WND_Xid;
+	var sa : array [n0..n1 : integer] of String_String;
+	var n_strs : integer);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetStringListSelected
+ *  Description     : Get the selected part of the list of a list widget
+ *  Parameters      : w : WND_Xid
+ *                    var sa : array of STRING_string
+ *                    var n_strs : integer, the retrived number of strings
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : sa contains the selected part of the list of widget w
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_GetStringListSelected (
+	w : WND_Xid;
+	var sa : array [n0..n1 : integer] of STRING_String;
+	var n_strs : integer);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetSelectedPos
+ *  Description     : Get the positions of the selected part of the list of
+ *                    a list widget
+ *  Parameters      : w : WND_Xid
+ *                    var sa : array of INTEGER
+ *                    var n_pos : integer, the retrieved number of integers
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : sa contains the selected part of the list of widget w
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_GetSelectedPos (
+	w : WND_Xid;
+	var sa : array [n0..n1 : integer] of INTEGER;
+	var n_pos : integer);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_SetKeys
+ *  Description     : Add a number of keys to the set of keys that may be
+ *                    chosen by the user;
+ *                    a key number can be
+ *                    > 0 : when the key is chosen and there are sub-windows
+ *                          active: generate a key sequence to clean up these
+ *                          windows, before this key is returned
+ *                    < 0 : simply return the key when chosen (positive value)
+ *                    = 0 : this is X_undefined: no key chosen; it may be used
+ *                          to indicate that keys contains no more valid keys
+ *  Parameters      : w : window to which the keys belong
+ *                    Const keys  : array [n0 .. n1 : integer] of integer;
+ *  Precondition    : WND_Initialize has been called AND
+ *                    WND_Manage (w) has been called
+ *  Postcondition   : all keys in keys can be chosen by the user
+ *                    WND_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_SetKeys (
+              w      : WND_Xid;
+	Const keys   : array [n0 .. n1 : integer] of integer);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_UnsetKeys
+ *  Description     : Unset a number of keys: they cannot be chosen until 
+ *                    they are set again; An unmanage of a window implies
+ *                    an unset of all keys associated with that window
+ *  Parameters      : Const keys  : array [n0 .. n1 : integer] of WND_Xid;
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : all keys in keys vcannot be chosen anymore
+ *                    WND_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_UnsetKeys (
+	Const keys   : array [n0 .. n1 : integer] of WND_Xid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetKey
+ *  Description     : reads one user choice (a key)
+ *  Parameters      : VAR k : Integer
+ *  Precondition    : WND_Initialize has been called
+ *  Postcondition   : k is element of keys that have been set with WND_SetKeys
+ *                    WND_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_GetKey (
+        VAR   k      : WND_Xid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_ReadString
+ *  Description     : reads a String of Characters, until end of line
+ *  Parameters      : w : WND_Xid
+ *                    VAR Str : String_String
+ *                    row : WND_RowRange
+ *  Precondition    : w has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : Str is filled with input Characters
+ *                    after length(Str) Characters have been read the remaining
+ *                    Chars>space are skipped.
+ *                    input is terminated at end of line
+ *                    A call of WND_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_ReadString (
+	w : WND_Xid;
+        VAR Str : string;
+	row : WND_RowRange);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_WriteString
+ *  Description     : writes String_String to text window
+ *  Parameters      : w : WND_Xid
+ *                    Str : String_String
+ *                    width : WND_IORange
+ *                    LeftJustify : WND_LeftJustify
+ *  Precondition    : w is has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : Str is written to w using atleast width Chars starting
+ *                    at current row and column position.
+ *                    The written String is justified according to LeftJustify
+ *                    If the String does not fit on the current line, then the
+ *                    complete String is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written 
+ *                    on the new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_WriteString (
+	w : WND_Xid;
+        const Str : string;
+        width : WND_IORange;
+        LeftJustify : WND_LeftJustify);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_WriteChar
+ *  Description     : writes one Character to text window
+ *  Parameters      : w : WND_Xid
+ *                    c : Char
+ *  Precondition    : w is has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : c is written to w at current row and column position.
+ *                    If it does not fit on the current line, then the Character
+ *                    is written on a new line!
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_WriteChar (w : WND_Xid; c : Char);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_WriteInteger
+ *  Description     : writes an Integer to text window
+ *  Parameters      : w : WND_Xid
+ *                    i : Integer
+ *                    width : WND_IORange
+ *                    LeftJustify : WND_LeftJustify
+ *  Precondition    : w is has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : i is written to w, using at least width positions
+ *                    starting at current row and column position.
+ *                    The written Integer is justified according to 
+ *                    LeftJustify.
+ *                    If the Integer does not fit on the current line, then
+ *                    the complete Integer is written on a new line! 
+ *                    Preceding and trailing spaces are written as far as 
+ *                    possible in the currentline, remaining spaces are 
+ *                    written on the new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_WriteInteger (
+	w : WND_Xid;
+        i : Integer;
+        width : WND_IORange;
+        LeftJustify : WND_LeftJustify);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_WriteBoolean
+ *  Description     : writes a Boolean to window
+ *  Parameters      : w : WND_Xid
+ *                    b : Boolean
+ *                    width : WND_IORange
+ *                    LeftJustify : WND_LeftJustify
+ *  Precondition    : w is opened
+ *  Postcondition   : b is written to w, using at least width positions
+ *                    starting at current row and column position.
+ *                    The written Boolean is justified according to 
+ *                    LeftJustify.
+ *                    If the Boolean does not fit on the current line, then 
+ *                    the complete Boolean is written on a new line! 
+ *                    Preceding and trailing spaces are written as far as 
+ *                    possible in the currentline, remaining spaces are 
+ *                    written on the new line.
+ *                    The text representation of the Boolean is "TRUE" or
+ *                    "FALSE".
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_WriteBoolean (
+	w : WND_Xid;
+        b : Boolean;
+        width : WND_IORange;
+        LeftJustify : WND_LeftJustify);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_WriteSpace
+ *  Description     : writes spaces to text window
+ *  Parameters      : w : WND_Xid
+ *                    width : WND_IORange
+ *  Precondition    : w is has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : width spaces are written to w starting at current row
+ *                    and column position.
+ *                    The spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the 
+ *                    new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_WriteSpace (w : WND_Xid; width : WND_IORange);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_WriteLine
+ *  Description     : writes and end-of-line mark in the window w
+ *  Parameters      : w : WND_Xid
+ *                    b : Boolean
+ *  Precondition    : w is has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : IFF b OR 'current-line is not closed yet' THEN
+ *                       end-of-line marker is written into w,
+ *                       current row is incremented and current column
+ *                       becomes 1
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_WriteLine (w : WND_Xid; b : Boolean);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_DestroyTree
+ *  Description     : Destroy a tree 
+ *  Parameters      : w : WND_Xid, the tree widget to be destroyed
+ *  Precondition    : w is has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : w is an empty tree widget
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_DestroyTree (w : WND_Xid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_StartTree
+ *  Description     : Start a (new) tree
+ *  Parameters      : w : WND_Xid, the tree widget
+ *  Precondition    : w is has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : w is an empty tree widget, ready to be filled
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_StartTree (w : WND_Xid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_EndTree
+ *  Description     : End the definition of a tree
+ *  Parameters      : id : WND_Xid, the tree widget
+ *  Precondition    : WND_StartTree must have been called for this id
+ *  Postcondition   : w is a complete tree
+ *  Side Effects    : w will be drawn on the screen
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_EndTree (id : WND_Xid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_SetNode
+ *  Description     : Add a node to a tree widget
+ *  Parameters      : node_id, parent_id : WND_Did
+ *                    const label1, label2 : string
+ *  Precondition    : WND_StartTree must have been called,
+ *                    WND_EndTree not yet
+ *  Postcondition   : node_id is added to the current tree with SuperNode
+ *                    parent_id, and as label the concatenation of
+ *                    label1 and label2 (separated by a new line)
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_SetNode (node_id, parent_id : WND_Did;
+                       const label1, label2 : String );
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetNodeSelected
+ *  Description     : Get the id of the selected node or 0 if none selected
+ *  Parameters      : id : WND_Xid, the tree widget
+ *                    var node_id : WND_Did, the selected node
+ *  Precondition    : id is a defined tree widget
+ *  Postcondition   : node_id is selected node of id, or 0
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_GetNodeSelected (id : WND_Xid ; var node_id : WND_Did);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_DestroyAttr
+ *  Description     : Destroy an attr widget
+ *  Parameters      : w : WND_Xid, the attr widget to be destroyed
+ *  Precondition    : w is has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : w is an empty attr widget
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_DestroyAttr (id : WND_Xid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_StartAttr
+ *  Description     : Start a (new) attr widget
+ *  Parameters      : w : WND_Xid, the attr widget
+ *  Precondition    : w is has been opened AND
+ *                    WND_Initialize has been called
+ *  Postcondition   : w is an empty attr widget, ready to be filled
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_StartAttr (id : WND_Xid);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_EndAttr
+ *  Description     : End the definition of an attr widget
+ *  Parameters      : id : WND_Xid, the attr widget
+ *  Precondition    : WND_StartTree must have been called for this id
+ *  Postcondition   : w is a complete attr
+ *  Side Effects    : w will be drawn on the screen
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_EndAttr (id : WND_Xid);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_SetAttr
+ *  Description     : Add an entry to a attr widget
+ *  Parameters      : attr_id : WND_Xid, the attr widget
+ *                    const name : String, the name of the attribute entry
+ *                    complex : Boolean, if TRUE then it is a complex attr entry
+ *                    editable : Boolean, when TRUE, it may be changed
+ *                    const sa : array of STRING_string, the value(s) of the entry
+ *                    n_strs : integer, the number of valid entries in sa
+ *  Precondition    : WND_StartAttr must have been called,
+ *                    WND_EndAttr not yet
+ *  Postcondition   : a new entry is added to attr_id as defined in the parameters
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_SetAttr (attr_id : WND_Did;
+                       const name: String;
+                       complex : Boolean;
+                       editable : Boolean;
+                       const sa : array [n0..n1 : integer] of STRING_String;
+                       n_strs : integer);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetAttrSelected
+ *  Description     : Get the id of the selected attrr entry or 0 if none selected
+ *  Parameters      : id : WND_Xid, the attr widget
+ *                    var attr_id : WND_Did, the selected attribute
+ *  Precondition    : id is a defined attr widget
+ *  Postcondition   : attr_id is selected attribute of id, or 0
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_GetAttrSelected (id : WND_Xid ; var attr_id : WND_Did);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetAttrValues
+ *  Description     : Get the values of a specified attr widget entry
+ *  Parameters      : id : WND_Did, the attr widget entry
+ *                    var name : String_string, the name of the entry
+ *                    var sa : array of STRING_string, the value(s)
+ *                    var n_strs : integer, the number of valid entries in sa
+ *  Precondition    : id is a defined attr widget
+ *  Postcondition   : name and sa contain the values of id
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_GetAttrValues (id : WND_Did ;
+                            var name : String_String;
+                            var sa : array [n0..n1 : integer] of String_String;
+                            var n_strs : integer);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetAttrChanged
+ *  Description     : Get the widget entries of the changed attributes
+ *  Parameters      : id : WND_Xid, the attr widget
+ *                    var sa : array of WND_Did the changed attr widget entries
+ *                    var n_dids : integer, the number of valid entries in sa
+ *  Precondition    : id is a defined attr widget
+ *  Postcondition   : sa contains the values of id
+ *  Side Effects    :
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_GetAttrChanged (id : WND_Xid ;
+                            var sa : array [n0..n1 : integer] of WND_Did;
+                            var n_dids : integer);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_CodeKey
+ *  Description     : Code the dynamic Xid given a static Xid and a screen
+ *                    number (for dynamic windows)
+ *  Parameters      : key : WND_Xid, the static key Xid
+ *                    screenNr : integer
+ *  Return Value    : WND_Xid, the dynamic key Xid
+ *  Precondition    : none
+ *  Postcondition   : WND_CodeKey = codeKey (key, screenNr)
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+Function WND_CodeKey (key : WND_Xid; screenNr : integer) : WND_Xid;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_DecodeKey
+ *  Description     : Decode a static Xid and a screenNr from a given
+ *                    dynamic Xid
+ *  Parameters      : rkey : WND_Xid, the dynamic Xid
+ *                    var key : WND_Xid, the static Xid
+ *                    var screenNr : integer
+ *  Precondition    : none
+ *  Postcondition   : rkey = codeKey (key, screenNr)
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_DecodeKey (rkey : WND_Xid; Var key : WND_Xid; Var screenNr : integer);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetNextDid
+ *  Description     : Get next free WND_Did ident
+ *  Parameters      : 
+ *  Precondition    : next_free_Did > 0
+ *  Postcondition   : next_free_Did is incremented with 1
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+Function WND_GetNextDid : WND_Did;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_ResetDid
+ *  Description     : Reset handing out of next free WND_Did
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : next_free_Did = 1
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_ResetDid;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_GetFreeScreenNr
+ *  Description     : Get next free screen number for a given screen type
+ *  Parameters      : scrType : WND_ScreenType
+ *                    var screen_nr : integer
+ *  Return Value    : Boolean, True when next free number was available
+ *  Precondition    : 
+ *  Postcondition   : WND_GetFreeScreenNr = False or
+ *                   (WND_GetFreeScreenNr = True and screen_nr is number
+ *                    of free screen of scrType)
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+Function WND_GetFreeScreenNr (scrType : WND_ScreenType; VAR screen_nr : integer):
+         boolean;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : WND_FreeScreenNr
+ *  Description     : Free the screen number for a given screen type
+ *  Parameters      : scrType : WND_ScreenType
+ *                    screenNr : integer
+ *  Precondition    : screenNr of type scrType is not free
+ *  Postcondition   : screenNr of type scrType is free
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE WND_FreeScreenNr (scrType : WND_ScreenType; screenNr : integer);
+EXTERNAL;
+
+
+END {WND};

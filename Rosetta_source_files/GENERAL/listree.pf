@@ -1,0 +1,725 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : LISTREE 
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  This module defines the abstract datatype S-trees.
+ *                     The S-trees defined here are completely
+ *                     language independent. In order to accomplish this
+ *                     a kind of trick has been used. For each language
+ *                     there will be a module LS-STREE, in which the
+ *                     language specific parts are defined explicitely.
+ *                     If S-trees are passed from language specific modules
+ *                     to language independent modules a CAST operation 
+ *                     transforms the LS-Strees into the LI-Strees.
+ *
+ *  Modified at  27-APR-1987 by Carel Fellinger
+ *                     The definitions of the data types Stree and Dtree are
+ *                     mutual dependent. An Stree contains a pointer to a list
+ *                     of Dtrees, beeing the result of applying M-Parser to
+ *                     that Stree. A Dtree contains a pointer to a list of
+ *                     Strees, beeing the result of applying M-Generator to
+ *                     that Dtree. In this way both M-Parser and M-Generator
+ *                     can be a little more efficient, because in case of
+ *                     convergence in Strees cq. Dtrees M_Parser cq. M_Generator
+ *                     only have to be applied once!
+ *                     In a language like Modula2 this mutual dependency could
+ *                     be solved by defining the type Dtree as a hidden type in
+ *                     the definition of Stree, and declare it to be a real
+ *                     Dtree in the implementation of Stree. (The same has to
+ *                     be done for Stree in Dtree.) In VAX/VMS Pascal we have to
+ *                     use the CAST trick again (see above).
+ *
+ *EMP:::===================================================================*)
+
+pragma C_include('lidomaint.pf');
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+
+PACKAGE LISTREE;
+WITH LIDOMAINT;
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : LISTREE_MaxBugString
+ *  Description    : Maximum length of strings used in LI part of S-tree node
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   LISTREE_MaxBugString = 50;
+
+TYPE
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LISTREE_pStree
+ *  Description    : Pointer to S-tree
+ *
+ *EMP:::===================================================================*)
+   LISTREE_pStree   = ^LISTREE_Stree;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LISTREE_Prelnode
+ *  Description    : Pointer to relation node
+ *
+ *EMP:::===================================================================*)
+   LISTREE_pRelNode = ^LISTREE_RelNode;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LISTREE_PLIrecord
+ *  Description    : Pointer to LI stree information
+ *
+ *EMP:::===================================================================*)
+   LISTREE_pLIrecord = ^LISTREE_LIrecord;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LISTREE_stree
+ *  Description    : This is the LI definition of an S-tree.
+ *
+ *                           LISTREE_stree
+ *                           +-----+
+ *                           |     |
+ *                           |     |
+ *                           +-----+
+ *                              |
+ *                              |                    LISTREE_relnode
+ *                           +-----+     +-----+     +-----+
+ *                           |     |---->|     |---->|     |
+ *                           +-----+     +-----+     +-----+
+ *                              |           |           |
+ *                              |           |           |
+ *
+ *EMP:::===================================================================*)
+   LISTREE_Stree = RECORD cat  : LIDOMAINT_syntcat;
+                          sons : LISTREE_pRelNode;
+                          twin : LISTREE_pstree;
+                          LI   : LISTREE_pLIrecord;
+                          LS   : LIDOMAINT_pLSrecord
+                   END;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LISTREE_relnode
+ *  Description    : Definition of relation-node
+ *
+ *EMP:::===================================================================*)
+   LISTREE_RelNode = RECORD node     : LISTREE_pStree;
+                            brother  : LISTREE_pRelNode;
+                            relation : LIDOMAINT_synrel
+                     END;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LISTREE_LIrecord
+ *  Description    : Definition of a record which can contain specific
+ *                   LI information which is irrelevant for the LS software
+ *
+ *                   Done iff MParser has been applied to this Stree and
+ *                   the resulting Dtrees have been saved in Dtrees.
+ *                   Dtrees holds a pointer to a set of dtrees, implemented
+ *                   by means of the CAST trick.
+ *                   Both Done and Dtrees are only to be accessed via the 
+ *                   routines LIStree_IsParseResultSaved, LIStree_SaveParseResult
+ *                   and LIStree_ReturnParseResult.
+ *
+ *EMP:::===================================================================*)
+   LIStree_pSetOfSuperDtree = ^integer;
+   LISTREE_pHyperNodeElt    = ^integer;
+   LISTREE_BugString        = RECORD
+                                 str: STRING(LISTREE_MaxBugString);
+                                 len: INTEGER
+                              END;
+   LISTREE_pBugString       = ^LISTREE_BugString;
+   LISTREE_LIrecord = RECORD n,minpos,maxpos : integer;
+                             first        : BOOLEAN;
+                             Done         : BOOLEAN;
+                             Dtrees       : LIStree_pSetOfSuperDtree;
+                             HyperNodeElt : LISTREE_pHyperNodeElt;
+                             X, Y, len    : INTEGER;
+                             BxprId       : INTEGER;
+                             BugString    : LISTREE_pBugString;
+                             synbonus     : INTEGER;
+                             sembonus     : INTEGER;
+                      END;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LISTREE_SetOfStrees
+ *  Description    : 
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   LISTREE_pLoStree   = ^LISTREE_LoStree;
+   LISTREE_LoStree    = RECORD
+                             arg: LISTREE_pStree;
+                             next: LISTREE_pLoStree;
+                             bonus: INTEGER;
+                         END;
+   LISTREE_SetOfStrees = RECORD
+   			     first,last:LISTREE_pLoStree;
+                             j:INTEGER; {for use in surface parser}
+                             cur : LISTREE_pLoStree
+   			 END;
+
+   LISTREE_pSetOfStrees = ^LISTREE_SetOfStrees;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LISTREE_SetOfSetOfStrees
+ *  Description    : 
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   LISTREE_plossetofstrees = ^LISTREE_lossetofstrees;
+   LISTREE_lossetofstrees = RECORD
+                     next:LISTREE_plossetofstrees;
+                     arg:LISTREE_setofstrees
+                    END;
+   LISTREE_SetOfSetOfStrees = RECORD
+                               first,last:LISTREE_plossetofstrees;
+                               StillCartProdElts: BOOLEAN
+                              END;
+   LISTREE_TupleOfSetOfStrees = LISTREE_SetOfSetOfStrees;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LISTREE_TupleOfStrees
+ *  Description    : 
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   LISTREE_TupleOfStrees = LISTREE_SetOfStrees;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LISTREE_SetOfTupleOfStrees
+ *  Description    : 
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   LISTREE_pTupleOfStrees = ^LISTREE_TupleOfStrees;
+   LISTREE_pLoTupleOfStrees = ^LISTREE_LoTupleOfStrees;
+   LISTREE_LoTupleOfStrees = RECORD
+                                 arg:LISTREE_TupleOfStrees;
+                                 next:LISTREE_pLoTupleOfStrees;
+                                 bonus: INTEGER;
+                             END;
+   LISTREE_SetOfTupleOfStrees = RECORD
+                                  first,last:LISTREE_pLoTupleOfStrees
+                                END;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_InitLIRecord
+ *  Description     : Gives all attributes of the LI record an initial value
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_InitLIRecord(VAR s: LISTREE_pStree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_MakeStree
+ *  Description     : Creates an Stree, with default values for the LI
+ *                    attributes
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_MakeStree(VAR s: LISTREE_pStree);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_MakeRelNode
+ *  Description     : Creates a relation node
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_MakeRelNode(VAR rs: LISTREE_pRelNode);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_InitSetOfStrees
+ *  Description     : makes empty set
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_InitSetOfStrees(VAR S:LISTREE_SetOfStrees);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_AppendStree
+ *  Description     : appends stree 'stree' to set S
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_AppendStree(stree:LISTREE_pStree;
+                                          VAR S:LISTREE_SetOfStrees);
+EXTERNAL;
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_AppendStreebonus
+ *  Description     : appends stree 'stree' with bonus to set S
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_AppendStreebonus(stree:LISTREE_pStree;
+                                          VAR S:LISTREE_SetOfStrees;
+                                          bonus:INTEGER);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_AppendSortStree
+ *  Description     : add stree 'stree' to sorted set S
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_AppendSortStree(stree:LISTREE_pStree;
+                                          VAR S:LISTREE_SetOfStrees);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_TakeStree
+ *  Description     : takes stree 'stree' from set S
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_TakeStree(VAR stree:LISTREE_pStree;
+                                          VAR S:LISTREE_SetOfStrees);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_TakeStreeBonus
+ *  Description     : takes stree 'stree' from set S
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_TakeStreeBonus(VAR stree:LISTREE_pStree;
+                                          VAR S:LISTREE_SetOfStrees;
+                                          VAR bonus: INTEGER);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LISTREE_StillStrees
+ *  Description    : is true iff S is not empty
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LISTREE_StillStrees(S:LISTREE_SetOfStrees)
+                    :BOOLEAN;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name : LISTREE_MergeSetsOfStrees
+ *  Description    : merges S1 with and into S2
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_MergeSetsOfStrees(S1:LISTREE_SetOfStrees;
+                                               VAR S2:LISTREE_SetOfStrees);
+EXTERNAL;
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name : LISTREE_MergeSetsOfTupleOfStrees
+ *  Description    : merges S1 with and into S2
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_MergeSetsOfTupleStrees(S1:LISTREE_SetOfTupleOfStrees;
+                                               VAR S2:LISTREE_SetOfTupleOfStrees);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_EmptyTuple
+ *  Description     : creates empty tuple of strees
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_EmptyTuple(VAR T:LISTREE_TupleOfStrees);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_AddToTuple
+ *  Description     : adds stree 'stree' to tuple T
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 'stree' is the last one in T
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_AddToTuple(stree:LISTREE_pStree;
+                                          VAR T:LISTREE_TupleOfStrees);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_ExtractFromTuple
+ *  Description     : takes first stree from tuple
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 'stree' is no longer in T
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_ExtractFromTuple(VAR stree:LISTREE_pStree;
+                                              VAR T:LISTREE_TupleOfStrees);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LISTREE_StillElements
+ *  Description    : is true iff T is the empty tuple
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LISTREE_StillElements(T:LISTREE_TupleOfStrees)
+                    :BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_InitSetOfTupleOfStrees
+ *  Description     : makes empty set
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_InitSetOfTupleOfStrees(
+                             VAR S:LISTREE_SetOfTupleOfStrees);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_AppendTupleOfStrees
+ *  Description     : appends tuple T to set S
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_AppendTupleOfStrees(T:LISTREE_TupleOfStrees;
+                                          VAR S:LISTREE_SetOfTupleOfStrees);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_AppendTupleOfStreesbon
+ *  Description     : appends tuple T with bonus to set S
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_AppendTupleOfStreesbon(T:LISTREE_TupleOfStrees;
+                                          VAR S:LISTREE_SetOfTupleOfStrees;
+                                          bonus:INTEGER);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_TakeTupleofStrees
+ *  Description     : takes tuple T from set S
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_TakeTupleOfStrees(VAR T:LISTREE_TupleOfStrees;
+                                          VAR S:LISTREE_SetOfTupleOfStrees);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_TakeTupleofStreesBonus
+ *  Description     : takes tuple T from set S
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_TakeTupleOfStreesBonus(VAR T:LISTREE_TupleOfStrees;
+                                          VAR S:LISTREE_SetOfTupleOfStrees;
+                                          VAR bonus: INTEGER);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LISTREE_StillTupleOfStrees
+ *  Description    : is true iff S is not empty
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LISTREE_StillTupleOfStrees(S:LISTREE_SetOfTupleOfStrees)
+                    :BOOLEAN;
+EXTERNAL;
+   
+   
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LIStree_SaveParseResult
+ *  Description     : Saves the Dtrees resulting from applying M-Parser to t.
+ *  Parameters      : ds : LIStree_pSetOfSuperDtree;
+ *                    VAR t : LIStree_pStree
+ *  Precondition    : ds CAST SuperDtree_SetOfSuperDtree = M-Parser(t)
+ *  Postcondition   : LIStree_IsParseResultSaved(t)
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LIStree_SaveParseResult (ds : LIStree_pSetOfSuperDtree;
+                                              VAR t : LIStree_pStree);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LIStree_IsParseResultSaved
+ *  Description    : Tells whether the result of applying M-parser to t has been
+ *                   saved.
+ *  Parameters     : t : LIStree_pStree
+ *  Result         : TRUE iff the result of applying M-parser to t has been
+ *                   saved.
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LIStree_IsParseResultSaved (t : LIStree_pStree)
+                    : BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LIStree_ReturnParseResult
+ *  Description    : Returns the Dtrees resulting from applying M-Parser to t.
+ *  Parameters     : t : LIStree_pStree
+ *  Result         : LIStree_pSetOfSuperDtree
+ *  Precondition   : LIStree_IsParseResultSaved(t)
+ *  Postcondition  : RETURNS ds AND ds CAST SuperDtree_pSetOfSuperDtree = M-Parser(t)
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LIStree_ReturnParseResult (t : LIStree_pStree)
+                    : LIStree_pSetOfSuperDtree;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_EmptyTofSofStrees
+ *  Description     : creates empty tuple of strees
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_EmptyTofSofStrees(VAR T:LISTREE_TupleOfSetOfStrees);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_AddToTofSofStrees
+ *  Description     : 
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_AddToTofSofStrees(strees:LISTREE_SetOfStrees;
+                                          VAR T:LISTREE_TupleOfSetOfStrees);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_AddBackToTofSofStrees
+ *  Description     : 
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_AddBackToTofSofStrees(strees:LISTREE_SetOfStrees;
+                                          VAR T:LISTREE_TupleOfSetOfStrees);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_TakeFromTofSofStrees
+ *  Description     : takes first set of strees from tuple
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 'stree' is no longer in T
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_TakeFromTofSofStrees(VAR strees:LISTREE_SetOfStrees;
+                                              VAR T:LISTREE_TupleOfSetOfStrees);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LISTREE_TakeTupleFromCartProd
+ *  Description     : takes first tuple of strees from tuple of sets of strees
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_TakeTupleFromCartProd(VAR tupl:LISTREE_TupleOfStrees;
+                                              VAR T:LISTREE_TupleOfSetOfStrees);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LISTREE_StillCartProdElts
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LISTREE_StillCartProdElts(T:LISTREE_TupleOfSetOfStrees)
+                    :BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LISTREE_InitCartProdElts
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LISTREE_InitCartProdElts(VAR T:LISTREE_TupleOfSetOfStrees);
+EXTERNAL;
+
+
+END {LISTREE};

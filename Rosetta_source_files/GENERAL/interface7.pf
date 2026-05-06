@@ -1,0 +1,160 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : INTERFACE7 
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  
+ *
+ *EMP:::===================================================================*)
+
+pragma C_Include('listree.pf');
+pragma C_Include('string.pf');
+pragma C_Include('interface1.pf');
+pragma C_Include('interface8.pf');
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+PACKAGE INTERFACE7;
+WITH
+LISTREE, STRNG, INTERFACE1, INTERFACE8;
+
+CONST
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  :    INTERFACE7_MAXWORDAMBID
+ *  Description    :    Maximum number of ambiguous segmentations for one
+ *                      word.
+ *
+ *EMP:::===================================================================*)
+
+   INTERFACE7_MAXWORDAMBID             = 63;
+
+TYPE
+
+   INTERFACE7_NodeType        = ( OriginalWord, MorphWord );
+
+   INTERFACE7_pRowSeqSegmKeys = ^INTERFACE7_RowSeqSegmKeys;
+   INTERFACE7_pSeqSegmKeys    = ^INTERFACE7_SeqSegmKeys;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : INTERFACE7_pRowSeqSegmKeys, INTERFACE7_RowSeqSegmKeys
+ *  Description    : Definition of the main datastructure in the morphology.
+ *                   For insiders: comparable to the connectionnode of
+ *                   Rosetta2.
+ *
+ *EMP:::===================================================================*)
+   INTERFACE7_RowSeqSegmKeys  = RECORD 
+                                  nxtamb : INTERFACE7_pRowSeqSegmKeys;
+                                  rn     : INTERFACE7_pRowSeqSegmKeys;
+                                  fseq,
+                                  lseq   : INTERFACE7_pSeqSegmKeys;
+                                  idnr   : INTEGER;
+                                  kind   : INTERFACE7_NodeType;
+                                  prv,
+                                  nxt    : INTERFACE7_pRowSeqSegmKeys;
+                                  result : INTERFACE8_pSeqWords;
+                           END;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : INTERFACE7_pSeqSegmKeys, INTERFACE7_SeqSegmKeys
+ *  Description    : 
+ *
+ *EMP:::===================================================================*)
+   INTERFACE7_SeqSegmKeys  = RECORD 
+                               prvseg,
+                               nxtseg,
+                               nxtamb,
+                               rn           : INTERFACE7_pSeqSegmKeys;
+                               CASE segkind : INTERFACE1_segmenttype OF
+                               keyseg : ( CASE keykind : INTERFACE1_keytype OF
+                                          PFKtype : ( PFK : integer);
+                                          SFKtype : ( SFK : integer);
+                                          GLUtype : ( GLU : integer);
+                                          IDPtype,
+                                          BAStype : ( KEY : integer;
+                                                      word: STRING_String) );
+                               streeseg : ( stree : LISTREE_pStree )
+                        END;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : INTERFACE7_MakeSeqSegmStree
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION INTERFACE7_MakeSeqSegmStree(n : INTERFACE7_pSeqSegmKeys):
+                                           INTERFACE7_pSeqSegmKeys;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : INTERFACE7_MakeSeqSegmKey
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION INTERFACE7_MakeSeqSegmKey(n : INTERFACE7_pSeqSegmKeys):
+                                              INTERFACE7_pSeqSegmKeys;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : INTERFACE7_MakeWRowSeqSegm
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION INTERFACE7_makeWRowSeqSegm(n : INTERFACE7_pRowSeqSegmKeys):
+                                               INTERFACE7_pRowSeqSegmKeys;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : INTERFACE7_MakeSRowSeqSegm
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION INTERFACE7_makeSRowSeqSegm(n : INTERFACE7_pRowSeqSegmKeys):
+                                               INTERFACE7_pRowSeqSegmKeys;
+
+EXTERNAL;
+END {INTERFACE7};

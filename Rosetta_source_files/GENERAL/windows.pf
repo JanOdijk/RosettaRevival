@@ -1,0 +1,2280 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project
+ *
+ *  Module Title     : Windows
+ *  Creation date    : 05-SEP-1986
+ *  Modification date: 03-DEC-1986
+ *  Authors          : Carel Fellinger & Jeroen Medema
+ *
+ *  Copyright (c) 1986, by Nederlandse Philips Bedrijven BV.
+ *
+ *  Remarks         : This module defines some basic operations on
+ *                    text windows. 
+ *
+ *                    A text window consists of Characters, lines and
+ *                    pages. The reading and writing of Key, Char, Integer,
+ *                    Boolean, String and String_String is supported.
+ *                    Also some basic window manipulation procedures
+ *                    are provided 1) to skip spaces, complete lines and
+ *                    pages, 2) to detect end-of-line, end-of-page and
+ *                    end-of-window conditions, 3) to end a line or a page,
+ *                    4) to reread the last read Character, 5) to determine how
+ *                    many Characters have been read/written in the current
+ *                    line, 6) to open/close (named) windows, 7) to open/close/
+ *                    move viewports, 8) to open/close a device for private
+ *                    or shared use and 9) to position the cursor at will.
+ *
+ *                    The routine ReadAgain makes it easy to implement
+ *                    parsers, f.e. if the last read Character was a digit
+ *                    then ReadAgain followed by ReadInteger will read and
+ *                    convert an Integer, but if it was a letter then ReadAgain
+ *                    followed by ReadStr will read the complete String.
+ *                    Also end-of-line/end-of-window conditions are detectable
+ *                    in a more convinient way.
+ *
+ *                    The open routines makes it possible to open a window,
+ *                    link it to a viewport and link a viewport to a device.
+ *                    Moreover it makes it possible to mark the device for
+ *                    exclusive or shared use.
+ *
+ *                    The write functions automatically insert an end-of-line
+ *                    in the output Stream if more then MaxIO Characters are
+ *                    being written in the current line. This prevents the
+ *                    system from breaking down in such a case. The insertion
+ *                    is done at the proper places; Strings and Integers are
+ *                    never split over two lines, if it does not fit on the
+ *                    current line all of it will be written on the next line.
+ *
+ *                    A call to Windows_Done will return TRUE IFF the last
+ *                    Read, Open/Close/Move or Translate action went well. The
+ *                    ReadAgain routine has no effect on this.
+ *
+ *                    Before windows, viewports and devices can be used the
+ *                    procedure Windows_Initialize has to be called!
+ *
+ *                    While performing input the key's <HELP> and <CRTLW> are
+ *                    given a special meaning. The first displaying the help
+ *                    window; the second to repaint the screen (e.g. after an
+ *                    external message).
+ *
+ *                    Future Extension: Functions to set global variables
+ *                    which control the mode of displaying: inserting or
+ *                    overwriting.
+ *
+ *                    16-FEB-1987 Windows_IntegerStatus added for test
+ *                     purposes
+ *                     Changed the sequence of the parameters in all the
+ *                     draw routines to get a uniform interface.
+ *                                                       J. Stevens
+ *
+ *                    16-MAR-1987 x and y in WINDOWS_OpenViewPort exchanged
+ *                    in order to let the description be corresponding
+ *                    with the actual action.
+ *                                                       J. Stevens
+ *EMP:::===================================================================*)
+
+
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+pragma C_include('string.pf');
+pragma C_include('strings.pf');
+pragma C_include('str.pf');
+
+
+PACKAGE Windows;
+WITH strng,str;
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_TabSymbol
+ *  Description    : This is the value of the tab-marker (ASCII HT).
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_TabSymbol = Str_HT;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_EndOfLineSymbol
+ *  Description    : This is the value of the end-of-line-marker (ASCII CR).
+ *                   Writing chr(Windows_EndOfLineSymbol) is equivalent to
+ *                   Windows_WriteLine.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_EndOfLineSymbol = Str_CR;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_EndOfPageSymbol
+ *  Description    : This is the value of the end-of-page-marker (ASCII FF).
+ *                   Writing chr(Windows_EndOfSymbolKey) is equivalent to
+ *                   Windows_ClearWindow.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_EndOfPageSymbol = Str_FF;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_TabKey
+ *  Description    : This is the value of the tab-key (ASCII HT).
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_TabKey = Str_HT;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_EndOfLineKey
+ *  Description    : This is the value of the end-of-line-key (ASCII CR).
+ *                   Writing chr(Windows_EndOfLineKey) is equivalent to
+ *                   Windows_WriteLine.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_EndOfLineKey = Str_CR;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_EndOfPageKey
+ *  Description    : This is the value of the end-of-page-key (ASCII FF).
+ *                   Writing chr(Windows_EndOfPageKey) is equivalent to
+ *                   Windows_ClearWindow.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_EndOfPageKey = Str_FF;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_DelKey
+ *  Description    : This is the value of the Del-key (ASCII DEL).
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_DelKey = -1;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F6Key
+ *  Description    : This is the value of the F6-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F6Key = -2;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F7Key
+ *  Description    : This is the value of the F7-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F7Key = -3;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F8Key
+ *  Description    : This is the value of the F8-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F8Key = -4;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F9Key
+ *  Description    : This is the value of the F9-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F9Key = -5;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F10Key
+ *  Description    : This is the value of the F10-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F10Key = -6;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F11Key
+ *  Description    : This is the value of the F11-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F11Key = -7;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F12Key
+ *  Description    : This is the value of the -F12-functionkey.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F12Key = -8;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F13Key
+ *  Description    : This is the value of the F13-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F13Key = -9;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F14Key
+ *  Description    : This is the value of the F14-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F14Key = -10;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_HelpKey
+ *  Description    : This is the value of the Help-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_HelpKey = -11;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_DoKey
+ *  Description    : This is the value of the Do-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_DoKey = -12;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F17Key
+ *  Description    : This is the value of the F17-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F17Key = -13;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F18Key
+ *  Description    : This is the value of the F18-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F18Key = -14;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F19Key
+ *  Description    : This is the value of the F19-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F19Key = -15;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_F20Key
+ *  Description    : This is the value of the F20-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_F20Key = -16;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_FindKey
+ *  Description    : This is the value of the Find-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_FindKey = -17;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_InsertHereKey
+ *  Description    : This is the value of the InsertHere-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_InsertHereKey = -18;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_RemoveKey
+ *  Description    : This is the value of the Remove-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_RemoveKey = -19;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_PF1Key
+ *  Description    : This is the value of the PF1-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_PF1Key = -20;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_PF2Key
+ *  Description    : This is the value of the PF2-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_PF2Key = -21;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_PF3Key
+ *  Description    : This is the value of the PF3-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_PF3Key = -22;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_PF4Key
+ *  Description    : This is the value of the PF4-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_PF4Key = -23;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_SelectKey
+ *  Description    : This is the value of the Select-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_SelectKey = -24;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_PrevScreenKey
+ *  Description    : This is the value of the PrevScreen-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_PrevScreenKey = -25;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_NextScreenKey
+ *  Description    : This is the value of the NextScreen-function-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_NextScreenKey = -26;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_UpArrowKey
+ *  Description    : This is the value of the UpArrow-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_UpArrowKey = -27;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_DownArrowKey
+ *  Description    : This is the value of the DownArrow-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_DownArrowKey = -28;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_LeftArrowKey
+ *  Description    : This is the value of the LeftArrow-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_LeftArrowKey = -29;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_RightArrowKey
+ *  Description    : This is the value of the RightArrow-key.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_RightArrowKey = -30;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_MaxIO
+ *  Description    : maximum length of input/output buffer
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_MaxIO = 255;
+
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_MaxWindowName
+ *  Description    : maximal length of a window name
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_MaxWindowName = 40;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_MaxHelpWindows
+ *  Description    : The maximum number of help windows a window can contain
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_MaxHelpWindows = 5;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_MaxDeviceName
+ *  Description    : maximal length of a device name
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_MaxDeviceName = 255;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_MaxColumn
+ *  Description    : maximal number of columns that a window may have
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_MaxColumn = maxint;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Windows_MaxRow
+ *  Description    : maximal number of rows that a window may have
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Windows_MaxRow = maxint;
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_IORange
+ *  Description    : index range of input/output buffer
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_IORange = 0..Windows_MaxIO;
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_WindowNameRange
+ *  Description    : index range of window names
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_WindowNameRange = 0..Windows_MaxWindowName;
+
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_DeviceNameRange
+ *  Description    : index range of device names
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_DeviceNameRange = 0..Windows_MaxDeviceName;
+
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_ColumnRange
+ *  Description    : Column range of a window.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_ColumnRange = 1..Windows_MaxColumn;
+
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_RowRange
+ *  Description    : row range of a window
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_RowRange = 1..Windows_MaxRow;
+
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_IOBuffer
+ *  Description    : Largest possible buffer needed for IO operations.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_IOBuffer = PACKED ARRAY [1..Windows_MaxIO] OF Char;
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_WindowNameBuffer
+ *  Description    : Largest possible buffer needed for window-names
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_WindowNameBuffer = PACKED ARRAY [1..Windows_MaxWindowName] OF Char;
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_DeviceNameBuffer
+ *  Description    : Largest possible buffer needed for device-names
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_DeviceNameBuffer = PACKED ARRAY [1..Windows_MaxDeviceName] OF Char;
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_VideoAttributes
+ *  Description    : The possible video attributes.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_VideoAttributes = (Windows_Blink, Windows_Bold,
+                              Windows_Reverse, Windows_Underline);
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_VideoAttributeSet
+ *  Description    : Set of possible video attributes.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_VideoAttributeSet = SET OF Windows_VideoAttributes;
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_Device
+ *  Description    : A device information record,
+ *                   its structure should be considered hidden!
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_Device = RECORD did : Integer;
+                           Rows : Windows_RowRange;
+                           Columns : Windows_ColumnRange;
+                    END;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_Viewport
+ *  Description    : A viewport information record,
+ *                   its structure should be considered hidden!
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_Viewport = RECORD vid : Integer;   {NOT USED}
+                             did : Integer;
+                             wid : Integer
+                      END;
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_Window
+ *  Description    : standard text window.
+ *                   its structure should be considered hidden!
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_Window = RECORD 
+      wid          : Integer;
+      Rows         : Windows_RowRange;
+      Row          : Windows_RowRange;
+      Columns      : Windows_ColumnRange;
+      Column       : Windows_ColumnRange;
+      VideoAttribs : Integer;
+      Help         : RECORD 
+                        d : ARRAY [1..Windows_MaxHelpWindows] OF 
+                            RECORD 
+                               wp : ^Windows_Window;
+                               v  : Windows_Viewport;
+                               d  : Windows_Device;
+                               x  : Integer;
+                               y  : Integer
+                            END {RECORD};
+                        sp: 0..Windows_MaxHelpWindows
+                     END {RECORD};
+      Again        : Boolean;
+      i            : Integer
+   END;
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Windows_LeftJustify
+ *  Description    : Windows_LeftJustify determines the ways in which Strings
+ *                   may be justified.
+ *                      TRUE  -> String is padded with blanks
+ *                      FALSE -> String is preceded by blanks
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Windows_LeftJustify = Boolean;
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : WINDOWS_Direction
+ *  Description    : Defines the possible directions of the cursor.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   WINDOWS_Direction = (WINDOWS_Up, WINDOWS_Down, WINDOWS_Left, WINDOWS_Right);
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Windows_Done
+ *  Description    : determines the status of the last operation.
+ *  Parameters     : 
+ *  Result         : Boolean
+ *  Precondition   : 
+ *  Postcondition  : RETURNS TRUE IFF the last Read, Open/Close/Move,
+ *                   Initialize action went well. (the ReadAgain routine
+ *                   has no effect in this respect)
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+FUNCTION Windows_Done
+                    : Boolean;
+EXTERNAL;
+
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_Initialize
+ *  Description     : Initializes this module
+ *  Parameters      : 
+ *  Precondition    : This module is initialized
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_Initialize;
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_OpenWindow
+ *  Description     : opens a window
+ *  Parameters      : VAR w : Windows_Window
+ *                    name : STRING
+ *                    len : Windows_WindowNameRange
+ *                    Rows : Windows_RowRange
+ *                    Columns : Windows_ColumnRange
+ *  Precondition    : lb1=1 AND Windows_Initialize has been called
+ *  Postcondition   : A window will be created. This window can be referenced by
+ *                    w. The specified name will be written in the border of w.
+ *                    The window consists of Rows lines of Columns Characters
+ *                    each. Initially the window is cleared and the cursor is
+ *                    positioned at (row 1, column 1).
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_OpenWindow (VAR w : Windows_Window;
+                              CONST name : STRING;
+                              len : Windows_WindowNameRange;
+                              Rows : Windows_RowRange;
+                              Columns : Windows_ColumnRange);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ClearWindow
+ *  Description     : clears a previous opened window
+ *  Parameters      : VAR w : Windows_Window
+ *  Precondition    : w was previously opened using Windows_OpenWindow AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : w is cleared and the cursor is positioned at
+ *                    (row 1, column 1).
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ClearWindow (VAR w : Windows_Window);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_CloseWindow
+ *  Description     : closes a previous opened window
+ *  Parameters      : VAR w : Windows_Window
+ *  Precondition    : w was previously opened using Windows_OpenWindow AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : w is closed
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_CloseWindow (VAR w : Windows_Window);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_NewHelpWindow
+ *  Description     : Will add a new help window to the window given which is 
+ *                    displayed after pressing the HELP-key when the input was
+ *                    expected out of w. The previous added windows are saved 
+ *                    and can, one at a time, be restored by calling 
+ *                    Windows_OldHelpWindow (w). The window is displayed at
+ *                    the co-ordinates x, y at device dv.
+ *  Parameters      : VAR w  : Windows_Window
+ *                    VAR n  : Windows_Window
+ *                        dv : Windows_Device
+ *                        x  : Integer
+ *                        y  : Integer
+ *  Precondition    : 
+ *  Postcondition   : N is stored as helpwindow for w.
+ *  Side Effects    : Older windows are saved
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE Windows_NewHelpWindow (VAR w : Windows_window;
+                                            VAR n : Windows_Window;
+                                                dv: Windows_Device;
+                                                x : Integer;
+                                                y : Integer);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_OldHelpWindow
+ *  Description     : Will restore one of the old help windows.
+ *  Parameters      : w : Windows_Window
+ *  Precondition    : There must be an old window
+ *  Postcondition   : The old window is restored
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE Windows_OldHelpWindow (VAR w: Windows_Window);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_AddHelpWindow
+ *  Description     : Will store the given window as new help window (saving
+ *                    the already stored ones.
+ *  Parameters      : w : Windows_Window
+ *                    h : Windows_Window
+ *                    x : Windows_RowRange
+ *                    y : Windows_ColumnRange
+ *  Precondition    : Both windows are opened
+ *  Postcondition   : h is stored in w as helpwindow
+ *  Side Effects    : previous helpwindow is not visible after pressing helpkey
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE Windows_AddHelpWindow;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_CreateViewport
+ *  Description     : Creates a viewport on a window (virtual display)
+ *  Parameters      :     w : Windows_Window
+ *                    VAR v : Windows_Viewport
+ *                        d : Windows_Device
+ *                    Row   : Windows_RowRange;
+ *                    Column: Windows_ColumnRange;
+ *                    Rows : Windows_RowRange
+ *                    Columns : Windows_ColumnRange
+ *  Precondition    : lb1=1 AND Windows_Initialize has been called
+ *  Postcondition   : A viewportwill be created on window w. 
+ *                    The viewport consists of Rows lines of Columns Characters
+ *                    each. The left upper corner of the viewport is positioned
+ *                    at position (Row, Column) of the window.
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_CreateViewport (w : Windows_Window;
+                                  VAR v : Windows_Viewport;
+                                  d : Windows_Device;
+                                  Row : Windows_RowRange;
+                                  Column : Windows_ColumnRange;
+                                  Rows : Windows_RowRange;
+                                  Columns : Windows_ColumnRange);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ChangeViewport
+ *  Description     : Chanegs the position and size of the viewport 
+ *                    on a window (virtual display)
+ *  Parameters      : VAR v : Windows_Viewport
+ *                    Row   : Windows_RowRange;
+ *                    Column: Windows_ColumnRange;
+ *                    Rows : Windows_RowRange
+ *                    Columns : Windows_ColumnRange
+ *  Precondition    : lb1=1 AND Windows_Initialize has been called
+ *  Postcondition   : 
+ *                    The viewport consists of Rows lines of Columns Characters
+ *                    each. The left upper corner of the viewport is positioned
+ *                    at position (Row, Column) of the window.
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ChangeViewport (VAR v : Windows_Viewport;
+                                  Row : Windows_RowRange;
+                                  Column : Windows_ColumnRange;
+                                  Rows : Windows_RowRange;
+                                  Columns : Windows_ColumnRange);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_OpenViewport
+ *  Description     : opens a viewport at the specified device and displays
+ *                    the specified window in the viewport.
+ *  Parameters      : VAR v : Windows_Viewport
+ *                        d : Windows_Device
+ *                        w : Windows_Window
+ *                        y : Integer
+ *                        x : Integer
+ *  Precondition    : d and w are opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : The window w is displayed at device d, any update to 
+ *                    w is immediately
+ *                    displayed at d. The top left corner of w is positioned at
+ *                    (x,y). The top left corner of the device is (1,1). The
+ *                    part of w that is visible at d depends on the column and
+ *                    row range of the device. Only the overlapping part of
+ *                       ((x..x+w.Columns),(y,y+w.Rows)) and
+ *                       ((1..d.Columns),(1..d.Rows)) is displayed!
+ *                    If there has been no previous call to 
+ *                    WINDOWS_CreateViewport the viewport has the size of the
+ *                    complete window.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_OpenViewPort (VAR v : Windows_Viewport;
+                                    d : Windows_Device;
+                                    w : Windows_Window;
+                                    y : Integer;
+                                    x : Integer);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ResetViewport
+ *  Description     : Repaints the complete the specified device 
+ *  Parameters      : VAR v : Windows_Viewport
+ *                        d : Windows_Device
+ *                        w : Windows_Window
+ *                        y : Integer
+ *                        x : Integer
+ *  Precondition    : d and w are opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : The window w is displayed at device d, any update to 
+ *                    w is immediately
+ *                    displayed at d. The top left corner of w is positioned at
+ *                    (x,y). The top left corner of the device is (1,1). The
+ *                    part of w that is visible at d depends on the column and
+ *                    row range of the device. Only the overlapping part of
+ *                       ((x..x+w.Columns),(y,y+w.Rows)) and
+ *                       ((1..d.Columns),(1..d.Rows)) is displayed!
+ *                    If there has been no previous call to 
+ *                    WINDOWS_CreateViewport the viewport has the size of the
+ *                    complete window.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ResetViewPort (VAR v : Windows_Viewport;
+                                    d : Windows_Device;
+                                    w : Windows_Window;
+                                    y : Integer;
+                                    x : Integer);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_MoveViewport
+ *  Description     : moves a previous opened viewport
+ *  Parameters      : VAR v : Windows_Viewport
+ *                        x : Integer
+ *                        y : Integer
+ *  Precondition    : v was previously opened using Windows_OpenViewport AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : Replaces the window, that was previously put on a device
+ *                    by a call to Windows_OpenViewport, on the device
+ *                    according to x,y in the same way as Windows_OpenViewport
+ *                    would have done.
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_MoveViewport (VAR v : Windows_Viewport;
+                                    x : Integer;
+                                    y : Integer);
+EXTERNAL;
+
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ScrollViewport
+ *  Description     : moves a previous opened viewport
+ *  Parameters      : VAR v : Windows_Viewport
+ *                        direction : WINDOWS_Direction;
+ *                        count     : Integer
+ *  Precondition    : v was previously opened using Windows_OpenViewport AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : Move the window under the previously opened viewport
+ *                    according to the specified direction
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ScrollViewport (VAR v : Windows_Viewport;
+                                  direction : WINDOWS_Direction;
+                                  count : Integer);
+EXTERNAL;
+
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_CloseViewport
+ *  Description     : closes a previous opened viewport
+ *  Parameters      : VAR v : Windows_Viewport
+ *  Precondition    : v was previously opened using Windows_OpenViewport AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : Removes the window that was previously put on a device by
+ *                    a call to Windows_OpenViewport from that device.
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_CloseViewport (VAR v : Windows_Viewport);
+EXTERNAL;
+
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_OpenDevice
+ *  Description     : the named device will be opened
+ *  Parameters      : VAR d : Windows_Device
+ *                    name : STRING
+ *                    len : Windows_DeviceNameRange
+ *                    shared : Boolean
+ *  Precondition    : Windows_Initialize has been called
+ *  Postcondition   : The device with the (logical) name name[1..min(ub1,len1)
+ *                    will be opened and marked for exclusive/shared use
+ *                    according to shared. The device can be referenced by d.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_OpenDevice (VAR d : Windows_Device;
+                              CONST name : STRING;
+                              len : Windows_DeviceNameRange;
+                              shared : Boolean);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_CloseDevice
+ *  Description     : closes a previous opened device
+ *  Parameters      : VAR d : Windows_Device
+ *  Precondition    : d was previously opened using Windows_OpenDevice AND
+ *                    all viewports associated with d have been closed AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : d is closed.
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_CloseDevice (VAR d : Windows_Device);
+EXTERNAL;
+
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Windows_EndOfPage
+ *  Description    : determines the end of window status of w
+ *  Parameters     : VAR w : Windows_Window
+ *  Result         : Boolean
+ *  Precondition   : w has been opened AND
+ *                   Windows_Initialize has been called
+ *  Postcondition  : RETURNS TRUE IFF the last read Character of w equals the
+ *                   end-of-page symbol
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+FUNCTION Windows_EndOfPage (VAR w : Windows_Window)
+                    : Boolean;
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Windows_EndOfLine
+ *  Description    : determines the end of line status of w
+ *  Parameters     : VAR w : Windows_Window
+ *  Result         : Boolean
+ *  Precondition   : w has been opened AND
+ *                   Windows_Initialize has been called
+ *  Postcondition  : RETURNS TRUE IFF the last read Character of w equals the
+ *                   end-of-line symbol
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+FUNCTION Windows_EndOfLine (VAR w : Windows_Window)
+                    : Boolean;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Windows_Column
+ *  Description    : returns the current column position
+ *  Parameters     : w : Windows_Window
+ *  Result         : Windows_ColumnRange
+ *  Precondition   : w is previously opened AND
+ *                   Windows_Initialize has been called
+ *  Postcondition  : RETURNS the current column position
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+FUNCTION Windows_Column (VAR w : Windows_Window)
+                    : Windows_ColumnRange;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Windows_Row
+ *  Description    : returns the current row position
+ *  Parameters     : w : Windows_Window
+ *  Result         : Windows_RowRange
+ *  Precondition   : w is previously opened AND
+ *                   Windows_Initialize has been called
+ *  Postcondition  : RETURNS the current row position
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+FUNCTION Windows_Row (VAR w : Windows_Window)
+                    : Windows_RowRange;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_NewRowColumn
+ *  Description     : moves the cursor to specified place
+ *  Parameters      : VAR w : Windows_Window
+ *                    Row : Windows_RowRange
+ *                    Column : Windows_ColumnRange
+ *  Precondition    : w has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : cursor is positioned at (row,column) if possible
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_NewRowColumn (VAR w  : Windows_Window;
+                                Row    : Windows_RowRange;
+                                Column : Windows_ColumnRange);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ReadIdentifier
+ *  Description     : reads a String of Characters, consisting of letters and
+ *                    digits only
+ *                    The read Characters are written in the window at the
+ *                    current row and column position.
+ *  Parameters      : VAR w : Windows_Window
+ *                    VAR Str : STRING
+ *                    VAR len : Windows_IORange
+ *  Precondition    : w has been opened AND lb1=1 AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : Str[1..len] is filled with input Characters
+ *                    after len Characters have been read the remaining
+ *                    letters and digits are skipped.
+ *                    input is terminated at first non-letter/digit(note that
+ *                    this closing Character is not read yet).
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ReadIdentifier (VAR w : Windows_Window;
+                                  VAR Str : STRING;
+                                  VAR len : Windows_IORange);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ReadStr
+ *  Description     : reads a String of Characters, not consisting of spaces
+ *                    and/or control-Characters
+ *  Parameters      : VAR w : Windows_Window
+ *                    VAR Str : STRING
+ *                    VAR len : Windows_IORange
+ *  Precondition    : w has been opened AND lb1=1 AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : Str[1..len] is filled with input Characters
+ *                    after len Characters have been read the remaining
+ *                    Chars>space are skipped.
+ *                    input is terminated at first Char<=space (note that this
+ *                    closing Character is not read yet).
+ *                    The read Characters are written in the window at the
+ *                    current row and column position.
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ReadStr (VAR w : Windows_Window;
+                           VAR Str : STRING;
+                           VAR len : Windows_IORange);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ReadToEndOfLine
+ *  Description     : reads a String of Characters, not consisting of
+ *                    control-Characters
+ *  Parameters      : VAR w : Windows_Window
+ *                    VAR Str : STRING
+ *                    VAR len : Windows_IORange
+ *  Precondition    : w has been opened AND lb1=1 AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : Str[1..len] is filled with input Characters
+ *                    after len Characters have been read the remaining
+ *                    Chars<>end-of-line-marker are skipped.
+ *                    input is terminated at first end-of-line (note that this
+ *                    closing Character is not read yet).
+ *                    The read Characters are written in the window at the
+ *                    current row and column position.
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ReadToEndOfLine (VAR w : Windows_Window;
+                                   VAR Str : STRING;
+                                   VAR len : Windows_IORange);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ReadString
+ *  Description     : reads a String of Characters, not consisting of spaces,
+ *                    and/or control-Characters
+ *  Parameters      : VAR w : Windows_Window
+ *                    VAR Str : String_String
+ *  Precondition    : w has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : Str is filled with input Characters
+ *                    after length(Str) Characters have been read the remaining
+ *                    Chars>space are skipped.
+ *                    input is terminated at first Char<=space (note that this
+ *                    closing Character is not read yet).
+ *                    The read Characters are written in the window at the
+ *                    current row and column position.
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ReadString (VAR w : Windows_Window;
+                              VAR Str : String_String);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ReadKey
+ *  Description     : reads one Character from the input window
+ *  Parameters      : VAR w : Windows_Window
+ *                    VAR k : Integer
+ *  Precondition    : w has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : k contains the representation of the last key read.
+ *                    (f.e. k = Windows_HelpKey)
+ *                    The read key is not echoed to the window!
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ReadKey (VAR w : Windows_Window;
+                           VAR k : Integer);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ReadChar
+ *  Description     : reads one Character from the input window
+ *  Parameters      : VAR w : Windows_Window
+ *                    VAR c : Char
+ *  Precondition    : w has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : c contains last Character read
+ *                    incase end-of-line was read, c contains its representation
+ *                    the same for end-of-page and end-of-window.
+ *                    The read Characters are written in the window at the
+ *                    current row and column position.
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ReadChar (VAR w : Windows_Window;
+                            VAR c : Char);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ReadInteger
+ *  Description     : reads an Integer from the input window
+ *  Parameters      : VAR w : Windows_Window
+ *                    VAR i : Integer
+ *  Precondition    : w has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : i contains the representation of the last read Integer
+ *                    preceding spaces and new-lines are skipped.
+ *                    An in Integer consists of an optional sign and a sequence
+ *                    of digits.
+ *                    Input is terminated at first non-digit (note that this
+ *                    closing Character is not read yet)
+ *                    The read Characters are written in the window at the
+ *                    current row and column position.
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ReadInteger (VAR w : Windows_Window;
+                               VAR i : Integer);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ReadBoolean
+ *  Description     : reads a Boolean from the window
+ *  Parameters      : VAR w : Windows_Window
+ *                    VAR b : Boolean
+ *  Precondition    : w is opened
+ *  Postcondition   : b contains the representation of the last read Boolean
+ *                    preceding spaces and new-lines are skipped.
+ *                    A Boolean consists of the Charecter sequence "TRUE" or
+ *                    "FALSE".
+ *                    The read Characters are written in the window at the
+ *                    current row and column position.
+ *                    A call of Windows_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ReadBoolean (VAR w : Windows_Window;
+                               VAR b : Boolean);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_SkipSpace
+ *  Description     : skips all the spaces (and end-of-lines) in the input
+ *  Parameters      : VAR w : Windows_Window
+ *                    b : Boolean
+ *  Precondition    : w has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : IF b THEN all spaces, tabs and end-of-lines
+ *                              are skipped
+ *                    ELSE all spaces and tabs are skipped
+ *                    The read Characters are written in the window at the
+ *                    current row and column position.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_SkipSpace (VAR w : Windows_Window;
+                                 b : Boolean);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_SkipLine
+ *  Description     : skips the input past next end-of-line Character
+ *  Parameters      : VAR w : Windows_Window
+ *  Precondition    : w has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : input is skipped past next end-of-line Character
+ *                    The read Characters are written in the window at the
+ *                    current row and column position.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_SkipLine (VAR w : Windows_Window);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ReadAgain
+ *  Description     : inStructs to read the last read Character again
+ *  Parameters      : 
+ *  Precondition    : w has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : The last read Character will be read again in the next
+ *                    read action, it will not be written to the window again.
+ *                    This has no effect on Windows_EndOfLine and 
+ *                    Windows_EndOfFile!
+ *  Side Effects    : After a call of this routine a read operation on w
+ *                    will never give an error, even if the w was not opened!
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_ReadAgain (VAR w : Windows_Window);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_WriteStr
+ *  Description     : writes String to text window
+ *  Parameters      : VAR w : Windows_Window
+ *                    Str         : STRING
+ *                    len         : Windows_IORange
+ *                    width       : Windows_IORange
+ *                    LeftJustify : Windows_LeftJustify
+ *  Precondition    : w is has been opened AND lb1=1 AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : Str[1..min(ub,len)] is written to w using at least width
+ *                    Chars starting at current row and column position.
+ *                    The written String is justified according to LeftJustify.
+ *                    If the String does not fit on the current line, then the
+ *                    complete String is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *                    If the String does not fit on the current line, then the
+ *                    complete String is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_WriteStr (VAR w       : Windows_Window;
+                            CONST Str         : STRING;
+                            len         : Windows_IORange;
+                            width       : Windows_IORange;
+                            LeftJustify : Windows_LeftJustify);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_WriteString
+ *  Description     : writes String_String to text window
+ *  Parameters      : VAR w : Windows_Window
+ *                    Str : String_String
+ *                    width : Windows_IORange
+ *                    LeftJustify : Windows_LeftJustify
+ *  Precondition    : w is has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : Str is written to w using atleast width Chars starting
+ *                    at current row and column position.
+ *                    The written String is justified according to LeftJustify.
+ *                    If the String does not fit on the current line, then the
+ *                    complete String is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_WriteString (VAR w : Windows_Window;
+                               Str : String_String;
+                               width : Windows_IORange;
+                               LeftJustify : Windows_LeftJustify);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_WriteChar
+ *  Description     : writes one Character to text window
+ *  Parameters      : VAR w : Windows_Window
+ *                    c : Char
+ *  Precondition    : w is has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : c is written to w at current row and column position.
+ *                    If it does not fit on the current line, then the Character
+ *                    is written on a new line!
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_WriteChar (VAR w : Windows_Window;
+                                 c : Char);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_WriteInteger
+ *  Description     : writes an Integer to text window
+ *  Parameters      : VAR w : Windows_Window
+ *                    i : Integer
+ *                    width : Windows_IORange
+ *                    LeftJustify : Windows_LeftJustify
+ *  Precondition    : w is has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : i is written to w, using at least width positions
+ *                    starting at current row and column position.
+ *                    The written Integer is justified according to LeftJustify.
+ *                    If the Integer does not fit on the current line, then the
+ *                    complete Integer is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_WriteInteger (VAR w : Windows_Window;
+                                i : Integer;
+                                width : Windows_IORange;
+                                LeftJustify : Windows_LeftJustify);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_WriteBoolean
+ *  Description     : writes a Boolean to window
+ *  Parameters      : VAR w : Windows_Window
+ *                    b : Boolean
+ *                    width : Windows_IORange
+ *                    LeftJustify : Windows_LeftJustify
+ *  Precondition    : w is opened
+ *  Postcondition   : b is written to w, using at least width positions
+ *                    starting at current row and column position.
+ *                    The written Boolean is justified according to LeftJustify.
+ *                    If the Boolean does not fit on the current line, then the
+ *                    complete Boolean is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *                    The text representation of the Boolean is "TRUE" or
+ *                    "FALSE".
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_WriteBoolean (VAR w : Windows_Window;
+                                b : Boolean;
+                                width : Windows_IORange;
+                                LeftJustify : Windows_LeftJustify);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_WriteSpace
+ *  Description     : writes spaces to text window
+ *  Parameters      : VAR w : Windows_Window
+ *                    width : Windows_IORange
+ *  Precondition    : w is has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : width spaces are written to w starting at current row
+ *                    and column position.
+ *                    The spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_WriteSpace (VAR w : Windows_Window;
+                              width : Windows_IORange);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_WriteLine
+ *  Description     : writes and end-of-line mark in the window w
+ *  Parameters      : VAR w : Windows_Window
+ *                    b : Boolean
+ *  Precondition    : w is has been opened AND
+ *                    Windows_Initialize has been called
+ *  Postcondition   : IFF b OR 'current-line is not closed yet' THEN
+ *                       end-of-line marker is written into w,
+ *                       current row is incremented and current column
+ *                       becomes 1
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_WriteLine (VAR w : Windows_Window;
+                                 b : Boolean);
+EXTERNAL;
+
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_SetVideoAttrExist
+ *  Description     : Changes the way in which the specified part of the
+ *                    window is displayed.
+ *  Parameters      : w             : Windows_Window
+ *                    Row           : Windows_Range;
+ *                    Rows          : Windows_RowRange
+ *                    Column        : Windows_ColumnRange
+ *                    Columns       : Windows_ColumnRange
+ *                    VideoAttribs  : Windows_VideoAttributeSet
+ *                    ReverseAttribs: Windows_VideoAttributeSet
+ *  Precondition    : w is opened.
+ *  Postcondition   : The specified part of the window is displayed using
+ *                    the specified video attributes.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_SetVideoAttrExist (VAR w         : Windows_Window;
+                                     Row           : Windows_RowRange;
+                                     Rows          : Windows_RowRange;
+                                     Column        : Windows_ColumnRange;
+                                     Columns       : Windows_ColumnRange;
+                                     VideoAttribs  : Windows_VideoAttributeSet;
+                                     ReverseAttribs: Windows_VideoAttributeSet);
+EXTERNAL;
+
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_SetDefaultVideoAttr
+ *  Description     : Changes the way in which the text is displayed.
+ *  Parameters      : w             : Windows_Window
+ *                    VideoAttribs  : Windows_VideoAttributeSet
+ *                    ReverseAttribs: Windows_VideoAttributeSet
+ *  Precondition    : w is opened.
+ *  Postcondition   : The display attributes are set to the specified video 
+ *                    attributes.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_SetDefaultVideoAttr (VAR w        : Windows_Window;
+                                       VideoAttribs : Windows_VideoAttributeSet;
+                                     ReverseAttribs: Windows_VideoAttributeSet);
+EXTERNAL;
+
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_Erase
+ *  Description     : Erases Characters in the specified window
+ *  Parameters      : w            : Windows_Window
+ *                    Row          : Windows_RowRange
+ *                    Rows         : Windows_RowRange
+ *                    Column       : Windows_ColumnRange
+ *                    Columns      : Windows_ColumnRange
+ *  Precondition    : w is opened.
+ *  Postcondition   : The specified part of the window is filled with spaces.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_Erase (VAR w        : Windows_Window;
+                         Row          : Windows_RowRange;
+                         Rows         : Windows_RowRange; 
+                         Column       : Windows_ColumnRange;
+                         Columns      : Windows_ColumnRange);
+EXTERNAL;
+
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_DeleteInLine
+ *  Description     : Deletes Characters in the specified window
+ *  Parameters      : w       : Windows_Window
+ *                    Row     : Windows_RowRange
+ *                    Column  : Windows_ColumnRange
+ *                    NrChars : Integer
+ *  Precondition    : w is opened.
+ *  Postcondition   : The specified part of the window is deleted
+ *  Side Effects    : Text scrolling
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_DeleteInLine (VAR w   : Windows_Window;
+                                Row     : Windows_RowRange;
+                                Column  : Windows_ColumnRange;
+                                NrChars : Integer);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_DeleteLines
+ *  Description     : Deletes lines in the specified window
+ *  Parameters      : w        : Windows_Window
+ *                    StartRow : Windows_RowRange
+ *                    NrLines  : Integer
+ *  Precondition    : w is opened.
+ *  Postcondition   : The specified part of the window is deleted
+ *  Side Effects    : Text scrolling
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_DeleteLines (VAR w    : Windows_Window;
+                               StartRow : Windows_RowRange;
+                               NrLines  : Integer);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_InsertInLine
+ *  Description     : Inserts Space Characters in the specified window
+ *  Parameters      : w       : Windows_Window
+ *                    Row     : Windows_RowRange
+ *                    Column  : Windows_ColumnRange
+ *                    NrChars : Integer
+ *  Precondition    : w is opened.
+ *  Postcondition   : The specified part of the window is inserted
+ *  Side Effects    : Scrolling of the text
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_InsertInLine (VAR w   : Windows_Window;
+                                Row     : Windows_RowRange;
+                                Column  : Windows_ColumnRange;
+                                NrChars : Integer);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_InsertChar
+ *  Description     : Inserts Character in the specified window
+ *  Parameters      : w       : Windows_Window
+ *                    Row     : Windows_RowRange
+ *                    Column  : Windows_ColumnRange
+ *                    Ch      : CHAR;
+ *                    rc, rs  : WINDOWS_VideoAttributeSet;
+ *  Precondition    : w is opened.
+ *  Postcondition   : The specified part of the window is inserted
+ *  Side Effects    : Scrolling of the text
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_InsertChar(VAR w   : Windows_Window;
+                             Row     : Windows_RowRange;
+                             Column  : Windows_ColumnRange;
+                             Ch      : CHAR;
+                             rc, rs  : Windows_VideoAttributeSet);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_InsertLines
+ *  Description     : inserts empty lines in the specified window
+ *  Parameters      : w        : Windows_Window
+ *                    StartRow : Windows_RowRange
+ *                    NrLines  : Integer
+ *  Precondition    : w is opened.
+ *  Postcondition   : The specified part of the window is inserted
+ *  Side Effects    : Scrolling of the text
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_InsertLines (VAR w    : Windows_Window;
+                               StartRow : Windows_RowRange;
+                               NrLines  : Integer);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_InsertLine
+ *  Description     : inserts text lines in the specified window
+ *  Parameters      : w        : Windows_Window
+ *                    StartRow : Windows_RowRange
+ *                    line     : String_String
+ *  Precondition    : w is opened.
+ *  Postcondition   : The specified part of the window is inserted
+ *  Side Effects    : Scrolling of the text
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_InsertLine  (VAR w    : Windows_Window;
+                               StartRow : Windows_RowRange;
+                               line     : String_String);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_EraseLine
+ *  Description     : Erases specified line from specified column
+ *                    to end of line
+ *  Parameters      : w        : Windows_Window
+ *                    StartRow : Windows_RowRange
+ *                    StartColumn: Windows_ColumnRange
+ *  Precondition    : w is opened.
+ *  Postcondition   : The specified part of the window is inserted
+ *  Side Effects    : Scrolling of the text
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_EraseLine   (VAR w    : Windows_Window;
+                               StartRow : Windows_RowRange;
+                               StartColumn : Windows_ColumnRange);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_DrawHorizontalLine
+ *  Description     : Will draw an horizontal line in a window
+ *  Parameters      : VAR w       : Windows_Window
+ *                        Row     : Windows_RowRange
+ *                        Column  : Windows_ColumnRange
+ *                        Columns : Windows_ColumnRange
+ *  Precondition    : 
+ *  Postcondition   : Line drawn from (Row,Column) to 
+ *                    (Row, Column + Columns - 1)
+ *  Side Effects    : cursor movement
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_DrawHorizontalLine (VAR w       : Windows_Window;
+                                          Row     : Windows_RowRange;
+                                          Column  : Windows_ColumnRange;
+                                          Columns : Windows_ColumnRange);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_DrawVerticalLine
+ *  Description     : Will draw a vertical line
+ *  Parameters      : VAR w       : Windows_Window
+ *                        Row     : Windows_RowRange
+ *                        Column  : Windows_ColumnRange
+ *                        Rows    : Windows_RowRange
+ *  Precondition    : 
+ *  Postcondition   : Line drawn from (Row,Column) to (Row + Rows - 1,Column)
+ *  Side Effects    : cursor movement
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_DrawVerticalLine (VAR w       : Windows_Window;
+                                        Row     : Windows_RowRange;
+                                        Column  : Windows_ColumnRange;
+                                        Rows    : Windows_RowRange);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_DrawRectangle
+ *  Description     : Will draw a rectangle
+ *  Parameters      : VAR w       : Windows_Window
+ *                        Row     : Windows_RowRange
+ *                        Column  : Windows_ColumnRange
+ *                        Rows    : Windows_RowRange
+ *                        Columns : Windows_ColumnRange
+ *  Precondition    : 
+ *  Postcondition   : Rectangle drawn with top-left point (Row,Column) and
+ *                    bottom-right point (Row + Rows - 1,Column + Columns - 1)
+ *  Side Effects    : Cursor movement
+ *
+ *EMP:::===================================================================*)
+
+ 
+PROCEDURE Windows_DrawRectangle (VAR w       : Windows_Window;
+                                     Row     : Windows_RowRange;
+                                     Column  : Windows_ColumnRange;
+                                     Rows    : Windows_RowRange;
+                                     Columns : Windows_ColumnRange);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Windows_IsPrintableChar
+ *  Description    : Will return true iff chr(i) is printable; otherwise
+ *                   returns false
+ *  Parameters     : i : Integer
+ *  Result         : TRUE iff chr(i) printable; otherwise FALSE
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION Windows_IsPrintableChar (i : Integer)
+                    : Boolean;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Windows_IntegerStatus
+ *  Description    : return the status as an integer (used by VMS)
+ *  Parameters     : None
+ *  Result         : An INTEGER representing the status of the last action
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION Windows_IntegerStatus
+                    : INTEGER;
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_ReadLineFromDisplay
+ *  Description     : Reads window line 'rownr' into 'line'.
+ *  Parameters      : VAR w: Windows_Window;
+ *                    VAR l: VARYING[ub1] OF CHAR;
+ *                    r: Windows_RowRange;
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE Windows_ReadLineFromDisplay(
+                             VAR w: Windows_Window;
+                             VAR l: STRING;
+                                 r: Windows_RowRange);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_RingBell
+ *  Description     : Rings Bell.
+ *  Parameters      : VAR w : Windows_Window;
+ *                    count : INTEGER;
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE Windows_RingBell(
+                             VAR w : Windows_Window;
+                             count : INTEGER);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_CursorVisible
+ *  Description     : Makes physical cursor visible/invisible.
+ *  Parameters      : VAR d : Windows_Device;
+ *                    b     : BOOLEAN;
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE Windows_CursorVisible(
+                             VAR d : Windows_Device;
+                             b     : BOOLEAN);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Windows_PutStatusLine
+ *  Description     : Puts text on 25 display line
+ *  Parameters      : VAR d: Windows_Device;
+ *                    l    : VARYING[ub1] OF CHAR;
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE Windows_PutStatusLine(
+                              VAR d: Windows_Device;
+                              CONST l    : STRING);
+EXTERNAL;
+
+
+
+
+END {Windows};

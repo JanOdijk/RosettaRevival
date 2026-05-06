@@ -1,0 +1,172 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : INTERFACE1 
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  
+ *
+ *EMP:::===================================================================*)
+
+pragma C_include('listree.pf');
+pragma C_include('limorfdef.pf');
+pragma C_include('string.pf');
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+PACKAGE INTERFACE1;
+WITH LIMORFDEF, STRNG, LISTREE; 
+CONST
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  :    INTERFACE1_MAXWORDAMBID
+ *  Description    :    Maximum number of ambiguous segmentations for one
+ *                      word.
+ *
+ *EMP:::===================================================================*)
+
+   INTERFACE1_MAXWORDAMBID             = 63;
+   
+TYPE
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : INTERFACE1_RSSKnodetype
+ *  Description    : Used to distinguish two kind of INTERFACE1_RowSeqSegmKey
+ *                   nodes.
+ *EMP:::===================================================================*)
+
+   INTERFACE1_RSSKnodetype    = ( worddel, segdel, inputworddel );
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : INTERFACE1_SegmentType
+ *  Description    : After ASEGM_ASEGMENTATION the INTERFACE1_SeqSegmKey nodes 
+ *                   contain segmentkeys (keyseg). After ALEX_ALEXPLUS 
+ *                   they contain S-trees (streeseg).
+ *EMP:::===================================================================*)
+
+   INTERFACE1_SegmentType     = ( streeseg, keyseg );
+   INTERFACE1_KeyType         = ( PFKtype, SFKtype, GLUtype, IDPtype, BAStype);
+
+
+   INTERFACE1_WordAmbIdType   = 0..INTERFACE1_MAXWORDAMBID;
+   INTERFACE1_SetOfWordAmbIdType = SET OF INTERFACE1_WordAmbIdType;
+
+   INTERFACE1_pRowSeqSegmKeys = ^INTERFACE1_RowSeqSegmKeys;
+   INTERFACE1_pSeqSegmKeys    = ^INTERFACE1_SeqSegmKeys;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : INTERFACE1_pRowSeqSegmKeys, INTERFACE1_RowSeqSegmKeys
+ *  Description    : Definition of the main datastructure in the morphology.
+ *                   For insiders: comparable to the connectionnode of
+ *                   Rosetta2.
+ *
+ *EMP:::===================================================================*)
+   INTERFACE1_RowSeqSegmKeys  = RECORD 
+                                  error  : BOOLEAN;
+                                  X, Y,
+                                  len    : INTEGER;
+                                  nrstems: INTEGER;
+                                  nxtamb : INTERFACE1_pRowSeqSegmKeys;
+                                  rn     : INTERFACE1_pRowSeqSegmKeys;
+                                  CC     : LIMORFDEF_ContextConds;
+                                  f      : LIMORFDEF_pPhonInfo;
+                                  fseq,
+                                  lseq   : INTERFACE1_pSeqSegmKeys;
+                                  idnr   : integer;
+                                  ambid  : INTERFACE1_WordAmbIdType;
+                                  nonsucc: INTERFACE1_SetOfWordAmbIdType;
+                                  kind   : INTERFACE1_RSSKnodetype;
+                                  prv,
+                                  nxt    : INTERFACE1_pRowSeqSegmKeys;
+                                  MinErrors : INTEGER;
+                                  BestMinErrorsInChain :INTERFACE1_pRowSeqSegmKeys
+                           END;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : INTERFACE1_pSeqSegmKeys, INTERFACE1_SeqSegmKeys
+ *  Description    : 
+ *
+ *EMP:::===================================================================*)
+   INTERFACE1_SeqSegmKeys  = RECORD 
+                               robustmode   : BOOLEAN;
+                               prvseg,
+                               nxtseg,
+                               nxtamb,
+                               rn           : INTERFACE1_pSeqSegmKeys;
+                               CASE segkind : INTERFACE1_segmenttype OF
+                               keyseg : ( CASE keykind : INTERFACE1_keytype OF
+                                          PFKtype : ( PFK : integer);
+                                          SFKtype : ( SFK : integer);
+                                          GLUtype : ( GLU : integer);
+                                          IDPtype,
+                                          BAStype : ( KEY : integer;
+                                                      word: STRING_String) );
+                               streeseg : ( stree : LISTREE_pStree)
+                        END;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : INTERFACE1_MakeSeqSegmStree
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION INTERFACE1_MakeSeqSegmStree(n : INTERFACE1_pSeqSegmKeys):
+                                           INTERFACE1_pSeqSegmKeys;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : INTERFACE1_MakeWRowSeqSegm
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION INTERFACE1_makeWRowSeqSegm(n : INTERFACE1_pRowSeqSegmKeys):
+                                               INTERFACE1_pRowSeqSegmKeys;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : INTERFACE1_MakeSRowSeqSegm
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION INTERFACE1_makeSRowSeqSegm(n : INTERFACE1_pRowSeqSegmKeys):
+                                               INTERFACE1_pRowSeqSegmKeys;
+
+EXTERNAL;
+END {INTERFACE1};

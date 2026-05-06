@@ -1,0 +1,437 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project
+ *
+ *  Module Title    : Mem
+ *  Creation date   :  12-OCT-1988
+ *  Author          : Joep Rous
+ *
+ *  Copyright (c) 1986, by Nederlandse Philips Bedrijven BV.
+ *
+ *  Remarks         : Memory management module. Don't use these functions
+ *                    together with other PASCAL memory functions, such
+ *                    as NEW, MARK and RELEASE
+ *
+ *EMP:::===================================================================*)
+
+
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+
+PACKAGE Mem;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Mem_Stack
+ *  Description    : implementation of the datatype stack. Its structure
+ *                   should be considered hidden.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Mem_Stack = INTEGER;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Mem_Ptr
+ *  Description    : Memory pointer type
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Mem_Ptr = POINTER;
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Mem_StackPtr
+ *  Description    : Stack pointer type.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Mem_StackPtr = RECORD
+                     sid : Mem_Stack;
+                     ptr : INTEGER
+                  END;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_Init
+ *  Description     : Initialization of the Mem module
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_Init;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_CreateStack
+ *  Description     : Creates a stack of specified maximal size.
+ *  Parameters      : VAR stackid : Mem_Stack; unique id of the stack.
+ *                        stacksize    : INTEGER; size in bytes.
+ *  Precondition    : none
+ *  Postcondition   : If enough memory was available to create the stack,
+ *                    the parameter contains the new stack identification. 
+ *                    Otherwise its value is undefined.
+ *  Side Effects    : If the stack could not be created an internal statusvalue
+ *                    is set, indicating that the last call to the module Mem
+ *                    was not successful.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_CreateStack(VAR stackid : Mem_Stack;
+                                     stacksize : INTEGER);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_SetDefault
+ *  Description     : Sets default stack.
+ *  Parameters      : VAR stackid      : Mem_Stack; unique id of the stack.
+ *  Precondition    : stack with stack-id has been created.
+ *  Postcondition   : Default stack has been set to stack-id
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_SetDefault(stackid : Mem_Stack);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_ReleaseStack
+ *  Description     : Releases the stack-space of the specified stack.
+ *                    !! WARNING: Do not refer to memory area of a released
+ *                                stack space; it will cause a run-time error.
+ *  Parameters      : stackid : Mem_Stack; unique id of the stack.
+ *  Precondition    : Parameter stackid should be the id of a previously
+ *                    created stack.
+ *  Postcondition   : The stack-space has been freed.
+ *  Side Effects    : If the stack could not be freed an internal statusvalue
+ *                    is set, indicating that the last call to the module Mem
+ *                    was not successful.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_ReleaseStack(stackid : Mem_Stack);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_Mark
+ *  Description     : Returns the current stack pointer.
+ *  Parameters      :     stackid : Mem_Stack; unique id of the stack.
+ *                    VAR stackptr: Mem_StackPtr;
+ *  Precondition    : Parameter stackid should be the id of a previously
+ *                    created stack.
+ *  Postcondition   : Parameter stackptr contains the value of the current
+ *                    stack pointer.
+ *  Side Effects    : If the stack does not exist an internal statusvalue
+ *                    is set, indicating that the last call to the module Mem
+ *                    was not successful.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_Mark(stackid  : Mem_Stack;
+                              VAR stackptr : Mem_StackPtr);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_Release
+ *  Description     : Frees the memory area from the top of the stack
+ *                    to the specified pointer.
+ *  Parameters      : stackid : Mem_Stack; unique id of the stack.
+ *                    stackptr: Mem_StackPtr;
+ *  Precondition    : Parameter stackid should be the id of a previously
+ *                    created stack. The value of parameter stackptr
+ *                    has to be 0 < stackptr <= stacksize
+ *  Postcondition   : Memory area from stackptr to current top of stack is
+ *                    released. The current top of stack will be set to 
+ *                    stackptr.
+ *  Side Effects    : If curstackptr < stackptr <= stacksize then an internal 
+ *                    statusvalue
+ *                    is set, indicating that the no memory has been released. 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_Release(stackid  : Mem_Stack;
+                                 stackptr : Mem_StackPtr);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_MarkDefault
+ *  Description     : Returns the current stack pointer of the default stack.
+ *  Parameters      : 
+ *                    VAR stackptr: Mem_StackPtr;
+ *  Precondition    : Default stack has been set.
+ *                    created stack.
+ *  Postcondition   : Parameter stackptr contains the value of the current
+ *                    stack pointer.
+ *  Side Effects    : If the default has not been set an internal statusvalue
+ *                    is set, indicating that the last call to the module Mem
+ *                    was not successful.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_MarkDefault(VAR stackptr : Mem_StackPtr);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_ReleaseDefault
+ *  Description     : Frees the memory area from the top of the default stack
+ *                    to the specified pointer.
+ *  Parameters      : 
+ *                    stackptr: Mem_StackPtr;
+ *  Precondition    : Default stack has been set. 
+ *                    The value of parameter stackptr
+ *                    has to be 0 < stackptr <= stacksize
+ *  Postcondition   : Memory area from stackptr to current top of stack is
+ *                    released. The current top of stack will be set to 
+ *                    stackptr.
+ *  Side Effects    : If curstackptr < stackptr <= stacksize then an internal 
+ *                    statusvalue
+ *                    is set, indicating that the no memory has been released. 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_ReleaseDefault(stackptr : Mem_StackPtr);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_New
+ *  Description     : Returns address of new memory segment of specified size
+ *                    on specified stack.
+ *  Parameters      :     stackid : Mem_Stack; unique id of the stack.
+ *                        bytes   : INTEGER;   size in bytes.
+ *                    VAR ptr     : Mem_Ptr;   address of memory segment
+ *  Precondition    : Parameter stackid should be the id of a previously
+ *                    created stack.
+ *                    The stack should contain enough free space.
+ *  Postcondition   : Parameter ptr contains the address of the new memory area,
+ *                    that is, the current top of stack.
+ *                    The top of stack has been incremented.
+ *  Side Effects    : If there is insufficient stack-space an internal 
+ *                    statusvalue
+ *                    is set, indicating that the last call to the module Mem
+ *                    was not successful.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_New(stackid  : Mem_Stack;
+                             bytes    : INTEGER;
+                             VAR ptr  : Mem_Ptr);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_NewDefault
+ *  Description     : Returns address of new memory segment of specified size
+ *                    on default stack.
+ *  Parameters      :     
+ *                        bytes   : INTEGER;   size in bytes.
+ *                    VAR ptr     : Mem_Ptr;   address of memory segment
+ *  Precondition    : Default stack has been set. 
+ *                    The stack should contain enough free space.
+ *  Postcondition   : Parameter ptr contains the address of the new memory area,
+ *                    that is, the current top of stack.
+ *                    The top of stack has been incremented.
+ *  Side Effects    : If there is insufficient stack-space an internal 
+ *                    statusvalue
+ *                    is set, indicating that the last call to the module Mem
+ *                    was not successful.
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_NewDefault(bytes    : INTEGER;
+                                    VAR ptr  : Mem_Ptr);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Mem_Avail
+ *  Description    : Checks whether specified amount of free bytes is available
+ *                   in the stack-space.
+ *  Parameters     : stackid : Mem_Stack;
+ *                   bytes   : INTEGER;  size in bytes.
+ *  Result         : BOOLEAN; TRUE if bytes are available.
+ *  Precondition   : Parameter stackid should be the id of a previously
+ *                   created stack.
+ *  Postcondition  : -
+ *  Side Effects   : None
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION Mem_Avail(stackid : Mem_Stack;
+                              bytes   : INTEGER): BOOLEAN;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Mem_AvailDefault
+ *  Description    : Checks whether specified amount of free bytes is available
+ *                   in the stack-space.
+ *  Parameters     : 
+ *                   bytes   : INTEGER;  size in bytes.
+ *  Result         : BOOLEAN; TRUE if bytes are available.
+ *  Precondition   : Default stack has been set 
+ *  Postcondition  : -
+ *  Side Effects   : None
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION Mem_AvailDefault(bytes   : INTEGER): BOOLEAN;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Mem_Done
+ *  Description    : Returns TRUE is the previous call to Mem was 
+ *                   successful
+ *  Result         : BOOLEAN;
+ *EMP:::===================================================================*)
+
+FUNCTION Mem_Done: BOOLEAN;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_TopDefault
+ *  Description     : Makes the top of the default stack available
+ *  Parameters      : None
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_TopDefault;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_BottomDefault
+ *  Description     : Makes the bottom of the default stack available
+ *  Parameters      : None
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_BottomDefault;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_Top
+ *  Description     : Makes the top of the stack available
+ *  Parameters      : stackid : Mem_Stack;
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_Top(stackid : Mem_Stack);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_Bottom
+ *  Description     : Makes the bottom of the stack available
+ *  Parameters      : stackid : Mem_Stack
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_Bottom(stackid : Mem_Stack);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name   : Mem_IsTop
+ *  Description     : True if the top of the stack current
+ *  Parameters      : stackid : Mem_Stack;
+ *  Result          : BOOLEAN : TRUE if top is current
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION Mem_IsTop(stackid : Mem_Stack): BOOLEAN;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name   : Mem_IsTopDefault
+ *  Description     : True if the top of default stack is current
+ *  Result          : BOOLEAN : TRUE if top is current
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION Mem_IsTopDefault: BOOLEAN;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Mem_CopyDefault
+ *  Description     : Copys `nrbytes' from one address on the stack to 
+ *                    another.
+ *  Parameters      : source     : Mem_Ptr;
+ *                    bytes      : INTEGER; 
+ *                    VAR dest   : Mem_Ptr;
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Mem_CopyDefault(source      : Mem_Ptr;
+                                     bytes       : INTEGER;
+                                     VAR dest    : Mem_Ptr);
+EXTERNAL;
+
+END {Mem};

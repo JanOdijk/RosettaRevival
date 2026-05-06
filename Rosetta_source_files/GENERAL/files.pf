@@ -1,0 +1,992 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project
+ *
+ *  Module Title    : Files
+ *  Creation date   :  6-2-1990
+ *  Author          : Harold Leurs
+ *
+ *  Copyright (c) 1990, by Nederlandse Philips Bedrijven BV.
+ *
+ *  Remarks         : This module defines some basic operations on
+ *                    text files. 
+ *
+ *                    A text files consists of characters, lines and
+ *                    pages. The reading and writing of CHAR, INTEGER, BOOLEAN,
+ *                    string and STRING_String is supported. Also procedures
+ *                    are provided 1) to skip spaces, complete lines and
+ *                    pages, 2) to detect end-of-line, end-of-page and
+ *                    end-of-file conditions, 3) to end a line or a page,
+ *                    4) to reread the lastread character, 5) to determine how
+ *                    many characters have been read/written in the current
+ *                    line, 6) to open/close (local) files for (shared) reading,
+ *                    writing or appending and 7) to translate logical names.
+ *
+ *                    The routine ReadAgain makes it easy to implement
+ *                    parsers, f.e. if the last read character was a digit
+ *                    then ReadAgain followed by ReadInteger will read and
+ *                    convert an integer, but if it was a letter then ReadAgain
+ *                    followed by ReadStr will read the complete string.
+ *                    Also end-of-line/end-of-file conditions are detectable
+ *                    in a more convinient way.
+ *
+ *                    The Open routine makes it possible to open a file,
+ *                    linked to an external file, either for reading or
+ *                    for writing/appending. Moreover it makes it possible to
+ *                    mark the external file for exclusive use, shared reading
+ *                    or shared reading and writing.
+ *
+ *                    The write functions automatically insert an end-of-line
+ *                    in the output stream if more then MaxIO characters are
+ *                    bying written in the current line. This prevents the
+ *                    system from breaking down in such a case. The insertion
+ *                    is done at the proper places; strings and integers are
+ *                    never splitt over two lines, if it does not fit on the
+ *                    current line all of it will be written on the next line.
+ *
+ *                    A call to Files_Done will return TRUE IFF the last
+ *                    Read, Open/Close or Translate action went well. The
+ *                    ReadAgain routine has no effect on this.
+ *
+ *EMP:::===================================================================*)
+
+pragma C_include('string.pf');
+pragma C_include('str.pf');
+
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+
+PACKAGE Files;
+WITH STRNG;
+WITH STR;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Left
+ *  Description    : This constant is temporarily available to simplify the
+ *                   modification of the type Files_LeftOrRight. Its uses
+ *                   should be avoided.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Left = TRUE;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Right
+ *  Description    : This constant is temporarily available to simplify the
+ *                   modification of the type Files_LeftOrRight. Its uses
+ *                   should be avoided.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Right = FALSE;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Files_TabSymbol
+ *  Description    : This is a the value of the tab-marker (ASCII HT).
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Files_TabSymbol = Str_HT;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Files_EndOfLineSymbol
+ *  Description    : This is a the value of the end-of-line-marker (ASCII CR).
+ *                   Writing chr(Files_EndOfLineSymbol) is equivalent to
+ *                   Files_WriteLine.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Files_EndOfLineSymbol = Str_CR;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Files_EndOfPageSymbol
+ *  Description    : This is a the value of the end-of-page-marker (ASCII FF).
+ *                   Writing chr(Files_EndOfPageSymbol) is equivalent to
+ *                   Files_WritePage.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Files_EndOfPageSymbol = Str_FF;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Files_EndOfSubFileSymbol
+ *  Description    : This is a the value of the end-of-sub-file-marker
+ *                   (ASCII FS).
+ *                   Writing chr(Files_EndOfSubFileSymbol) is equivalent to
+ *                   Files_WriteSubFile.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Files_EndOfSubFileSymbol = Str_FS;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Files_EndOfFileSymbol
+ *  Description    : This is a the value of the end-of-file-marker (ASCII EOT).
+ *                   Writing chr(Files_EndOfFileSymbol) is equivalent to
+ *                   Files_Close.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Files_EndOfFileSymbol = Str_EOT;
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Files_MaxIO
+ *  Description    : maximum length of input/output buffer
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Files_MaxIO = 132;
+
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : Files_MaxName
+ *  Description    : maximal length of a complete file name,
+ *                   including device,directory and extension
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   Files_MaxName = 255;
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Files_IORange
+ *  Description    : index range of input/output buffer
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Files_IORange = 0..Files_MaxIO;
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Files_NameRange
+ *  Description    : index range of file names
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Files_NameRange = 0..Files_MaxName;
+
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Files_IOBuffer
+ *  Description    : Largest possible buffer needed for IO operations.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Files_IOBuffer = STRING(132);
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Files_NameBuffer
+ *  Description    : Largest possible buffer needed for file-names
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Files_NameBuffer = STRING(255);
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Files_Mode
+ *  Description    : specification of the way in which a file must be/has been
+ *                   opened.
+ *                   If the file didn't exist yet then a new file is
+ *                   created IFF mode IN [3,5].
+ *                   CASE mode OF
+ *                      0 : The file is marked for exclusive use;
+ *                          f is in read state, at first position of file.
+ *                      1 : The file is marked for shared reading;
+ *                          f is in read state, at first position of file.
+ *                      2 : The file is marked for shared reading and writing;
+ *                          f is in read state, at first position of file.
+ *                      3 : The file is marked for exclusive use;
+ *                          f is in write state, file is empty.
+ *                      4 : The file is marked for exclusive use;
+ *                          f is in write state, at end of file ready to append.
+ *                      5 : The file is marked for shared reading and writing;
+ *                          f is in write state, file is empty.
+ *                      6 : The file is marked for shared reading and writing;
+ *                          f is in write state, at end of file ready to append.
+ *                  END
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Files_Mode = 0..6;
+
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Files_Text
+ *  Description    : standard text file.
+ *                   its structure should be considered hidden!
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Files_Text = RECORD f : TEXT;
+                       pos : Files_IORange;
+                       Again : BOOLEAN;
+                       ch : CHAR;
+                       mode : Files_Mode;
+                END;
+
+
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : Files_LeftJustify
+ *  Description    : Files_LeftJustify determines the ways in which strings
+ *                   may be justified.
+ *                      TRUE  -> string is padded with blanks
+ *                      FALSE -> string is preceded by blanks
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   Files_LeftJustify = BOOLEAN;
+
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Files_Done
+ *  Description    : determines the status of the last operation.
+ *  Parameters     : 
+ *  Result         : BOOLEAN
+ *  Precondition   : 
+ *  Postcondition  : RETURNS TRUE IFF the last Read, Open/Close or Translate
+ *                   action went well. (the ReadAgain routine has no effect
+ *                   in this respect)
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION Files_Done
+              : BOOLEAN;
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_Open
+ *  Description     : opens a file
+ *  Parameters      : VAR f : Files_Text
+ *                    name : STRING
+ *                    len : Files_NameRange
+ *                    mode : Files_Mode
+ *  Precondition    : lb1=1
+ *  Postcondition   : The external file named name[1..min(length(name),len)] is
+ *                    connected to the file-variable f.
+ *                    The file is opened according to mode.
+ *                    A call of Files_Done will return TRUE IFF all went well.
+ *  Side Effects    : Possibly a new file is created!
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_Open (VAR f : Files_Text;
+                 CONST name : STRING;
+                        len : Files_NameRange;
+                       mode : Files_Mode);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_OpenGlobal
+ *  Description     : opens a file
+ *  Parameters      : VAR f : Files_Text
+ *                    f2 : TEXT
+ *                    mode : Files_Mode
+ *  Precondition    : lb1=1
+ *  Postcondition   : The external file named name[1..min(length(name),len)] is
+ *                    connected to the file-variable f.
+ *                    The file is opened according to mode.
+ *                    A call of Files_Done will return TRUE IFF all went well.
+ *  Side Effects    : Possibly a new file is created!
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_OpenGlobal (VAR f : Files_Text;
+                           VAR f2 : TEXT;
+                             mode : Files_Mode);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_OpenLocal
+ *  Description     : opens a file
+ *  Parameters      : VAR f : Files_Text
+ *                    mode : Files_Mode
+ *  Precondition    : 
+ *  Postcondition   : A local file is connected to the file-variable f.
+ *                    The file is opened according to mode. The only sensible
+ *                    and allowed values for mode are 1 and 3.
+ *                    A call of Files_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_OpenLocal (VAR f : Files_Text;
+                            mode : Files_Mode);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_Close
+ *  Description     : closes a previous opened file
+ *  Parameters      : VAR f : Files_Text
+ *  Precondition    : f was previously opened using Files_Open
+ *  Postcondition   : f is closed
+ *                    A call of Files_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_Close (VAR f : Files_Text);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Files_EndOfFile
+ *  Description    : determines the end of file status of f
+ *  Parameters     : VAR f : Files_Text
+ *  Result         : BOOLEAN
+ *  Precondition   : f is in read state
+ *  Postcondition  : RETURNS TRUE IFF the last read character of f equals the
+ *                   end-of-file symbol
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION Files_EndOfFile (VAR f : Files_Text)
+              : BOOLEAN;
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Files_EndOfSubFile
+ *  Description    : determines the end of subfile status of f
+ *  Parameters     : VAR f : Files_Text
+ *  Result         : BOOLEAN
+ *  Precondition   : f is in read state
+ *  Postcondition  : RETURNS TRUE IFF the last read character of f equals the
+ *                   end-of-sub-file symbol
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION Files_EndOfSubFile (VAR f : Files_Text)
+              : BOOLEAN;
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Files_EndOfLine
+ *  Description    : determines the end of line status of f
+ *  Parameters     : VAR f : Files_Text
+ *  Result         : BOOLEAN
+ *  Precondition   : f is in read state
+ *  Postcondition  : RETURNS TRUE IFF the last read character of f equals the
+ *                   end-of-line symbol
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION Files_EndOfLine (VAR f : Files_Text)
+              : BOOLEAN;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Files_EndOfPage
+ *  Description    : determines the end of page status of f
+ *  Parameters     : VAR f : Files_Text
+ *  Result         : BOOLEAN
+ *  Precondition   : f is in read state
+ *  Postcondition  : RETURNS TRUE IFF the last read character of f equals the
+ *                   end-of-page symbol
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION Files_EndOfPage (VAR f : Files_Text)
+              : BOOLEAN;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : Files_Position
+ *  Description    : returns the number of read/written characters in the
+ *                   current line of f
+ *  Parameters     : f : Files_Text
+ *  Result         : Files_IORange
+ *  Precondition   : f is previously opened
+ *  Postcondition  : RETURNS the number of read/written characters in the
+ *                   current line of f
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION Files_Position (VAR f : Files_Text)
+              : Files_IORange;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_ReadIdentifier
+ *  Description     : reads a string of characters, consisting of letters and
+ *                    digits
+ *  Parameters      : VAR f : Files_Text
+ *                    VAR str : STRING
+ *                    VAR len : Files_IORange
+ *  Precondition    : f is in read state AND lb1=1
+ *  Postcondition   : str[1..len] is filled with input characters
+ *                    after len characters have been read the remaining
+ *                    letters and digits are skipped.
+ *                    input is terminated at first non-letter-/digit (note that
+ *                    this closing character is not read yet).
+ *                    A call of Files_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_ReadIdentifier (VAR f : Files_Text;
+                              VAR str : STRING;
+                              VAR len : Files_IORange);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_ReadStr
+ *  Description     : reads a string of characters, not consisting of spaces
+ *                    and/or control-characters
+ *  Parameters      : VAR f : Files_Text
+ *                    VAR str : STRING
+ *                    VAR len : Files_IORange
+ *  Precondition    : f is in read state {AND lb1=1}
+ *  Postcondition   : str[1..len] is filled with input characters
+ *                    after len characters have been read the remaining
+ *                    chars>space are skipped.
+ *                    input is terminated at first char<=space (note that this
+ *                    closing character is not read yet).
+ *                    A call of Files_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_ReadStr (VAR f : Files_Text;
+                       VAR str : STRING;
+                       VAR len : Files_IORange);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_ReadToEndOfLine
+ *  Description     : reads a string of characters, not consisting of
+ *                    end-of-line/end-of-page markers
+ *  Parameters      : VAR f : Files_Text
+ *                    VAR str : STRING
+ *                    VAR len : Files_IORange
+ *  Precondition    : f is in read state {AND lb1=1}
+ *  Postcondition   : str[1..len] is filled with input characters
+ *                    after len characters have been read the remaining
+ *                    chars<>end-of-line/end-of-page are skipped.
+ *                    input is terminated at first end-of-line/end-of-page
+ *                    (note that this closing character is not read yet).
+ *                    A call of Files_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_ReadToEndOfLine (VAR f : Files_Text;
+                               VAR str : STRING;
+                               VAR len : Files_IORange);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_ReadString
+ *  Description     : reads a string of characters, not consisting of spaces,
+ *                    and/or control-characters
+ *  Parameters      : VAR f : Files_Text
+ *                    VAR str : STRING_String
+ *  Precondition    : f is in read state
+ *  Postcondition   : str is filled with input characters
+ *                    after length(str) characters have been read the remaining
+ *                    chars>space are skipped.
+ *                    input is terminated at first char<=space (note that this
+ *                    closing character is not read yet).
+ *                    A call of Files_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_ReadString (VAR f : Files_Text;
+                          VAR str : STRING_String);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_ReadChar
+ *  Description     : reads one character from the input file
+ *  Parameters      : VAR F : Files_Text
+ *                    VAR c : CHAR
+ *  Precondition    : f is in read state
+ *  Postcondition   : c contains last character read
+ *                    incase end-of-line was read, c contains its representation
+ *                    the same for end-of-page, end-of-sub-file and end-of-file.
+ *                    A call of Files_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_ReadChar (VAR f : Files_Text;
+                          VAR c : CHAR);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_ReadInteger
+ *  Description     : reads an integer from the input file
+ *  Parameters      : VAR F : Files_Text
+ *                    VAR i : INTEGER
+ *  Precondition    : f is in read state
+ *  Postcondition   : i contains the representation of the last read integer
+ *                    preceding spaces and new-lines are skipped.
+ *                    An integer consists of an optional sign and a sequence
+ *                    of digits.
+ *                    Input is terminated at first non-digit (note that this
+ *                    closing character is not read yet)
+ *                    A call of Files_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_ReadInteger (VAR f : Files_Text;
+                             VAR i : INTEGER);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_ReadBoolean
+ *  Description     : reads a boolean from the input file
+ *  Parameters      : VAR F : Files_Text
+ *                    VAR b : BOOLEAN
+ *  Precondition    : f is in read state
+ *  Postcondition   : b contains the representation of the last read boolean
+ *                    preceding spaces and new-lines are skipped.
+ *                    A boolean consists of the character sequence "TRUE" or
+ *                    "FALSE".
+ *                    A call of Files_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_ReadBoolean (VAR f : Files_Text;
+                             VAR b : BOOLEAN);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_SkipSpace
+ *  Description     : skips all the spaces (and end-of-lines) in the input
+ *  Parameters      : VAR f : Files_Text
+ *                    b : BOOLEAN
+ *  Precondition    : f is in read state
+ *  Postcondition   : IF b THEN all spaces, tabs, end-of-lines and end-of-pages
+ *                              are skipped
+ *                    ELSE all spaces and tabs are skipped
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_SkipSpace (VAR f : Files_Text;
+                               b : BOOLEAN);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_SkipLine
+ *  Description     : skips the input past next end-of-line character
+ *  Parameters      : VAR f : Files_Text
+ *  Precondition    : f is in read state
+ *  Postcondition   : input is skipped past next end-of-line character
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_SkipLine (VAR f : Files_Text);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_SkipPage
+ *  Description     : skips the input past next end-of-page character
+ *  Parameters      : VAR f : Files_Text
+ *  Precondition    : f is in read state
+ *  Postcondition   : input is skipped past next end-of-page character
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_SkipPage (VAR f : Files_Text);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_SkipSubFile
+ *  Description     : skips the input past next end-of-sub-file character
+ *  Parameters      : VAR f : Files_Text
+ *  Precondition    : f is in read state
+ *  Postcondition   : input is skipped past next end-of-sub-file character
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_SkipSubFile (VAR f : Files_Text);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_ReadAgain
+ *  Description     : instructs to read the last read character again
+ *  Parameters      : 
+ *  Precondition    : f is in read state
+ *  Postcondition   : The last read character will be read again in the next
+ *                    read action.
+ *                    This has no effect on Files_EndOfLine, Files_EndOfSubFile,
+ *                    Files_EndOfPage and Files_EndOfFile!
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_ReadAgain (VAR f : Files_Text);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_WriteStr
+ *  Description     : writes string to text file
+ *  Parameters      : VAR f : Files_Text
+ *                    str : STRING
+ *                    len,
+ *                    width : Files_IORange
+ *                    LeftJustify : Files_LeftJustify
+ *  Precondition    : f is in write state AND lb1=1
+ *  Postcondition   : str[1..min(ub,len)] is written to f using at least width
+ *                    chars.
+ *                    The written string is justified according to LeftJustify.
+ *                    If the string does not fit on the current line, then the
+ *                    complete string is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *                    If the string does not fit on the current line, then the
+ *                    complete string is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_WriteStr (VAR f :Files_Text;
+                      CONST str : STRING;
+                     len, width : Files_IORange;
+                    LeftJustify : Files_LeftJustify);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_WriteString
+ *  Description     : writes STRING_string to text file
+ *  Parameters      : VAR f : Files_Text
+ *                    str : STRING_String
+ *                    width : Files_IORange
+ *                    LeftJustify : Files_LeftJustify
+ *  Precondition    : f is in write state
+ *  Postcondition   : str is written to f using atleast width chars
+ *                    The written string is justified according to LeftJustify.
+ *                    If the string does not fit on the current line, then the
+ *                    complete string is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_WriteString (VAR f :Files_Text;
+                               str : STRING_String;
+                             width : Files_IORange;
+                       LeftJustify : Files_LeftJustify);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_WriteChar
+ *  Description     : writes one character to text file
+ *  Parameters      : VAR f : Files_Text
+ *                    c : CHAR
+ *  Precondition    : f is in write state
+ *  Postcondition   : c is written to f
+ *                    If it does not fit on the current line, then the character
+ *                    is written on a new line!
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_WriteChar (VAR f :Files_Text;
+                               c : CHAR);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_WriteInteger
+ *  Description     : writes an integer to text file
+ *  Parameters      : VAR f : Files_Text
+ *                    i : INTEGER
+ *                    width : Files_IORange
+ *                    LeftJustify : Files_LeftJustify
+ *  Precondition    : f is in write state
+ *  Postcondition   : i is written to f, using at least width positions,
+ *                    The written integer is justified according to LeftJustify.
+ *                    If the integer does not fit on the current line, then the
+ *                    complete integer is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_WriteInteger (VAR f :Files_Text;
+                                  i : INTEGER;
+                              width : Files_IORange;
+                        LeftJustify : Files_LeftJustify);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_WriteBoolean
+ *  Description     : writes a boolean to text file
+ *  Parameters      : VAR f : Files_Text
+ *                    b : BOOLEAN
+ *                    width : Files_IORange
+ *                    LeftJustify : Files_LeftJustify
+ *  Precondition    : f is in write state
+ *  Postcondition   : b is written to f, using at least width positions,
+ *                    The written boolean is justified according to LeftJustify.
+ *                    If the boolean does not fit on the current line, then the
+ *                    complete boolean is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *                    The text representation of the boolean is "TRUE" or
+ *                    "FALSE".
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_WriteBoolean (VAR f :Files_Text;
+                                  b : BOOLEAN;
+                              width : Files_IORange;
+                        LeftJustify : Files_LeftJustify);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_WriteSpace
+ *  Description     : writes spaces to text file
+ *  Parameters      : VAR f : Files_Text
+ *                    width : Files_IORange
+ *  Precondition    : f is in write state
+ *  Postcondition   : width spaces are written to f
+ *                    The spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_WriteSpace (VAR f :Files_Text;
+                            width : Files_IORange);
+EXTERNAL;
+
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_WriteLine
+ *  Description     : writes and end-of-line mark in the file f
+ *  Parameters      : VAR f : Files_Text
+ *                    b : BOOLEAN
+ *  Precondition    : f is in write state
+ *  Postcondition   : IFF b OR 'current-line is not closed yet' THEN
+ *                       end-of-line marker is written into f;
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_WriteLine (VAR f : Files_Text;
+                               b : BOOLEAN);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_WritePage
+ *  Description     : writes and end-of-page mark in the file f
+ *  Parameters      : VAR f : Files_Text
+ *  Precondition    : f is in write state
+ *  Postcondition   : IF 'current-line is not closed yet' THEN
+ *                       end-of-line marker is written into f;
+ *                    end-of-page marker is written into f
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_WritePage (VAR f : Files_Text);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : Files_WriteSubFile
+ *  Description     : writes and end-of-subfile mark in the file f
+ *  Parameters      : VAR f : Files_Text
+ *  Precondition    : f is in write state
+ *  Postcondition   : IF 'current-line is not closed yet' THEN
+ *                       end-of-line marker is written into f;
+ *                    end-of-subfile marker is written into f
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE Files_WriteSubFile (VAR f : Files_Text);
+EXTERNAL;
+
+
+END {Files};

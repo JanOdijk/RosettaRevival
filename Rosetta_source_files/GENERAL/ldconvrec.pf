@@ -1,0 +1,275 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project
+ *
+ *  Module Title    : LDCONVREC
+ *  Creation date   : 
+ *  Author          : J. Rous
+ *
+ *  Copyright (c) 1986, by Nederlandse Philips Bedrijven BV.
+ *
+ *  Remarks         : 
+ *
+ *EMP:::===================================================================*)
+
+pragma C_Include('strings.pf');
+pragma c_include('listree.pf');
+pragma c_include('string.pf');
+pragma c_include('str.pf');
+
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+
+PACKAGE LDCONVREC;
+WITH LISTREE, STRNG, STR, STRINGS;
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : LDCONVREC_MaxStrLength
+ *  Description    : maximum length of BLEX-str.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   LDCONVREC_MaxStrLength = 32;
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : LDCONVREC_MaxNumbOfFields
+ *  Description    : maximum number of attributes.
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   LDCONVREC_MaxNumbOfFields = 40;
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : LDCONVREC_MaxNumbOfValues
+ *  Description    : maximum numder of possible values
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   LDCONVREC_MaxNumbOfValues = 100;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LDCONVREC_Str
+ *  Description    : largest possible BLEX-str
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   LDCONVREC_Str = STRING(LDCONVREC_MaxStrLength);
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LDCONVREC_IndicatorType
+ *  Description    : the possible types
+ *
+ *EMP:::===================================================================*)
+
+
+   LDCONVREC_IndicatorType = (EnumSet,Subrange,Enumeration,Key,Int,Bool,Strin);
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LDCONVREC_pAttrStruct
+ *  Description    : pointer to record of type LDCONVREC_AttrStruct.
+ *
+ *EMP:::===================================================================*)
+
+
+   LDCONVREC_pAttrStruct = ^LDCONVREC_AttrStruct;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LDCONVREC_pSetValueType
+ *  Description    : pointer to a record a type LDCONVREC_SetValueType.
+ *
+ *EMP:::===================================================================*)
+
+   LDCONVREC_pSetValueType = ^LDCONVREC_SetValueType;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LDCONVREC_SetValueType
+ *  Description    : contains the value of an attribute of a set, in case the
+ *                   set contains at least two elements, and a pointer to
+ *                   a record of type LDCONVREC_SetValueType.
+ *
+ *EMP:::===================================================================*)
+
+   LDCONVREC_SetValueType = RECORD
+                               EltValue   : RECORD
+                                               Str : LDCONVREC_Str;
+                                               Len : Str_Range;
+                                            END;
+                               NextValue  : LDCONVREC_pSetValueType
+                            END;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LDCONVREC_AttrStruct
+ *  Description    : record which contains information about a attribute.
+ *                   NextAttr      : LDCONVREC_AttrStruct (pointer
+ *                                   to the next record of type
+ *                                   LDCONVREC_AttrStruct).
+ *                   FieldName     : string representation of the name of
+ *                                   the attribute.
+ *                   SetValue      : LDCONVREC_pSetValueType (pointer to a
+ *                                   record of type LDCONVREC_SetValueType).
+ *                   FieldValue    : string representation of the value of
+ *                                   the attribute.
+ *                   TypeIndicator : LDCONVREC_IndicatorType.
+ *                   TypeCode      : integer (value used retrieve the
+ *                                   possible values of the attribute.
+ *                   LineNumber    : the linenumber in the window.
+ *                   Error         : Is used to indicate whether conversion
+ *                                   from string type to PASCAL type went well
+ *EMP:::===================================================================*)
+
+   LDCONVREC_AttrStruct = RECORD
+                            NextAttr                  : LDCONVREC_pAttrStruct;
+                            FieldName                 : RECORD
+                                                           Str : LDCONVREC_Str;
+                                                           Len : Str_Range
+                                                        END;
+                            FieldValue                : RECORD
+                                                           Str : LDCONVREC_Str;
+                                                           Len : Str_Range
+                                                        END;
+                            SetValue                  : LDCONVREC_pSetValueType;
+                            TypeIndicator             : LDCONVREC_IndicatorType;
+                            TypeCode                  : INTEGER;
+                            LineNumber                : INTEGER;
+                            Error                     : BOOLEAN
+                         END;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LDCONVREC_FieldArrayType
+ *  Description    : array of records of type LDCONVREC_BlexFieldType
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   LDCONVREC_FieldArrayType = Array [1..LDCONVREC_MaxNumbOfFields] Of LDCONVREC_AttrStruct;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LDCONVREC_PValueRecType
+ *  Description    : pointer to a record of type LDCONVREC_ValueRecType.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   LDCONVREC_PValueRecType = ^LDCONVREC_ValueRecType;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LDCONVREC_ValueRecType
+ *  Description    : contains a possible value of an attribute and
+ *                   a pointer to a record of type LDCONVREC_ValueRecType.
+ *
+ *EMP:::===================================================================*)
+
+   LDCONVREC_ValueRecType = RECORD
+                             FieldValue : RECORD
+                                             Str : LDCONVREC_Str;
+                                             Len : Integer
+                                          END;
+                             PValueRec : LDCONVREC_PValueRecType
+                          END;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LDCONVREC_ValueType
+ *  Description    : record which contains information about a possible
+ *                   value of an attribute.
+ *                   FieldValue : the string representation of the value.
+ *                   Present    : boolean to indicate wether the attribute
+ *                                has the value of the possible value.
+ *                   XPos       : the row number in the window.
+ *                   YPos       : the column number in the window.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   LDCONVREC_ValueType = RECORD
+                          FieldValue : RECORD
+                                          Str : LDCONVREC_Str;
+                                          Len : Integer
+                                       END;
+                          Present    : Boolean;
+                          XPos       : Integer;
+                          YPos       : Integer
+                       END;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LDCONVREC_ValueArrayType
+ *  Description    : array of records of type LDCONVREC_ValueType.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   LDCONVREC_ValueArrayType = Array [1..LDCONVREC_MaxNumbOfValues] Of LDCONVREC_ValueType;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LDCONVREC_GetAttrbs
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LDCONVREC_GetAttrbs(s: LISTREE_pStree)
+                    : LDCONVREC_pAttrStruct;
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LDCONVREC_GetNode
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LDCONVREC_GetNode(t: LDCONVREC_pAttrStruct;
+                                      VAR s: LISTREE_pStree)
+                    : BOOLEAN;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LDCONVREC_CatAttrbs
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LDCONVREC_CatAttrbs(CONST catstring: STRING_string)
+                    : LDCONVREC_pAttrStruct;
+EXTERNAL;
+
+
+END {LDCONVREC};

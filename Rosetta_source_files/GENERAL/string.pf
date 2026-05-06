@@ -1,0 +1,834 @@
+
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : STRING 
+ *  Creation date   : 29 January 1990                              
+ *  Author          : Harold Leurs
+ *                                                                  
+ *  Copyright (c) 1990, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         : Contains string manipulation routines.
+ *                    This module describes the abstract-datatype STRING_String.
+ *                    It is meant to be a dynamic string type, that is the
+ *                    strings may vary in length during their lifetime.
+ *
+ *                    The main feature of this abstract data type is to
+ *                    provide an efficient (in time as well as in memory use)
+ *                    implementation of dynamic strings.
+ *                    In the current version of this abstract data type a
+ *                    VMS/Pascal specific solution is used in which all strings
+ *                    use the same amount of memory. If time is on our side and
+ *                    the need comes this solution will be replaced by another,
+ *                    probably some pointer structure. So, please be sure not
+ *                    to use any knowledge of the implementation of the type
+ *                    STRING_String, and only use assignment and the in this
+ *                    module defined actions!
+ *
+ *                    In the postconditions describing the effect of the
+ *                    actions, STRING_String's are sometimes treated as if they
+ *                    were ordinary Pascal strings.
+ *
+ *EMP:::===================================================================*)
+
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+
+PACKAGE STRNG;
+
+
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : STRING_Max
+ *  Description    : maximal length of a string
+ *
+ *EMP:::===================================================================*)
+
+CONST
+   STRING_Max = 100;
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : STRING_Range
+ *  Description    : defines index range of a string.
+ *                   the first character in a string has index 1.
+ *                   0 is an extra value used to indicate out of bound
+ *                   conditions, empty strings ed.
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   STRING_Range = 0..STRING_Max;
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : STRING_String
+ *  Description    : STRING_String is to be used as the only string type in
+ *                   Rosetta. Its internal structure should be considered
+ *                   to be unknown outside this module!!
+ *                   The only actions upon this data type are the one
+ *                   defined in this module and the Pascal assignment statement.
+ *                   To initiate and/or assign a Pascal-string-constant to a
+ *                   variable of this type use the STRING_Constant routines.
+ *
+ *EMP:::===================================================================*)
+
+   STRING_String = STRING(STRING_Max);
+
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : STRING_CompareResult
+ *  Description    : STRING_Compare Result is used to represent the result of
+ *                   a string comparison. Comparing string a with string b the
+ *                   meaning of the different values is as follows :
+ *                      -1 -> a<b
+ *                       0 -> a=b
+ *                       1 -> a>b
+ *
+ *EMP:::===================================================================*)
+
+   STRING_CompareResult = -1..1;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : STRING_Length
+ *  Description    : returns the length of a string
+ *  Parameters     : str : STRING_String
+ *  Result         : STRING_Range
+ *  Precondition   : 
+ *  Postcondition  : RETURNS length(str)
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION STRING_Length (str : STRING_String)
+               : STRING_Range;   
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : STRING_Compare
+ *  Description    : returns the result of comparison of two strings
+ *  Parameters     : str1 : STRING_String
+ *                   str2 : STRING_String
+ *  Result         : STRING_CompareResult
+ *  Precondition   : 
+ *  Postcondition  : RETURNS -1 iff str1<str2
+ *                            0 iff str1=str2
+ *                            1 iff str1>str2
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION  STRING_Compare (str1 : STRING_String; 
+                          str2 : STRING_String)
+                : STRING_CompareResult;                      
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : STRING_CompareBegin
+ *  Description    : returns the result of comparison of the first part of
+ *                   two strings.
+ *  Parameters     : str1 : STRING_String
+ *                   str2 : STRING_String
+ *  Result         : STRING_CompareResult
+ *  Precondition   : 
+ *  Postcondition  : str1_1:= str1[1..min(length(str1),length(str2))]
+ *                   str2_1:= str2[1..min(length(str1),length(str2))]
+ *                   RETURNS  STRING_Compare(str1_1,str2_1)
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION  STRING_CompareBegin (str1 : STRING_String; 
+                               str2 : STRING_String)
+                : STRING_CompareResult;                     
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : STRING_CompareEnd
+ *  Description    : returns the result of comparison of the last part of
+ *                   two strings.
+ *  Parameters     : str1 : STRING_String
+ *                   str2 : STRING_String
+ *  Result         : STRING_CompareResult
+ *  Precondition   : 
+ *  Postcondition  : str1_1:= str1[length(str1)-min(length(str1),length(str2))+1
+                                   ..length(str1)]
+ *                   str2_1:= str2[length(str2)-min(length(str1),length(str2))+1
+                                   ..length(str2)]
+ *                   RETURNS  STRING_Compare(str1_1,str2_1)
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION  STRING_CompareEnd (str1 : STRING_String;
+                             str2 : STRING_String)
+                : STRING_CompareResult;                 
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : STRING_CompareChars
+ *  Description    : returns the result of comparison of two strings
+ *  Parameters     : str1: STRING_String
+ *                   str2: STRING
+ *                   len2: STRING_Range
+ *  Result         : STRING_CompareResult
+ *  Precondition   : lb1=1
+ *  Postcondition  : RETURNS  -1 iff str1<str2[1..min(len2,ub2)]
+ *                             0 iff str1=str2[1..min(len2,ub2)]
+ *                             1 iff str1>str2[1..min(len2,ub2)]
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION  STRING_CompareChars (str1 : STRING_String;
+                               CONST  str2 : STRING;
+                               len2 : STRING_Range)
+                : STRING_CompareResult;                      
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : STRING_CompareChar
+ *  Description    : returns the result of comparison of the i'the character of
+ *                   a string with c.
+ *  Parameters     : str: STRING_String
+ *                   i: STRING_Range
+ *                   c: CHAR
+ *  Result         : STRING_CompareResult
+ *  Precondition   : 
+ *  Postcondition  : IF length(str)<i THEN 'str is padded with blanks'
+ *                   RETURNS  -1 iff str[i]<c
+ *                             0 iff str[i]=c
+ *                             1 iff str[i]>c
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION  STRING_CompareChar (str : STRING_String;
+                                i : STRING_Range;
+                                c : CHAR)
+                : STRING_CompareResult;        
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : STRING_FindFirstInSet
+ *  Description    : returns the offset of the first character in source
+ *                   that is a member of chars
+ *  Parameters     : str1 : STRING_String
+ *                   str2 : STRING_Range
+ *  Result         : STRING_Range
+ *  Precondition   : 
+ *  Postcondition  : i:=1;
+ *                   REPEAT
+ *                      IF (EXIST j :str1[i]=str2[j]) THEN
+ *                         RETURNS i
+ *                      ELSE i:=i+1
+ *                   UNTIL i=length(str1);
+ *                   RETURNS 0
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION  STRING_FindFirstInSet ( str1 : STRING_String;
+                                  str2 : STRING_String)
+                : STRING_Range;                          
+EXTERNAL;
+
+   
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : STRING_FindFirstNotInSet
+ *  Description    : returns the offset of the first character in source
+ *                   that is not a member of chars
+ *  Parameters     : str1 : STRING_String
+ *                   str2 : STRING_String
+ *  Result         : STRING_Range
+ *  Precondition   : 
+ *  Postcondition  : IF length(str1)=1 THEN RETURNS 1;
+ *                   IF length(str2)=0 THEN RETURNS 0;
+ *                   i:=1;
+ *                   REPEAT
+ *                      IF NOT(EXIST j : str1[i]=str2[j]) THEN
+ *                         RETURNS i
+ *                      ELSE i:=i+1
+ *                   UNTIL i=length(str1);
+ *                   RETURNS 0
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION  STRING_FindFirstNotInSet ( str1 : STRING_String;
+                                     str2 : STRING_String)
+                : STRING_Range;
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : STRING_FindFirstSubString
+ *  Description    : returns the offset of the first occurrence of substring
+ *                   in a string starting the search at string[start]
+ *  Parameters     : str1, str2: STRING_String
+ *                   start: STRING_Range
+ *  Result         : STRING_Range
+ *  Precondition   : 
+ *  Postcondition  : i:=start;
+ *                   REPEAT
+ *                      IF str1[i..i+length(str2)-1] = str2 THEN
+ *                         RETURNS i
+ *                      ELSE i:=i+1
+ *                   UNTIL i=length(str1);
+ *                   RETURNS 0
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION  STRING_FindFirstSubString ( CONST str1 : STRING_String;
+                                      CONST str2 : STRING_String;
+                                     start : STRING_Range)
+                : STRING_Range;
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_Constant
+ *  Description     : creates a STRING_String constant with c as content
+ *  Parameters      : VAR str1: STRING_String
+ *                    str2: STRING
+ *                    len2: STRING_Range
+ *  Precondition    : lb1=1
+ *  Postcondition   :  str1 = str2[1..min(len2,ub2)]
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_Constant (VAR str1 : STRING_String;
+                         CONST str2 : STRING;
+                               len2 : STRING_Range);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_ConstantChar
+ *  Description     : creates a STRING_String constant with c as content
+ *  Parameters      : VAR str: STRING_String
+ *                    c: CHAR
+ *  Precondition    : 
+ *  Postcondition   :  str[1] = c  AND  length(str) = 1
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_ConstantChar (VAR str : STRING_String;
+                                     c : CHAR);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_ConstantEmpty
+ *  Description     : creates an empty STRING_String constant
+ *  Parameters      : VAR str: STRING_String
+ *  Precondition    : 
+ *  Postcondition   : length(str) = 0
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_ConstantEmpty (VAR str : STRING_String);
+
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_Reverse
+ *  Description     : reverses the letters of a string
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *  Precondition    : 
+ *  Postcondition   : FOR ALL i in [1..length(str2)] :
+ *                        str1[length(str2)+1-i] = str2[i]
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_Reverse (VAR str1 : STRING_String;
+                          CONST str2 : STRING_String);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_Extract
+ *  Description     : Extracts a substring from a string
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    pos, lngth : STRING_Range
+ *  Precondition    : 
+ *  Postcondition   :  str1 = str2[pos..lngth]
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_Extract (VAR str1 : STRING_String;
+                              str2 : STRING_String;
+                        pos, lngth : STRING_Range);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_ExtractBegin
+ *  Description     : Extracts the first part from a string
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    pos : STRING_Range
+ *  Precondition    : 
+ *  Postcondition   :  str1 = str2[1..pos]
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_ExtractBegin (VAR str1 : STRING_String;
+                                   str2 : STRING_String;
+                                    pos : STRING_Range);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_ExtractEnd
+ *  Description     : Extracts the last part from a string
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    pos : STRING_Range
+ *  Precondition    : 
+ *  Postcondition   :  str1 = str2[pos..length(str2)]
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_ExtractEnd (VAR str1 : STRING_String;
+                             CONST str2 : STRING_String;
+                                  pos : STRING_Range);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_ExtractChars
+ *  Description     : copies a substring into c
+ *  Parameters      : VAR str1: STRING
+ *                    VAR len1: STRING_Range
+ *                    str2: STRING_String
+ *                    pos, len: STRING_Range
+ *  Precondition    : lb1=1
+ *  Postcondition   : len1 = min(len,length(str2))
+ *                    str1 = str2[min(max(1,pos),length(str2)..
+ *                                    min(max(1,pos),length(str2)+len]
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_ExtractChars (VAR str1 : STRING;
+                               VAR len1 : STRING_Range;
+                                   str2 : STRING_String;
+                               pos, len : STRING_Range);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_ExtractChar
+ *  Description     : Extracts the i'th character from a string
+ *  Parameters      : VAR c : CHAR
+ *                    str : STRING_String
+ *                    i : STRING_Range
+ *  Precondition    : 
+ *  Postcondition   : if length(str)<i then str is padded with blanks
+ *                    c = str[i]
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_ExtractChar (VAR c : CHAR;
+                                str : STRING_String;
+                                  i : STRING_Range);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_Replace
+ *  Description     : Replaces part of a string with another string
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    offset, len : STRING_Range
+ *                    str3 : STRING_String
+ *  Precondition    : 
+ *  Postcondition   : str1 = str2[1..min(offset-1,length(str2))] +
+ *                           str3[1..length(str3] +
+ *                           str2[min(offset-1,length(str2))+1+len..length(str2)]
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_Replace (VAR str1 : STRING_String;
+                          CONST str2 : STRING_String;
+                       offset, len : STRING_Range;
+                          CONST str3 : STRING_String);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_ReplaceChars
+ *  Description     : Replaces a substring of a string with another string
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    offset, len : STRING_Range
+ *                    str2: STRING
+ *                    len3: STRING_Range
+ *  Precondition    : lb13=1
+ *  Postcondition   : str1 = str2[1..min(offset-1,length(str2))] +
+ *                           str3[1..min(len3,ub3)] +
+ *                           str2[min(offset-1,length(str2))+1+len
+ *                                ..length(str2)]
+ *
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_ReplaceChars (VAR str1 : STRING_String;
+                                   str2 : STRING_String;
+                            offset, len : STRING_Range;
+                             CONST str3 : STRING;
+                                   len3 : STRING_Range);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_ReplaceChar
+ *  Description     : Replaces the i'th character of a string with c
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    i: STRING_Range
+ *                    c: CHAR
+ *  Precondition    : 
+ *  Postcondition   : str1 = str2[1..min(i-1,length(str2))] +
+ *                           c +
+ *                           str2[min(i-1,length(str2))+1+1..length(str2)]
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_ReplaceChar (VAR str1 : STRING_String;
+                                  str2 : STRING_String;
+                                     i : STRING_Range;
+                                     c : CHAR);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_Concat
+ *  Description     : Concatenates two strings
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    str3 : STRING_String
+ *  Precondition    : 
+ *  Postcondition   : str1 = str2 + str3
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_Concat (VAR str1 : STRING_String;
+                         CONST str2 : STRING_String;
+                         CONST str3 : STRING_String);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_Prefix
+ *  Description     : Prefixes str1 with str2
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *  Precondition    : 
+ *  Postcondition   : str1 = str2 + str3
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_Prefix (VAR str1 : STRING_String;
+                             str2 : STRING_String);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_Append
+ *  Description     : Appends str2 to str1
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *  Precondition    : 
+ *  Postcondition   : str1 = str1 + str2
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_Append (VAR str1 : STRING_String;
+                             str2 : STRING_String);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_AppendChars
+ *  Description     : Appends a string to another to a string
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    str3 : STRING
+ *                    len3 : STRING_Range
+ *  Precondition    : 
+ *  Postcondition   : str1 = str1 2[1..length(str2)] +
+ *                           str3[1..min(len3,ub3)]
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_AppendChars (VAR str1 : STRING_String;
+                                  str2 : STRING_String;
+                            CONST str3 : STRING;
+                                  len3 : STRING_Range);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_PrefixChars
+ *  Description     : prefixes a string with another string
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    str3 : STRING
+ *                    len3 : STRING_Range
+ *  Precondition    : 
+ *  Postcondition   : str1 = str3[1..min(len3,ub3)] +
+ *                           str2[1..length(str2)]
+ * 
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_PrefixChars (VAR str1 : STRING_String;
+                                  str2 : STRING_String;
+                            CONST str3 : STRING;
+                                  len3 : STRING_Range);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_AppendChar
+ *  Description     : Appends c to a string
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    c : CHAR
+ *  Precondition    : 
+ *  Postcondition   : str1 = str[1..length(str2)] +
+ *                           c
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_AppendChar (VAR str1 : STRING_String;
+                                 str2 : STRING_String;
+                                    c : CHAR);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_PrefixChar
+ *  Description     : prefixes a string with c
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    c : CHAR
+ *  Precondition    : 
+ *  Postcondition   : str1 = c +
+ *                           str2[1..length(str2)]
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_PrefixChar (VAR str1 : STRING_String;
+                                 str2 : STRING_String;
+                                    c : CHAR);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_Trim
+ *  Description     : Removes all trailing tabs and spaces from a string
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *  Precondition    : 
+ *  Postcondition   : str1 = str2 without trailing blanks or tabs
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_Trim (VAR str1 : STRING_String;
+                           str2 : STRING_String);
+EXTERNAL;
+   
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_UpperCase
+ *  Description     : Changes the case of all the letters of a string to
+ *                    uppercase
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *  Precondition    : 
+ *  Postcondition   : str1 = str2 with all letters in uppercase
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_UpperCase (VAR str1 : STRING_String;
+                                str2 : STRING_String);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_UpperCaseChar
+ *  Description     : Changes the case of the i'th letter of a string to
+ *                    uppercase
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    i : STRING_Range
+ *  Precondition    : 
+ *  Postcondition   : str1 = str2 with i'th letter in uppercase if possible
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_UpperCaseChar (VAR str1 : STRING_String;
+                                    str2 : STRING_String;
+                                       i : STRING_Range);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_LowerCase
+ *  Description     : Changes the case of all the letters of a string to
+ *                    lowercase
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *  Precondition    : 
+ *  Postcondition   : str1 = str2 with all  letters in lowercase
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_LowerCase (VAR str1 : STRING_String;
+                                str2 : STRING_String);
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_LowerCaseChar
+ *  Description     : Changes the case of the i'th letter of a string to
+ *                    lowercase
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    i : STRING_Range
+ *  Precondition    : 
+ *  Postcondition   : str1 = str2 with i'th letter in lowercase if possible
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_LowerCaseChar (VAR str1 : STRING_String;
+                                    str2 : STRING_String;
+                                       i : STRING_Range);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_ChangeCase
+ *  Description     : Toggles the case of all the letters of a string
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *  Precondition    : 
+ *  Postcondition   : str1 = str2 with the case of all letters changed
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_ChangeCase (VAR str1 : STRING_String;
+                                 str2 : STRING_String);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : STRING_ChangeCaseChar
+ *  Description     : Toggles the case of the i'th letter of a string
+ *  Parameters      : VAR str1 : STRING_String
+ *                    str2 : STRING_String
+ *                    i : STRING_Range
+ *  Precondition    : 
+ *  Postcondition   : str1 = str2 with the case of the i'th letter changed
+ *                           if possible
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE STRING_ChangeCaseChar (VAR str1 : STRING_String;
+                                     str2 : STRING_String;
+                                        i : STRING_Range);
+EXTERNAL;
+
+
+
+END {STRING};

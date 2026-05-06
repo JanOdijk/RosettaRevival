@@ -1,0 +1,1048 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project
+ *
+ *  Module Title    : LSMATCHES
+ *  Creation date   :  07-AUG-1989
+ *  Author          : rene leermakers
+ *
+ *  Copyright (c) 1987, by Nederlandse Philips Bedrijven BV.
+ *
+ *  Remarks         : Contains matching procedures for use in translated
+ *                    Mrules
+ *
+ *EMP:::===================================================================*)
+
+pragma C_include('lsstree.pf');
+pragma C_include('lsdomaint.pf');
+pragma C_include('lsmruquo.pf');
+pragma C_include('string.pf');
+
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+
+PACKAGE LSMATCHES;
+WITH lsstree, lsdomaint, lsmruquo, strng;
+
+FUNCTION store(VAR vpid1:LSDOMAINT_synpatterntype;vpid2:LSDOMAINT_synpatterntype):LSDOMAINT_synpatterntype;
+EXTERNAL;
+FUNCTION auxkey(strkey:STRING_string):INTEGER;
+EXTERNAL;
+PROCEDURE MatchList0Items(L:LSSTREE_pRelNode;first:Boolean;VAR match:Boolean);
+EXTERNAL;
+FUNCTION numberofelements(L:LSMRUQUO_Listofstrees):INTEGER;
+EXTERNAL;
+PROCEDURE copylist(L1:LSMRUQUO_Listofstrees;VAR L2:LSMRUQUO_Listofstrees);
+EXTERNAL;
+PROCEDURE TcelesLfirstAndLlast(VAR Lfirst,Llast,Lrest:LSSTREE_pRelNode;
+          VAR NoMoreTrees:BOOLEAN;
+          L:LSSTREE_pRelNode);
+EXTERNAL;
+
+PROCEDURE SelectLfirstAndLlast(VAR Lfirst,Llast,Lrest:LSSTREE_pRelNode;
+          VAR NoMoreTrees:BOOLEAN;
+          L:LSSTREE_pRelNode);
+EXTERNAL;
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LSMATCHES_Matchlistsigma
+ *  Description    : matches a sigma item
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LSMATCHES_Matchlistsigma(L        : LSSTREE_prelNode;
+                                              first    : BOOLEAN;
+                                              VAR match: BOOLEAN;
+                                             PROCEDURE itemfun(
+                                                Lfirst,Llast:LSSTREE_prelNode;
+                                                first       :BOOLEAN;
+                                                VAR match   :BOOLEAN
+                                                              );
+                                             PROCEDURE listfun(
+                                                Lrest        :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                             VAR Llast,Lfirst,Lrest:LSSTREE_prelNode;
+                                             VAR nomoretrees:BOOLEAN;
+                                             VAR i:INTEGER
+                                            );
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LSMATCHES_Matchlistmu
+ *  Description    : matches a mu item
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LSMATCHES_Matchlistmu(L        : LSSTREE_prelNode;
+                                           first    : BOOLEAN;
+                                           VAR match: BOOLEAN;
+                                             PROCEDURE itemfun(
+                                                Lfirst,Llast:LSSTREE_prelNode;
+                                                first       :BOOLEAN;
+                                                VAR match   :BOOLEAN
+                                                              );
+                                             PROCEDURE listfun(
+                                                Lrest        :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                             VAR Llast,Lfirst,Lrest:LSSTREE_prelNode;
+                                             VAR nomoretrees:BOOLEAN
+                                         );
+EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LSMATCHES_Matchlistreltree
+ *  Description    : matches a reltree item
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LSMATCHES_Matchlistreltree(L        : LSSTREE_prelNode;
+                                                first    : BOOLEAN;
+                                                VAR match: BOOLEAN;
+                                             PROCEDURE itemfun(
+                                                Lfirst,Llast:LSSTREE_prelNode;
+                                                first       :BOOLEAN;
+                                                VAR match   :BOOLEAN
+                                                              );
+                                             PROCEDURE listfun(
+                                                Lrest        :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                             VAR Llast,Lfirst,Lrest:LSSTREE_prelNode;
+                                             VAR nomoretrees:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_Matchtree0rels(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation         :LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_Matchtree1rels(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation,rel1    :LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_Matchtree2rels(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation,rel1,rel2:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_Matchtree3rels(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation,rel1,rel2,rel3:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_Matchtree4rels(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation,rel1,rel2,rel3,rel4:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN
+                                              );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_MatchtreeVar0rels(stree:LSSTREE_pstree;
+                                         first            : BOOLEAN;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeVar1rels(stree:LSSTREE_pstree;
+                                         first            : BOOLEAN;
+                                         rel1    :LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeVar2rels(stree:LSSTREE_pstree;
+                                         first            : BOOLEAN;
+                                         rel1,rel2:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeVar3rels(stree:LSSTREE_pstree;
+                                         first            : BOOLEAN;
+                                         rel1,rel2,rel3:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeVar4rels(stree:LSSTREE_pstree;
+                                         first            : BOOLEAN;
+                                         rel1,rel2,rel3,rel4:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN
+                                              );
+EXTERNAL;
+
+
+{with match conditions:}
+
+PROCEDURE LSMATCHES_MatchtreeCon0rels(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation         :LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeCon1rels(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation,rel1    :LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeCon2rels(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation,rel1,rel2:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeCon3rels(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation,rel1,rel2,rel3:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeCon4rels(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation,rel1,rel2,rel3,rel4:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN
+                                              );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_MatchtreeConVar0rels(stree:LSSTREE_pstree;
+                                         first            : BOOLEAN;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeConVar1rels(stree:LSSTREE_pstree;
+                                         first            : BOOLEAN;
+                                         rel1    :LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeConVar2rels(stree:LSSTREE_pstree;
+                                         first            : BOOLEAN;
+                                         rel1,rel2:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeConVar3rels(stree:LSSTREE_pstree;
+                                         first            : BOOLEAN;
+                                         rel1,rel2,rel3:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeConVar4rels(stree:LSSTREE_pstree;
+                                         first            : BOOLEAN;
+                                         rel1,rel2,rel3,rel4:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         PROCEDURE nodefun(
+                                                stree:LSSTREE_pstree;
+                                                VAR match   :BOOLEAN
+                                                          );
+                                         PROCEDURE listfun(
+                                                list         :LSSTREE_prelNode;
+                                                first        :BOOLEAN;
+                                                VAR listmatch:BOOLEAN
+                                                              );
+                                         VAR lastmatch: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN
+                                              );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_MatchtreeVar(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation:LSDOMAINT_synrel;
+                                         VAR stree:LSSTREE_pstree;
+                                         VAR match: BOOLEAN;
+                                         VAR lastmatch:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeConVar(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation:LSDOMAINT_synrel;
+                                         VAR stree:LSSTREE_pstree;
+                                         VAR match: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN;
+                                         VAR lastmatch:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeVarVar(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         VAR rel:LSDOMAINT_synrel;
+                                         VAR stree:LSSTREE_pstree;
+                                         VAR match: BOOLEAN;
+                                         VAR lastmatch:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeVarConVar(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         VAR rel:LSDOMAINT_synrel;
+                                         VAR stree:LSSTREE_pstree;
+                                         VAR match: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN;
+                                         VAR lastmatch:BOOLEAN
+                                              );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_MatchtreeEmp(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         VAR lastmatch:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeConEmp(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         relation:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN;
+                                         VAR lastmatch:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeVarEmp(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         VAR rel:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         VAR lastmatch:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeVarConEmp(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         VAR rel:LSDOMAINT_synrel;
+                                         VAR match: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN;
+                                         VAR lastmatch:BOOLEAN
+                                              );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_MatchtreeEmpVar(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         VAR stree:LSSTREE_pstree;
+                                         VAR match: BOOLEAN;
+                                         VAR lastmatch:BOOLEAN
+                                              );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MatchtreeEmpConVar(Lfirst,Llast     : LSSTREE_prelNode;
+                                         first            : BOOLEAN;
+                                         VAR stree:LSSTREE_pstree;
+                                         VAR match: BOOLEAN;
+                                         FUNCTION matchcondition:BOOLEAN;
+                                         VAR lastmatch:BOOLEAN
+                                              );
+EXTERNAL;
+
+{CREATE FUNCTIONS:}
+
+PROCEDURE LSMATCHES_createlist1items0(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist1items1(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_createlist2items00(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist2items10(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_createlist2items01(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist2items11(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+
+PROCEDURE LSMATCHES_createlist3items000(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist3items100(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_createlist3items010(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist3items110(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist3items001(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist3items101(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_createlist3items011(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist3items111(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist4items0000(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist4items1000(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_createlist4items0100(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist4items1100(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist4items0010(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist4items1010(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_createlist4items0110(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist4items1110(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist4items0001(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist4items1001(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_createlist4items0101(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist4items1101(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist4items0011(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist4items1011(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_createlist4items0111(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_createlist4items1111(VAR wholelist:LSMRUQUO_ListOfStrees;
+                                   PROCEDURE createitem1(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem2(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem3(VAR list:LSMRUQUO_ListOfStrees);
+                                   PROCEDURE createitem4(VAR list:LSMRUQUO_ListOfStrees)
+                                             );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_createitem(VAR list:LSMRUQUO_ListOfStrees;
+                                        relation:LSDOMAINT_synrel;
+                                        category:LSDOMAINT_syntcat;
+                                        PROCEDURE nodefun(VAR stree:LSSTREE_pstree);
+                                        PROCEDURE listfun(
+                                                VAR list:LSMRUQUO_ListOfStrees
+                                                         )
+                                       );
+EXTERNAL;
+PROCEDURE LSMATCHES_createitemVar(VAR list:LSMRUQUO_ListOfStrees;
+                                           relation:LSDOMAINT_synrel;
+                                           stree:LSSTREE_pstree
+                                          );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MUMfirst(List:LSSTREE_prelnode;
+                                 VAR match:BOOLEAN;
+                                 PROCEDURE item1(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match:BOOLEAN
+                                                );
+                                 VAR Lfirst1,Llast1:LSSTREE_prelNode;
+                                 relation:LSDOMAINT_synrel;
+                                 PROCEDURE item2(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match:BOOLEAN
+                                                );
+                                 VAR Lfirst2,Llast2:LSSTREE_prelNode;
+                                 PROCEDURE item3(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match:BOOLEAN
+                                                );
+                                 VAR Lfirst3,Llast3:LSSTREE_prelNode
+                                );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MUMUMfirst(
+                                 List               :LSSTREE_prelnode;
+                                 VAR match          :BOOLEAN;
+                                 PROCEDURE item1(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst1,Llast1 :LSSTREE_prelNode;
+                                 relation1          :LSDOMAINT_synrel;
+                                 PROCEDURE item2(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst2,Llast2 :LSSTREE_prelNode;
+                                 PROCEDURE item3(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst3,Llast3 :LSSTREE_prelNode;
+                                 relation2          :LSDOMAINT_synrel;
+                                 PROCEDURE item4(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst4,Llast4:LSSTREE_prelNode;
+                                 PROCEDURE item5(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst5,Llast5 :LSSTREE_prelNode
+                                );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_MUMRfirst(
+                                 List               :LSSTREE_prelnode;
+                                 VAR match          :BOOLEAN;
+                                 PROCEDURE item1(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst1,Llast1 :LSSTREE_prelNode;
+                                 relation1          :LSDOMAINT_synrel;
+                                 PROCEDURE item2(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst2,Llast2 :LSSTREE_prelNode;
+                                 PROCEDURE item3(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst3,Llast3 :LSSTREE_prelNode;
+                                 PROCEDURE item4(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst4,Llast4:LSSTREE_prelNode
+                                );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_RMUMfirst(
+                                 List               :LSSTREE_prelnode;
+                                 VAR match          :BOOLEAN;
+                                 PROCEDURE item1(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst1,Llast1 :LSSTREE_prelNode;
+                                 PROCEDURE item2(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst2,Llast2 :LSSTREE_prelNode;
+                                 relation2          :LSDOMAINT_synrel;
+                                 PROCEDURE item3(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst3,Llast3 :LSSTREE_prelNode;
+                                 PROCEDURE item4(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst4,Llast4:LSSTREE_prelNode
+                                );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MMUMfirst(
+                                 List               :LSSTREE_prelnode;
+                                 VAR match          :BOOLEAN;
+                                 PROCEDURE item1(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst1,Llast1 :LSSTREE_prelNode;
+                                 PROCEDURE item2(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst2,Llast2 :LSSTREE_prelNode;
+                                 relation1          :LSDOMAINT_synrel;
+                                 PROCEDURE item3(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst3,Llast3 :LSSTREE_prelNode;
+                                 PROCEDURE item4(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst4,Llast4:LSSTREE_prelNode
+                                );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MMUMnext(
+                                 List               :LSSTREE_prelnode;
+                                 VAR match          :BOOLEAN;
+                                 PROCEDURE item1(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst1,Llast1 :LSSTREE_prelNode;
+                                 PROCEDURE item2(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst2,Llast2 :LSSTREE_prelNode;
+                                 relation1          :LSDOMAINT_synrel;
+                                 PROCEDURE item3(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst3,Llast3 :LSSTREE_prelNode;
+                                 PROCEDURE item4(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst4,Llast4:LSSTREE_prelNode
+                                );
+EXTERNAL;
+
+
+PROCEDURE LSMATCHES_RMfirst(
+                                 List               :LSSTREE_prelnode;
+                                 VAR match          :BOOLEAN;
+                                 PROCEDURE item1(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst1,Llast1 :LSSTREE_prelNode;
+                                 PROCEDURE item2(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst2,Llast2 :LSSTREE_prelNode
+                                );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MRfirst(
+                                 List               :LSSTREE_prelnode;
+                                 VAR match          :BOOLEAN;
+                                 PROCEDURE item1(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst1,Llast1 :LSSTREE_prelNode;
+                                 PROCEDURE item2(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst2,Llast2 :LSSTREE_prelNode
+                                );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MRMfirst(
+                                 List               :LSSTREE_prelnode;
+                                 VAR match          :BOOLEAN;
+                                 PROCEDURE item1(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst1,Llast1 :LSSTREE_prelNode;
+                                 PROCEDURE item2(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst2,Llast2 :LSSTREE_prelNode;
+                                 PROCEDURE item3(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst3,Llast3 :LSSTREE_prelNode
+                                );
+EXTERNAL;
+
+PROCEDURE LSMATCHES_MRMnext(
+                                 List               :LSSTREE_prelnode;
+                                 VAR match          :BOOLEAN;
+                                 PROCEDURE item1(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst1,Llast1 :LSSTREE_prelNode;
+                                 PROCEDURE item2(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst2,Llast2 :LSSTREE_prelNode;
+                                 PROCEDURE item3(Lfirst,Llast:LSSTREE_prelnode;
+                                                 VAR match   :BOOLEAN
+                                                );
+                                 VAR Lfirst3,Llast3 :LSSTREE_prelNode
+                                );
+EXTERNAL;
+
+END {LSMATCHES};
