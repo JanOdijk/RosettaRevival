@@ -1,0 +1,1400 @@
+/* Rosetta lexed: main window definition */
+
+module Rosetta
+  
+version = 'v1.0'
+names = case_sensitive
+character_set=iso_latin1
+objects= {
+  XmCascadeButton = gadget;
+  XmToggleButton = gadget;
+  XmPushButton = gadget;
+  XmLabel = gadget;
+  XmArrowButton = gadget;
+  XmSeparator = gadget;
+}
+
+#include "Xwuil.h"
+
+procedure
+  XwuCreateWidget(integer);
+  XwuManageWidget(integer);
+  XwuUnmanageWidget(integer);
+  XwaAction(integer);
+  XwbAction(integer);
+  XwdAction(integer);
+  XwhAction(integer);
+  XwlAction(integer);
+  XwtAction(integer);
+
+value
+/*
+  spacing             : 10;
+  spacing_h           : 10;
+  spacing_v           : 10;
+*/
+  spacing             : 4;
+  spacing_h           : 4;
+  spacing_v           : 4;
+
+identifier
+  small;
+  normal;
+  bold;
+  big;
+  bigbold;
+
+list button_box_args : arguments {
+  XmNpacking    = XmPACK_COLUMN;
+  XmNentryAlignment = XmALIGNMENT_CENTER;
+  XmNspacing    = spacing;
+  XmNmarginWidth  = 0;
+  XmNmarginHeight   = 0;
+};
+
+list button_args : arguments {
+  XmNmarginHeight     = 4;
+  XmNmarginWidth    = 4;
+  XmNfontList       = bigbold;
+  XmNhighlightThickness = 2;
+  XmNshadowThickness  = 4;
+  XmNsensitive      = false;
+};
+
+list cascade_args : arguments {
+  XmNmarginHeight     = 4;
+  XmNmarginWidth    = 4;
+  XmNfontList       = bold;
+  XmNsensitive      = false;
+};
+
+list form_args : arguments {
+  XmNhorizontalSpacing = spacing_h;
+  XmNverticalSpacing   = spacing_v;
+};
+
+list list_args : arguments {
+  XmNscrollBarDisplayPolicy = XmSTATIC;
+  XmNfontList      = normal;
+  XmNhighlightThickness = 0;
+};
+
+list form_dialog_args : arguments {
+  XmNdialogStyle  = XmDIALOG_MODELESS;
+  arguments form_args;
+};
+
+list arrow_button_args : arguments {
+  XmNheight      = 21;
+  XmNwidth       = 25;
+};
+
+list text_args : arguments {
+  XmNfontList      = normal;
+};
+
+list label_args : arguments {
+  XmNfontList      = bold;
+};
+
+list toggle_args : arguments {
+  XmNfontList      = normal;
+};
+
+
+#include "le_select.uil"
+#include "le_sid.uil"
+#include "le_id.uil"
+#include "le_il.uil"
+#include "le_dialogs.uil"
+
+object le_window : XmMainWindow {
+  arguments {
+    XmNmenuBar     = XmMenuBar le_menubar;
+    XmNworkWindow   = XmForm le_work;
+/*  XmNmessageWindow = XmFrame le_message_window; */
+  };
+  controls {
+  XmMenuBar le_menubar;
+  XmForm le_work;
+/*    XmFrame le_message_window; */
+
+  unmanaged XmFormDialog le_select_window; 
+   unmanaged XmFormDialog le_sid_window;  
+   unmanaged XmFormDialog le_id_window;  
+   unmanaged XmFormDialog le_il_window;  
+   unmanaged XmFormDialog le_ask_string_window;  
+   unmanaged XmQuestionDialog le_ask_boolean_window;  
+    unmanaged XmErrorDialog le_error_window;
+  };
+  callbacks {
+    MrmNcreateCallback = procedure XwuCreateWidget (X_le_window);
+  };
+};  
+
+object le_menubar : XmMenuBar {
+  arguments {
+    XmNmenuHelpWidget = XmCascadeButton le_help_menu;
+    XmNspacing    = 30;
+  };
+  controls {
+    XmCascadeButton le_file_menu;
+    XmCascadeButton le_lemma_menu;
+    XmCascadeButton le_edit_menu;
+    XmCascadeButton le_options_menu;
+    XmCascadeButton le_help_menu;
+  };
+};
+
+object le_file_menu : XmCascadeButton {
+  arguments { 
+    arguments cascade_args;
+    XmNlabelString = 'File'; 
+    XmNsensitive   = true;
+  };
+  controls { 
+    XmPulldownMenu {
+      controls {
+    XmCascadeButton {
+      arguments {
+      arguments cascade_args;
+      XmNlabelString = 'Load'; 
+      };
+      controls { 
+        XmPulldownMenu {
+        controls {
+            XmPushButton {
+              arguments { 
+                arguments cascade_args;
+                XmNlabelString = 'Current'; 
+              };
+              callbacks {
+                MrmNcreateCallback = procedure
+                    XwuCreateWidget (X_le_current_button);
+                XmNactivateCallback = procedure 
+                 XwbAction (X_le_current_button);
+              };
+            };
+            XmPushButton {
+              arguments { 
+                arguments cascade_args;
+                XmNlabelString = 'Frozen'; 
+              };
+              callbacks {
+                MrmNcreateCallback = procedure
+                    XwuCreateWidget (X_le_frozen_button);
+                XmNactivateCallback = procedure 
+                 XwbAction (X_le_frozen_button);
+              };
+            };
+            XmPushButton {
+              arguments { 
+                arguments cascade_args;
+                XmNlabelString = 'Local'; 
+              };
+              callbacks {
+                MrmNcreateCallback = procedure
+                    XwuCreateWidget (X_le_local_button);
+                XmNactivateCallback = procedure 
+                 XwbAction (X_le_local_button);
+              };
+            };
+          };
+        };
+      };
+    };
+    XmCascadeButton {
+      arguments {
+        arguments cascade_args;
+        XmNlabelString = 'Language'; 
+        XmNsensitive   = true;
+      };
+      controls { 
+        XmPulldownMenu {
+          controls {
+            XmPushButton {
+              arguments { 
+                arguments cascade_args;
+                XmNlabelString = 'Dutch'; 
+              };
+              callbacks {
+                MrmNcreateCallback = procedure
+                    XwuCreateWidget (X_le_dutch_button);
+                XmNactivateCallback = procedure 
+                 XwbAction (X_le_dutch_button);
+              };
+            };
+            XmPushButton {
+              arguments { 
+                arguments cascade_args;
+                XmNlabelString = 'English'; 
+              };
+              callbacks {
+                MrmNcreateCallback = procedure
+                    XwuCreateWidget (X_le_english_button);
+                XmNactivateCallback = procedure 
+                 XwbAction (X_le_english_button);
+              };
+            };
+            XmPushButton {
+              arguments { 
+                arguments cascade_args;
+                XmNlabelString = 'Spanish'; 
+              };
+              callbacks {
+                MrmNcreateCallback = procedure
+                    XwuCreateWidget (X_le_spanish_button);
+                XmNactivateCallback = procedure 
+                 XwbAction (X_le_spanish_button);
+              };
+            };
+          };
+        };
+      };
+    };
+    XmPushButton {
+      arguments { 
+        arguments cascade_args;
+        XmNlabelString = 'Exit'; 
+      };
+      callbacks {
+        MrmNcreateCallback = procedure
+            XwuCreateWidget (X_le_exit_button);
+        XmNactivateCallback = procedure 
+            XwbAction (X_le_exit_button);
+          };
+        };
+      };
+    };
+  };
+};
+
+object le_lemma_menu : XmCascadeButton {
+  arguments { 
+    arguments cascade_args;
+    XmNlabelString = 'Lemma'; 
+    XmNsensitive   = true;
+  };
+  controls { 
+    XmPulldownMenu {
+      controls {
+        XmPushButton {
+          arguments { 
+            arguments cascade_args;
+            XmNlabelString = 'Find'; 
+          };
+          callbacks {
+            MrmNcreateCallback = procedure
+                XwuCreateWidget (X_le_find_lemma_button);
+            XmNactivateCallback = procedure 
+                XwbAction (X_le_find_lemma_button);
+          };
+        };
+        XmPushButton {
+          arguments { 
+            arguments cascade_args;
+            XmNlabelString = 'Insert'; 
+        };
+          callbacks {
+            MrmNcreateCallback = procedure
+                XwuCreateWidget (X_le_insert_lemma_button);
+            XmNactivateCallback = procedure 
+                XwbAction (X_le_insert_lemma_button);
+          };
+        };
+        XmPushButton {
+          arguments { 
+            arguments cascade_args;
+            XmNlabelString = 'Sequential'; 
+          };
+          callbacks {
+            MrmNcreateCallback = procedure
+                XwuCreateWidget (X_le_sequential_button);
+            XmNactivateCallback = procedure 
+                XwbAction (X_le_sequential_button);
+          };
+        };
+      };
+    };
+  };
+};
+
+object le_edit_menu : XmCascadeButton {
+  arguments { 
+    arguments cascade_args;
+    XmNlabelString = 'Edit'; 
+    XmNsensitive   = true;
+  };
+  controls { 
+    XmPulldownMenu {
+      controls {
+        XmPushButton {
+          arguments { 
+            arguments cascade_args;
+            XmNlabelString = 'Modify lemma'; 
+          };
+          callbacks {
+            MrmNcreateCallback = procedure
+                XwuCreateWidget (X_le_modify_lemma_button);
+            XmNactivateCallback = procedure 
+                XwbAction (X_le_modify_lemma_button);
+          };
+        };
+        XmPushButton {
+          arguments { 
+            arguments cascade_args;
+            XmNlabelString = 'Split lemma'; 
+          };
+          callbacks {
+            MrmNcreateCallback = procedure
+                XwuCreateWidget (X_le_copy_lemma_button);
+            XmNactivateCallback = procedure 
+                XwbAction (X_le_copy_lemma_button);
+          };
+        };
+        XmPushButton {
+          arguments { 
+            arguments cascade_args;
+            XmNlabelString = 'Delete lemma'; 
+          };
+          callbacks {
+            MrmNcreateCallback = procedure
+                  XwuCreateWidget (X_le_delete_lemma_button);
+            XmNactivateCallback = procedure 
+                  XwbAction (X_le_delete_lemma_button);
+          };
+        };
+        XmCascadeButton {
+          arguments {
+            arguments cascade_args;
+            XmNsensitive   = true;
+            XmNlabelString = 'Insert'; 
+          };
+          controls { 
+            XmPulldownMenu {
+              controls {
+                XmPushButton {
+                  arguments { 
+                    arguments cascade_args;
+                    XmNlabelString = 'Meaning'; 
+                  };
+                  callbacks {
+                    MrmNcreateCallback = procedure
+                        XwuCreateWidget (X_le_insert_meaning_button);
+                    XmNactivateCallback = procedure 
+                        XwbAction (X_le_insert_meaning_button);
+                  };
+                };
+                XmPushButton {
+                  arguments { 
+                    arguments cascade_args;
+                    XmNlabelString = 'Particle'; 
+                  };
+                  callbacks {
+                    MrmNcreateCallback = procedure
+                        XwuCreateWidget (X_le_insert_particle_button);
+                    XmNactivateCallback = procedure 
+                        XwbAction (X_le_insert_particle_button);
+                  };
+                };
+                XmPushButton {
+                  arguments { 
+                    arguments cascade_args;
+                    XmNlabelString = 'Idiom'; 
+                  };
+                  callbacks {
+                    MrmNcreateCallback = procedure
+                        XwuCreateWidget (X_le_insert_idiom_button);
+                    XmNactivateCallback = procedure 
+                        XwbAction (X_le_insert_idiom_button);
+                  };
+                };
+                XmPushButton {
+                  arguments { 
+                    arguments cascade_args;
+                    XmNlabelString = 'Semi-Idiom'; 
+                  };
+                  callbacks {
+                    MrmNcreateCallback = procedure
+                        XwuCreateWidget (X_le_insert_semi_idiom_button);
+                    XmNactivateCallback = procedure 
+                        XwbAction (X_le_insert_semi_idiom_button);
+                  };
+                };
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+};
+
+object le_options_menu : XmCascadeButton {
+  arguments { 
+    arguments cascade_args;
+  XmNlabelString = 'Options'; 
+    XmNsensitive   = true;
+  };
+  controls { 
+    XmPulldownMenu {
+      controls {
+/*
+    XmCascadeButton {
+      arguments {
+      arguments cascade_args;
+      XmNlabelString = 'Translate'; 
+      };
+      controls { 
+        XmPulldownMenu {
+          controls {
+            XmPushButton {
+              arguments { 
+                arguments cascade_args;
+            XmNlabelString = 'Dutch'; 
+          };
+              callbacks {
+                MrmNcreateCallback = procedure
+                    XwuCreateWidget (X_le_translate_dutch_button);
+                XmNactivateCallback = procedure 
+                 XwbAction (X_le_translate_dutch_button);
+              };
+            };
+            XmPushButton {
+              arguments { 
+                arguments cascade_args;
+            XmNlabelString = 'English'; 
+          };
+              callbacks {
+                MrmNcreateCallback = procedure
+                    XwuCreateWidget (X_le_translate_english_button);
+                XmNactivateCallback = procedure 
+                 XwbAction (X_le_translate_english_button);
+              };
+            };
+            XmPushButton {
+              arguments { 
+                arguments cascade_args;
+            XmNlabelString = 'Spanish'; 
+          };
+              callbacks {
+                MrmNcreateCallback = procedure
+                    XwuCreateWidget (X_le_translate_spanish_button);
+                XmNactivateCallback = procedure 
+                 XwbAction (X_le_translate_spanish_button);
+              };
+            };
+          };
+        };
+      };
+    };
+*/
+        XmPushButton {
+          arguments { 
+            arguments cascade_args;
+        XmNlabelString = 'Show idioms'; 
+      };
+          callbacks {
+            MrmNcreateCallback = procedure
+                XwuCreateWidget (X_le_show_idioms_button);
+            XmNactivateCallback = procedure 
+             XwbAction (X_le_show_idioms_button);
+          };
+        };
+        XmPushButton {
+          arguments { 
+            arguments cascade_args;
+        XmNlabelString = 'Show semi-idioms'; 
+      };
+          callbacks {
+            MrmNcreateCallback = procedure
+                XwuCreateWidget (X_le_show_semi_idioms_button);
+            XmNactivateCallback = procedure 
+             XwbAction (X_le_show_semi_idioms_button);
+          };
+        };
+    };
+  };
+  };
+};
+
+object le_help_menu : XmCascadeButton {
+  arguments { 
+    arguments cascade_args;
+  XmNlabelString = 'Help'; 
+    XmNsensitive   = true;
+  };
+  callbacks {
+    MrmNcreateCallback = procedure
+             XwuCreateWidget (X_le_help_button);
+    XmNactivateCallback = procedure XwhAction (X_le_help_button);
+  };
+};
+
+object le_work : XmForm {
+  arguments {
+/*    XmNhorizontalSpacing = 0; 
+    XmNverticalSpacing   = 0; */
+    arguments form_args;
+  };
+  controls {
+    XmForm      le_morf;
+    XmSeparator  le_morf_separator;
+    XmForm     le_part_mean_form;
+    XmForm      le_sid_id_form;
+    XmForm    le_attr_form;
+    XmForm      le_comment_form;
+    XmRowColumn   le_button_box;
+    XmForm        le_selection_form;
+  };
+};
+
+object le_morf : XmForm {
+  arguments {
+    arguments form_args;
+  };
+  controls {
+    XmRowColumn   le_language;
+    XmRowColumn   le_stem;
+    XmRowColumn   le_category;
+    XmRowColumn   le_skey;
+    XmRowColumn   le_where;
+    XmRowColumn   le_phonetical;
+  };
+};
+
+object le_language: XmRowColumn {
+  arguments {
+    XmNtopAttachment    = XmATTACH_FORM;
+    XmNleftAttachment   = XmATTACH_FORM;
+    XmNrightAttachment  = XmATTACH_FORM;
+    XmNpacking          = XmPACK_NONE;
+    XmNorientation      = XmHORIZONTAL;
+  };
+  controls {
+    XmLabel {
+      arguments {
+        arguments label_args;
+        XmNlabelString  = 'Language: ';
+        XmNx = 3;
+      };
+    };
+    XmLabel {
+      arguments {
+        arguments label_args;
+        XmNlabelString = '';
+        XmNx = 85;
+      };
+      callbacks {
+        MrmNcreateCallback = procedure XwuCreateWidget
+               (X_le_language);
+      };
+    };
+  };
+};
+
+object le_stem: XmRowColumn {
+  arguments {
+    XmNtopAttachment    = XmATTACH_WIDGET;
+    XmNtopWidget        = XmRowColumn le_language;
+    XmNleftAttachment   = XmATTACH_FORM;
+    XmNrightAttachment  = XmATTACH_FORM;
+    XmNpacking          = XmPACK_NONE;
+    XmNorientation      = XmHORIZONTAL;
+  };
+  controls {
+    XmLabel {
+      arguments {
+        arguments label_args;
+        XmNlabelString  = 'Stem: ';
+        XmNx = 3;
+      };
+    };
+    XmLabel {
+      arguments {
+        arguments label_args;
+        XmNlabelString = '';
+        XmNx = 85;
+      };
+      callbacks {
+        MrmNcreateCallback = procedure XwuCreateWidget
+               (X_le_stem_text);
+      };
+    };
+  };
+};
+
+object le_category: XmRowColumn {
+  arguments {
+    XmNtopAttachment    = XmATTACH_WIDGET;
+    XmNtopWidget        = XmRowColumn le_stem;
+    XmNleftAttachment   = XmATTACH_FORM;
+    XmNrightAttachment  = XmATTACH_FORM;
+    XmNpacking          = XmPACK_NONE;
+    XmNorientation      = XmHORIZONTAL;
+  };
+  controls {
+    XmLabel {
+      arguments {
+        arguments label_args;
+        XmNlabelString  = 'Category: ';
+        XmNx = 3;
+      };
+    };
+    XmLabel {
+      arguments {
+        arguments label_args;
+        XmNlabelString = '';
+        XmNx = 85;
+      };
+      callbacks {
+        MrmNcreateCallback = procedure XwuCreateWidget
+               (X_le_category_text);
+      };
+    };
+  };
+};
+
+object le_skey: XmRowColumn {
+  arguments {
+    XmNtopAttachment    = XmATTACH_WIDGET;
+    XmNtopWidget        = XmRowColumn le_category;
+    XmNleftAttachment   = XmATTACH_FORM;
+    XmNrightAttachment  = XmATTACH_FORM;
+    XmNpacking          = XmPACK_NONE;
+    XmNorientation      = XmHORIZONTAL;
+  };
+  controls {
+    XmLabel {
+      arguments {
+        arguments label_args;
+        XmNlabelString  = 'Skey: ';
+        XmNx = 3;
+      };
+    };
+    XmLabel {
+      arguments {
+        arguments label_args;
+        XmNlabelString = '';
+        XmNx = 85;
+      };
+      callbacks {
+        MrmNcreateCallback = procedure XwuCreateWidget
+               (X_le_skey);
+      };
+    };
+  };
+};
+
+object le_where: XmRowColumn {
+  arguments {
+    XmNtopAttachment    = XmATTACH_WIDGET;
+    XmNtopWidget        = XmRowColumn le_skey;
+    XmNleftAttachment   = XmATTACH_FORM;
+    XmNrightAttachment  = XmATTACH_FORM;
+    XmNpacking          = XmPACK_NONE;
+    XmNorientation      = XmHORIZONTAL;
+  };
+  controls {
+    XmLabel {
+      arguments {
+        arguments label_args;
+        XmNlabelString  = 'Where: ';
+        XmNx = 3;
+        XmNy = 5;
+      };
+    };
+    XmRadioBox {
+      arguments {
+        XmNorientation = XmHORIZONTAL;
+        XmNx = 85;
+      };
+      controls {
+        XmToggleButton {
+          arguments {
+            arguments toggle_args;
+            XmNhighlightThickness = 0;
+            XmNlabelString  = 'analysis';
+            XmNsensitive  = false;
+          };
+          callbacks {
+            MrmNcreateCallback = procedure XwuCreateWidget 
+                       (X_le_analysis_toggle);
+          };
+        };
+        XmToggleButton {
+          arguments {
+            arguments toggle_args;
+            XmNhighlightThickness = 0;
+            XmNlabelString  = 'generation';
+            XmNsensitive  = false;
+          };
+          callbacks {
+            MrmNcreateCallback = procedure XwuCreateWidget 
+                        (X_le_generation_toggle);
+          };
+        };
+        XmToggleButton {
+          arguments {
+            arguments toggle_args;
+            XmNhighlightThickness = 0;
+            XmNlabelString  = 'both';
+            XmNsensitive  = false;
+          };
+          callbacks {
+            MrmNcreateCallback = procedure XwuCreateWidget 
+                        (X_le_angen_toggle);
+          };
+        };
+      };
+    };
+  };
+};
+
+object le_phonetical: XmRowColumn {
+  arguments {
+    XmNtopAttachment    = XmATTACH_WIDGET;
+    XmNtopWidget        = XmRowColumn le_where;
+    XmNleftAttachment   = XmATTACH_FORM;
+    XmNrightAttachment  = XmATTACH_FORM;
+    XmNpacking          = XmPACK_NONE; 
+    XmNorientation      = XmHORIZONTAL;
+  };
+  controls {
+    XmLabel {
+      arguments {
+        arguments label_args;
+        XmNlabelString  = 'Phonetical: ';
+        XmNx = 3;
+      };
+    };
+/*  This does not work !! ?? 
+    XmRowColumn {
+      arguments {
+        XmNorientation      = XmHORIZONTAL;
+        XmNpacking          = XmPACK_TIGHT;
+        XmNx = 85;
+      };
+      controls {
+*/
+        unmanaged XmToggleButton {
+          arguments {
+            arguments toggle_args;
+            XmNhighlightThickness = 0;
+            XmNlabelString  = 'sjwa';
+            XmNsensitive  = false;
+            XmNx = 85;
+          };
+          callbacks {
+            MrmNcreateCallback = procedure XwuCreateWidget (X_le_sjwa_toggle);
+          };
+        };
+        unmanaged XmToggleButton {
+          arguments {
+            arguments toggle_args;
+            XmNhighlightThickness = 0;
+            XmNlabelString  = 'wissel';
+            XmNsensitive  = false;
+            XmNx = 155;
+          };
+          callbacks {
+            MrmNcreateCallback = procedure XwuCreateWidget (X_le_wissel_toggle);
+          };
+        };
+        unmanaged XmToggleButton {
+          arguments {
+            arguments toggle_args;
+            XmNhighlightThickness = 0;
+            XmNlabelString  = 'cons';
+            XmNsensitive  = false;
+            XmNx = 85;
+          };
+          callbacks {
+            MrmNcreateCallback = procedure XwuCreateWidget (X_le_cons_toggle);
+          };
+        };
+        unmanaged XmToggleButton {
+          arguments {
+            arguments toggle_args;
+            XmNhighlightThickness = 0;
+            XmNlabelString  = 'gg';
+            XmNsensitive  = false;
+            XmNx = 85;
+          };
+          callbacks {
+            MrmNcreateCallback = procedure XwuCreateWidget (X_le_gg_toggle);
+          };
+        };
+        unmanaged XmToggleButton {
+          arguments {
+            arguments toggle_args;
+            XmNhighlightThickness = 0;
+            XmNlabelString  = 'ch';
+            XmNsensitive  = false;
+            XmNx = 155;
+          };
+          callbacks {
+            MrmNcreateCallback = procedure XwuCreateWidget (X_le_ch_toggle);
+          };
+        };
+        unmanaged XmToggleButton {
+          arguments {
+            arguments toggle_args;
+            XmNhighlightThickness = 0;
+            XmNlabelString  = 'kk';
+            XmNsensitive  = false;
+            XmNx = 225;
+          };
+          callbacks {
+            MrmNcreateCallback = procedure XwuCreateWidget (X_le_kk_toggle);
+          };
+        };
+        unmanaged XmToggleButton {
+          arguments {
+            arguments toggle_args;
+            XmNhighlightThickness = 0;
+            XmNlabelString  = 'th';
+            XmNsensitive  = false;
+            XmNx = 295;
+          };
+          callbacks {
+            MrmNcreateCallback = procedure XwuCreateWidget (X_le_th_toggle);
+          };
+        };
+/*
+      };
+    };
+*/
+  };
+};
+
+
+/*
+    XmOptionMenu {
+      arguments {
+!        XmNlabelString = 'where';
+         XmNspacing = 0;
+         XmNmarginWidth = 0;
+      };
+      controls {
+        XmPulldownMenu {
+          controls {
+            XmPushButton {
+              arguments {
+                arguments cascade_args;
+                XmNlabelString = 'Analysis';
+              };
+            };
+            XmPushButton {
+              arguments {
+                arguments cascade_args;
+                XmNlabelString = 'Generation';
+              };
+            };
+            XmPushButton {
+              arguments {
+                arguments cascade_args;
+                XmNlabelString = 'Both';
+              };
+            };
+          };
+        };
+      };
+    };
+    XmText {
+      arguments {
+        arguments text_args;
+        XmNcolumns       = 6;
+        XmNvalue = 'abcdef';
+      };
+    };
+*/
+
+object le_morf_separator: XmSeparator {
+  arguments {
+  XmNtopAttachment  = XmATTACH_WIDGET;
+  XmNtopWidget    = le_morf;
+  XmNleftAttachment   = XmATTACH_FORM;
+  XmNrightAttachment  = XmATTACH_FORM;
+  XmNmargin       = 0;
+  XmNorientation    = XmHORIZONTAL;
+  };
+};
+
+object le_part_mean_form : XmForm {
+  arguments {
+  XmNtopAttachment  = XmATTACH_WIDGET;
+    XmNtopWidget    = le_morf_separator;
+  XmNleftAttachment   = XmATTACH_FORM;
+  XmNrightAttachment   = XmATTACH_FORM;
+  };
+  controls {
+    XmForm   le_part_form;
+    XmForm   le_mean_form;
+  };
+};
+
+object le_part_form : XmForm {
+  arguments {
+    XmNtopAttachment  = XmATTACH_FORM;
+    XmNleftAttachment   = XmATTACH_FORM;
+    XmNwidth = 150;
+    arguments form_args;
+  };
+  controls {
+    XmLabel     le_part_text;
+    XmScrolledList  le_part_list;
+  };
+};
+
+object le_part_text : XmLabel {
+  arguments {
+  XmNtopAttachment  = XmATTACH_FORM;
+  XmNleftAttachment   = XmATTACH_FORM;
+
+    arguments label_args;
+    XmNlabelString = 'Particles:';
+  };
+};
+
+object le_part_list : XmScrolledList {
+  arguments {
+  XmNtopAttachment  = XmATTACH_WIDGET;
+    XmNtopWidget    = XmLabel le_part_text;
+  XmNleftAttachment   = XmATTACH_FORM;
+  XmNrightAttachment  = XmATTACH_FORM;
+
+    arguments list_args;
+    XmNvisibleItemCount = 4;
+    XmNselectionPolicy  = XmSINGLE_SELECT;
+/*
+    XmNitemCount = 5;
+    XmNitems = string_table ( 'geit', 
+                  'mannetje', 
+                  'hijswerktuig', 
+                  'gymnastiektoestel',
+                  'zitplaats');
+*/
+  };
+  callbacks {
+    MrmNcreateCallback = procedure XwuCreateWidget (X_le_part_list);
+    XmNdefaultActionCallback = procedure XwbAction (X_le_part_list);
+  };
+};
+
+object le_mean_form : XmForm {
+  arguments {
+  XmNtopAttachment  = XmATTACH_FORM;
+  XmNleftAttachment   = XmATTACH_WIDGET;
+    XmNleftWidget     = XmForm le_part_form;
+  XmNrightAttachment  = XmATTACH_FORM;
+
+    arguments form_args;
+  };
+  controls {
+    XmLabel     le_mean_text;
+    XmScrolledList  le_mean_list;
+  };
+};
+
+object le_mean_text : XmLabel {
+  arguments {
+  XmNtopAttachment  = XmATTACH_FORM;
+  XmNleftAttachment   = XmATTACH_FORM;
+
+    arguments label_args;
+    XmNlabelString = 'Meanings:';
+  };
+};
+
+object le_mean_list : XmScrolledList {
+  arguments {
+  XmNtopAttachment  = XmATTACH_WIDGET;
+    XmNtopWidget    = XmLabel le_mean_text;
+  XmNleftAttachment   = XmATTACH_FORM;
+  XmNrightAttachment  = XmATTACH_FORM;
+
+    arguments list_args;
+    XmNvisibleItemCount = 4;
+    XmNselectionPolicy  = XmSINGLE_SELECT;
+/*
+    XmNitemCount = 5;
+    XmNitems = string_table ( 'mannetje v.d. geit', 
+                  'mannetje van andere dieren', 
+                  'hijswerktuig', 
+                  'gymnastiektoestel',
+                  'zitplaats v.d. koetsier');
+*/
+  };
+  callbacks {
+    MrmNcreateCallback = procedure XwuCreateWidget (X_le_mean_list);
+    XmNdefaultActionCallback = procedure XwbAction (X_le_mean_list);
+  };
+};
+
+object le_sid_id_form : XmForm {
+  arguments {
+  XmNtopAttachment  = XmATTACH_WIDGET;
+  XmNtopWidget    = XmForm le_part_mean_form;
+  XmNleftAttachment   = XmATTACH_FORM;
+  XmNrightAttachment   = XmATTACH_FORM;
+  };
+  controls {
+    XmForm   le_sid_form;
+    XmForm   le_id_form;
+  };
+};
+
+object le_sid_form : XmForm {
+  arguments {
+    XmNtopAttachment  = XmATTACH_FORM;
+    XmNleftAttachment   = XmATTACH_FORM;
+    XmNwidth = 150;
+
+    arguments form_args;
+  };
+  controls {
+    XmLabel     le_sid_text;
+    XmScrolledList  le_sid_list;
+  };
+};
+
+object le_sid_text : XmLabel {
+  arguments {
+  XmNtopAttachment  = XmATTACH_FORM;
+  XmNleftAttachment   = XmATTACH_FORM;
+
+    arguments label_args;
+    XmNlabelString = 'Semi idioms:';
+  };
+};
+
+object le_sid_list : XmScrolledList {
+  arguments {
+  XmNtopAttachment  = XmATTACH_WIDGET;
+    XmNtopWidget    = XmLabel le_sid_text;
+  XmNleftAttachment   = XmATTACH_FORM;
+  XmNrightAttachment  = XmATTACH_FORM;
+
+    arguments list_args;
+    XmNvisibleItemCount = 4;
+    XmNselectionPolicy  = XmSINGLE_SELECT;
+/*
+    XmNitemCount = 5;
+    XmNitems = string_table ( 'mannetje v.d. geit', 
+                  'mannetje ', 
+                  'hijswerktuig', 
+                  'gymnastiektoestel',
+                  'zitplaats');
+*/
+  };
+  callbacks {
+    MrmNcreateCallback = procedure XwuCreateWidget (X_le_sid_list);
+    XmNdefaultActionCallback = procedure XwbAction (X_le_sid_list);
+  };
+};
+
+object le_id_form : XmForm {
+  arguments {
+  XmNtopAttachment  = XmATTACH_FORM;
+  XmNleftAttachment   = XmATTACH_WIDGET;
+    XmNleftWidget     = XmForm le_sid_form;
+  XmNrightAttachment  = XmATTACH_FORM;
+
+    arguments form_args;
+  };
+  controls {
+    XmLabel     le_id_text;
+    XmScrolledList  le_id_list;
+  };
+};
+
+object le_id_text : XmLabel {
+  arguments {
+  XmNtopAttachment  = XmATTACH_FORM;
+  XmNleftAttachment   = XmATTACH_FORM;
+
+    arguments label_args;
+    XmNlabelString = 'Idioms:';
+  };
+};
+
+object le_id_list : XmScrolledList {
+  arguments {
+  XmNtopAttachment  = XmATTACH_WIDGET;
+    XmNtopWidget    = XmLabel le_id_text;
+  XmNleftAttachment   = XmATTACH_FORM;
+  XmNrightAttachment  = XmATTACH_FORM;
+
+    arguments list_args;
+    XmNvisibleItemCount = 4;
+    XmNselectionPolicy  = XmSINGLE_SELECT;
+/*
+    XmNitemCount = 5;
+    XmNitems = string_table ( 'mannetje v.d. geit', 
+                  'mannetje van andere dieren', 
+                  'hijswerktuig', 
+                  'gymnastiektoestel',
+                  'zitplaats v.d. koetsier');
+*/
+  };
+  callbacks {
+    MrmNcreateCallback = procedure XwuCreateWidget (X_le_id_list);
+    XmNdefaultActionCallback = procedure XwbAction (X_le_id_list);
+  };
+};
+
+object le_attr_form : XmForm {
+  arguments {
+  XmNtopAttachment  = XmATTACH_WIDGET;
+  XmNtopWidget    = XmForm le_sid_id_form;
+  XmNleftAttachment   = XmATTACH_FORM;
+  XmNrightAttachment  = XmATTACH_FORM;
+    arguments form_args;
+  };
+  controls {
+    XmLabel     le_attr_text;
+    XmScrolledText  le_attr_list;
+  };
+};
+
+object le_attr_text : XmLabel {
+  arguments {
+  XmNtopAttachment  = XmATTACH_FORM;
+  XmNleftAttachment   = XmATTACH_FORM;
+
+    arguments label_args;
+    XmNlabelString = 'Attributes:';
+  };
+};
+
+object le_attr_list : XmScrolledText {
+  arguments {
+  XmNtopAttachment  = XmATTACH_WIDGET;
+    XmNtopWidget    = XmLabel le_attr_text;
+  XmNleftAttachment   = XmATTACH_FORM;
+  XmNrightAttachment  = XmATTACH_FORM;
+
+    arguments text_args;
+/*    XmNsensitive  = false; becomes always insensitive! */
+  XmNeditMode     = XmMULTI_LINE_EDIT;
+    XmNscrollHorizontal = false;
+  XmNcolumns      = 80;
+  XmNrows       = 17; 
+  };
+  callbacks {
+    MrmNcreateCallback = procedure XwuCreateWidget (X_le_attr_list);
+  };
+};
+
+
+object le_comment_form : XmForm {
+  arguments {
+  XmNtopAttachment  = XmATTACH_WIDGET;
+  XmNtopWidget    = XmForm le_attr_form;
+  XmNrightAttachment  = XmATTACH_FORM;
+  XmNleftAttachment   = XmATTACH_FORM;
+    arguments form_args;
+  };
+  controls {
+  XmLabel     le_comment_label;
+    XmScrolledText   le_comment_text;
+  };
+};
+
+object le_comment_label : XmLabel {
+  arguments {
+  XmNtopAttachment  = XmATTACH_FORM;
+  XmNleftAttachment   = XmATTACH_FORM;
+
+    arguments label_args;
+    XmNlabelString = 'Comments:';
+  };
+};
+
+object le_comment_text : XmScrolledText {
+  arguments {
+  XmNtopAttachment  = XmATTACH_WIDGET;
+    XmNtopWidget    = XmLabel le_comment_label;
+  XmNleftAttachment   = XmATTACH_FORM;
+  XmNrightAttachment  = XmATTACH_FORM;
+
+    arguments text_args;
+/*    XmNsensitive  = false; becomes always insensitive! */
+/*
+    XmNvalue      = 'xcvgsfgh fgh  h gfh sfgh sfg hsf gh sfg h sfgh sfg hsh';
+*/
+  XmNeditMode     = XmMULTI_LINE_EDIT;
+    XmNscrollHorizontal = false;
+  XmNcolumns      = 80;
+  XmNrows       = 3; 
+  };
+  callbacks {
+    MrmNcreateCallback = procedure XwuCreateWidget (X_le_comment_text);
+  };
+};
+
+/*
+object le_message_window : XmFrame {
+  controls {
+    XmRowColumn {
+      arguments {
+      XmNorientation    = XmHORIZONTAL;
+      };
+      controls {
+      XmLabel le_message_label;
+        XmLabel le_message_text;
+      };
+    };
+  };
+};
+
+object le_message_label : XmLabel {
+  arguments {
+    XmNfontList     = bold;
+  XmNlabelString    = 'Message:';
+  };
+};
+
+object le_message_text : XmLabel {
+  arguments {
+    XmNfontList     = bold;
+  XmNlabelString    = 'zdfgdfghdghf';
+  };
+  callbacks {
+    MrmNcreateCallback = procedure XwuCreateWidget (X_le_message_text);
+  };
+};
+
+*/
+
+object le_button_box : XmRowColumn {
+  arguments {
+    XmNtopAttachment  = XmATTACH_WIDGET;
+    XmNtopWidget    = XmForm le_comment_form; 
+    XmNleftAttachment   = XmATTACH_FORM;
+    XmNbottomAttachment = XmATTACH_FORM;
+    XmNresizable    = false;
+
+    arguments button_box_args;
+    XmNorientation    = XmHORIZONTAL;
+  };
+  controls {
+    XmPushButton {
+      arguments {
+        arguments button_args;
+        XmNlabelString  = 'Previous';
+      };
+      callbacks {
+        MrmNcreateCallback = procedure XwuCreateWidget(
+          X_le_previous_button);
+        XmNactivateCallback = procedure
+          XwbAction (X_le_previous_button);
+      };
+    };
+    XmPushButton {
+      arguments {
+        arguments button_args;
+        XmNlabelString  = 'Next';
+        XmNsensitive  = false;
+      };
+      callbacks {
+        MrmNcreateCallback = procedure XwuCreateWidget(
+          X_le_next_button);
+        XmNactivateCallback = procedure
+          XwbAction (X_le_next_button);
+      };
+    };
+    XmPushButton {
+      arguments {
+        arguments button_args;
+        XmNlabelString  = 'Jump';
+        XmNsensitive  = false;
+      };
+      callbacks {
+        MrmNcreateCallback = procedure XwuCreateWidget(
+          X_le_jump_button);
+        XmNactivateCallback = procedure
+          XwbAction (X_le_jump_button);
+      };
+    };
+    XmPushButton {
+      arguments {
+        arguments button_args;
+        XmNlabelString  = 'Return';
+      };
+      callbacks {
+        MrmNcreateCallback = procedure XwuCreateWidget (X_le_return_button);
+        XmNactivateCallback = procedure XwbAction (X_le_return_button);
+      };
+    };
+    XmPushButton {
+      arguments {
+        arguments button_args;
+        XmNlabelString  = 'Select';
+      };
+      callbacks {
+        MrmNcreateCallback = procedure XwuCreateWidget (X_le_select_button);
+        XmNactivateCallback = procedure XwbAction (X_le_select_button);
+      };
+    };
+  };
+};
+
+object le_selection_form : XmForm {
+  arguments {
+    XmNtopAttachment  = XmATTACH_WIDGET;
+    XmNtopWidget    = XmForm le_comment_form; 
+    XmNleftAttachment   = XmATTACH_WIDGET;
+    XmNleftWidget       = XmRowColumn le_button_box; 
+    XmNrightAttachment  = XmATTACH_FORM;
+    XmNbottomAttachment = XmATTACH_FORM;
+    XmNresizable    = false;
+    arguments form_args;
+  };
+  controls { 
+        XmLabel {
+          arguments {
+            arguments label_args;
+            XmNlabelString  = 'Selected: ';
+            XmNx = 3;
+            XmNy = 1;
+          };
+        };
+        XmLabel {
+          arguments {
+            arguments label_args;
+            XmNlabelString = '';
+            XmNx = 85;
+            XmNy = 1;
+          };
+          callbacks {
+            MrmNcreateCallback = procedure XwuCreateWidget
+                   (X_le_selected_number);
+          };
+        };
+        XmLabel {
+          arguments {
+            arguments label_args;
+            XmNlabelString  = 'Current: ';
+            XmNx = 3;
+            XmNy = 15;
+          };
+        };
+        XmLabel {
+          arguments {
+            arguments label_args;
+            XmNlabelString = '';
+            XmNx = 85;
+            XmNy = 15;
+          };
+          callbacks {
+            MrmNcreateCallback = procedure XwuCreateWidget
+                   (X_le_current_lemma);
+          };
+        };
+  };
+};
+
+end module;
+ 

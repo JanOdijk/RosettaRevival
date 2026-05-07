@@ -1,0 +1,330 @@
+
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : lexdecldef 
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  
+ *
+ *EMP:::===================================================================*)
+ 
+pragma C_include('strings.pf');
+PACKAGE surcomdecl;
+const SURCOMDECL_maxrnr = 9;
+      SURCOMDECL_Hinit = -1;
+      SURCOMDECL_Hdum = SURCOMDECL_Hinit;
+      SURCOMDECL_Hfinal = 99;
+
+TYPE
+   SURCOMDECL_string = STRING(220);
+
+type 
+     SURCOMDECL_graphtypetype = 
+                   (enclosedgraph,optgraph,stargraph,helpgraphident,atomgraph);
+     SURCOMDECL_surfrulemode = (loccond,globcond);
+     SURCOMDECL_syntcat = 
+               (UTT,Regexp,graph,helpgraph,CAs,concgraph,vertline,
+                elementarygraph,dot,roundopen,roundclose,squareopen,
+                squareclose,curlyopen,curlyclose,ident,slash,number,
+                charstring,rulename,iscat
+               );
+     SURCOMDECL_psyntcat = ^SURCOMDECL_syntcat;
+     SURCOMDECL_syntcatset = set of SURCOMDECL_syntcat;
+     SURCOMDECL_pcharstrfieldrec = ^SURCOMDECL_charstrfieldrec;
+     SURCOMDECL_charstrfieldrec = RECORD
+                             stringfield:SURCOMDECL_string;
+                             linenumber:INTEGER
+                             END;
+     SURCOMDECL_prulenamefieldrec = ^SURCOMDECL_rulenamefieldrec;
+     SURCOMDECL_rulenamefieldrec = RECORD
+                            rulename:SURCOMDECL_string
+                           END;
+     SURCOMDECL_puttfieldrec = ^SURCOMDECL_uttfieldrec;
+     SURCOMDECL_uttfieldrec = RECORD
+                                       numofhelpgraphs:INTEGER;
+                                       category:SURCOMDECL_string
+                                     END;
+     SURCOMDECL_phelpgraphfieldrec = ^SURCOMDECL_helpgraphfieldrec;
+     SURCOMDECL_helpgraphfieldrec = RECORD
+                                             str:SURCOMDECL_string
+                                           END;
+     SURCOMDECL_pidentfieldrec = ^SURCOMDECL_identfieldrec;
+     SURCOMDECL_identfieldrec = RECORD
+                                         str:SURCOMDECL_string
+                                       END;
+     SURCOMDECL_pgraphfieldrec = ^SURCOMDECL_graphfieldrec;
+     SURCOMDECL_graphfieldrec = RECORD
+                                         numofconcgraphs:INTEGER
+                                       END;
+     SURCOMDECL_pconcgraphfieldrec = ^SURCOMDECL_concgraphfieldrec;
+     SURCOMDECL_concgraphfieldrec = RECORD
+                                             numofelementarygraphs:INTEGER
+                                           END;
+     SURCOMDECL_pelemgraphfieldrec = ^SURCOMDECL_elemgraphfieldrec;
+     SURCOMDECL_elemgraphfieldrec = RECORD
+                                   graphtype:SURCOMDECL_graphtypetype
+                            END;
+
+     SURCOMDECL_psnode = ^SURCOMDECL_snode;
+     SURCOMDECL_prsnode = ^SURCOMDECL_rsnode;
+     SURCOMDECL_rsnode = RECORD 
+                               node :SURCOMDECL_psnode;
+		               brother:SURCOMDECL_prsnode
+                             END;
+     SURCOMDECL_snode = RECORD
+			sonlist:SURCOMDECL_prsnode;
+			minpos,maxpos:INTEGER;
+			n:INTEGER;
+			
+			case cat:SURCOMDECL_syntcat of
+            UTT:(uttfield:SURCOMDECL_puttfieldrec);
+            IDENT:(identfield:SURCOMDECL_pidentfieldrec);
+            HELPGRAPH:(helpgraphfield:SURCOMDECL_phelpgraphfieldrec);
+            GRAPH:(graphfield:SURCOMDECL_pgraphfieldrec);
+            CONCGRAPH:(concgraphfield:SURCOMDECL_pconcgraphfieldrec);
+            ELEMENTARYGRAPH:(elementarygraphfield:SURCOMDECL_pelemgraphfieldrec);
+            CHARSTRING:(charstringfield:SURCOMDECL_pcharstrfieldrec);
+   	    RULENAME:(rulenamefield:SURCOMDECL_prulenamefieldrec)
+                        END;
+
+     SURCOMDECL_plostree = ^SURCOMDECL_lostree;            
+     SURCOMDECL_lostree = RECORD
+        			next:SURCOMDECL_plostree;
+	        		arg: SURCOMDECL_psnode
+	                      END;
+     SURCOMDECL_pconnectionnode = ^SURCOMDECL_connectionnode;
+     SURCOMDECL_psinglesegmentlist = ^SURCOMDECL_singlesegmentlist;
+     SURCOMDECL_connectionnode = RECORD
+		                       list:SURCOMDECL_psinglesegmentlist;
+		                       next,prev:SURCOMDECL_pconnectionnode;
+                                       idnr:INTEGER
+                                     END;
+     SURCOMDECL_singlesegmentlist = RECORD
+				next:SURCOMDECL_psinglesegmentlist;
+				rn: SURCOMDECL_pconnectionnode;
+				stree: SURCOMDECL_psnode
+			                END;
+     SURCOMDECL_psurfgraph = ^SURCOMDECL_surfgraphtype;
+     SURCOMDECL_psurfgraphnode = ^SURCOMDECL_surfgraphnode;
+     SURCOMDECL_surfgraphtype = RECORD
+                  			first,
+   	                		last:SURCOMDECL_psurfgraphnode
+   		                    END;
+     SURCOMDECL_nodeid = SURCOMDECL_Hinit..SURCOMDECL_Hfinal;
+     SURCOMDECL_plonodeid = ^SURCOMDECL_lonodeid;
+     SURCOMDECL_lonodeid = RECORD
+   			next:SURCOMDECL_plonodeid;
+   			arg:SURCOMDECL_nodeid
+   	 	               END;
+     SURCOMDECL_plossurfgraphnode = ^SURCOMDECL_lossurfgraphnode;
+     SURCOMDECL_surfgraphnodelist = RECORD
+   				first,
+   				last:SURCOMDECL_plossurfgraphnode;
+   			                END;
+     SURCOMDECL_lossurfgraphnode = RECORD
+   				next:SURCOMDECL_plossurfgraphnode;
+   				arg:SURCOMDECL_psurfgraphnode
+   			end;
+     SURCOMDECL_surfgraphnode = RECORD
+   			left,
+   			right:SURCOMDECL_psurfgraphnode;
+   			n:SURCOMDECL_nodeid;
+   			cat:SURCOMDECL_psyntcat;
+   			nextnodes:SURCOMDECL_surfgraphnodelist;
+   			nextcats,
+   			nexttops:SURCOMDECL_syntcatset;
+   			completed,alreadysearched:BOOLEAN
+   	             END;
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : newtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SURCOMDECL_newtop:SURCOMDECL_psinglesegmentlist; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SURCOMDECL_assignnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of newtop is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE SURCOMDECL_assignnewtop(valeu:SURCOMDECL_psinglesegmentlist);EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SURCOMDECL_status
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SURCOMDECL_status:BOOLEAN;EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SURCOMDECL_assignstatus
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of status is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE SURCOMDECL_assignstatus(valeu:BOOLEAN); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SURCOMDECL_debug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SURCOMDECL_debug:BOOLEAN; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SURCOMDECL_assigndebug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of debug is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE SURCOMDECL_assigndebug(valeu:BOOLEAN); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SURCOMDECL_surfgraph
+ *  Description    : 
+ *  Parameters     :0<i<=maxrnr 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SURCOMDECL_surfgraph(i:INTEGER):SURCOMDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SURCOMDECL_assignsurfgraph
+ *  Description    : 
+ *  Parameters     : o<i<=maxrnr
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of surfgraph(i) is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+  PROCEDURE SURCOMDECL_assignsurfgraph(i:INTEGER;valeu:SURCOMDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SURCOMDECL_absent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SURCOMDECL_absent:SURCOMDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SURCOMDECL_assignabsent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of absent is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE SURCOMDECL_assignabsent(valeu:SURCOMDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : initcounter
+ *  Description     : inits linecouner
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE SURCOMDECL_initcounter;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : SURCOMDECL_addcounter
+ *  Description     : adds 1 to line counter
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE SURCOMDECL_addcounter;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SURCOMDECL_linecounter
+ *  Description    : gives valeu of line counter
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SURCOMDECL_linecounter
+                    :INTEGER ;
+EXTERNAL;
+
+END;
+
+

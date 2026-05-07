@@ -1,0 +1,901 @@
+%UTT
+BASIS RULE
+   UTT = AFFIXEXPR/1 . EQUAL/2 . EXPR/3 . EXPREND/1
+
+SURFACE PART
+VAR
+   Eps   : BOOLEAN;
+   First :: SETOFatomnodes;
+   Kind  :: KindType;
+
+<*
+   INIT: BEGIN
+            Eps   := TRUE;
+            INITsetofatomnodes(First);
+            AfxId:=0;
+         END;
+   1   : <*
+            LOCALCONDITION: TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                END
+         *>
+   2   : <*
+            LOCALCONDITION: TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                END
+         *>
+   3   : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                Eps   := %EXPR.Eps;
+                                First := %EXPR.First;
+                                Kind  := %EXPR.Kind;
+                                END
+         *>
+   FINAL: #CONDITION: TRUE
+          #ACTION: BEGIN SEND_UTT;
+                         $UTT.Eps   := Eps;
+                         $UTT.First := First;
+                         $UTT.Kind  := Kind;
+                      END
+*>
+END;
+
+PROCEDURAL PART
+VAR
+   s :: SETOFatomnodes;
+   AtomStr,
+   a :: atomnode;
+BEGIN
+   INIT: BEGIN
+         END;
+   <*
+   1:    <* SEND: 
+               BEGIN
+               END
+            !.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   2:    <* SEND: 
+               BEGIN
+               END
+            !.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   3:    <* SEND: 
+               BEGIN
+                  TFILES_Open(of1, 'ldsucc', 6, 3);
+                  BEGIN
+                     \of1. 
+"EXPORT(LDSUCC);"\\
+"pragma C_include('mem.pf');" \\
+"pragma C_include('lsdomaint.pf');" \\ 
+"pragma C_include('ldsucc.pf');" \\ \\
+
+"PROGRAM LDSUCC;" \\
+"WITH MEM, LSDOMAINT;" \\ \\
+"VAR FirstItems : LDSUCC_ItemSetType;" \\
+\\
+"PROCEDURE LDSUCC_INITSETOFItems(VAR items:LDSUCC_ItemSetType);" \\
+"BEGIN"\\
+TAB(of1, 3); "items.first := NIL; items.last := NIL;"  \\
+"END; {LDSUCC_INITSETOFItems}"\\
+\\
+"FUNCTION LDSUCC_STILLItems(items:LDSUCC_ItemSetType): BOOLEAN;" \\
+"BEGIN"\\
+TAB(of1, 3); "LDSUCC_STILLItems := NOT((items.first=NIL ) AND (items.last=NIL));"\\
+"END; {LDSUCC_STILLItems}"\\
+\\
+"PROCEDURE LDSUCC_APPENDItem(afx, afxid: INTEGER;"\\
+TAB(of1, 25);                        "VAR items:LDSUCC_ItemSetType);" \\
+"VAR n: LDSUCC_pItemType;"\\
+"BEGIN"\\
+TAB(of1, 3); "MEM_NewDefault(loopholes.SIZEof(LDSUCC_ItemType), loopholes.retype(n,Mem_Ptr));"\\
+TAB(of1, 3); "WITH n^ DO BEGIN" \\
+TAB(of1, 6);    "afxkey := afx; afxnode := afxid; nxt := NIL"\\
+TAB(of1, 3); "END;"\\
+TAB(of1, 3); "IF items.first = NIL THEN BEGIN" \\
+TAB(of1, 6);     "items.first := n; items.last := items.first;"\\
+TAB(of1, 6);     "END"\\
+TAB(of1, 3); "ELSE BEGIN" \\
+TAB(of1, 6);    "items.last^.nxt := n; items.last := n;" \\
+TAB(of1, 3); "END" \\
+"END; {LDSUCC_APPENDItem}"\\
+\\
+"PROCEDURE LDSUCC_TAKEItem(VAR afx, afxid: INTEGER; "\\
+TAB(of1, 25);                       "VAR items:LDSUCC_ItemSetType);" \\
+"BEGIN"\\
+TAB(of1, 3); "WITH items.first^ DO BEGIN" \\
+TAB(of1, 6);    "afx := afxkey; afxid := afxnode"\\
+TAB(of1, 3); "END;"\\
+TAB(of1, 3); "IF items.last = items.first THEN BEGIN" \\
+TAB(of1, 6);     "items.first := NIL; items.last := items.first;"\\
+TAB(of1, 6);     "END"\\
+TAB(of1, 3); "ELSE BEGIN" \\
+TAB(of1, 6);    "items.first := items.first^.nxt;" \\
+TAB(of1, 3); "END;" \\
+"END; {LDSUCC_TAKEItem}"\\
+\\
+"FUNCTION LDSUCC_UNIONItems(items1, items2: LDSUCC_ItemSetType):"\\
+TAB(of1, 25);                        "LDSUCC_ItemSetType;" \\
+"VAR n: LDSUCC_pItemType;"\\
+TAB(of1, 5); "items3: LDSUCC_ItemSetType;"\\
+TAB(of1, 5); "a1, a2: INTEGER;"\\
+"BEGIN"\\
+TAB(of1, 3); "items3 := items1;"\\
+TAB(of1, 3); "WHILE LDSUCC_STILLItems(items2) DO BEGIN" \\
+TAB(of1, 6);    "LDSUCC_TAKEItem(a1, a2, items2);"\\
+TAB(of1, 6);    "LDSUCC_APPENDItem(a1, a2, items3);"\\
+TAB(of1, 3); "END;"\\
+TAB(of1, 3); "LDSUCC_UNIONItems := items3;" \\
+"END; {LDSUCC_APPENDItem}"\\
+\\
+"PROCEDURE LDSUCC_ReduceItems(afx: INTEGER; S1: LDSUCC_ItemSetType;"\\
+TAB(of1, 25);                           "VAR S2: LDSUCC_ItemSetType);"\\
+"VAR"\\
+TAB(of1,3);   "k1, k2: INTEGER;"\\
+"BEGIN"\\
+TAB(of1,3);   "LDSUCC_InitSetOfItems(S2);"\\
+TAB(of1,3);   "WHILE LDSUCC_StillItems(S1) DO BEGIN"\\
+TAB(of1,6);      "LDSUCC_TAKEItem(k1, k2, S1);"\\
+TAB(of1,6);      "IF afx = k1 THEN LDSUCC_AppendItem(k1, k2, S2);"\\
+TAB(of1,3);   "END;"\\
+"END {LDSUCC_ReduceItems};"\\
+\\
+                     "FUNCTION LDSUCC_Succ(afx: INTEGER): LDSUCC_ItemSetType;" \\
+                     "VAR" \\
+                     "   result : LDSUCC_ItemSetType;" \\
+                     "BEGIN" \\
+                     TAB(of1, 3); "LDSUCC_INITSETOFItems(result);" \\
+                     TAB(of1, 3); "CASE afx OF" \\
+                     TAB(of1, 3); "LDSUCC_FirstAffix : BEGIN" \\
+                     s := %EXPR.First;
+                     WHILE STILLatomnodes(s) DO BEGIN
+                        TAKEatomnode(a, s);
+                        TAB(of1, 15); 
+                        "LDSUCC_APPENDItem("
+                        ""a.str"" ","
+                        """a.afxid""" ", result);" \\
+                     END;
+                     IF %EXPR.Eps THEN BEGIN
+                        "LDSUCC_APPENDItem(LDSUCC_TrailerAffix, LDSUCC_TrailerAffix, result);" \\
+                     END;
+                     TAB(of1, 15); "END;" \\
+                  END;
+                  INITsetofatomnodes(%%EXPR.Succ);
+                  AtomStr.str := 'LDSUCC_TrailerAffix';
+                  AtomStr.afxid := -1;
+                  APPENDatomnode(AtomStr, %%EXPR.Succ);
+               END
+            !EXPR.
+            RECEIVE:
+               BEGIN
+                  BEGIN
+                     \of1. 
+                     TAB(of1, 3); "END {CASE};" \\
+                     TAB(of1, 3); "LDSUCC_Succ := result;" \\
+                     "END {LDSUCC_Succ};" \\
+\\
+"PROCEDURE LDSUCC_PredictItems(S1: LDSUCC_ItemSetType;"\\
+TAB(of1,25);                       "VAR S2: LDSUCC_ItemSetType);"\\
+"VAR"\\
+TAB(of1,3);   "k1, k2: INTEGER;"\\
+"BEGIN"\\
+TAB(of1,3);   "LDSUCC_InitSetOfItems(S2);"\\
+TAB(of1,3);   "WHILE LDSUCC_StillItems(S1) DO BEGIN"\\
+TAB(of1,6);      "LDSUCC_TAKEItem(k1, k2, S1);"\\
+TAB(of1,6);      "S2 := LDSUCC_UNIONItems(S2, LDSUCC_Succ(k2));"\\
+TAB(of1,3);   "END;"\\
+"END {LDSUCC_PredictItems};"\\
+\\
+"PROCEDURE LDSUCC_Init;" \\
+"BEGIN"\\
+TAB(of1, 3); "FirstItems := LDSUCC_Succ(LDSUCC_FirstAffix);" \\
+"END; {LDSUCC_Init}"\\
+\\
+"FUNCTION LDSUCC_FirstItems: LDSUCC_ItemSetType;" \\
+"BEGIN"\\
+TAB(of1, 3); "LDSUCC_FirstItems := FirstItems;" \\
+"END; {LDSUCC_FirstItems}"\\
+\\
+                  END;
+               END
+         *>
+   *>
+   FINAL: BEGIN
+          END
+END;
+&
+%EXPR
+BASIS RULE
+   EXPR = ROUND/1 | LAND/2 | LOR/3 | LOPT/4 | REP/5 | LEAVE/6
+
+SURFACE PART
+
+VAR
+   Eps   : BOOLEAN;
+   First :: SETOFatomnodes;
+   Kind  :: KindType;
+
+<*
+   INIT: BEGIN
+            Eps   := TRUE;
+            INITsetofatomnodes(First);
+         END;
+   1   : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                Eps := %ROUND.Eps;
+                                First := %ROUND.First;
+                                Kind  := %ROUND.Kind;
+                                END
+         *>
+   2   : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                Eps := %LAND.Eps;
+                                First := %LAND.First;
+                                Kind  := %LAND.Kind;
+                                END
+         *>
+   3   : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                Eps := %LOR.Eps;
+                                First := %LOR.First;
+                                Kind  := %LOR.Kind;
+                                END
+         *>
+   4   : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                Eps   := %LOPT.Eps;
+                                First := %LOPT.First;
+                                Kind  := %LOPT.Kind;
+                                END
+         *>
+   5   : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                Eps := %REP.Eps;
+                                First := %REP.First;
+                                Kind  := %REP.Kind;
+                                END
+         *>
+   6   : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                Eps := %LEAVE.Eps;
+                                First := %LEAVE.First;
+                                Kind  := %LEAVE.Kind;
+                                END
+         *>
+   FINAL: #CONDITION: TRUE
+          #ACTION: BEGIN SEND_EXPR;
+                         $EXPR.Eps   := Eps;
+                         $EXPR.First := First;
+                         $EXPR.Kind  := Kind;
+                      END
+*>
+END;
+
+PROCEDURAL PART
+VAR
+BEGIN
+   INIT: BEGIN
+         END;
+   <*
+   1:    <* SEND: 
+               BEGIN
+                  %%ROUND.Succ := $$EXPR.Succ
+               END
+            !ROUND.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   2:    <* SEND: 
+               BEGIN
+                  %%LAND.Succ := $$EXPR.Succ
+               END
+            !LAND.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   3:    <* SEND: 
+               BEGIN
+                  %%LOR.Succ := $$EXPR.Succ
+               END
+            !LOR.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   4:    <* SEND: 
+               BEGIN
+                  %%LOPT.Succ := $$EXPR.Succ
+               END
+            !LOPT.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   5:    <* SEND: 
+               BEGIN
+                  %%REP.Succ := $$EXPR.Succ
+               END
+            !REP.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   6:    <* SEND: 
+               BEGIN
+                  %%LEAVE.Succ := $$EXPR.Succ
+               END
+            !LEAVE.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   *>
+   FINAL: BEGIN
+          END
+END;
+&
+%ROUND
+BASIS RULE
+   ROUND = LROUND/10. EXPR/1
+          .RROUND/11
+
+SURFACE PART
+VAR
+   Eps   : BOOLEAN;
+   First :: SETOFatomnodes;
+
+<*
+   INIT: BEGIN
+            Eps   := TRUE;
+            INITsetofatomnodes(First);
+         END;
+   1   : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                Eps := %EXPR.Eps;
+                                First := %EXPR.First;
+                                END
+         *>
+   10  : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                END
+         *>
+   11  : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                END
+         *>
+   FINAL: #CONDITION: TRUE
+          #ACTION: BEGIN SEND_ROUND;
+                         $ROUND.Eps   := Eps;
+                         $ROUND.First := First;
+                         $ROUND.Kind  := RoundKind;
+                      END
+*>
+END;
+
+PROCEDURAL PART
+VAR
+BEGIN
+   INIT: BEGIN
+         END;
+   <*
+   1:    <* SEND: 
+               BEGIN
+                  %%EXPR.Succ := $$ROUND.Succ
+               END
+            !EXPR.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   10:   <* SEND: 
+               BEGIN
+               END
+            !.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   11:   <* SEND: 
+               BEGIN
+               END
+            !.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   *>
+   FINAL: BEGIN
+          END
+END;
+&
+%LAND
+BASIS RULE
+   LAND = EXPR/1 . [ DOT/10 ] . EXPR/2
+
+SURFACE PART
+
+VAR
+   Eps   : BOOLEAN;
+   Eps1  : BOOLEAN;
+   Eps2  : BOOLEAN;
+   First :: SETOFatomnodes;
+   First1 :: SETOFatomnodes;
+   First2 :: SETOFatomnodes;
+
+   HELP FUNCTION Union(a1, a2:: SETOFatomnodes):: SETOFatomnodes;
+   VAR
+      a3:: SETOFatomnodes;
+      a :: atomnode;
+   BEGIN
+      a3 := a1;
+      WHILE STILLatomnodes(a2) DO BEGIN
+	 TAKEatomnode(a, a2);
+	 APPENDatomnode(a, a3);
+      END;
+      Union := a3
+   END;
+
+
+<*
+   INIT: BEGIN
+            Eps   := TRUE;
+            Eps1  := TRUE;
+            Eps2  := TRUE;
+            INITsetofatomnodes(First);
+            INITsetofatomnodes(First1);
+            INITsetofatomnodes(First2);
+         END;
+   1   : <*
+            LOCALCONDITION: ( %EXPR.Kind <> ConcKind )
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                Eps1 := %EXPR.Eps;
+                                First1 := %EXPR.First;
+                                END
+         *>
+   2   : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                Eps2   := %EXPR.Eps;
+                                First2 := %EXPR.First;
+                                END
+         *>
+   10  : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                END
+         *>
+   FINAL: #CONDITION: TRUE
+          #ACTION: BEGIN SEND_LAND;
+                         IF Eps1 
+                         THEN First := Union(First1, First2)
+                         ELSE First := First1;
+                         Eps := Eps1 AND Eps2;
+
+                         $LAND.Eps    := Eps;
+                         $LAND.First  := First;
+                         $LAND.Eps2   := Eps2;
+                         $LAND.First2 := First2;
+                         $LAND.Kind   := ConcKind;
+                      END
+*>
+END;
+
+PROCEDURAL PART
+VAR
+   HELP FUNCTION Union(a1, a2:: SETOFatomnodes):: SETOFatomnodes;
+   VAR
+      a3:: SETOFatomnodes;
+      a :: atomnode;
+   BEGIN
+      a3 := a1;
+      WHILE STILLatomnodes(a2) DO BEGIN
+	 TAKEatomnode(a, a2);
+	 APPENDatomnode(a, a3);
+      END;
+      Union := a3
+   END;
+
+BEGIN
+   INIT: BEGIN
+         END;
+   <*
+   1:    <* SEND: 
+               BEGIN
+                  %%EXPR.Succ := $LAND.First2;
+                  IF $LAND.Eps2 THEN BEGIN
+                     %%EXPR.Succ := Union(%%EXPR.Succ, $$LAND.Succ);
+                  END
+               END
+            !EXPR.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   2:    <* SEND: 
+               BEGIN
+                  %%EXPR.Succ := $$LAND.Succ;
+               END
+            !EXPR.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   10:   <* SEND: 
+               BEGIN
+               END
+            !.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   *>
+   FINAL: BEGIN
+          END
+END;
+&
+%LOR
+BASIS RULE
+   LOR = EXPR/1 . BAR/10 . EXPR/2
+
+SURFACE PART
+
+VAR
+   Eps1  : BOOLEAN;
+   Eps2  : BOOLEAN;
+   First1 :: SETOFatomnodes;
+   First2 :: SETOFatomnodes;
+
+   HELP FUNCTION Union(a1, a2:: SETOFatomnodes):: SETOFatomnodes;
+   VAR
+      a3:: SETOFatomnodes;
+      a :: atomnode;
+   BEGIN
+      a3 := a1;
+      WHILE STILLatomnodes(a2) DO BEGIN
+	 TAKEatomnode(a, a2);
+	 APPENDatomnode(a, a3);
+      END;
+      Union := a3
+   END;
+
+
+<*
+   INIT: BEGIN
+            Eps1   := TRUE;
+            Eps2   := TRUE;
+            INITsetofatomnodes(First1);
+            INITsetofatomnodes(First2);
+         END;
+   1   : <*
+            LOCALCONDITION: ( %EXPR.Kind <> AltKind )
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                Eps1 := %EXPR.Eps;
+                                First1 := %EXPR.First;
+                                END
+         *>
+   2   : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                Eps2 := %EXPR.Eps;
+                                First2 := %EXPR.First;
+                                END
+         *>
+   10  : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                END
+         *>
+   FINAL: #CONDITION: TRUE
+          #ACTION: BEGIN SEND_LOR;
+                         $LOR.Eps   := Eps1 OR Eps2;
+                         $LOR.First := Union(First1, First2);
+                         $LOR.Kind  := AltKind;
+                      END
+*>
+END;
+
+PROCEDURAL PART
+VAR
+BEGIN
+   INIT: BEGIN
+         END;
+   <*
+   1:    <* SEND: 
+               BEGIN
+                  %%EXPR.Succ := $$LOR.Succ;
+               END
+            !EXPR.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   2:    <* SEND: 
+               BEGIN
+                  %%EXPR.Succ := $$LOR.Succ;
+               END
+            !EXPR.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   10:   <* SEND: 
+               BEGIN
+               END
+            !.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   *>
+   FINAL: BEGIN
+          END
+END;
+&
+%LOPT
+BASIS RULE
+   LOPT = LSQUARE/10 . EXPR/1 . RSQUARE/11
+
+SURFACE PART
+VAR
+   First1 :: SETOFatomnodes;
+
+<*
+   INIT: BEGIN
+            INITsetofatomnodes(First1);
+         END;
+   1   : <*
+            LOCALCONDITION: TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                First1 := %EXPR.First;
+                                END
+         *>
+   10  : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                END
+         *>
+   11  : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                END
+         *>
+   FINAL: #CONDITION: TRUE
+          #ACTION: BEGIN SEND_LOPT;
+                         $LOPT.Eps   := TRUE;
+                         $LOPT.First := First1;
+                         $LOPT.Kind  := OptKind;
+                      END
+*>
+END;
+
+PROCEDURAL PART
+VAR
+BEGIN
+   INIT: BEGIN
+         END;
+   <*
+   1:    <* SEND: 
+               BEGIN
+                  %%EXPR.Succ := $$LOPT.Succ;
+               END
+            !EXPR.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   10:   <* SEND: 
+               BEGIN
+               END
+            !.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   11:   <* SEND: 
+               BEGIN
+               END
+            !.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   *>
+   FINAL: BEGIN
+          END
+END;
+&
+%REP
+BASIS RULE
+   REP = LCURLY/10 . EXPR/1 . RCURLY/11
+
+SURFACE PART
+VAR
+   First1 :: SETOFatomnodes;
+
+<*
+   INIT: BEGIN
+            INITsetofatomnodes(First1);
+         END;
+   1   : <*
+            LOCALCONDITION: TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                First1 := %EXPR.First;
+                                END
+         *>
+   10  : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                END
+         *>
+   11  : <*
+            LOCALCONDITION:TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                END
+         *>
+   FINAL: #CONDITION: TRUE
+          #ACTION: BEGIN SEND_REP;
+                         $REP.Eps   := TRUE;
+                         $REP.First := First1;
+                         $REP.Kind  := RepKind;
+                      END
+*>
+END;
+
+PROCEDURAL PART
+VAR
+   HELP FUNCTION Union(a1, a2:: SETOFatomnodes):: SETOFatomnodes;
+   VAR
+      a3:: SETOFatomnodes;
+      a :: atomnode;
+   BEGIN
+      a3 := a1;
+      WHILE STILLatomnodes(a2) DO BEGIN
+	 TAKEatomnode(a, a2);
+	 APPENDatomnode(a, a3);
+      END;
+      Union := a3
+   END;
+
+BEGIN
+   INIT: BEGIN
+         END;
+   <*
+   1:    <* SEND: 
+               BEGIN
+                  %%EXPR.Succ := Union($$REP.Succ, $REP.First);
+               END
+            !EXPR.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   10:   <* SEND: 
+               BEGIN
+               END
+            !.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   11:   <* SEND: 
+               BEGIN
+               END
+            !.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   *>
+   FINAL: BEGIN
+          END
+END;
+&
+%LEAVE
+BASIS RULE
+   LEAVE = IDENTIFIER/1
+
+SURFACE PART
+VAR
+   First1 :: SETOFatomnodes;
+   AtomStr :: atomnode;    
+
+<*
+   INIT: BEGIN
+            INITsetofatomnodes(First1);
+         END;
+   1   : <*
+            LOCALCONDITION: TRUE
+            GLOBAL: #CONDITION: TRUE
+                    #ACTION: BEGIN
+                                AtomStr.str := %.str;
+                                Afxid:=Afxid+1;
+                                AtomStr.afxid :=AfxId; 
+                                APPENDatomnode(AtomStr, First1);
+                                END
+         *>
+   FINAL: #CONDITION: TRUE
+          #ACTION: BEGIN SEND_LEAVE;
+                         $LEAVE.Eps   := FALSE;
+                         $LEAVE.First := First1;
+                         $LEAVE.Kind   := AtomKind;
+                      END
+*>
+END;
+
+PROCEDURAL PART
+VAR
+   AtomStr :: atomnode;    
+   str     : TSTRING_String;
+BEGIN
+   INIT: BEGIN
+         END;
+   <*
+   1:    <* SEND: 
+               BEGIN
+                  TAKEatomnode(AtomStr, $LEAVE.First);
+                  BEGIN
+                     \of1.
+                     TAB(of1, 3); """AtomStr.afxid"""
+                     "{" ""AtomStr.str"" "}"
+                     " : BEGIN" \\
+		     WHILE STILLatomnodes($$LEAVE.Succ) DO BEGIN
+			TAKEatomnode(AtomStr, $$LEAVE.Succ);
+			TAB(of1, 15); 
+                        "LDSUCC_APPENDItem("
+			""ATOMStr.str"" ","
+                        """ATOMStr.afxid""" ", result);" \\
+		     END;
+                     TAB(of1, 15); "END;" \\
+                  END;
+               END
+            !.
+            RECEIVE:
+               BEGIN
+               END
+         *>
+   *>
+   FINAL: BEGIN
+          END
+END;
+&

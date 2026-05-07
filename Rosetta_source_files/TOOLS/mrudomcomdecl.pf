@@ -1,0 +1,491 @@
+(*MPM:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : mrudomcomDECL 
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  
+ *
+ *EMP:::===================================================================*)
+
+pragma C_include ('strings.pf');
+pragma C_include ('tstring.pf');
+pragma C_include ('files.pf');
+pragma C_include ('mrudomcomlangspec.pf');
+
+PACKAGE mrudomcomDECL;
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+WITH STRINGS,
+     mrudomcomLANGSPEC,
+     TSTRING,
+     FILES;
+
+
+CONST
+   HINIT = -1;
+   HDUM  = -1;
+   HFINAL= 60;
+
+TYPE
+   mrudomcomDECL_Surfrulemode = (loccond, globcond);
+   mrudomcomDECL_psyntcat     = ^mrudomcomLANGSPEC_Category;
+   mrudomcomDECL_syntcatset   = SET OF mrudomcomLANGSPEC_Category;
+   mrudomcomDECL_nodeid         = HINIT..HFINAL;
+   mrudomcomDECL_plonodeid      = ^mrudomcomDECL_lonodeid;
+   mrudomcomDECL_lonodeid       = RECORD
+   			          next: mrudomcomDECL_plonodeid;
+   			          arg : mrudomcomDECL_nodeid
+   	 	               END;
+   mrudomcomDECL_pSnode       = ^mrudomcomDECL_Snode;
+   mrudomcomDECL_pRsnode      = ^mrudomcomDECL_Rsnode;
+   mrudomcomDECL_Rsnode       = RECORD
+                                sonnumber:mrudomcomDECL_nodeid;
+                                node    : mrudomcomDECL_pSnode;
+                                brother : mrudomcomDECL_pRsnode
+                             END;
+   mrudomcomDECL_Snode        = RECORD
+                                sonlist : mrudomcomDECL_pRsnode;
+                                minpos,
+                                maxpos  : integer;
+                                n       : integer;
+                                cl      : integer;
+                                connected : boolean;
+                                cat     : mrudomcomLANGSPEC_Category;
+                                ldfield : mrudomcomLANGSPEC_FieldDef
+                             END;
+   mrudomcomDECL_pLostree     = ^mrudomcomDECL_Lostree;
+   mrudomcomDECL_Lostree      = RECORD
+                                next    : mrudomcomDECL_pLostree;
+                                arg     : mrudomcomDECL_pSnode
+                             END;
+   mrudomcomDECL_pConnectionnode
+                           = ^mrudomcomDECL_Connectionnode;
+   mrudomcomDECL_pSingleSegmList
+                           = ^mrudomcomDECL_SingleSegmList;
+   mrudomcomDECL_Connectionnode 
+                           = RECORD
+                                list    : mrudomcomDECL_pSingleSegmList;
+                                next,
+                                prev    : mrudomcomDECL_pConnectionnode;
+                                idnr    : integer
+                             END;
+   mrudomcomDECL_SingleSegmList
+                           = RECORD
+                                next    : mrudomcomDECL_pSingleSegmlist;
+                                rn      : mrudomcomDECL_pConnectionnode;
+                                stree   : mrudomcomDECL_pSnode
+                             END;
+   mrudomcomDECL_psurfgraph     = ^mrudomcomDECL_surfgraphtype;
+   mrudomcomDECL_psurfgraphnode = ^mrudomcomDECL_surfgraphnode;
+   mrudomcomDECL_surfgraphtype  = RECORD
+   			          first,
+   			          last: mrudomcomDECL_psurfgraphnode
+   		               END;
+   mrudomcomDECL_plossurfgraphnode 
+                             = ^mrudomcomDECL_lossurfgraphnode;
+   mrudomcomDECL_surfgraphnodelist
+                             = RECORD
+   				   first,
+      				   last  : mrudomcomDECL_plossurfgraphnode;
+   			       END;
+   mrudomcomDECL_lossurfgraphnode 
+                             = RECORD
+   				   next :  mrudomcomDECL_plossurfgraphnode;
+   				   arg  :  mrudomcomDECL_psurfgraphnode
+   			       END;
+   mrudomcomDECL_surfgraphnode  = RECORD
+      			          left,
+   			          right: mrudomcomDECL_psurfgraphnode;
+   			          n    : mrudomcomDECL_nodeid;
+   			          cat  : mrudomcomDECL_psyntcat;
+   			          nextnodes: mrudomcomDECL_surfgraphnodelist;
+   			          nextcats,
+   			          nexttops : mrudomcomDECL_syntcatset;
+   			          completed,
+                                  alreadysearched:boolean
+   	                       END;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_newtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrudomcomDECL_newtop: mrudomcomDECL_psinglesegmlist; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_assignnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of newtop is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE mrudomcomDECL_assignnewtop(valeu: mrudomcomDECL_psinglesegmlist);EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_addnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE mrudomcomDECL_addnewtop(a: mrudomcomDECL_pSnode); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_status
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrudomcomDECL_status:boolean;EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_assignstatus
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of status is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE mrudomcomDECL_assignstatus(valeu:boolean); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_debug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrudomcomDECL_debug:boolean; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_assigndebug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of debug is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE mrudomcomDECL_assigndebug(valeu:boolean); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_surfgraph
+ *  Description    : 
+ *  Parameters     :0<i<=maxrnr 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrudomcomDECL_surfgraph(i:integer):mrudomcomDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_assignsurfgraph
+ *  Description    : 
+ *  Parameters     : o<i<=maxrnr
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of surfgraph(i) is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE mrudomcomDECL_assignsurfgraph(i: integer; valeu: mrudomcomDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_absent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrudomcomDECL_absent: mrudomcomDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : TAB
+ *  Description    : writes tab of 'indent' characters
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE TAB(VAR of1:FILES_text;indent:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : LOCALTAB
+ *  Description    : writes tab of 'indent' characters to local file
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LOCALTAB(VAR of1:LOCALFILE;indent:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDlocfile
+ *  Description    : appends local file of1 to local file of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDlocfile(of1:LOCALFILE;VAR of2:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : SAVElocfile
+ *  Description    : copies local file of1 'totally' to local file of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SAVElocfile(of1:LOCALFILE;VAR of2:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : INITlocalfile
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE INITlocalfile(VAR of1:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDfile
+ *  Description    : appends local file of1 to global of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : of1 is empty !!!!
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDfile(VAR of1:LOCALFILE;VAR of2:FILES_text); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDstring
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDstring(string1:TSTRING_string;VAR S:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_assignabsent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of absent is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE mrudomcomDECL_assignabsent(valeu: mrudomcomDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_Addconnectionnode
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE mrudomcomDECL_Addconnectionnode(VAR r: mrudomcomDECL_pconnectionnode;
+                                                  t: mrudomcomDECL_psnode); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_MakeTerminal
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrudomcomDECL_MakeTerminal(s: mrudomcomLANGSPEC_Category;
+                                            w: TSTRING_String): 
+                                            mrudomcomDECL_pSnode; EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_MakeNonTerminal
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrudomcomDECL_MakeNonTerminal(s: mrudomcomLANGSPEC_Category):
+                                            mrudomcomDECL_pSnode; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrudomcomDECL_Convinttostring
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrudomcomDECL_Convinttostring(int:INTEGER):
+                                            TSTRING_string; EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : counter
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION counter:INTEGER; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assigncounter
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE assigncounter(valeu:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : warning
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION warning:BOOLEAN; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assignwarning
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE assignwarning(valeu:BOOLEAN); EXTERNAL;
+
+FUNCTION converttointeger(CONST str1:STRING; len: INTEGER)
+:INTEGER; EXTERNAL;
+
+END {mrudomcomDECL};

@@ -1,0 +1,436 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : lexdecldef 
+ *  Creation date   : june 1986
+ *  Author          : rene leermakers                                     
+ *                                                                  
+ *  Copyright (c) 1986, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         : file contains global types and some functions manipulating
+ *                    global data
+ *
+ *EMP:::===================================================================*)
+
+pragma C_include('strings.pf');
+PACKAGE lexcomdecl;
+
+const LEXCOMDECL_maxrnr = 23;
+      LEXCOMDECL_Hinit = -1;
+      LEXCOMDECL_Hdum = LEXCOMDECL_Hinit;
+      LEXCOMDECL_Hfinal = 60;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LEXCOMDECL_plosrecord
+ *  Description    : 
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   LEXCOMDECL_plosrecord = ^LEXCOMDECL_losrecord;
+   LEXCOMDECL_string = STRING(220);
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LEXCOMDECL_losrecord
+ *  Description    : 
+ *
+ *EMP:::===================================================================*)
+
+   LEXCOMDECL_losrecord = RECORD
+                 arg:LEXCOMDECL_string;
+                 next:LEXCOMDECL_plosrecord
+               END;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : LEXCOMDECL_setofrecords
+ *  Description    : 
+ *
+ *EMP:::===================================================================*)
+
+TYPE
+   LEXCOMDECL_setofrecords = RECORD
+                    first,last:LEXCOMDECL_plosrecord
+                  END;
+{functions on setofrecords are defined in lexcomsurfrules}
+
+
+
+TYPE 
+     LEXCOMDECL_surfrulemode = (loccond,globcond);
+     LEXCOMDECL_syntcat = (UTT,RULENAME,MODELS,COMP,CAPAIRS,DECOMP,INPUTMODELS,
+                OUTPUTMODEL,MODEL,MCIJFER,NODEDESCRIPTION,SQUAREOPEN,
+                RELTREELIST,SQUARECLOSE,CATNAME,CURLYOPEN,CATRECNAME,
+                CURLYCLOSE,COMMA,RELNAME,SLASH,IDENT,CCIJFER,TCIJFER,
+                ACIJFER,CONDITION,ANDCAT,ACTION,DOTCOMMA,PASCAL,APESTAART,
+                CHARSTRING,DOTDOT,MUCIJFER,ORCAT,ROUNDOPEN,ROUNDCLOSE,NOTCAT,
+                ASSIGN
+               );
+     LEXCOMDECL_psyntcat = ^LEXCOMDECL_syntcat;
+     LEXCOMDECL_syntcatset = SET OF LEXCOMDECL_syntcat;
+     LEXCOMDECL_pcode = ^LEXCOMDECL_code;
+     LEXCOMDECL_prcode = ^LEXCOMDECL_rcode;
+     LEXCOMDECL_rcode = RECORD
+	     son:LEXCOMDECL_pcode;
+	     next:LEXCOMDECL_prcode
+	     END;
+     LEXCOMDECL_code = RECORD
+            topcode:LEXCOMDECL_string;
+            soncode:LEXCOMDECL_prcode
+	    END;
+     LEXCOMDECL_pcharstringfieldrec = ^LEXCOMDECL_charstringfieldrec;
+     LEXCOMDECL_charstringfieldrec = RECORD
+                             stringfield:LEXCOMDECL_string;
+   			     alreadyconcatenated:BOOLEAN;
+                             linenumber:INTEGER
+                             END; 
+     LEXCOMDECL_ppascalfieldrecord = ^LEXCOMDECL_pascalfieldrecord;
+     LEXCOMDECL_pascalfieldrecord = RECORD
+                         stringfield:LEXCOMDECL_string
+                         END;
+     LEXCOMDECL_prelnamefieldrecord = ^LEXCOMDECL_relnamefieldrecord;
+     LEXCOMDECL_relnamefieldrecord = RECORD
+                          stringfield:LEXCOMDECL_string
+                          END;
+     LEXCOMDECL_prulenamefieldrecord = ^LEXCOMDECL_rulenamefieldrecord;
+     LEXCOMDECL_rulenamefieldrecord = RECORD
+   			   rulename:LEXCOMDECL_string
+   			   END;
+     LEXCOMDECL_ptcijferfieldrecord = ^LEXCOMDECL_tcijferfieldrecord;
+     LEXCOMDECL_tcijferfieldrecord = RECORD
+                         tfield:LEXCOMDECL_string
+                         END;
+     LEXCOMDECL_pmucijferfieldrecord = ^LEXCOMDECL_mucijferfieldrecord;
+     LEXCOMDECL_mucijferfieldrecord = RECORD
+                         mufield:LEXCOMDECL_string
+                         END;
+     LEXCOMDECL_pmcijferfieldrecord = ^LEXCOMDECL_mcijferfieldrecord;
+     LEXCOMDECL_mcijferfieldrecord = RECORD
+                         mfield:LEXCOMDECL_string
+                         END;
+     LEXCOMDECL_pccijferfieldrecord = ^LEXCOMDECL_ccijferfieldrecord;
+     LEXCOMDECL_ccijferfieldrecord = RECORD
+                         cfield:LEXCOMDECL_string
+                         END;
+     LEXCOMDECL_pacijferfieldrecord = ^LEXCOMDECL_acijferfieldrecord;
+     LEXCOMDECL_acijferfieldrecord = RECORD
+                         afield:LEXCOMDECL_string
+                         END;
+     LEXCOMDECL_pcatnamefieldrecord = ^LEXCOMDECL_catnamefieldrecord;
+     LEXCOMDECL_catnamefieldrecord = RECORD
+                          catfield:LEXCOMDECL_string
+                          END;
+     LEXCOMDECL_pcatrecnamefieldrec = ^LEXCOMDECL_catrecnamefieldrec;
+     LEXCOMDECL_catrecnamefieldrec = RECORD
+                             catrecfield:LEXCOMDECL_string
+                             END;
+     LEXCOMDECL_pactionfieldrecord = ^LEXCOMDECL_actionfieldrecord;
+     LEXCOMDECL_actionfieldrecord = RECORD
+                         numberofactions:INTEGER
+                         END;
+     LEXCOMDECL_pconditionfieldrec = ^LEXCOMDECL_conditionfieldrec;
+     LEXCOMDECL_conditionfieldrec = RECORD
+                            numberofconditions:INTEGER;
+                            andcond:BOOLEAN
+                            END;
+     LEXCOMDECL_preltreelistfldrec = ^LEXCOMDECL_reltreelistfldrec;
+     LEXCOMDECL_reltreelistfldrec = RECORD
+                              numberofsons:INTEGER;
+   			      records:LEXCOMDECL_setofrecords;
+   			      variable:BOOLEAN
+                              END;
+     LEXCOMDECL_pnodedescripfldrec = ^LEXCOMDECL_nodedescripfldrec;
+     LEXCOMDECL_nodedescripfldrec = RECORD
+                                  catn,rec,tname,keystr:LEXCOMDECL_string;
+                                  variable,basiccat,keypresent:BOOLEAN
+                                  END;
+     LEXCOMDECL_pinputmodelsfieldrec = ^LEXCOMDECL_inputmodelsfieldrec;
+     LEXCOMDECL_inputmodelsfieldrec = RECORD
+                              numberofmodels:INTEGER;
+                              records:LEXCOMDECL_setofrecords
+                              END;
+     LEXCOMDECL_poutputmodelfieldrec = ^LEXCOMDECL_outputmodelfieldrec;
+     LEXCOMDECL_outputmodelfieldrec = RECORD
+   			           records:LEXCOMDECL_setofrecords
+   			       END;
+     LEXCOMDECL_pmodelrecord = ^LEXCOMDECL_modelrecord;
+     LEXCOMDECL_modelrecord = RECORD
+		    	variable:BOOLEAN;
+                        records:LEXCOMDECL_setofrecords;
+                        existreltreelist,nonemptyreltreelist:BOOLEAN
+		    END;
+     LEXCOMDECL_pcapairsrecord = ^LEXCOMDECL_capairsrecord;
+     LEXCOMDECL_capairsrecord = RECORD
+			level:INTEGER;
+                        numofcas:INTEGER
+	              END;
+     LEXCOMDECL_psnode = ^LEXCOMDECL_snode;
+     LEXCOMDECL_prsnode = ^LEXCOMDECL_rsnode;
+     LEXCOMDECL_rsnode = RECORD
+                     node :LEXCOMDECL_psnode;
+		     brother:LEXCOMDECL_prsnode
+	      END;
+     LEXCOMDECL_snode = RECORD
+			sonlist:LEXCOMDECL_prsnode;
+			minpos,maxpos:INTEGER;
+			n:INTEGER;
+                        code:LEXCOMDECL_pcode;
+			
+			CASE cat:LEXCOMDECL_syntcat OF
+            CHARSTRING:(charstringfield:LEXCOMDECL_pcharstringfieldrec);
+   	    PASCAL:(pascalfield:LEXCOMDECL_ppascalfieldrecord);
+            RELNAME:(relnamefield:LEXCOMDECL_prelnamefieldrecord);
+   	    RULENAME:(rulenamefield:LEXCOMDECL_prulenamefieldrecord);
+            TCIJFER:(tcijferfield:LEXCOMDECL_ptcijferfieldrecord);
+   	    MUCIJFER:(mucijferfield:LEXCOMDECL_pmucijferfieldrecord);
+            MCIJFER:(mcijferfield:LEXCOMDECL_pmcijferfieldrecord);
+            CCIJFER:(ccijferfield:LEXCOMDECL_pccijferfieldrecord);
+            ACIJFER:(acijferfield:LEXCOMDECL_pacijferfieldrecord);
+            CATNAME:(catnamefield:LEXCOMDECL_pcatnamefieldrecord);
+            CATRECNAME:(catrecnamefield:LEXCOMDECL_pcatrecnamefieldrec);
+            CONDITION:(conditionfield:LEXCOMDECL_pconditionfieldrec);
+            ACTION:(actionfield:LEXCOMDECL_pactionfieldrecord);
+            RELTREELIST:(reltreelistfield:LEXCOMDECL_preltreelistfldrec);
+            NODEDESCRIPTION:(nodedescriptionfield:LEXCOMDECL_pnodedescripfldrec);
+            INPUTMODELS :(inputmodelsfield:LEXCOMDECL_pinputmodelsfieldrec);
+            OUTPUTMODEL :(outputmodelfield:LEXCOMDECL_poutputmodelfieldrec);
+            MODEL :(modelfield:LEXCOMDECL_pmodelrecord);
+            CAPAIRS :(capairsfield:LEXCOMDECL_pcapairsrecord)
+            END;
+     LEXCOMDECL_plostree = ^LEXCOMDECL_lostree;            
+     LEXCOMDECL_lostree = RECORD
+			next:LEXCOMDECL_plostree;
+			arg: LEXCOMDECL_psnode
+	       END;
+     LEXCOMDECL_pconnectionnode = ^LEXCOMDECL_connectionnode;
+     LEXCOMDECL_psinglesegmentlist = ^LEXCOMDECL_singlesegmentlist;
+     LEXCOMDECL_connectionnode = RECORD
+		      list:LEXCOMDECL_psinglesegmentlist;
+		      next,prev:LEXCOMDECL_pconnectionnode;
+		      idnr:INTEGER
+		      END;
+     LEXCOMDECL_singlesegmentlist = RECORD
+				next:LEXCOMDECL_psinglesegmentlist;
+				rn: LEXCOMDECL_pconnectionnode;
+				stree: LEXCOMDECL_psnode
+			 END;
+     LEXCOMDECL_psurfgraph = ^LEXCOMDECL_surfgraphtype;
+     LEXCOMDECL_psurfgraphnode = ^LEXCOMDECL_surfgraphnode;
+     LEXCOMDECL_surfgraphtype = RECORD
+   			first,
+   			last:LEXCOMDECL_psurfgraphnode
+   		     END;
+     LEXCOMDECL_nodeid = LEXCOMDECL_Hinit..LEXCOMDECL_Hfinal;
+     LEXCOMDECL_plonodeid = ^LEXCOMDECL_lonodeid;
+     LEXCOMDECL_lonodeid = RECORD
+   			next:LEXCOMDECL_plonodeid;
+   			arg:LEXCOMDECL_nodeid
+   	 	END;
+     LEXCOMDECL_plossurfgraphnode = ^LEXCOMDECL_lossurfgraphnode;
+     LEXCOMDECL_surfgraphnodelist = RECORD
+   				first,
+   				last:LEXCOMDECL_plossurfgraphnode;
+   			 END;
+     LEXCOMDECL_lossurfgraphnode = RECORD
+   				next:LEXCOMDECL_plossurfgraphnode;
+   				arg:LEXCOMDECL_psurfgraphnode
+   			END;
+     LEXCOMDECL_surfgraphnode = RECORD
+   			left,
+   			right:LEXCOMDECL_psurfgraphnode;
+   			n:LEXCOMDECL_nodeid;
+   			cat:LEXCOMDECL_psyntcat;
+   			nextnodes:LEXCOMDECL_surfgraphnodelist;
+   			nextcats,
+   			nexttops:LEXCOMDECL_syntcatset;
+   			completed,alreadysearched:BOOLEAN
+   	             END;
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LEXCOMDECL_newtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LEXCOMDECL_newtop:LEXCOMDECL_psinglesegmentlist; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LEXCOMDECL_assignnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of newtop is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LEXCOMDECL_assignnewtop(valeu:LEXCOMDECL_psinglesegmentlist);EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LEXCOMDECL_status
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LEXCOMDECL_status:BOOLEAN;EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LEXCOMDECL_assignstatus
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of status is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LEXCOMDECL_assignstatus(valeu:BOOLEAN); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : debug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LEXCOMDECL_debug:BOOLEAN; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LEXCOMDECL_assigndebug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of debug is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LEXCOMDECL_assigndebug(valeu:BOOLEAN); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LEXCOMDECL_surfgraph
+ *  Description    : 
+ *  Parameters     :0<i<=LEXCOMDECL_maxrnr 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LEXCOMDECL_surfgraph(i:INTEGER):LEXCOMDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LEXCOMDECL_assignsurfgraph
+ *  Description    : 
+ *  Parameters     : o<i<=LEXCOMDECL_maxrnr
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of surfgraph(i) is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LEXCOMDECL_assignsurfgraph(i:INTEGER;valeu:LEXCOMDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LEXCOMDECL_absent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LEXCOMDECL_absent:LEXCOMDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LEXCOMDECL_assignabsent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of absent is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LEXCOMDECL_assignabsent(valeu:LEXCOMDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LEXCOMDECL_initcounter
+ *  Description     : inits linecouner
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LEXCOMDECL_initcounter;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : LEXCOMDECL_addcounter
+ *  Description     : adds 1 to line counter
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LEXCOMDECL_addcounter;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : LEXCOMDECL_linecounter
+ *  Description    : gives valeu of line counter
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION LEXCOMDECL_linecounter
+                    :INTEGER ;
+EXTERNAL;
+
+END;
+

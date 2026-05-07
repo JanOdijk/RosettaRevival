@@ -1,0 +1,491 @@
+(*MPM:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : #DECL 
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  
+ *
+ *EMP:::===================================================================*)
+
+pragma C_include ('strings.pf');
+pragma C_include ('tstring.pf');
+pragma C_include ('files.pf');
+pragma C_include ('#langspec.pf');
+
+PACKAGE #DECL;
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+WITH STRINGS,
+     #LANGSPEC,
+     TSTRING,
+     FILES;
+
+
+CONST
+   HINIT = -1;
+   HDUM  = -1;
+   HFINAL= 60;
+
+TYPE
+   #DECL_Surfrulemode = (loccond, globcond);
+   #DECL_psyntcat     = ^#LANGSPEC_Category;
+   #DECL_syntcatset   = SET OF #LANGSPEC_Category;
+   #DECL_nodeid         = HINIT..HFINAL;
+   #DECL_plonodeid      = ^#DECL_lonodeid;
+   #DECL_lonodeid       = RECORD
+   			          next: #DECL_plonodeid;
+   			          arg : #DECL_nodeid
+   	 	               END;
+   #DECL_pSnode       = ^#DECL_Snode;
+   #DECL_pRsnode      = ^#DECL_Rsnode;
+   #DECL_Rsnode       = RECORD
+                                sonnumber:#DECL_nodeid;
+                                node    : #DECL_pSnode;
+                                brother : #DECL_pRsnode
+                             END;
+   #DECL_Snode        = RECORD
+                                sonlist : #DECL_pRsnode;
+                                minpos,
+                                maxpos  : integer;
+                                n       : integer;
+                                cl      : integer;
+                                connected : boolean;
+                                cat     : #LANGSPEC_Category;
+                                ldfield : #LANGSPEC_FieldDef
+                             END;
+   #DECL_pLostree     = ^#DECL_Lostree;
+   #DECL_Lostree      = RECORD
+                                next    : #DECL_pLostree;
+                                arg     : #DECL_pSnode
+                             END;
+   #DECL_pConnectionnode
+                           = ^#DECL_Connectionnode;
+   #DECL_pSingleSegmList
+                           = ^#DECL_SingleSegmList;
+   #DECL_Connectionnode 
+                           = RECORD
+                                list    : #DECL_pSingleSegmList;
+                                next,
+                                prev    : #DECL_pConnectionnode;
+                                idnr    : integer
+                             END;
+   #DECL_SingleSegmList
+                           = RECORD
+                                next    : #DECL_pSingleSegmlist;
+                                rn      : #DECL_pConnectionnode;
+                                stree   : #DECL_pSnode
+                             END;
+   #DECL_psurfgraph     = ^#DECL_surfgraphtype;
+   #DECL_psurfgraphnode = ^#DECL_surfgraphnode;
+   #DECL_surfgraphtype  = RECORD
+   			          first,
+   			          last: #DECL_psurfgraphnode
+   		               END;
+   #DECL_plossurfgraphnode 
+                             = ^#DECL_lossurfgraphnode;
+   #DECL_surfgraphnodelist
+                             = RECORD
+   				   first,
+      				   last  : #DECL_plossurfgraphnode;
+   			       END;
+   #DECL_lossurfgraphnode 
+                             = RECORD
+   				   next :  #DECL_plossurfgraphnode;
+   				   arg  :  #DECL_psurfgraphnode
+   			       END;
+   #DECL_surfgraphnode  = RECORD
+      			          left,
+   			          right: #DECL_psurfgraphnode;
+   			          n    : #DECL_nodeid;
+   			          cat  : #DECL_psyntcat;
+   			          nextnodes: #DECL_surfgraphnodelist;
+   			          nextcats,
+   			          nexttops : #DECL_syntcatset;
+   			          completed,
+                                  alreadysearched:boolean
+   	                       END;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_newtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION #DECL_newtop: #DECL_psinglesegmlist; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_assignnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of newtop is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE #DECL_assignnewtop(valeu: #DECL_psinglesegmlist);EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_addnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE #DECL_addnewtop(a: #DECL_pSnode); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_status
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION #DECL_status:boolean;EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_assignstatus
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of status is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE #DECL_assignstatus(valeu:boolean); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_debug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION #DECL_debug:boolean; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_assigndebug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of debug is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE #DECL_assigndebug(valeu:boolean); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_surfgraph
+ *  Description    : 
+ *  Parameters     :0<i<=maxrnr 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION #DECL_surfgraph(i:integer):#DECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_assignsurfgraph
+ *  Description    : 
+ *  Parameters     : o<i<=maxrnr
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of surfgraph(i) is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE #DECL_assignsurfgraph(i: integer; valeu: #DECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_absent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION #DECL_absent: #DECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : TAB
+ *  Description    : writes tab of 'indent' characters
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE TAB(VAR of1:FILES_text;indent:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : LOCALTAB
+ *  Description    : writes tab of 'indent' characters to local file
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LOCALTAB(VAR of1:LOCALFILE;indent:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDlocfile
+ *  Description    : appends local file of1 to local file of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDlocfile(of1:LOCALFILE;VAR of2:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : SAVElocfile
+ *  Description    : copies local file of1 'totally' to local file of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SAVElocfile(of1:LOCALFILE;VAR of2:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : INITlocalfile
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE INITlocalfile(VAR of1:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDfile
+ *  Description    : appends local file of1 to global of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : of1 is empty !!!!
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDfile(VAR of1:LOCALFILE;VAR of2:FILES_text); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDstring
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDstring(string1:TSTRING_string;VAR S:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_assignabsent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of absent is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE #DECL_assignabsent(valeu: #DECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_Addconnectionnode
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE #DECL_Addconnectionnode(VAR r: #DECL_pconnectionnode;
+                                                  t: #DECL_psnode); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_MakeTerminal
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION #DECL_MakeTerminal(s: #LANGSPEC_Category;
+                                            w: TSTRING_String): 
+                                            #DECL_pSnode; EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_MakeNonTerminal
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION #DECL_MakeNonTerminal(s: #LANGSPEC_Category):
+                                            #DECL_pSnode; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : #DECL_Convinttostring
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION #DECL_Convinttostring(int:INTEGER):
+                                            TSTRING_string; EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : counter
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION counter:INTEGER; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assigncounter
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE assigncounter(valeu:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : warning
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION warning:BOOLEAN; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assignwarning
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE assignwarning(valeu:BOOLEAN); EXTERNAL;
+
+FUNCTION converttointeger(CONST str1:STRING; len: INTEGER)
+:INTEGER; EXTERNAL;
+
+END {#DECL};

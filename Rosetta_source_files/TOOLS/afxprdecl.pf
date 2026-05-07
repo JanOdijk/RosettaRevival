@@ -1,0 +1,491 @@
+(*MPM:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : afxprDECL 
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  
+ *
+ *EMP:::===================================================================*)
+
+pragma C_include ('strings.pf');
+pragma C_include ('tstring.pf');
+pragma C_include ('files.pf');
+pragma C_include ('afxprlangspec.pf');
+
+PACKAGE afxprDECL;
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+WITH STRINGS,
+     afxprLANGSPEC,
+     TSTRING,
+     FILES;
+
+
+CONST
+   HINIT = -1;
+   HDUM  = -1;
+   HFINAL= 60;
+
+TYPE
+   afxprDECL_Surfrulemode = (loccond, globcond);
+   afxprDECL_psyntcat     = ^afxprLANGSPEC_Category;
+   afxprDECL_syntcatset   = SET OF afxprLANGSPEC_Category;
+   afxprDECL_nodeid         = HINIT..HFINAL;
+   afxprDECL_plonodeid      = ^afxprDECL_lonodeid;
+   afxprDECL_lonodeid       = RECORD
+   			          next: afxprDECL_plonodeid;
+   			          arg : afxprDECL_nodeid
+   	 	               END;
+   afxprDECL_pSnode       = ^afxprDECL_Snode;
+   afxprDECL_pRsnode      = ^afxprDECL_Rsnode;
+   afxprDECL_Rsnode       = RECORD
+                                sonnumber:afxprDECL_nodeid;
+                                node    : afxprDECL_pSnode;
+                                brother : afxprDECL_pRsnode
+                             END;
+   afxprDECL_Snode        = RECORD
+                                sonlist : afxprDECL_pRsnode;
+                                minpos,
+                                maxpos  : integer;
+                                n       : integer;
+                                cl      : integer;
+                                connected : boolean;
+                                cat     : afxprLANGSPEC_Category;
+                                ldfield : afxprLANGSPEC_FieldDef
+                             END;
+   afxprDECL_pLostree     = ^afxprDECL_Lostree;
+   afxprDECL_Lostree      = RECORD
+                                next    : afxprDECL_pLostree;
+                                arg     : afxprDECL_pSnode
+                             END;
+   afxprDECL_pConnectionnode
+                           = ^afxprDECL_Connectionnode;
+   afxprDECL_pSingleSegmList
+                           = ^afxprDECL_SingleSegmList;
+   afxprDECL_Connectionnode 
+                           = RECORD
+                                list    : afxprDECL_pSingleSegmList;
+                                next,
+                                prev    : afxprDECL_pConnectionnode;
+                                idnr    : integer
+                             END;
+   afxprDECL_SingleSegmList
+                           = RECORD
+                                next    : afxprDECL_pSingleSegmlist;
+                                rn      : afxprDECL_pConnectionnode;
+                                stree   : afxprDECL_pSnode
+                             END;
+   afxprDECL_psurfgraph     = ^afxprDECL_surfgraphtype;
+   afxprDECL_psurfgraphnode = ^afxprDECL_surfgraphnode;
+   afxprDECL_surfgraphtype  = RECORD
+   			          first,
+   			          last: afxprDECL_psurfgraphnode
+   		               END;
+   afxprDECL_plossurfgraphnode 
+                             = ^afxprDECL_lossurfgraphnode;
+   afxprDECL_surfgraphnodelist
+                             = RECORD
+   				   first,
+      				   last  : afxprDECL_plossurfgraphnode;
+   			       END;
+   afxprDECL_lossurfgraphnode 
+                             = RECORD
+   				   next :  afxprDECL_plossurfgraphnode;
+   				   arg  :  afxprDECL_psurfgraphnode
+   			       END;
+   afxprDECL_surfgraphnode  = RECORD
+      			          left,
+   			          right: afxprDECL_psurfgraphnode;
+   			          n    : afxprDECL_nodeid;
+   			          cat  : afxprDECL_psyntcat;
+   			          nextnodes: afxprDECL_surfgraphnodelist;
+   			          nextcats,
+   			          nexttops : afxprDECL_syntcatset;
+   			          completed,
+                                  alreadysearched:boolean
+   	                       END;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_newtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION afxprDECL_newtop: afxprDECL_psinglesegmlist; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_assignnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of newtop is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE afxprDECL_assignnewtop(valeu: afxprDECL_psinglesegmlist);EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_addnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE afxprDECL_addnewtop(a: afxprDECL_pSnode); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_status
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION afxprDECL_status:boolean;EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_assignstatus
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of status is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE afxprDECL_assignstatus(valeu:boolean); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_debug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION afxprDECL_debug:boolean; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_assigndebug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of debug is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE afxprDECL_assigndebug(valeu:boolean); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_surfgraph
+ *  Description    : 
+ *  Parameters     :0<i<=maxrnr 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION afxprDECL_surfgraph(i:integer):afxprDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_assignsurfgraph
+ *  Description    : 
+ *  Parameters     : o<i<=maxrnr
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of surfgraph(i) is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE afxprDECL_assignsurfgraph(i: integer; valeu: afxprDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_absent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION afxprDECL_absent: afxprDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : TAB
+ *  Description    : writes tab of 'indent' characters
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE TAB(VAR of1:FILES_text;indent:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : LOCALTAB
+ *  Description    : writes tab of 'indent' characters to local file
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LOCALTAB(VAR of1:LOCALFILE;indent:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDlocfile
+ *  Description    : appends local file of1 to local file of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDlocfile(of1:LOCALFILE;VAR of2:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : SAVElocfile
+ *  Description    : copies local file of1 'totally' to local file of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SAVElocfile(of1:LOCALFILE;VAR of2:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : INITlocalfile
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE INITlocalfile(VAR of1:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDfile
+ *  Description    : appends local file of1 to global of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : of1 is empty !!!!
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDfile(VAR of1:LOCALFILE;VAR of2:FILES_text); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDstring
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDstring(string1:TSTRING_string;VAR S:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_assignabsent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of absent is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE afxprDECL_assignabsent(valeu: afxprDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_Addconnectionnode
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE afxprDECL_Addconnectionnode(VAR r: afxprDECL_pconnectionnode;
+                                                  t: afxprDECL_psnode); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_MakeTerminal
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION afxprDECL_MakeTerminal(s: afxprLANGSPEC_Category;
+                                            w: TSTRING_String): 
+                                            afxprDECL_pSnode; EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_MakeNonTerminal
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION afxprDECL_MakeNonTerminal(s: afxprLANGSPEC_Category):
+                                            afxprDECL_pSnode; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : afxprDECL_Convinttostring
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION afxprDECL_Convinttostring(int:INTEGER):
+                                            TSTRING_string; EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : counter
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION counter:INTEGER; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assigncounter
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE assigncounter(valeu:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : warning
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION warning:BOOLEAN; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assignwarning
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE assignwarning(valeu:BOOLEAN); EXTERNAL;
+
+FUNCTION converttointeger(CONST str1:STRING; len: INTEGER)
+:INTEGER; EXTERNAL;
+
+END {afxprDECL};

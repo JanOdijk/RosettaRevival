@@ -1,0 +1,2440 @@
+
+%UTT
+BASIS RULE
+  UTT = LANGVERSION/1.[PARAMETERSTRANS/2].RULESTRANS/3
+
+SURFACE PART
+HELP function initfun:BOOLEAN;
+BEGIN
+initfun:=TRUE;
+assigncounter(0)
+END;
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:initfun
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_UTT;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR pairsets::setofpairsets; 
+    pairset::pairset;
+    pairs::setofpairs;
+    idents::setofidents;
+    ident::ident;
+    pair::pair;
+    intequals:LOCALFILE;
+BEGIN 
+INIT:BEGIN 
+     END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+                 TFILES_open(of1,'anofpas',7,3);
+                 BEGIN
+                   \of1.\GLOBAL.\\
+"EXPORT(LDANILRULES);"\\
+"pragma C_include('lsparams.pf');"\\
+"pragma C_include('lsdomaint.pf');"\\
+"pragma C_include('ldanilrules.pf');"\\
+"pragma C_include('hiltree.pf');"\\
+"pragma C_include('liilrules.pf');"\\
+"pragma C_include('ldmrules.pf');"\\
+                   "PROGRAM LDANILRULES;"\\\\
+"WITH lsparams,lsdomaint,"
+"hiltree,liilrules,ldmrules;"\\
+                   " FUNCTION LDAnIlrules_RuleTransFer("\\
+                   " R:LDMrules_Ruleindex;ps:LDMrules_LiParameters):"\\
+                   " HILtree_SetOfHyperNodeElt;"\\
+                   " VAR resultelt:HILTREE_HyperNodeElt;"\\
+                   " p:HILTREE_pHyperNodeElt;"\\
+                   " result,result1,result2,helpresult1:HILTREE_SetOfHyperNodeElt;"\\
+                   " lsps:LSPARAMS_precord;"\\
+                   " lips:LIILRULES_ilparams;"\\
+                   " X1,X2,X3:INTEGER;"\\
+                 END;
+                 TFILES_open(of2,'genofpas',8,3);
+                 BEGIN
+                   \of2.\GLOBAL.\\
+"EXPORT(LDGENILRULES);"\\
+"pragma C_include('lsparams.pf');"\\
+"pragma C_include('lsdomaint.pf');"\\
+"pragma C_include('ldgenilrules.pf');"\\
+"pragma C_include('hiltree.pf');"\\
+"pragma C_include('liilrules.pf');"\\
+"pragma C_include('ldmrules.pf');"\\
+"pragma C_include('hyperdtree.pf');"\\
+"pragma C_include('mem.pf');"\\
+                   "PROGRAM LDGENILRULES;"\\\\
+"WITH lsparams,lsdomaint,"
+"hiltree,liilrules,ldmrules,hyperdtree,mem;"\\
+                   " FUNCTION LDGenIlrules_RuleTransFer("\\
+                   " R:LIILrules_Ruleindex;ps:LIILrules_LiParameters):"\\
+                   " HyperDtree_SetOfHNECluster;"\\
+                   " VAR resultelt:HYPERDTREE_HyperNodeElt;"\\
+                   " p:HYPERDTREE_pHyperNodeElt;"\\
+                   " result:HYPERDTREE_setofHNECluster;"\\
+                   " result1,result2,helpresult1:HYPERDTREE_SetOfHyperNodeElt;"\\
+                   " lsps,lsps1:LSPARAMS_precord;"\\
+                   " X1,X2,X3:INTEGER;"\\
+                 END;
+               END
+   *>
+2: <* SEND: BEGIN pairsets:=%PARAMETERSTRANS.pairsets END
+      !PARAMETERSTRANS.
+      RECEIVE: BEGIN
+               END
+   *>
+3: <* SEND: BEGIN \of1.\GLOBAL.
+"procedure appendresults(result1:HILTREE_SetOfHyperNodeElt;"\\
+"            VAR result:HILTREE_SetOfHyperNodeElt);"\\
+"VAR node:HILTREE_pHypernodeelt;listrec:HILTREE_LoHyperIltree;"\\
+"BEGIN"\\
+"IF HILTREE_Isemptynode(result) THEN result:=result1 ELSE BEGIN"\\
+"WHILE NOT HILTREE_Isemptynode(result1) DO"\\
+" BEGIN"\\
+" HILTREE_Takefromnode(node,result1);"\\
+" HILTREE_Addtonode(node,result);"\\
+" END;"\\
+"END;"\\
+"END;"\\
+
+{also:
+"IF NOT(HILTREE_Isemptynode(result1)) THEN BEGIN"\\
+"HILtree_LoadLoHyperILtree(result.last,listrec);"\\
+"listrec.next:=result1.first;"\\
+"HILtree_StoreLoHyperILtree(result.last,listrec);"\\
+"result.last:=result1.last END END;"\\}
+                  \of2.\GLOBAL.
+"procedure appendresults(sg:INTEGER;result1:HYPERDTREE_SetOfHyperNodeElt;"\\
+"            VAR result:HYPERDTREE_SetOfHNECluster);"\\
+"VAR helpset1,helpset2:HYPERDTREE_SetOfHNECluster;"\\
+"    cluster:HYPERDTREE_setofhypernodeelt;"\\
+"    found:BOOLEAN;"\\
+"procedure appendresults(result1:HYPERDTREE_SetOfHyperNodeElt;"\\
+"            VAR result:HYPERDTREE_SetOfHyperNodeElt);"\\
+"VAR node:HYPERDTREE_pHypernodeelt;"\\
+"BEGIN"\\
+"IF HYPERDTREE_Isemptynode(result) THEN result:=result1 ELSE BEGIN"\\
+"IF NOT(HYPERDTREE_Isemptynode(result1)) THEN BEGIN"\\
+"result.last^.next:=result1.first;"\\
+"result.last:=result1.last END END;"\\
+{also:
+"WHILE NOT HYPERDTREE_Isemptynode(result1) DO"\\
+" BEGIN"\\
+" HYPERDTREE_Takefromnode(node,result1);"\\
+" HYPERDTREE_Addtonode(node,result);"\\
+" END;"\\}
+"END;"\\
+"BEGIN"\\
+"helpset1:=result;"\\
+"found:=FALSE;"\\
+"WHILE NOT(HYPERDTREE_isemptyclusterset(helpset1)) AND NOT(found) DO"\\
+" BEGIN"\\
+" helpset2:=helpset1;"\\
+" HYPERDTREE_takeCluster(cluster,helpset1);"\\
+" IF cluster.sg=sg THEN"\\
+"   BEGIN"\\
+"   found:=TRUE;"\\
+"   appendresults(result1,helpset2.first^.elts);"\\
+"   END;"\\
+" END;"\\
+"IF NOT found THEN"\\
+"  BEGIN"\\
+"  cluster:=result1;"\\
+"  cluster.sg:=sg;"\\
+"  HYPERDTREE_Addcluster(cluster,result)"\\
+"  END;"\\
+"END;"\\
+            %%RULESTRANS.pairsets:=pairsets;
+            END
+      !RULESTRANS.
+      RECEIVE: BEGIN intequals:=%%RULESTRANS.intequals;
+                     appendfile(intequals,of1);
+                     appendfile(%%RULESTRANS.intequals,of2);
+                  \of1.\GLOBAL.
+                   "BEGIN"\\
+                   "resultelt.nodeKind := Hiltree_RuleNode;"\\
+                   "HILTREE_EmptyNode(result);"\\
+                   "HILTREE_EmptyNode(result1);"\\
+                  \of2.\GLOBAL.
+                   "BEGIN"\\
+                   "resultelt.nodeKind := HyperDtree_RuleNode;"\\
+                   "HYPERDTREE_EmptyClusterSet(result);"\\
+                   "HYPERDTREE_EmptyNode(result1);"\\
+                     appendfile(%%RULESTRANS.anfile,of1);
+                     appendfile(%%RULESTRANS.genfile,of2);
+               END
+   *>
+*>
+FINAL: BEGIN \of1.\GLOBAL.
+                    "LDANILRULES_RuleTransfer:=result;"\\
+                    "END;"\\ 
+             \of2.\GLOBAL.
+                    "LDGENILRULES_RuleTransfer:=result;"\\
+                    "END;"\\ 
+             TFILES_close(of1);
+             TFILES_close(of2);
+       END
+END;
+&
+
+%PARAMETERSTRANS
+BASIS RULE
+  PARAMETERSTRANS = PARAMETER/1.TRANSLATION/1.LEFTARROW/1.{PARAMETERTRANS/2}.RIGHTARROW/1
+
+SURFACE PART
+VAR pairsets::setofpairsets;
+
+<*
+ INIT:BEGIN initsetofpairsets(pairsets);
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN appendpairset(%PARAMETERTRANS.pairset,pairsets);
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_PARAMETERSTRANS;
+                  $PARAMETERSTRANS.pairsets:=pairsets;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR  
+BEGIN
+INIT: BEGIN
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !PARAMETERTRANS.
+      RECEIVE: BEGIN
+               END
+   *>
+*>
+FINAL:BEGIN 
+      END
+END;
+&
+
+%PARAMETERTRANS
+BASIS RULE
+  PARAMETERTRANS = PARAMNAME/2.COLON/1.TYPENAME/7.LEFTARROW/4
+                   .DASH/1.RIGHTARROW/5.PARAMNAME/3.COLON/1.TYPENAME/8
+                   .EQUIVALENT/1.
+                   ROUNDOPEN/1.ELEMENTTRANS/6.{COMMA/1.ELEMENTTRANS/6}.ROUNDCLOSE/1
+SURFACE PART
+VAR leftpresent,rightpresent::bool;
+    pairset::pairset;
+
+<*
+ INIT:BEGIN leftpresent:=false;rightpresent:=false;
+            initsetofpairs(pairset.pairs);
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN pairset.mruparam:=%PARAMNAME.str;
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN pairset.ilparam:=%PARAMNAME.str;
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN leftpresent:=true
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN rightpresent:=true
+                          END
+       *>
+6:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN appendpair(%ELEMENTTRANS.pair,pairset.pairs);
+                          END
+       *>
+7:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN pairset.mrutype:=%TYPENAME.str
+                          END
+       *>
+8:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN pairset.iltype:=%TYPENAME.str
+                          END
+       *>
+FINAL: #CONDITION: leftpresent or rightpresent
+       #ACTION: BEGIN
+                  SEND_PARAMETERTRANS;
+                  $PARAMETERTRANS.pairset:=pairset;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR 
+BEGIN
+INIT: BEGIN 
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+3: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+4: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+5: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+6: <* SEND: BEGIN END
+      !ELEMENTTRANS.
+      RECEIVE: BEGIN
+               END
+   *>
+7: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+8: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+*>
+FINAL:BEGIN
+      END
+END;
+&
+
+%ELEMENTTRANS
+BASIS RULE
+  ELEMENTTRANS = (VALUENAME/2|SETVALUENAME/6).
+                    {BAR/8.(VALUENAME/2|SETVALUENAME/6)}.
+                  [LEFTARROW/4].DASH/1.[RIGHTARROW/5].
+                 (VALUENAME/3|SETVALUENAME/7).
+                    {BAR/9.(VALUENAME/3|SETVALUENAME/7)}
+
+SURFACE PART
+VAR leftpresent,rightpresent::bool;
+    pair::pair;
+    identset::identset;
+    ident::ident;
+
+<*
+ INIT:BEGIN leftpresent:=false;rightpresent:=false;
+            initsetofidents(pair.lefts);
+            initsetofidents(pair.rights);
+            initsetofidentsets(pair.leftsets);
+            initsetofidentsets(pair.rightsets);
+            pair.leftsetvalued:=false;
+            pair.rightsetvalued:=false;
+            pair.leftpresent:=false;
+            pair.rightpresent:=false;
+            leftpresent:=false;
+            rightpresent:=false;
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN ident.str:=%VALUENAME.str;
+                                appendident(ident,pair.lefts);
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN ident.str:=%VALUENAME.str;
+                                appendident(ident,pair.rights);
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN leftpresent:=true;
+                                pair.leftpresent:=true;
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN rightpresent:=true;
+                                pair.rightpresent:=true;
+                          END
+       *>
+6:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN pair.leftsetvalued:=true;
+                                identset.val:=%SETVALUENAME.copy;
+                                appendidentset(identset,pair.leftsets);
+                          END
+       *>
+7:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN identset.val:=%SETVALUENAME.copy;
+                                pair.rightsetvalued:=true;
+                                appendidentset(identset,pair.rightsets);
+                          END
+       *>
+8:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+9:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: leftpresent or rightpresent
+       #ACTION: BEGIN
+                  SEND_ELEMENTTRANS;
+                  $ELEMENTTRANS.pair:=pair;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR 
+BEGIN
+INIT: BEGIN 
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+3: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+4: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+5: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+6: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+7: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+8: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+9: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+*>
+FINAL:BEGIN
+      END
+END;
+&
+
+%LANGVERSION
+BASIS RULE
+  LANGVERSION = LANGUAGE/2 . COLON/2 . IDENTIFIER/1 
+
+SURFACE PART
+HELP FUNCTION CheckLanguage(str:TSTRING_String):BOOLEAN;
+     BEGIN
+       IF (str='DUTCH') OR (str='ENGLISH') OR (str='SPANISH') 
+                   THEN CheckLanguage:=TRUE
+                   ELSE CheckLanguage:=FALSE;
+     END;     
+
+<*
+  INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:CheckLanguage(%.str)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_LANGVERSION;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR language : TSTRING_string;
+BEGIN
+INIT: BEGIN 
+      END;
+<*
+1: <* SEND: BEGIN
+              language:=%.str;
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN
+        $$LANGVERSION.language:=language;
+      END
+END;
+&
+
+%RULESTRANS
+BASIS RULE
+  RULESTRANS = RULE/1.TRANSLATION/1.LEFTARROW/1 . {RULETRANS/2} . RIGHTARROW/1
+
+SURFACE PART
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN 
+                         END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_RULESTRANS;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR 
+   rightpresent,leftpresent::bool;
+   rightsimples,leftsimples::setofsimples;
+   intequals,leftcopy,rightcopy,anfile,genfile,helpfile:LOCALFILE;
+   ilrulenr,mrulenr::int;
+   helpcodes,leftnumcodes,rightnumcodes,numcodes::setofnumcodes;
+   numcode::numcode;
+   pairsets::setofpairsets;
+HELP PROCEDURE MERGEleftnumcode(numcode::numcode);
+     VAR table::setofnumcodes;
+         numcode1::numcode;
+         found::bool;
+     BEGIN
+     table:=leftnumcodes;
+     found:=false;
+     WHILE stillnumcodes(table) and not found DO
+       BEGIN
+       takenumcode(numcode1,table);
+       IF numcode1.num=numcode.num THEN found:=true
+       END;
+     IF not found then appendnumcode(numcode,leftnumcodes)
+     ELSE
+       BEGIN
+       table:=leftnumcodes;
+       initsetofnumcodes(leftnumcodes);
+       WHILE stillnumcodes(table) DO
+         BEGIN
+         takenumcode(numcode1,table);
+         IF numcode1.num=numcode.num THEN
+           BEGIN
+           appendlocfile(numcode.code,numcode1.code);
+           END;
+         appendnumcode(numcode1,leftnumcodes);
+         END;
+       END;
+     END;
+PROCEDURE MERGErightnumcode(numcode::numcode);
+     VAR table::setofnumcodes;
+         numcode1::numcode;
+         found::bool;
+     BEGIN
+     table:=rightnumcodes;
+     found:=false;
+     WHILE stillnumcodes(table) and not found DO
+       BEGIN
+       takenumcode(numcode1,table);
+       IF numcode1.num=numcode.num THEN found:=true
+       END;
+     IF not found then appendnumcode(numcode,rightnumcodes)
+     ELSE
+       BEGIN
+       table:=rightnumcodes;
+       initsetofnumcodes(rightnumcodes);
+       WHILE stillnumcodes(table) DO
+         BEGIN
+         takenumcode(numcode1,table);
+         IF numcode1.num=numcode.num THEN
+           BEGIN
+           appendlocfile(numcode.code,numcode1.code);
+           END;
+         appendnumcode(numcode1,rightnumcodes);
+         END;
+       END;
+     END;
+BEGIN
+INIT: BEGIN initlocalfile(anfile);
+            initlocalfile(genfile);
+            initlocalfile(intequals);
+            initsetofnumcodes(rightnumcodes);
+            initsetofnumcodes(leftnumcodes);
+            pairsets:=$$RULESTRANS.pairsets;
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN %%RULETRANS.pairsets:=pairsets END
+      !RULETRANS.
+      RECEIVE: BEGIN
+              appendlocfile(%%RULETRANS.intequals,intequals);
+              leftpresent:=%RULETRANS.leftpresent;
+              rightpresent:=%RULETRANS.rightpresent;
+              IF leftpresent THEN
+                BEGIN
+                numcodes:=%%RULETRANS.leftnumcodes;
+                WHILE stillnumcodes(numcodes) DO
+                  BEGIN
+                  takenumcode(numcode,numcodes);
+                  mergeleftnumcode(numcode);
+                  END;
+                END;
+              IF rightpresent THEN
+                BEGIN
+                numcodes:=%%RULETRANS.rightnumcodes;
+                WHILE stillnumcodes(numcodes) DO
+                  BEGIN
+                  takenumcode(numcode,numcodes);
+                  mergerightnumcode(numcode);
+                  END;
+                END;
+            END;
+   *>
+*>
+FINAL:BEGIN \genfile.\LOCAL.
+            helpcodes:=leftnumcodes;
+            "IF R IN [0..254] THEN"\\
+            helpcodes:=leftnumcodes;
+            "CASE R OF"\\
+             WHILE stillnumcodes(helpcodes) DO
+               BEGIN
+               takenumcode(numcode,helpcodes);
+               IF numcode.num<=254 THEN
+                 BEGIN
+                 """numcode.num""" " :BEGIN"\\
+                 appendlocfile(numcode.code,genfile);
+                 " END;"\\
+                 END;
+               END;
+             "END;{CASE}"\\
+            "R:=R-254;"\\
+            helpcodes:=leftnumcodes;
+            "IF R >0 THEN IF R<=254 THEN"\\
+            helpcodes:=leftnumcodes;
+            "CASE R OF"\\
+            "0: BEGIN END;"\\{omdat de case niet leeg mag zijn}
+             WHILE stillnumcodes(helpcodes) DO
+               BEGIN
+               takenumcode(numcode,helpcodes);
+               IF numcode.num>254 THEN IF numcode.num<=508 THEN
+                 BEGIN
+                 """numcode.num-254""" " :BEGIN"\\
+                 appendlocfile(numcode.code,genfile);
+                 " END;"\\
+                 END;
+               END;
+             "END;{CASE}"\\
+            "R:=R-254;"\\
+            helpcodes:=leftnumcodes;
+            "IF R >0 THEN"\\
+            helpcodes:=leftnumcodes;
+            "CASE R OF"\\
+            "0: BEGIN END;"\\{omdat de case niet leeg mag zijn}
+             WHILE stillnumcodes(helpcodes) DO
+               BEGIN
+               takenumcode(numcode,helpcodes);
+               IF numcode.num>762 THEN 
+                  writeln('total number of rules exceeded, WARN Rene');
+               IF numcode.num>508 THEN
+                 BEGIN
+                 """numcode.num-508""" " :BEGIN"\\
+                 appendlocfile(numcode.code,genfile);
+                 " END;"\\
+                 END;
+               END;
+             "END;{CASE}"\\
+            \anfile.\LOCAL. 
+            helpcodes:=rightnumcodes;
+            "IF R IN [0..254] THEN"\\
+            helpcodes:=rightnumcodes;
+            "CASE R OF"\\
+             WHILE stillnumcodes(helpcodes) DO
+               BEGIN
+               takenumcode(numcode,helpcodes);
+               IF numcode.num<=254 THEN
+                 BEGIN
+                 """numcode.num""" " :BEGIN"\\
+                 appendlocfile(numcode.code,anfile);
+                 " END;"\\
+                 END;
+               END;
+            "END;{CASE}"\\
+            "R:=R-254;"\\
+            helpcodes:=rightnumcodes;
+            "IF R >0 THEN IF R<=254 THEN"\\
+            helpcodes:=rightnumcodes;
+            "CASE R OF"\\
+            "0: BEGIN END;"\\{omdat de case niet leeg mag zijn}
+             WHILE stillnumcodes(helpcodes) DO
+               BEGIN
+               takenumcode(numcode,helpcodes);
+               IF numcode.num>254 THEN IF numcode.num<=508 THEN
+                 BEGIN
+                 """numcode.num-254""" " :BEGIN"\\
+                 appendlocfile(numcode.code,anfile);
+                 " END;"\\
+                 END;
+               END;
+            "END;{CASE}"\\
+            "R:=R-254;"\\
+            helpcodes:=rightnumcodes;
+            "IF R >0 THEN"\\
+            helpcodes:=rightnumcodes;
+            "CASE R OF"\\
+            "0: BEGIN END;"\\{omdat de case niet leeg mag zijn}
+             WHILE stillnumcodes(helpcodes) DO
+               BEGIN
+               takenumcode(numcode,helpcodes);
+               IF numcode.num>762 THEN 
+                  writeln('total number of rules exceeded, WARN Rene');
+               IF numcode.num>508 THEN
+                 BEGIN
+                 """numcode.num-508""" " :BEGIN"\\
+                 appendlocfile(numcode.code,anfile);
+                 " END;"\\
+                 END;
+               END;
+            "END;{CASE}"\\
+            $$RULESTRANS.intequals:=intequals;
+            $$RULESTRANS.genfile:=genfile;
+            $$RULESTRANS.anfile:=anfile;
+      END
+END;
+&
+
+
+%RULETRANS
+BASIS RULE
+  RULETRANS = MRULENAME/2.[CURLYOPEN/1.{ANDCOND/6}.CURLYCLOSE/1].
+              {(COMMA/8|BAR/8).MRULENAME/2.[CURLYOPEN/1.{ANDCOND/6}.CURLYCLOSE/1]}.
+                     [LEFTARROW/4].DASH/1.[RIGHTARROW/5].
+              ILRULENAME/3.[CURLYOPEN/1.{ANDCOND/7}.CURLYCLOSE/1].
+              {(COMMA/9|BAR/9).ILRULENAME/3.[CURLYOPEN/1.{ANDCOND/7}.CURLYCLOSE/1]}.
+              [[COLON/1].(SBONUS/10|WBONUS/11).[DASH/12|PLUS/13].IDENTIFIER/14]
+SURFACE PART
+VAR leftpresent,rightpresent,leftsimple,rightsimple::bool;
+    str:TSTRING_string;
+    len:STRING_range;
+    str1:STRING(5);
+    minus::bool;
+    sbonuspres,wbonuspres::bool;
+    sbonusval,wbonusval::int;
+
+<*
+ INIT:BEGIN leftpresent:=false;
+            rightpresent:=false;
+            leftsimple:=true;
+            rightsimple:=true;
+            wbonuspres:=false;
+            sbonuspres:=false;
+            wbonusval:=0;
+            sbonusval:=0;
+            minus:=false;
+      END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN str:=%MRULENAME.str
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN leftpresent:=true;
+                                IF not leftsimple THEN
+      writeln('left hand side of translation of Mrules including ',str,' not simple');
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN rightpresent:=true;
+                          END
+       *>
+6:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN leftsimple:=leftsimple AND %ANDCOND.simple
+                          END
+       *>
+7:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN rightsimple:=rightsimple AND %ANDCOND.simple;
+                                IF rightpresent and (not rightsimple) THEN
+         writeln('right hand side of translation of Mrule ',str,' not simple');
+                          END
+       *>
+8:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+9:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+10:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN sbonuspres:=TRUE
+                          END
+       *>
+11:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN wbonuspres:=TRUE
+                          END
+       *>
+12:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN minus:=TRUE
+                          END
+       *>
+13:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+14:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          IF sbonuspres THEN
+                           BEGIN
+                           TSTRING_extractchars(str1,len,%.str,1,
+                                                       STRING_length(%.str));
+                           sbonusval:=converttointeger(str1,len);
+                           IF minus THEN sbonusval:=-sbonusval;
+                           END
+                          ELSE
+                           BEGIN
+                           TSTRING_extractchars(str1,len,%.str,1,
+                                                        STRING_length(%.str));
+                           wbonusval:=converttointeger(str1,len);
+                           IF minus THEN wbonusval:=-wbonusval;
+                           END
+                          END
+       *>
+FINAL: #CONDITION: (NOT(leftpresent) OR leftsimple) AND
+                   (NOT(rightpresent) OR rightsimple) AND
+                   (leftpresent OR rightpresent)
+       #ACTION: BEGIN
+                  SEND_RULETRANS;
+                  $RULETRANS.leftpresent:=leftpresent;
+                  $RULETRANS.rightpresent:=rightpresent;
+                  $RULETRANS.wbonus:=wbonusval+1000*sbonusval;
+                  $RULETRANS.sbonus:=sbonusval;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR leftsimples,rightsimples,rightsimples1::setofsimples;
+    simplesets1,simplesets2,rightsimplesets,leftsimplesets::setofsimplesets;
+    simpleset::simpleset;
+    wbonus,sbonus::int;
+    found::bool;
+    simple::simple;
+    mparamlist:LDMRULES_paramlist;
+    ilparamlist:LIILRULES_paramlist;
+    leftpresent,rightpresent::bool;
+    intequals,helpfile,leftcopy,rightcopy,tempfile:LOCALFILE;
+    numofleftconds,numofrightconds::int;
+    ilrulenr,Mrulenr,sgnr::int;
+    str: STR_string;
+    len:STRING_range;
+    paramname:TSTRING_string;
+    leftnumcodes,rightnumcodes::setofnumcodes;
+    numcode::numcode;
+    pairsets::setofpairsets;
+    pairset::pairset;
+    pairs::setofpairs;
+    pair::pair;
+    leftsets,rightsets::setofidentsets;
+    identset::identset;
+    lefts,rights::setofidents;
+    identset1,identset2::identset;
+    ident::ident;
+HELP 
+     FUNCTION FINDILPARAM(pairsets::setofpairsets;str:TSTRING_string;
+                ilparamlist:LIILRULES_paramlist)::pairset;
+     VAR result,ilparamname:TSTRING_string;
+         pairset::pairset;
+         found::bool;
+         list:LIILRULES_paramlist;
+     BEGIN
+     initsetofpairs(pairset.pairs);
+     found:=false;
+     TSTRING_constantempty(result);
+     WHILE stillpairsets(pairsets) and not found DO
+       BEGIN
+       takepairset(pairset,pairsets);
+       found:=(TSTRING_compare(pairset.mruparam,str)=0);
+       IF found THEN
+         BEGIN
+         found:=FALSE;
+         list:=ilparamlist;
+         WHILE (list<>NIL) AND NOT(found) DO
+           BEGIN
+           TSTRING_constant(ilparamname,list^.paramname,
+                                         list^.length);
+           found:=(TSTRING_compare(pairset.ilparam,ilparamname)=0);
+           list:=list^.next
+           END;
+         END;
+       END;
+     IF found THEN result:=pairset.ilparam
+     ELSE writeln('WARNING no translation for MRULE-parameter ',str);
+     findilparam:=pairset;
+     END;
+     FUNCTION FINDMRUPARAM(pairsets::setofpairsets;str:TSTRING_string;
+                          mparamlist:LDMRULES_paramlist)::pairset;
+     VAR result,mparamname:TSTRING_string;
+         pairset::pairset;
+         found::bool;
+         list:LDMRULES_paramlist;
+     BEGIN
+     initsetofpairs(pairset.pairs);
+     found:=false;
+     TSTRING_constantempty(result);
+     WHILE stillpairsets(pairsets) and not found DO
+       BEGIN
+       takepairset(pairset,pairsets);
+       found:=(TSTRING_compare(pairset.ilparam,str)=0);
+       IF found THEN
+         BEGIN
+         found:=FALSE;
+         list:=mparamlist;
+         WHILE (list<>NIL) AND NOT(found) DO
+           BEGIN
+           TSTRING_constant(mparamname,list^.paramname,
+                                         list^.length);
+           found:=(TSTRING_compare(pairset.mruparam,mparamname)=0);
+           list:=list^.next
+           END;
+         END;
+       END;
+     IF found THEN result:=pairset.mruparam
+     ELSE writeln('WARNING no translation for IL-parameter ',str);
+     findmruparam:=pairset;
+     END;
+     PROCEDURE MERGEleftnumcode(numcode::numcode);
+     VAR table::setofnumcodes;
+         numcode1::numcode;
+         found::bool;
+     BEGIN
+     table:=leftnumcodes;
+     found:=false;
+     WHILE stillnumcodes(table) and not found DO
+       BEGIN
+       takenumcode(numcode1,table);
+       IF numcode1.num=numcode.num THEN found:=true
+       END;
+     IF not found then appendnumcode(numcode,leftnumcodes)
+     ELSE
+       BEGIN
+       table:=leftnumcodes;
+       initsetofnumcodes(leftnumcodes);
+       WHILE stillnumcodes(table) DO
+         BEGIN
+         takenumcode(numcode1,table);
+         IF numcode1.num=numcode.num THEN
+           BEGIN
+           appendlocfile(numcode.code,numcode1.code);
+           END;
+         appendnumcode(numcode1,leftnumcodes);
+         END;
+       END;
+     END;
+PROCEDURE MERGErightnumcode(numcode::numcode);
+     VAR table::setofnumcodes;
+         numcode1::numcode;
+         found::bool;
+     BEGIN
+     table:=rightnumcodes;
+     found:=false;
+     WHILE stillnumcodes(table) and not found DO
+       BEGIN
+       takenumcode(numcode1,table);
+       IF numcode1.num=numcode.num THEN found:=true
+       END;
+     IF not found then appendnumcode(numcode,rightnumcodes)
+     ELSE
+       BEGIN
+       table:=rightnumcodes;
+       initsetofnumcodes(rightnumcodes);
+       WHILE stillnumcodes(table) DO
+         BEGIN
+         takenumcode(numcode1,table);
+         IF numcode1.num=numcode.num THEN
+           BEGIN
+           appendlocfile(numcode.code,numcode1.code);
+           END;
+         appendnumcode(numcode1,rightnumcodes);
+         END;
+       END;
+     END;
+BEGIN
+INIT: BEGIN initsetofsimples(leftsimples);
+            initsetofsimples(rightsimples);
+            initsetofsimplesets(leftsimplesets);
+            initsetofsimplesets(rightsimplesets);
+            numofleftconds:=0;
+            numofrightconds:=0;
+            initlocalfile(leftcopy);
+            initlocalfile(rightcopy);
+            leftpresent:=$RULETRANS.leftpresent;
+            rightpresent:=$RULETRANS.rightpresent;
+            mrulenr:=-1;
+            initlocalfile(intequals);
+            initsetofnumcodes(leftnumcodes);
+            initsetofnumcodes(rightnumcodes);
+            pairsets:=$$RULETRANS.pairsets;
+            wbonus:=$RULETRANS.wbonus;
+            sbonus:=$RULETRANS.sbonus;
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN TSTRING_extractchars(str,len,%.str,0,TSTRING_length(%MRULENAME.str));
+                  mrulenr:=-1;
+                  LDMRULES_rulenumber(mrulenr,str,len);
+                  IF mrulenr=-1 THEN
+                    BEGIN
+                    mrulenr:=1;
+                    writeln('WARNING: unknown Mrule ',%MRULENAME.str);
+                    END;
+                  sgnr:=-1;
+                  LDMRULES_subgrammarnumber(mrulenr,sgnr);
+                  IF sgnr=-1 THEN BEGIN
+                    writeln('WARNING:RULE ',%MRULENAME.str,' is not in any SUBGRAMMAR');
+                    END;
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN  TSTRING_extractchars(str,len,%.str,0,TSTRING_length(%ILRULENAME.str));
+                   LIILRULES_Rulenumber(ilrulenr,str,len);
+                  IF ilrulenr=-1 THEN
+                    BEGIN
+                    ilrulenr:=1;
+                    writeln('WARNING: unknown ILrule ',%ILRULENAME.str);
+                    END;
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+4: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+5: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+6: <* SEND: BEGIN numofleftconds:=numofleftconds+1;
+                  %%ANDCOND.rulenumber:=mrulenr;
+            END
+      !ANDCOND.
+      RECEIVE: BEGIN appendlocfile(%%ANDCOND.intequals,intequals);
+                     IF leftpresent THEN
+                     appendsimple(%%ANDCOND.simple,leftsimples);
+                     \leftcopy.\LOCAL.
+                     IF numofleftconds=1 THEN "("
+                     IF numofleftconds>1 THEN BEGIN " AND (" \\ END;
+                     appendlocfile(%%ANDCOND.copy,leftcopy);
+                     ")"
+               END
+   *>
+7: <* SEND: BEGIN numofrightconds:=numofrightconds+1;
+                  %%ANDCOND.rulenumber:=ilrulenr;
+            END
+      !ANDCOND.
+      RECEIVE: BEGIN appendlocfile(%%ANDCOND.intequals,intequals);
+                     IF rightpresent THEN
+                     appendsimple(%%ANDCOND.simple,rightsimples);
+                     \rightcopy.\LOCAL.
+                     IF numofrightconds=1 THEN "("
+                     IF numofrightconds>1 THEN BEGIN " AND (" \\ END;
+                     appendlocfile(%%ANDCOND.copy,rightcopy);
+                     ")"
+               END
+   *>
+8: <* SEND: BEGIN \leftcopy.\LOCAL.
+                  IF numofleftconds=0 THEN 
+                    BEGIN initlocalfile(leftcopy);" TRUE " \\ END;
+                  simpleset.val:=leftsimples;
+                  simpleset.copy:=leftcopy;
+                  simpleset.rulenr:=mrulenr;
+                  appendsimpleset(simpleset,leftsimplesets);
+                  numofleftconds:=0;
+                  initlocalfile(leftcopy);
+                  initsetofsimples(leftsimples);
+            END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+9: <* SEND: BEGIN \rightcopy.\LOCAL.
+                  IF numofrightconds=0 THEN 
+                    BEGIN initlocalfile(rightcopy); "TRUE " \\ END;
+                  simpleset.val:=rightsimples;
+                  simpleset.copy:=rightcopy;
+                  simpleset.rulenr:=ilrulenr;
+                  appendsimpleset(simpleset,rightsimplesets);
+                  numofrightconds:=0;
+                  initlocalfile(rightcopy);
+                  initsetofsimples(rightsimples);
+            END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+10: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+11: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+12: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+13: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+14: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+*>
+FINAL:BEGIN   \leftcopy.\LOCAL.
+                  IF numofleftconds=0 THEN BEGIN initlocalfile(leftcopy);" TRUE " \\ END;
+              \rightcopy.\LOCAL.
+                  IF numofrightconds=0 THEN BEGIN initlocalfile(rightcopy); " TRUE " \\ END;
+              simpleset.val:=leftsimples;
+              simpleset.copy:=leftcopy;
+              simpleset.rulenr:=mrulenr;
+              appendsimpleset(simpleset,leftsimplesets);
+              simpleset.val:=rightsimples;
+              simpleset.copy:=rightcopy;
+              simpleset.rulenr:=ilrulenr;
+              appendsimpleset(simpleset,rightsimplesets);
+              IF leftpresent THEN
+               BEGIN
+               \helpfile.\LOCAL.
+               simplesets1:=rightsimplesets;
+               WHILE stillsimplesets(simplesets1) DO
+                BEGIN
+                takesimpleset(simpleset,simplesets1);
+                rightcopy:=simpleset.copy;
+                ilrulenr:=simpleset.rulenr;
+                rightsimples:=simpleset.val;
+                simplesets2:=leftsimplesets;
+                WHILE stillsimplesets(simplesets2) DO
+                  BEGIN
+                  initlocalfile(helpfile);
+                  takesimpleset(simpleset,simplesets2);
+                  leftsimples:=simpleset.val;
+                  leftcopy:=simpleset.copy;
+                  mrulenr:=simpleset.rulenr;
+                  " HYPERDTREE_emptyNode(result1);"\\
+                  " WITH ps.params DO BEGIN"\\
+                  "IF "
+                  savelocfile(rightcopy,tempfile);
+                  appendlocfile(tempfile,helpfile);
+                  LDMRULES_subgrammarnumber(mrulenr,sgnr);
+                  " THEN BEGIN"\\
+                  IF wbonus<0 THEN BEGIN "resultelt.bonus:=-" """-wbonus""" ";"\\
+                  END ELSE BEGIN "resultelt.bonus:=" """wbonus""" ";" \\ END;
+                  "      resultelt.sg:=" """sgnr""" ";"\\
+                  "      resultelt.R:=" """mrulenr""" ";"\\
+                  "      MEM_newdefault(loopholes.sizeof(LSPARAMS_record)," 
+                         "loopholes.retype(lsps,MEM_ptr));"\\ 
+                  "      lsps^.rulenr:=" """mrulenr""" ";"\\
+                  "      resultelt.parameters.rulenr:=" """mrulenr""" ";"\\
+                  "      resultelt.parameters.subst:=ps.subst;"\\
+                  "      resultelt.parameters.index:=-1;"\\
+                  LDMRULES_ruleparameters(mrulenr,mparamlist);
+                  WHILE mparamlist<>NIL DO
+                    BEGIN
+                    TSTRING_constant(paramname,mparamlist^.paramname,
+                                          mparamlist^.length);
+                    IF TSTRING_comparechars(paramname,'LEVEL',5)=0 THEN
+                      BEGIN
+                      "    resultelt.parameters.index:=ps.index;"\\
+                      END;
+                    mparamlist:=mparamlist^.next;
+                    END;
+                  WHILE stillsimples(leftsimples) DO
+                    BEGIN
+                    takesimple(simple,leftsimples);
+                    savelocfile(simple.valeu,tempfile);
+                    " lsps^.X" """mrulenr""" ""simple.param""
+                     ":=" appendlocfile(tempfile,helpfile); ";"\\
+                    END;
+                  " resultelt.parameters.ls:=loopholes.retype" 
+                   "(lsps,LDMRULES_lsparams);"\\
+                  " MEM_newdefault(loopholes.sizeof" "(HYPERDTREE_hypernodeelt),"
+                    "loopholes.retype(p,MEM_ptr));"\\
+                  " p^:=resultelt;"\\
+                  " HYPERDTREE_AddToNode(p,result1);"\\
+                  LDMRULES_ruleparameters(mrulenr,mparamlist);
+                  LIILRULES_ruleparameters(ilrulenr,ilparamlist);
+                  WHILE mparamlist<>NIL DO
+                    BEGIN
+                    TSTRING_constant(paramname,mparamlist^.paramname,
+                                          mparamlist^.length);
+                    IF TSTRING_comparechars(paramname,'LEVEL',5)<>0 THEN
+                      BEGIN
+                      found:=false;
+                      leftsimples:=simpleset.val;
+                      WHILE stillsimples(leftsimples) and not found DO
+                        BEGIN
+                        takesimple(simple,leftsimples);
+                        found := TSTRING_compare(simple.param,paramname)=0
+                        END;
+                      IF not found THEN
+                        BEGIN
+                        pairset:=findilparam(pairsets,paramname,ilparamlist);
+                        pairs:=pairset.pairs;
+                        "helpresult1:=result1;"\\
+                        "HYPERDTREE_emptyNode(result1);"\\
+                        WHILE stillpairs(pairs) DO
+                          BEGIN
+                          takepair(pair,pairs);
+                          IF pair.leftpresent THEN
+                             BEGIN
+                             IF pair.rightsetvalued THEN
+                                BEGIN
+                                rightsets:=pair.rightsets;
+                                WHILE stillidentsets(rightsets) DO
+                                  BEGIN
+                                  takeidentset(identset1,rightsets);
+                                  " IF X" """ilrulenr"""
+                                        ""pairset.ilparam"" "= ["
+                                  WHILE stillidents(identset1.val) DO
+                                    BEGIN
+                                    takeident(ident,identset1.val);
+                                    ""ident.str""
+                                    IF stillidents(identset1.val) THEN ","
+                                    \\
+                                    END;
+                                  " ] THEN BEGIN"\\
+                                  IF pair.leftsetvalued THEN
+                                    BEGIN
+                                    leftsets:=pair.leftsets;
+                                    WHILE stillidentsets(leftsets) DO
+                                      BEGIN
+                                      takeidentset(identset2,leftsets);
+                          "result2:=helpresult1;"\\
+                          "WHILE NOT(HYPERDTREE_IsEmptyNode(result2)) DO"\\
+                          " BEGIN"\\
+                          " HYPERDTREE_TakeFromNode(p,result2);"\\
+                          " resultelt:=p^;"\\
+                          "lsps1:=loopholes.retype"
+                           "(resultelt.parameters.ls,LSPARAMS_precord);"\\
+                          "MEM_newdefault(loopholes.sizeof(LSPARAMS_record),"
+                          "loopholes.retype(lsps,MEM_ptr));lsps^:=lsps1^;"\\
+                          "lsps^.X" """mrulenr""" ""paramname""
+                                  ":=["
+                                      WHILE stillidents(identset2.val) DO
+                                        BEGIN
+                                        takeident(ident,identset2.val);
+                                        ""ident.str""
+                                        IF stillidents(identset2.val) THEN ","
+                                         \\
+                                        END;
+                                      " ];"\\
+                          "resultelt.parameters.ls:=loopholes.retype" 
+                           "(lsps,LDMRULES_lsparams);"\\
+                     "MEM_newdefault(loopholes.sizeof" "(HYPERDTREE_hypernodeelt),"
+                          "loopholes.retype(p,MEM_ptr));"\\
+                          "p^:=resultelt;"\\
+                          "HYPERDTREE_addtoNode(p,result1);"\\
+                          "END;"\\
+                                      END;
+                                    END
+                                  ELSE {not pair.leftsetvalued}
+                                    BEGIN
+                                    lefts:=pair.lefts;
+                                    WHILE stillidents(lefts) DO
+                                      BEGIN
+                                      takeident(ident,lefts);
+                          "result2:=helpresult1;"\\
+                          "WHILE NOT(HYPERDTREE_IsEmptyNode(result2)) DO"\\
+                          " BEGIN"\\
+                          " HYPERDTREE_TakeFromNode(p,result2);"\\
+                          " resultelt:=p^;"\\
+                          "lsps1:=loopholes.retype"
+                         "(resultelt.parameters.ls,LSPARAMS_precord);"\\
+                          "MEM_newdefault(loopholes.sizeof(LSPARAMS_record),"
+                          "loopholes.retype(lsps,MEM_ptr));lsps^:=lsps1^;"\\
+                          "lsps^.X" """mrulenr""" ""paramname""
+                                  ":=" ""ident.str"" ";"\\
+                          "resultelt.parameters.ls:=loopholes.retype" 
+                         "(lsps,LDMRULES_lsparams);"\\
+                    " MEM_newdefault(loopholes.sizeof" "(HYPERDTREE_hypernodeelt),"
+                          "loopholes.retype(p,MEM_ptr));"\\
+                          "p^:=resultelt;"\\
+                          "HYPERDTREE_addtonode(p,result1);"\\
+                          "END;"\\
+                                      END;
+                                    END;
+                                  " END;"\\
+                                  END;
+                                END
+                             ELSE {not pair.rightsetvalued}
+                                BEGIN
+                                rights:=pair.rights;
+                                WHILE stillidents(rights) DO
+                                  BEGIN
+                                  takeident(ident,rights);
+                                  " IF X" """ilrulenr"""
+                                        ""pairset.ilparam"" "=" ""ident.str""
+                                  " THEN BEGIN"\\
+                                  IF pair.leftsetvalued THEN
+                                    BEGIN
+                                    leftsets:=pair.leftsets;
+                                    WHILE stillidentsets(leftsets) DO
+                                      BEGIN
+                                      takeidentset(identset2,leftsets);
+                          "result2:=helpresult1;"\\
+                          "WHILE NOT(HYPERDTREE_IsEmptyNode(result2)) DO"\\
+                          " BEGIN"\\
+                          " HYPERDTREE_TakeFromNode(p,result2);"\\
+                          " resultelt:=p^;"\\
+                          "lsps1:=loopholes.retype"
+                      "(resultelt.parameters.ls,LSPARAMS_precord);"\\
+                          "MEM_newdefault(loopholes.sizeof(LSPARAMS_record),"
+                          "loopholes.retype(lsps,MEM_ptr));lsps^:=lsps1^;"\\
+                          "lsps^.X" """mrulenr""" ""paramname""
+                                  ":=["
+                                      WHILE stillidents(identset2.val) DO
+                                        BEGIN
+                                        takeident(ident,identset2.val);
+                                        ""ident.str""
+                                        IF stillidents(identset2.val) THEN ","
+                                         \\
+                                        END;
+                                      " ];"\\
+                          "resultelt.parameters.ls:=loopholes.retype" 
+                        "(lsps,LDMRULES_lsparams);"\\
+                   " MEM_newdefault(loopholes.sizeof" "(HYPERDTREE_hypernodeelt),"
+                          "loopholes.retype(p,MEM_ptr));"\\
+                          "p^:=resultelt;"\\
+                          "HYPERDTREE_addtoNode(p,result1);"\\
+                          "END;"\\
+                                      END;
+                                    END
+                                  ELSE {not pair.leftsetvalued}
+                                    BEGIN
+                                    lefts:=pair.lefts;
+                                    WHILE stillidents(lefts) DO
+                                      BEGIN
+                                      takeident(ident,lefts);
+                          "result2:=helpresult1;"\\
+                          "WHILE NOT(HYPERDTREE_IsEmptyNode(result2)) DO"\\
+                          " BEGIN"\\
+                          " HYPERDTREE_TakeFromNode(p,result2);"\\
+                          " resultelt:=p^;"\\
+                          "lsps1:=loopholes.retype"
+                        "(resultelt.parameters.ls,LSPARAMS_precord);"\\
+                          "MEM_newdefault(loopholes.sizeof(LSPARAMS_record),"
+                          "loopholes.retype(lsps,MEM_ptr));lsps^:=lsps1^;"\\
+                          "lsps^.X" """mrulenr""" ""paramname""
+                                  ":=" ""ident.str"" ";"\\
+                          "resultelt.parameters.ls:=loopholes.retype" 
+                        "(lsps,LDMRULES_lsparams);"\\
+                    " MEM_newdefault(loopholes.sizeof" "(HYPERDTREE_hypernodeelt),"
+                          "loopholes.retype(p,MEM_ptr));"\\
+                          "p^:=resultelt;"\\
+                          "HYPERDTREE_addtoNode(p,result1);"\\
+                          "END;"\\
+                                      END;
+                                    END;
+                                  "END;"\\
+                                  END;
+                                END;
+                             END;
+                          END;
+                        END;
+                      END;
+                    mparamlist:=mparamlist^.next;
+                    END;
+                  "appendresults(" """sgnr""" ",result1,result);"\\
+                  "      END;"\\
+                  "      END{WITH};"\\
+                  numcode.code:=helpfile;
+                  numcode.num:=ilrulenr;
+                  mergeleftnumcode(numcode);
+                  END;
+                 END;
+                END;
+            IF rightpresent THEN
+              BEGIN
+                \helpfile.\LOCAL.
+              simplesets1:=rightsimplesets;
+              WHILE stillsimplesets(simplesets1) DO
+               BEGIN
+               takesimpleset(simpleset,simplesets1);
+               rightsimples:=simpleset.val;
+               rightcopy:=simpleset.copy;
+               ilrulenr:=simpleset.rulenr;
+               simplesets2:=leftsimplesets;
+               WHILE stillsimplesets(simplesets2) DO
+                BEGIN
+                takesimpleset(simpleset,simplesets2);
+                leftsimples:=simpleset.val;
+                leftcopy:=simpleset.copy;
+                mrulenr:=simpleset.rulenr;
+                initlocalfile(helpfile);
+                rightsimples1:=rightsimples;
+                LIILRULES_ruleparameters(ilrulenr,ilparamlist);
+                "lsps:=loopholes.retype(ps.ls,LSPARAMS_precord);"\\
+                "HILTREE_emptyNode(result1);"\\
+                "WITH lsps^ DO BEGIN"\\
+                "IF "
+                savelocfile(leftcopy,tempfile);
+                appendlocfile(tempfile,helpfile);
+                  " THEN BEGIN"\\
+                  IF wbonus<0 THEN BEGIN "resultelt.sembonus:=-" """-wbonus""" ";"\\
+                  END ELSE BEGIN "resultelt.sembonus:=" """wbonus""" ";" \\END;
+                  "      resultelt.R:=" """ilrulenr""" ";"\\
+                  "      lips.rulenr:=" """ilrulenr""" ";"\\
+                  "      resultelt.parameters.index:=-1;"\\
+                  "      resultelt.parameters.subst:=ps.subst;"\\
+                  WHILE stillsimples(rightsimples1) DO
+                    BEGIN
+                    takesimple(simple,rightsimples1);
+                    savelocfile(simple.valeu,tempfile);
+                    " lips.X" """ilrulenr""" ""simple.param""
+                     ":=" appendlocfile(tempfile,helpfile); ";"\\
+                    END;
+                  LIILRULES_ruleparameters(ilrulenr,ilparamlist);
+                  WHILE ilparamlist<>NIL DO
+                    BEGIN
+                    TSTRING_constant(paramname,ilparamlist^.paramname,
+                                          ilparamlist^.length);
+                    IF TSTRING_comparechars(paramname,'LEVEL',5)=0 THEN
+                      BEGIN
+                      "    resultelt.parameters.index:=ps.index;"\\
+                      END;
+                    ilparamlist:=ilparamlist^.next;
+                    END;
+                  " resultelt.parameters.params:=lips;"\\
+                  " HILTREE_newhyperiltreerule(p," """ilrulenr"""
+                    ",resultelt.parameters);"\\
+                  " HILTREE_storehypernodeelt(p,resultelt);"\\
+                  " HILTREE_AddToNode(p,result1);"\\
+                  LDMRULES_ruleparameters(mrulenr,mparamlist);
+                  LIILRULES_ruleparameters(ilrulenr,ilparamlist);
+                  WHILE ilparamlist<>NIL DO
+                    BEGIN
+                    TSTRING_constant(paramname,ilparamlist^.paramname,
+                                          ilparamlist^.length);
+                    IF TSTRING_comparechars(paramname,'LEVEL',5)<>0 THEN
+                      BEGIN
+                      found:=false;
+                      rightsimples1:=rightsimples;
+                      WHILE stillsimples(rightsimples1) and not found DO
+                        BEGIN
+                        takesimple(simple,rightsimples1);
+                        found := TSTRING_compare(simple.param,paramname)=0
+                        END;
+                      IF not found THEN
+                        BEGIN
+                        pairset:=findmruparam(pairsets,paramname,mparamlist);
+                        pairs:=pairset.pairs;
+                        "helpresult1:=result1;"\\
+                        "HILTREE_emptyNode(result1);"\\
+                        WHILE stillpairs(pairs) DO
+                          BEGIN
+                          takepair(pair,pairs);
+                          IF pair.rightpresent THEN
+                             BEGIN
+                             IF pair.leftsetvalued THEN
+                                BEGIN
+                                leftsets:=pair.leftsets;
+                                WHILE stillidentsets(leftsets) DO
+                                  BEGIN
+                                  takeidentset(identset1,leftsets);
+                                  " IF X" """mrulenr"""
+                                        ""pairset.mruparam"" "= ["
+                                  WHILE stillidents(identset1.val) DO
+                                    BEGIN
+                                    takeident(ident,identset1.val);
+                                    ""ident.str""
+                                    IF stillidents(identset1.val) THEN ","
+                                    \\
+                                    END;
+                                  " ] THEN BEGIN"\\
+                                  IF pair.rightsetvalued THEN
+                                    BEGIN
+                                    rightsets:=pair.rightsets;
+                                    WHILE stillidentsets(rightsets) DO
+                                      BEGIN
+                                      takeidentset(identset2,rightsets);
+                          "result2:=helpresult1;"\\
+                          "WHILE NOT(HILTREE_IsEmptyNode(result2)) DO"\\
+                          " BEGIN"\\
+                          " HILTREE_TakeFromNode(p,result2);"\\
+                          " HILTREE_LoadHypernodeelt(p,resultelt);"\\
+                          "lips:=resultelt.parameters.params;"\\
+                          "lips.X" """ilrulenr""" ""paramname""
+                                  ":=["
+                                      WHILE stillidents(identset2.val) DO
+                                        BEGIN
+                                        takeident(ident,identset2.val);
+                                        ""ident.str""
+                                        IF stillidents(identset2.val) THEN ","
+                                         \\
+                                        END;
+                                      " ];"\\
+                          " resultelt.parameters.params:=lips;"\\
+                          " HILTREE_newhyperiltreerule(p," """ilrulenr"""
+                           ",resultelt.parameters);"\\
+                          " HILTREE_storehypernodeelt(p,resultelt);"\\
+                          "HILTREE_addtoNode(p,result1);"\\
+                          " END;"\\
+                                      END;
+                                    END
+                                  ELSE {not pair.rightsetvalued}
+                                    BEGIN
+                                    rights:=pair.rights;
+                                    WHILE stillidents(rights) DO
+                                      BEGIN
+                                      takeident(ident,rights);
+                          "result2:=helpresult1;"\\
+                          "WHILE NOT(HILTREE_IsEmptyNode(result2)) DO"\\
+                          " BEGIN"\\
+                          " HILTREE_TakeFromNode(p,result2);"\\
+                          " HILTREE_LoadHypernodeelt(p,resultelt);"\\
+                          "lips:=resultelt.parameters.params;"\\
+                          "lips.X" """ilrulenr""" ""paramname""
+                                  ":=" ""ident.str"" ";"\\
+                          " resultelt.parameters.params:=lips;"\\
+                          " HILTREE_newhyperiltreerule(p," """ilrulenr"""
+                            ",resultelt.parameters);"\\
+                          " HILTREE_storehypernodeelt(p,resultelt);"\\
+                          "HILTREE_addtonode(p,result1);"\\
+                          " END;"\\
+                                      END;
+                                    END;
+                                  " END;"\\
+                                  END;
+                                END
+                             ELSE {not pair.leftsetvalued}
+                                BEGIN
+                                lefts:=pair.lefts;
+                                WHILE stillidents(lefts) DO
+                                  BEGIN
+                                  takeident(ident,lefts);
+                                  " IF X" """mrulenr"""
+                                        ""pairset.mruparam"" "=" ""ident.str""
+                                  " THEN BEGIN"\\
+                                  IF pair.rightsetvalued THEN
+                                    BEGIN
+                                    rightsets:=pair.rightsets;
+                                    WHILE stillidentsets(rightsets) DO
+                                      BEGIN
+                                      takeidentset(identset2,rightsets);
+                          "result2:=helpresult1;"\\
+                          "WHILE NOT(HILTREE_IsEmptyNode(result2)) DO"\\
+                          " BEGIN"\\
+                          " HILTREE_TakeFromNode(p,result2);"\\
+                          " HILTREE_LoadHypernodeelt(p,resultelt);"\\
+                          "lips:=resultelt.parameters.params;"\\
+                          "lips.X" """ilrulenr""" ""paramname""
+                                  ":=["
+                                      WHILE stillidents(identset2.val) DO
+                                        BEGIN
+                                        takeident(ident,identset2.val);
+                                        ""ident.str""
+                                        IF stillidents(identset2.val) THEN ","
+                                         \\
+                                        END;
+                                      " ];"\\
+                          " resultelt.parameters.params:=lips;"\\
+                          " HILTREE_newhyperiltreerule(p," """ilrulenr"""
+                            ",resultelt.parameters);"\\
+                          " HILTREE_storehypernodeelt(p,resultelt);"\\
+                          "HILTREE_addtoNode(p,result1);"\\
+                          " END;"\\
+                                    END;
+                                    END
+                                  ELSE {not pair.rightsetvalued}
+                                    BEGIN
+                                    rights:=pair.rights;
+                                    WHILE stillidents(rights) DO
+                                      BEGIN
+                                      takeident(ident,rights);
+                          "result2:=helpresult1;"\\
+                          "WHILE NOT(HILTREE_IsEmptyNode(result2)) DO"\\
+                          " BEGIN"\\
+                          " HILTREE_TakeFromNode(p,result2);"\\
+                          " HILTREE_LoadHypernodeelt(p,resultelt);"\\
+                          "lips:=resultelt.parameters.params;"\\
+                          "lips.X" """ilrulenr""" ""paramname""
+                                  ":=" ""ident.str"" ";"\\
+                          " resultelt.parameters.params:=lips;"\\
+                          " HILTREE_newhyperiltreerule(p," """ilrulenr"""
+                            ",resultelt.parameters);"\\
+                          " HILTREE_storehypernodeelt(p,resultelt);"\\
+                          "HILTREE_addtoNode(p,result1);"\\
+                          " END;"\\
+                                    END;
+                                    END;
+                                  "END;"\\
+                                  END;
+                                END;
+                             END;
+                          END;
+                        END;
+                      END;
+                    ilparamlist:=ilparamlist^.next;
+                    END;
+                  "appendresults(result1,result);"\\
+                  " END;"\\
+                  " END{WITH};"\\
+                numcode.code:=helpfile;
+                numcode.num:=mrulenr;
+                mergerightnumcode(numcode);
+                END;
+               END;
+              END;
+            $$RULETRANS.intequals:=intequals;
+            $$RULETRANS.leftnumcodes:=leftnumcodes;
+            $$RULETRANS.rightnumcodes:=rightnumcodes;
+      END
+END;
+&
+
+
+%ANDCOND
+BASIS RULE
+    ANDCOND = ORCOND/2.{ANDCAT/1.ORCOND/2}
+SURFACE PART
+VAR simple::bool;
+
+<*
+INIT: BEGIN simple:=true;
+      END;
+1 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN simple:=false END
+    *>
+2 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN simple:=simple and %ORCOND.simple
+                        END
+    *>
+FINAL: #CONDITION:TRUE
+       #ACTION: BEGIN SEND_ANDCOND;
+                      $ANDCOND.simple:=simple
+                END
+*>
+END;
+PROCEDURAL PART
+VAR copy,intequals:LOCALFILE;
+    simple::simple;
+    rulenumber::int;
+BEGIN
+INIT: BEGIN initlocalfile(copy);
+            initlocalfile(intequals);
+            \copy.\LOCAL.
+            rulenumber:=$$ANDCOND.rulenumber;
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN " AND "\\
+               END
+   *>
+2: <* SEND: BEGIN %%ORCOND.rulenumber:=rulenumber
+            END
+      !ORCOND.
+      RECEIVE: BEGIN simple:=%%ORCOND.simple;
+                     appendlocfile(%%ORCOND.copy,copy);
+                     appendlocfile(%%ORCOND.intequals,intequals);
+               END
+   *>
+*>
+FINAL:BEGIN $$ANDCOND.simple:=simple;
+            $$ANDCOND.copy:=copy;
+            $$ANDCOND.intequals:=intequals;
+      END
+END;
+&
+ 
+%ORCOND
+BASIS RULE
+     ORCOND = ELEMENTARYCOND/2.{ORCAT/1.ELEMENTARYCOND/2}
+SURFACE PART
+VAR simple::bool;
+
+<*
+INIT: BEGIN simple:=true;
+      END;
+1 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN simple:=false END
+    *>
+2 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN simple:=simple and %ELEMENTARYCOND.simple
+                        END
+    *>
+FINAL: #CONDITION:TRUE
+       #ACTION: BEGIN SEND_ORCOND;
+                      $ORCOND.simple:=simple
+                END
+*>
+END;
+PROCEDURAL PART
+VAR simple::simple;
+    copy,intequals:LOCALFILE;
+    rulenumber::int;
+BEGIN
+INIT: BEGIN initlocalfile(copy);
+            initlocalfile(intequals);
+            \copy.\LOCAL.
+            rulenumber:=$$ORCOND.rulenumber;
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN " OR "\\
+               END
+   *>
+2: <* SEND: BEGIN %%ELEMENTARYCOND.rulenumber:=rulenumber
+            END
+      !ELEMENTARYCOND.
+      RECEIVE: BEGIN simple:=%%ELEMENTARYCOND.simple;
+                     appendlocfile(%%ELEMENTARYCOND.copy,copy);
+                     appendlocfile(%%ELEMENTARYCOND.intequals,intequals);
+               END
+   *>
+*>
+FINAL:BEGIN $$ORCOND.copy:=copy;
+            $$ORCOND.simple:=simple;
+            $$ORCOND.intequals:=intequals;
+      END
+END;
+&
+ 
+%ELEMENTARYCOND
+BASIS RULE
+    ELEMENTARYCOND = (ROUNDOPEN/1.ANDCOND/2.ROUNDCLOSE/1|
+                      PASCALEXPR/3)
+SURFACE PART
+VAR simple::bool;
+
+<*
+INIT: BEGIN
+      END;
+1 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN END
+    *>
+2 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN simple:=%ANDCOND.simple
+                        END
+    *>
+3 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN simple:=%PASCALEXPR.simple
+                        END
+    *>
+FINAL: #CONDITION:TRUE
+       #ACTION: BEGIN SEND_ELEMENTARYCOND;
+                      $ELEMENTARYCOND.simple:=simple;
+                END
+*>
+END;
+PROCEDURAL PART
+VAR copy,intequals:LOCALFILE;
+    rulenumber::int;
+    simple::simple;
+BEGIN
+INIT: BEGIN rulenumber:=%%ELEMENTARYCOND.rulenumber
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN %%ANDCOND.rulenumber:=rulenumber END
+      !ANDCOND.
+      RECEIVE: BEGIN copy:=%%ANDCOND.copy;
+                     simple:=%%ANDCOND.simple;
+                     intequals:=%%ANDCOND.intequals;
+               END
+   *>
+3: <* SEND: BEGIN %%PASCALEXPR.rulenumber:=rulenumber END
+      !PASCALEXPR.
+      RECEIVE: BEGIN copy:=%%PASCALEXPR.copy;
+                     simple:=%%PASCALEXPR.simple;
+                     intequals:=%%PASCALEXPR.intequals;
+               END
+   *>
+*>
+FINAL:BEGIN $$ELEMENTARYCOND.copy:=copy;
+            $$ELEMENTARYCOND.simple:=simple;
+            $$ELEMENTARYCOND.intequals:=intequals;
+      END
+END;
+&
+%PASCALEXPR
+BASIS RULE
+      PASCALEXPR = EQUALS|SETBOOLEAN|NIBOOLEAN|INTEQUALS
+       INTEQUALS = PARAMNAME/18.EQUIVALENT/1.(X1/17|X2/17|X3/17)
+          EQUALS = PARAMNAME/10.
+                         (EQUIVALENT/2|(LEFTARROW/3.RIGHTARROW/1)).
+                   (VALUENAME/11|SETVALUENAME/12)
+      SETBOOLEAN = [NOTCAT/4].[ROUNDOPEN/5].PARAMNAME/13.
+                     (INCAT/6|LEFTARROW/7.EQUIVALENT/1|RIGHTARROW/8.EQUIVALENT/1).
+                   SETVALUENAME/14.[ROUNDCLOSE/9]
+      NIBOOLEAN = [NOTCAT/4].[ROUNDOPEN/5].PARAMNAME/15.NICAT/1.VALUENAME/16.
+                      [ROUNDCLOSE/9]
+SURFACE PART
+VAR simple::bool;
+    initialcounter::int;
+    notpresent,openpresent::bool;
+
+<*
+INIT: BEGIN simple:=true;notpresent:=false;openpresent:=false;
+            initialcounter:=counter;
+      END;
+1 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN END
+    *>
+2 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN
+                        END
+    *>
+3 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN simple:=false END
+    *>
+4 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN notpresent:=true
+                        END
+    *>
+5 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: notpresent
+               #ACTION: BEGIN openpresent:=true END
+    *>
+6 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN END
+    *>
+7 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN END
+    *>
+8 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN END
+    *>
+9 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: openpresent
+               #ACTION: BEGIN 
+                        END
+    *>
+10: <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN END
+    *>
+11: <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN
+                        END
+    *>
+12: <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN END
+    *>
+13: <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN simple:=false END
+    *>
+14: <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN END
+    *>
+15: <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN END
+    *>
+16: <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN END
+    *>
+17: <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN assigncounter(counter+1) END
+    *>
+18: <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN END
+    *>
+FINAL: #CONDITION:TRUE
+       #ACTION: BEGIN SEND_PASCALEXPR;
+                      $PASCALEXPR.initialcounter:=initialcounter;
+                      $PASCALEXPR.simple:=simple;
+                      $PASCALEXPR.notpresent:=notpresent;
+                END
+*>
+END;
+PROCEDURAL PART
+VAR copy,intequals:LOCALFILE;
+    param:TSTRING_string;
+    valeu,tempfile:LOCALFILE;
+    str,str1:TSTRING_string;
+    simple::simple;
+    notpresent::bool;
+    rulenumber,initialcounter::int;
+BEGIN
+INIT: BEGIN initlocalfile(copy);
+            initlocalfile(intequals);
+            initlocalfile(valeu);
+            initialcounter:=$PASCALEXPR.initialcounter;
+            rulenumber:=$$PASCALEXPR.rulenumber;
+            notpresent:=$PASCALEXPR.notpresent;
+            \copy.\LOCAL.
+            If notpresent THEN "NOT("
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN " = "
+               END
+   *>
+3: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN " = "
+               END
+   *>
+4: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+5: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+6: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN " IN "
+               END
+   *>
+7: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN "<="
+               END
+   *>
+8: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN ">="
+               END
+   *>
+9: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+10: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%PARAMNAME.str;
+                     "X" """rulenumber""" ""str""
+                     param:=str;
+               END
+   *>
+11: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN \valeu.\LOCAL.
+                     str:=%VALUENAME.str;
+                     ""str""
+                     \copy.\LOCAL.
+                     ""str""
+               END
+   *>
+12: <* SEND: BEGIN END
+      !SETVALUENAME.
+      RECEIVE: BEGIN savelocfile(%%SETVALUENAME.copy,tempfile);
+                     appendlocfile(tempfile,copy);
+                     savelocfile(%%SETVALUENAME.copy,tempfile);
+                     appendlocfile(tempfile,valeu);
+               END
+   *>
+13: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%PARAMNAME.str;
+                     ""str""
+               END
+   *>
+14: <* SEND: BEGIN END
+      !SETVALUENAME.
+      RECEIVE: BEGIN  appendlocfile(%%SETVALUENAME.copy,copy)
+               END
+   *>
+15: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str1:=%PARAMNAME.str;
+               END
+   *>
+16: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%VALUENAME.str;
+                     ""str"" " IN " ""str1""
+               END
+   *>
+17: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%.str;
+                     initialcounter:=initialcounter+1;
+                     "intequals" """initialcounter""" "(X"
+                     """rulenumber""" ""param"" ")"
+                     \intequals.\LOCAL.
+                     "function intequals" """initialcounter""" 
+                          "(param:INTEGER):BOOLEAN;"\\
+                     "begin"\\
+                     ""str"" ":=" "param" ";"
+                     \\ "intequals" """initialcounter"""
+                       ":=TRUE"\\
+                     "end;"\\
+                     \valeu.\LOCAL.
+                     str:=%VALUENAME.str;
+                     ""str""
+               END
+   *>
+18: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%PARAMNAME.str;
+                     param:=str;
+               END
+   *>
+*>
+FINAL:BEGIN IF notpresent THEN BEGIN ")" \\END;
+            $$PASCALEXPR.intequals:=intequals;
+            $$PASCALEXPR.copy:=copy;
+            simple.valeu:=valeu;
+            simple.param:=param;
+            simple.copy:=copy;
+            $$PASCALEXPR.simple:=simple;
+      END
+END;
+&
+ 
+ 
+%SETVALUENAME
+BASIS RULE
+      SETVALUENAME = SQUAREOPEN/1.[VALUENAME/2.{COMMA/3.VALUENAME/2}
+                                  ].
+                     SQUARECLOSE/1
+SURFACE PART
+VAR copy::setofidents;
+    ident::ident;
+
+<*
+INIT: BEGIN initsetofidents(copy) END;
+1 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN END
+    *>
+2 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN ident.str:=%VALUENAME.str;
+                              appendident(ident,copy);
+                        END
+    *>
+3 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN 
+                        END
+    *>
+FINAL: #CONDITION:TRUE
+       #ACTION: BEGIN SEND_SETVALUENAME;
+                      $SETVALUENAME.copy:=copy;
+                END
+*>
+END;
+PROCEDURAL PART
+VAR copy:LOCALFILE;
+    str:TSTRING_string;
+BEGIN
+INIT: BEGIN initlocalfile(copy);
+            \copy.\LOCAL.
+            "["
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               str:=%VALUENAME.str;
+               \copy.\LOCAL.
+               ""str""
+               END
+   *>
+3: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               \copy.\LOCAL.
+               ","\\
+               END
+   *>
+*>
+FINAL:BEGIN 
+            \copy.\LOCAL.
+            "]"
+            $$SETVALUENAME.copy:=copy;
+      END
+END;
+&
+ 
+%VALUENAME
+BASIS RULE
+      VALUENAME = IDENTIFIER/1
+SURFACE PART
+VAR str:TSTRING_string;
+
+<*
+INIT: BEGIN END;
+1 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN str:=%.str END
+    *>
+FINAL: #CONDITION:TRUE
+       #ACTION: BEGIN SEND_VALUENAME; 
+                      $VALUENAME.str:=str
+                END
+*>
+END;
+PROCEDURAL PART
+VAR
+BEGIN
+INIT: BEGIN END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+*>
+FINAL:BEGIN END
+END;
+&
+%PARAMNAME
+BASIS RULE
+      PARAMNAME = IDENTIFIER/1
+SURFACE PART
+VAR str:TSTRING_string;
+
+<*
+INIT: BEGIN END;
+1 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN str:=%.str END
+    *>
+FINAL: #CONDITION:TRUE
+       #ACTION: BEGIN SEND_PARAMNAME; 
+                      $PARAMNAME.str:=str
+                END
+*>
+END;
+PROCEDURAL PART
+VAR
+BEGIN
+INIT: BEGIN END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+*>
+FINAL:BEGIN END
+END;
+&
+
+%TYPENAME
+BASIS RULE
+      TYPENAME = IDENTIFIER/1
+SURFACE PART
+VAR str:TSTRING_string;
+
+<*
+INIT: BEGIN END;
+1 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN str:=%.str END
+    *>
+FINAL: #CONDITION:TRUE
+       #ACTION: BEGIN SEND_TYPENAME; 
+                      $TYPENAME.str:=str
+                END
+*>
+END;
+PROCEDURAL PART
+VAR
+BEGIN
+INIT: BEGIN END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+*>
+FINAL:BEGIN END
+END;
+&
+
+%MRULENAME
+BASIS RULE
+      MRULENAME = IDENTIFIER/1
+SURFACE PART
+VAR str:TSTRING_string;
+
+<*
+INIT: BEGIN END;
+1 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN str:=%.str END
+    *>
+FINAL: #CONDITION:TRUE
+       #ACTION: BEGIN SEND_MRULENAME; 
+                      $MRULENAME.str:=str
+                END
+*>
+END;
+PROCEDURAL PART
+VAR
+BEGIN
+INIT: BEGIN END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+*>
+FINAL:BEGIN END
+END;
+&
+%ILRULENAME
+BASIS RULE
+      ILRULENAME = IDENTIFIER/1
+SURFACE PART
+VAR str:TSTRING_string;
+
+<*
+INIT: BEGIN END;
+1 : <* LOCALCONDITION:TRUE
+       GLOBAL: #CONDITION: TRUE
+               #ACTION: BEGIN str:=%.str END
+    *>
+FINAL: #CONDITION:TRUE
+       #ACTION: BEGIN SEND_ILRULENAME; 
+                      $ILRULENAME.str:=str
+                END
+*>
+END;
+PROCEDURAL PART
+VAR
+BEGIN
+INIT: BEGIN END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+*>
+FINAL:BEGIN END
+END;
+&

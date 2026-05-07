@@ -1,0 +1,325 @@
+
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : lexdecldef 
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  
+ *
+ *EMP:::===================================================================*)
+pragma C_include('string.pf');
+
+PACKAGE mrusurcomdecl;
+WITH strng;
+
+const maxrnr = 9;
+      Hinit = -1;
+      Hdum = Hinit;
+      Hfinal = 99;
+
+type 
+     string = STRING_string;
+     graphtypetype = (enclosedgraph,optgraph,stargraph,helpgraphident,atomgraph);
+     surfrulemode = (loccond,globcond);
+     syntcat = (UTT,Regexp,graph,helpgraph,CAs,concgraph,vertline,
+                elementarygraph,dot,roundopen,roundclose,squareopen,
+                squareclose,curlyopen,curlyclose,ident,slash,number,
+                charstring,rulename,iscat
+               );
+     psyntcat = ^syntcat;
+     syntcatset = set of syntcat;
+     pcharstringfieldrecord = ^charstringfieldrecord;
+     charstringfieldrecord = record
+                             stringfield:string;
+                             linenumber:integer
+                             end;
+     prulenamefieldrecord = ^rulenamefieldrecord;
+     rulenamefieldrecord = record
+                            rulename:string
+                           end;
+     puttfieldrecord = ^uttfieldrecord;
+     uttfieldrecord = record
+                       numofhelpgraphs:integer
+                      end;
+     phelpgraphfieldrecord = ^helpgraphfieldrecord;
+     helpgraphfieldrecord = record
+                             str:string
+                            end;
+     pidentfieldrecord = ^identfieldrecord;
+     identfieldrecord = record
+                             str:string
+                        end;
+     pgraphfieldrecord = ^graphfieldrecord;
+     graphfieldrecord = record
+                         numofconcgraphs:integer
+                        end;
+     pconcgraphfieldrecord = ^concgraphfieldrecord;
+     concgraphfieldrecord = record
+                             numofelementarygraphs:integer
+                            end;
+     pelementarygraphfieldrecord = ^elementarygraphfieldrecord;
+     elementarygraphfieldrecord = record
+                                   graphtype:graphtypetype
+                                  end;
+
+     psnode = ^snode;
+     prsnode = ^rsnode;
+     rsnode = record node :psnode;
+		     brother:prsnode
+	      end;
+     snode = record
+			sonlist:prsnode;
+			minpos,maxpos:integer;
+			n:integer;
+			
+			case cat:syntcat of
+            UTT:(uttfield:puttfieldrecord);
+            IDENT:(identfield:pidentfieldrecord);
+            HELPGRAPH:(helpgraphfield:phelpgraphfieldrecord);
+            GRAPH:(graphfield:pgraphfieldrecord);
+            CONCGRAPH:(concgraphfield:pconcgraphfieldrecord);
+            ELEMENTARYGRAPH:(elementarygraphfield:pelementarygraphfieldrecord);
+            CHARSTRING:(charstringfield:pcharstringfieldrecord);
+   	    RULENAME:(rulenamefield:prulenamefieldrecord)
+                        end;
+
+     plostree = ^lostree;            
+     lostree = record
+			next:plostree;
+			arg: psnode
+	       end;
+     pconnectionnode = ^connectionnode;
+     psinglesegmentlist = ^singlesegmentlist;
+     connectionnode = record
+		      list:psinglesegmentlist;
+		      next,prev:pconnectionnode;
+		      idnr:integer
+		      end;
+     singlesegmentlist = record
+				next:psinglesegmentlist;
+				rn: pconnectionnode;
+				stree: psnode
+			 end;
+     psurfgraph = ^surfgraphtype;
+     psurfgraphnode = ^surfgraphnode;
+     surfgraphtype = record
+   			first,
+   			last:psurfgraphnode
+   		     end;
+     nodeid = Hinit..Hfinal;
+     plonodeid = ^lonodeid;
+     lonodeid = record
+   			next:plonodeid;
+   			arg:nodeid
+   	 	end;
+     plossurfgraphnode = ^lossurfgraphnode;
+     surfgraphnodelist = record
+   				first,
+   				last:plossurfgraphnode;
+   			 end;
+     lossurfgraphnode = record
+   				next:plossurfgraphnode;
+   				arg:psurfgraphnode
+   			end;
+     surfgraphnode = record
+   			left,
+   			right:psurfgraphnode;
+   			n:nodeid;
+   			cat:psyntcat;
+   			nextnodes:surfgraphnodelist;
+   			nextcats,
+   			nexttops:syntcatset;
+   			completed,alreadysearched:boolean
+   	             end;
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : newtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION newtop:psinglesegmentlist; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assignnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of newtop is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE assignnewtop(valeu:psinglesegmentlist);EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : status
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION status:boolean;EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assignstatus
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of status is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE assignstatus(valeu:boolean); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : debug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION debug:boolean; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assigndebug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of debug is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE assigndebug(valeu:boolean); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : surfgraph
+ *  Description    : 
+ *  Parameters     :0<i<=maxrnr 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION surfgraph(i:integer):psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assignsurfgraph
+ *  Description    : 
+ *  Parameters     : o<i<=maxrnr
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of surfgraph(i) is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+  PROCEDURE assignsurfgraph(i:integer;valeu:psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : absent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION absent:psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assignabsent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of absent is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE assignabsent(valeu:psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : initcounter
+ *  Description     : inits linecouner
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE initcounter;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : addcounter
+ *  Description     : adds 1 to line counter
+ *  Parameters      : 
+ *  Precondition    : 
+ *  Postcondition   : 
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE addcounter;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : linecounter
+ *  Description    : gives valeu of line counter
+ *  Parameters     : 
+ *  Result         : 
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION linecounter
+                    :integer ;
+EXTERNAL;
+
+END;
+

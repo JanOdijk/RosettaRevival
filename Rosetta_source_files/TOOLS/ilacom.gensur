@@ -1,0 +1,1219 @@
+
+%UTT
+BASIS RULE
+  UTT = LANGVERSION/1.[TYPESPEC/2].ILRULESSPEC/3
+
+SURFACE PART
+VAR table1,table2,table3::setoftypespecs;
+    typespec1,typespec2::typespec;
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_UTT;
+                  table1:=typestable;
+                  initsetoftypespecs(table3);
+                  WHILE stilltypespecs(table1) DO
+                    BEGIN
+                    taketypespec(typespec1,table1);
+                    IF (typespec1.typekind = setkind) THEN
+                      BEGIN
+                      table2:=typestable;
+                      WHILE stilltypespecs(table2) DO
+                        BEGIN
+                        taketypespec(typespec2,table2);
+                        IF (TSTRING_compare(typespec1.basetype,
+                                          typespec2.typename)=0) THEN
+                          BEGIN
+                          typespec1.basefirst:=typespec2.basefirst;  
+                          typespec1.baselast:=typespec2.baselast;  
+                          END;
+                        END;
+                      END;
+                    appendtypespec(typespec1,table3);
+                    END;
+                  $UTT.typestable:=table3; 
+                  $UTT.rulestable:=rulestable; 
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR parametertypes:LOCALFILE;
+    converttypes:LOCALFILE;
+    typestable::setoftypespecs;
+    rulespec::rulespec;
+    typespec::typespec;
+    params::setofparams;
+    param::param;
+    i:INTEGER;
+    rulestable,rulestable1::setofrulespecs;
+HELP PROCEDURE findtypespec(str:TSTRING_string;typestable::setoftypespecs;
+                            VAR typespec::typespec);
+     VAR found::bool;
+     BEGIN
+     found:=false;
+     WHILE stilltypespecs(typestable) AND NOT found DO
+       BEGIN
+       taketypespec(typespec,typestable);
+       found:=TSTRING_compare(typespec.typename,str)=0;
+       END;
+     END;
+BEGIN 
+INIT:BEGIN INITlocalfile(parametertypes);
+           INITlocalfile(converttypes);
+           typestable:=$UTT.typestable;
+           rulestable:=$UTT.rulestable;
+     END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+                 TFILES_open(of1,'ilofenv',7,3);
+                 BEGIN
+                   \of1.\GLOBAL.\\
+                   "pragma C_include('windows.pf');"\\
+                   "PACKAGE LIILRULES;"\\\\
+                   "WITH windows;"\\
+                   "TYPE "\\ 
+                   "LIILrules_ruleindex = INTEGER;"\\
+                 END;
+                 TFILES_open(of2,'ilofpas',7,3);
+                 BEGIN
+                   \of2.\GLOBAL.\\
+                   "EXPORT(liilrules);"\\
+                   "pragma C_include('liilrules.pf');"\\
+                   "pragma C_include('strings.pf');"\\
+                   "pragma C_include('windows.pf');"\\
+                   "pragma C_include('ldconvrec.pf');"\\
+                   "pragma C_include('mem.pf');"\\
+                   "pragma C_include('str.pf');"\\
+                   "pragma C_include('lirectoscreen.pf');"\\
+                   "PROGRAM LIILrules;"\\\\
+                   "WITH windows,ldconvrec,mem,str,lirectoscreen;"\\
+                 END;
+               END
+   *>
+2: <* SEND: BEGIN END
+      !TYPESPEC.
+      RECEIVE: BEGIN parametertypes:=%%TYPESPEC.parametertypes;
+                     converttypes:=%%TYPESPEC.converttypes;
+               END
+   *>
+3: <* SEND: BEGIN END
+      !ILRULESSPEC.
+      RECEIVE: BEGIN 
+               END
+   *>
+*>
+FINAL: BEGIN
+         BEGIN
+           \of1.\GLOBAL.\\\\
+                   appendfile(parametertypes,of1);
+                   "TYPE "\\ 
+                   "LIILrules_ILparams = RECORD"\\
+                   "CASE rulenr:LIILrules_RuleIndex OF"\\
+                   rulestable1:=rulestable;
+                   WHILE stillrulespecs(rulestable1) DO
+                     BEGIN
+                     takerulespec(rulespec,rulestable1);
+                     """rulespec.rulenr""" ": ("\\
+                     params:=rulespec.params;
+                     WHILE stillparams(params) DO
+                       BEGIN
+                       takeparam(param,params);
+                       IF TSTRING_comparechars(param.name,'LEVEL',5)<>0 THEN
+                         BEGIN
+                         "X" """rulespec.rulenr""" ""param.name"" 
+                         " : LIILRULES_" 
+                         ""param.typename"" ";"\\
+                         END;
+                       END;
+                     ");"\\
+                     END;
+                   "END;{ILparams}"\\
+                   "LIILrules_LIparameters = RECORD"\\
+                   TAB(of1,5);"index:INTEGER;"\\
+                   TAB(of1,5);"subst:INTEGER;"\\
+                   TAB(of1,5);"params:LIILrules_ILparams;"\\
+                   "END;"\\
+                   "LIILRULES_paramlist = ^LIILRULES_aramlist;"\\
+                   "LIILRULES_aramlist = RECORD"\\
+                   " paramname: string(20);"\\
+                   " length : INTEGER;"\\
+                   " next : LIILRULES_paramlist"\\
+                   "END;"\\
+             " PROCEDURE LIILRULES_RuleName (R:LIILrules_RuleIndex;"\\
+             " VAR name: string;"\\
+             " VAR length: INTEGER); EXTERNAL;"\\\\
+             " PROCEDURE LIILRULES_RuleParameters (R:LIILrules_RuleIndex;"\\
+             " VAR params: LIILRULES_paramlist); EXTERNAL;"\\\\
+             " PROCEDURE LIILRULES_RuleNumber (VAR R:LIILrules_RuleIndex;"\\
+             " CONST name: string;"\\
+             " length: INTEGER); EXTERNAL;"\\\\
+             " PROCEDURE LIILRULES_PrintParameters (w:WINDOWS_device;"\\
+             " parameters: LIILRULES_LIparameters); EXTERNAL;"\\
+           "END; {LIILrules}"
+         END;
+         BEGIN
+           \of2.\GLOBAL.\\\\
+             appendfile(converttypes,of2);
+             "PROCEDURE MakeParamlist(VAR p:LIILRULES_paramlist);"\\
+             "BEGIN"\\
+             "MEM_NewDefault(loopholes.sizeof"
+                  "(LIILRULES_aramlist),loopholes.retype(p,MEM_Ptr));"\\
+             "END;"\\
+             " PROCEDURE LIILRULES_RuleName (R:LIILrules_RuleIndex;"\\
+             " VAR name: string;"\\
+             " VAR length: INTEGER);"\\
+             "BEGIN"\\
+             " CASE R OF"\\
+             rulestable1:=rulestable;
+             WHILE stillrulespecs(rulestable1) DO
+               BEGIN
+               takerulespec(rulespec,rulestable1);
+               """rulespec.rulenr""" ": BEGIN"\\
+               " name := '" ""rulespec.rulename"" "';"\\
+               " length := " """TSTRING_length(rulespec.rulename)""" ";"\\
+               " END;"\\ 
+               END;
+             " END{CASE};"\\
+             "END;"\\\\
+             " PROCEDURE LIILRULES_RuleParameters (R:LIILrules_RuleIndex;"\\
+             " VAR params: LIILRULES_paramlist);"\\
+             " VAR paramlist,p:LIILRULES_paramlist;"\\
+             "BEGIN"\\
+             "paramlist:=NIL;"\\
+             "CASE R OF"\\
+             rulestable1:=rulestable;
+             WHILE stillrulespecs(rulestable1) DO
+               BEGIN
+               takerulespec(rulespec,rulestable1);
+               """rulespec.rulenr""" ": BEGIN"\\
+               params:=rulespec.params;
+               WHILE stillparams(params) DO
+                 BEGIN
+                 takeparam(param,params);
+                 "makeparamlist(p);"\\
+                 "p^.paramname:='" ""param.name"" "';"\\
+                 "p^.length:=" """TSTRING_length(param.name)""" ";"\\
+                 "p^.next:=paramlist;"\\
+                 "paramlist:=p;"\\
+                 END;
+               " END;"\\ 
+               END;
+             " END{CASE};"\\
+             "params:=paramlist;"\\
+             "END;"\\\\
+             " PROCEDURE LIILRULES_RuleNumber (VAR R:LIILrules_RuleIndex;"\\
+             " CONST name: string;"\\
+             " length: INTEGER);"\\
+             "BEGIN"\\
+             "R := -1;"\\
+             rulestable1:=rulestable;
+             WHILE stillrulespecs(rulestable1) DO
+               BEGIN
+               takerulespec(rulespec,rulestable1);
+               "IF STR_compare(name,length,'"
+               ""rulespec.rulename"" "',"\\
+               """TSTRING_length(rulespec.rulename)""" ")=0 THEN"\\
+               " R := " """rulespec.rulenr""" ";"\\
+               END;
+             "END;"\\
+             " PROCEDURE LIILRULES_PrintParameters (w:WINDOWS_device;"\\
+             " parameters: LIILRULES_LIparameters);"\\
+             " VAR p,attrstruct:LDCONVREC_pattrstruct;"\\
+             " len1:INTEGER;"\\
+             " q:LDCONVREC_psetvaluetype;"\\
+             rulestable1:=rulestable;
+             WHILE stillrulespecs(rulestable1) DO
+               BEGIN
+               takerulespec(rulespec,rulestable1);
+               params:=rulespec.params;
+               i:=0;
+               WHILE stillparams(params) DO
+                 BEGIN
+                 i:=i+1;
+                 takeparam(param,params);
+                 findtypespec(param.typename,typestable,typespec);
+                 IF typespec.typekind=setkind THEN
+                   BEGIN
+                   " val" """rulespec.rulenr""" "X"
+                        """i""" " : LIILRULES_" ""typespec.basetype"" 
+                        ";"\\
+                   END;
+                 END;
+               END;
+             "BEGIN"\\
+             "attrstruct:=NIL;"\\
+             "CASE parameters.params.rulenr OF"\\
+             rulestable1:=rulestable;
+             WHILE stillrulespecs(rulestable1) DO
+               BEGIN
+               takerulespec(rulespec,rulestable1);
+               """rulespec.rulenr""" ": BEGIN"\\
+               "MEM_newdefault(loopholes.sizeof"
+                   "(LDCONVREC_attrstruct),loopholes.retype(p,MEM_Ptr));"\\
+               "p^.nextattr:=attrstruct;"\\
+               "attrstruct:=p;"\\
+               "p^.setvalue:=NIL;"\\
+               "p^.typeindicator:=enumeration;"\\
+               "p^.fieldname.str:='ILRULE';"\\
+               "p^.fieldname.len:=6;"\\
+               "LIILRULES_rulename(" """rulespec.rulenr"""
+               ",p^.fieldvalue.str,len1);"\\
+               "p^.fieldvalue.len:=len1;"\\
+               params:=rulespec.params;
+               i:=0;
+               WHILE stillparams(params) DO
+                 BEGIN
+                 i:=i+1;
+                 takeparam(param,params);
+                 findtypespec(param.typename,typestable,typespec);
+                 "MEM_newdefault(loopholes.sizeof"
+                     "(LDCONVREC_attrstruct),loopholes.retype(p,MEM_Ptr));"\\
+                 "p^.nextattr:=attrstruct;"\\
+                 "attrstruct:=p;"\\
+                 "p^.setvalue:=NIL;"\\
+                 IF typespec.typekind<>setkind THEN
+                   BEGIN
+                   "p^.typeindicator:=enumeration;"\\
+                   "p^.fieldname.str:='" ""param.name"" "';"\\
+                   "p^.fieldname.len:=" """TSTRING_length(param.name)""" ";"\\
+                   "conv" ""param.typename"" 
+                   IF TSTRING_comparechars(param.name,'LEVEL',5)<>0 THEN
+                     BEGIN
+                     "(parameters.params.X"
+                     """rulespec.rulenr""" ""param.name""
+                     END
+                   ELSE
+                     BEGIN
+                     "(parameters.index"
+                     END;
+                    ",p^.fieldvalue.str,len1);"\\
+                   "p^.fieldvalue.len:=len1;"\\
+                   END
+                 ELSE {setkind}
+                   BEGIN
+                   "p^.typeindicator:=enumset;"\\
+                   "FOR val" """rulespec.rulenr""" "X"
+                    """i""" ":=" ""typespec.basefirst""
+                     " TO " ""typespec.baselast"" " DO"\\
+                    "BEGIN"\\
+                    "IF val" """rulespec.rulenr""" "X"
+                     """i""" " IN parameters.params.X" """rulespec.rulenr"""
+                     ""param.name"" " THEN"\\
+                      "BEGIN"\\
+                      "MEM_newdefault(loopholes.sizeof"
+                           "(LDCONVREC_setvaluetype),q::MEM_ptr);"\\
+                      "q^.nextvalue:=p^.setvalue;"\\
+                      "p^.setvalue:=q;"\\
+                      "conv" ""typespec.basetype"" "("
+                         "val" """rulespec.rulenr""" 
+                                      "X" """i"""
+                         ",p^.setvalue^.eltvalue.str,"
+                        "len1 );"\\
+                         "p^.setvalue^.eltvalue.len:=len1;"\\
+                      "END;"\\
+                    "END;"\\
+                   END;
+                 END;
+               " END;"\\ 
+               END;
+             " END{CASE};"\\
+             "LIRECTOSCREEN_write(w,attrstruct);"\\
+             "END;"\\
+         END;
+       END
+END;
+&
+
+%TYPESPEC
+BASIS RULE
+  TYPESPEC = TYPEStje/1.LEFTARROW/1.{TYPEDEFINITION/2}.RIGHTARROW/1
+
+SURFACE PART
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_TYPESPEC;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR parametertypes,converttypes:LOCALFILE; 
+BEGIN
+INIT: BEGIN INITLOCALFILE(parametertypes);
+            INITLOCALFILE(converttypes);
+            \converttypes.\LOCAL.
+                     "PROCEDURE convINTEGER("
+                     "valeu:INTEGER;"
+                      "VAR str:string;"
+                      "VAR len:INTEGER);"\\
+                     "VAR len1:STR_range;"\\
+                     "BEGIN"\\
+                     "STR_IntegerTostr(valeu,str,len1);"\\
+                     "len:=len1;"\\
+                     "END;"\\
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !TYPEDEFINITION.
+      RECEIVE: BEGIN appendlocfile(%%TYPEDEFINITION.parametertypes,
+                                   parametertypes);
+                     appendlocfile(%%TYPEDEFINITION.converttypes,
+                                   converttypes);
+               END
+   *>
+*>
+FINAL:BEGIN $$TYPESPEC.parametertypes:=parametertypes;
+            $$TYPESPEC.converttypes:=converttypes;
+      END
+END;
+&
+
+%TYPEDEFINITION
+BASIS RULE
+  TYPEDEFINITION = (ENUMDEF/1|SUBRANGEDEF/2|INTEGERDEF/3|BOOLEANDEF/4|
+                    SETDEF/5)
+
+SURFACE PART
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_TYPEDEFINITION;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR parametertypes,converttypes:LOCALFILE;
+BEGIN
+INIT: BEGIN initlocalfile(parametertypes);
+            initlocalfile(converttypes);
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !ENUMDEF.
+      RECEIVE: BEGIN appendlocfile(%%ENUMDEF.parametertype,parametertypes);
+                     appendlocfile(%%ENUMDEF.converttype,converttypes);
+               END
+   *>
+2: <* SEND: BEGIN END
+      !SUBRANGEDEF.
+      RECEIVE: BEGIN appendlocfile(%%SUBRANGEDEF.parametertype,parametertypes);
+                     appendlocfile(%%SUBRANGEDEF.converttype,converttypes);
+               END
+   *>
+3: <* SEND: BEGIN END
+      !INTEGERDEF.
+      RECEIVE: BEGIN appendlocfile(%%INTEGERDEF.parametertype,parametertypes);
+                     appendlocfile(%%INTEGERDEF.converttype,converttypes);
+               END
+   *>
+4: <* SEND: BEGIN END
+      !BOOLEANDEF.
+      RECEIVE: BEGIN appendlocfile(%%BOOLEANDEF.parametertype,parametertypes);
+                     appendlocfile(%%BOOLEANDEF.converttype,converttypes);
+               END
+   *>
+5: <* SEND: BEGIN END
+      !SETDEF.
+      RECEIVE: BEGIN appendlocfile(%%SETDEF.parametertype,parametertypes);
+                     appendlocfile(%%SETDEF.converttype,converttypes);
+               END
+   *>
+*>
+FINAL:BEGIN $$TYPEDEFINITION.parametertypes:=parametertypes;
+            $$TYPEDEFINITION.converttypes:=converttypes;
+      END
+END;
+&
+
+%ENUMDEF
+BASIS RULE
+  ENUMDEF = TYPENAME/2.EQUIVALENT/1.ROUNDOPEN/1.IDENTIFIER/3.
+              {COMMA/4.IDENTIFIER/3}.
+              ROUNDCLOSE/1.
+            SEMICOLON/1
+
+SURFACE PART
+VAR teller::int;
+    str:TSTRING_string;
+    typespec::typespec;
+
+<*
+ INIT:BEGIN teller:=0;
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN typespec.typename:=%TYPENAME.str;
+                                typespec.typekind:=enumkind;
+                                TSTRING_constantempty(typespec.basetype);
+                                TSTRING_constantempty(typespec.basefirst);
+                                TSTRING_constantempty(typespec.baselast);
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN teller:=teller+1;
+                                str:=%.str;
+                                IF teller=1 THEN
+                                  BEGIN
+                                  typespec.basefirst:=str
+                                  END;
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_ENUMDEF;
+                  typespec.baselast:=str;
+                  appendtypespec(typespec,typestable);
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR parametertype,converttype:LOCALFILE;
+    str:TSTRING_string;
+BEGIN
+INIT: BEGIN INITlocalfile(parametertype);
+            initlocalfile(converttype);
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN \parametertype.\LOCAL.
+                     str:=%TYPENAME.str;
+                     "LIILrules_" ""str"" " = (" \\
+                     \converttype.\LOCAL.
+                     "PROCEDURE " "conv" ""str""
+                      "(valeu:LIILRULES_" ""str"" ";"\\
+                      "VAR str:string;"
+                      "VAR len:INTEGER);"\\
+                     "BEGIN"\\
+               END
+   *>
+3: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN \parametertype.\LOCAL.
+                     str:=%.str;
+                     ""str""\\
+                     \converttype.\LOCAL.
+                     "IF valeu=" ""str"" " THEN"\\
+                     "BEGIN "\\
+                      "str:='"
+                      ""str"" "';"\\
+                      "len:=" """TSTRING_length(str)""" 
+                     " END;"\\
+               END
+   *>
+4: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN \parametertype.\LOCAL.
+                     "," 
+               END
+   *>
+*>
+FINAL:BEGIN \parametertype.\LOCAL.
+            ");"\\
+            \converttype.\LOCAL.
+            "END;"\\
+            $$ENUMDEF.converttype:=converttype;
+            $$ENUMDEF.parametertype:=parametertype;
+      END
+END;
+&
+
+%SUBRANGEDEF
+BASIS RULE
+  SUBRANGEDEF = TYPENAME/2.EQUIVALENT/1.IDENTIFIER/3.DOT/1.DOT/1.IDENTIFIER/4.
+                SEMICOLON/1
+SURFACE PART
+VAR typespec::typespec;
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN typespec.typename:=%TYPENAME.str;
+                                typespec.typekind:=subrangekind;
+                                TSTRING_constantempty(typespec.basefirst);
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN typespec.basefirst:=%.str
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN typespec.baselast:=%.str
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  appendtypespec(typespec,typestable);
+                  SEND_SUBRANGEDEF;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR parametertype,converttype:LOCALFILE;
+    str:TSTRING_string;
+BEGIN
+INIT: BEGIN initlocalfile(parametertype);
+            initlocalfile(converttype);
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%TYPENAME.str;
+                     \parametertype.\LOCAL.
+                     "LIILrules_" ""str"" "="\\
+                     \converttype.\LOCAL.
+                     "PROCEDURE conv" ""str"" "("
+                     "valeu:LIILRULES_" ""str"" ";"
+                      "VAR str:string;"
+                      "VAR len:INTEGER);"\\
+                     "VAR len1:STR_range;"\\
+                     "BEGIN"\\
+                     "STR_IntegerTostr(valeu,str,len1);"\\
+                     "len:=len1;"\\
+                     "END;"\\
+               END
+   *>
+3: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%.str;
+                     \parametertype.\LOCAL.
+                     ""str"" ".."
+               END
+   *>
+4: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%.str;
+                     \parametertype.\LOCAL.
+                     ""str"" ";" \\
+               END
+   *>
+*>
+FINAL:BEGIN $$SUBRANGEDEF.parametertype:=parametertype;
+            $$SUBRANGEDEF.converttype:=converttype;
+      END
+END;
+&
+
+%INTEGERDEF
+BASIS RULE
+  INTEGERDEF = TYPENAME/2.EQUIVALENT/1.INTEGERtje/1.SEMICOLON/1
+SURFACE PART
+VAR typespec::typespec;
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN typespec.typename:=%TYPENAME.str;
+                                typespec.typekind:=intkind;
+                                TSTRING_constantempty(typespec.basetype);
+                                TSTRING_constantempty(typespec.basefirst);
+                                TSTRING_constantempty(typespec.baselast);
+                                appendtypespec(typespec,typestable);
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_INTEGERDEF;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR parametertype,converttype:LOCALFILE;
+    str:TSTRING_string;
+BEGIN
+INIT: BEGIN initlocalfile(parametertype);
+            initlocalfile(converttype);
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%TYPENAME.str;
+                     \parametertype.\LOCAL.
+                     "LIILrules_" ""str"" "=INTEGER;"\\
+                     \converttype.\LOCAL.
+                     "PROCEDURE conv" ""str"" "("
+                     "valeu:LIILRULES_" ""str"" ";"
+                      "VAR str:string;"
+                      "VAR len:INTEGER);"\\
+                     "VAR len1:STR_range;"\\
+                     "BEGIN"\\
+                     "STR_IntegerTostr(valeu,str,len1);"\\
+                     "len:=len1;"\\
+                     "len:=len1;"\\
+                     "END;"\\
+               END
+   *>
+*>
+FINAL:BEGIN $$INTEGERDEF.parametertype:=parametertype;
+            $$INTEGERDEF.converttype:=converttype;
+      END
+END;
+&
+
+%BOOLEANDEF
+BASIS RULE
+  BOOLEANDEF = TYPENAME/2.EQUIVALENT/1.BOOLEANtje/1.SEMICOLON/1
+SURFACE PART
+VAR typespec::typespec;
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN typespec.typename:=%TYPENAME.str;
+                                typespec.typekind:=boolkind;
+                                TSTRING_constantempty(typespec.basetype);
+                                TSTRING_constantempty(typespec.basefirst);
+                                TSTRING_constantempty(typespec.baselast);
+                                appendtypespec(typespec,typestable);
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_BOOLEANDEF;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR parametertype,converttype:LOCALFILE;
+    str:TSTRING_string;
+BEGIN
+INIT: BEGIN initlocalfile(parametertype);
+            initlocalfile(converttype);
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%TYPENAME.str;
+                     \parametertype.\LOCAL.
+                     "LIILrules_" ""str"" "=BOOLEAN;"\\
+                     \converttype.\LOCAL.
+                     "PROCEDURE conv" ""str"" "("
+                     "valeu:LIILRULES_" ""str"" ";"
+                      "VAR str:string;"
+                      "VAR len:INTEGER);"\\
+                     "BEGIN"\\
+                     "STR_BooleanTostr(valeu,str,len);"\\
+                     "END;"\\
+               END
+   *>
+*>
+FINAL:BEGIN $$BOOLEANDEF.parametertype:=parametertype;
+            $$BOOLEANDEF.converttype:=converttype;
+      END
+END;
+&
+
+%SETDEF
+BASIS RULE
+  SETDEF = TYPENAME/2.EQUIVALENT/1.SETtje/1.OFtje/1.IDENTIFIER/3.SEMICOLON/1
+SURFACE PART
+VAR typespec::typespec;
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN typespec.typename:=%TYPENAME.str;
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN typespec.typekind:=setkind;
+                                typespec.basetype:=%.str;
+                                TSTRING_constantempty(typespec.basefirst);
+                                TSTRING_constantempty(typespec.baselast);
+                                appendtypespec(typespec,typestable);
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_SETDEF;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR parametertype,converttype:LOCALFILE;
+    str:TSTRING_string; 
+BEGIN
+INIT: BEGIN initlocalfile(parametertype);
+            initlocalfile(converttype);
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%TYPENAME.str;
+                     \parametertype.\LOCAL.
+                     "LIILrules_" ""str"" " = SET OF LIILRULES_"
+               END
+   *>
+3: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN str:=%.str;
+                     \parametertype.\LOCAL.
+                     ""str"" ";"\\
+               END
+   *>
+*>
+FINAL:BEGIN $$SETDEF.parametertype:=parametertype;
+            $$SETDEF.converttype:=converttype;
+      END
+END;
+&
+
+%LANGVERSION
+BASIS RULE
+  LANGVERSION= INTERLINGUA/1.DEFINITION/2
+
+SURFACE PART
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  assigncounter(0);
+                  SEND_LANGVERSION;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR 
+BEGIN
+INIT: BEGIN 
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN
+      END
+END;
+&
+
+
+%ILRULESspec
+BASIS RULE
+  ILRULESspec = ILRULES/1.LEFTARROW/1 . {ILRULE/2} . RIGHTARROW/1
+
+SURFACE PART
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN 
+                         END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_ILrulesspec;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR 
+BEGIN
+INIT: BEGIN 
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !ILRULE.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN
+      END
+END;
+&
+
+
+%ILRULE
+BASIS RULE
+  ILRULE = IDENTIFIER/2.(PARAMETERS/1.LEFTARROW/1.
+           {(PARAMname/3.COLON/1.TYPEname/4|LEVEL/5)}.RIGHTARROW/1|
+           SEMICOLON/1)
+
+SURFACE PART
+VAR rulespec::rulespec;
+    params::setofparams;
+    param::param;
+HELP FUNCTION checktypename(str:TSTRING_string):BOOLEAN;
+     VAR found::bool;
+         table::setoftypespecs;
+         typespec::typespec;
+     BEGIN
+     found:=false;
+     table:=typestable;
+     WHILE stilltypespecs(table) AND not(found) DO
+       BEGIN
+       taketypespec(typespec,table);
+       found:=(TSTRING_compare(typespec.typename,str)=0);
+       END;
+     IF not found THEN writeln('type ',str, ' used but not defined');
+     checktypename:=found
+     END;
+
+<*
+ INIT:BEGIN initsetofparams(params);
+      END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN assigncounter(counter+1);
+                                rulespec.rulename:=%.str;
+                                rulespec.rulenr:=counter;
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN param.name:=%PARAMNAME.str;
+                          END
+       *>
+4:     <*
+        LOCALCONDITION: checktypename(%TYPENAME.str)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN param.typename:=%TYPENAME.str;
+                                appendparam(param,params);
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN TSTRING_constantempty(param.name);
+                                TSTRING_appendchars(param.name,
+                                      param.name,'LEVEL',5);
+                                TSTRING_constantempty(param.typename);
+                                TSTRING_appendchars(param.typename,
+                                      param.typename,'INTEGER',7);
+                                appendparam(param,params);
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  rulespec.params:=params;
+                  appendrulespec(rulespec,rulestable);
+                  SEND_ILRULE;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR 
+BEGIN
+INIT: BEGIN END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+4: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+5: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN
+      END
+END;
+&
+     
+%PARAMNAME
+BASIS RULE
+  PARAMNAME = IDENTIFIER/1
+
+SURFACE PART
+VAR str:TSTRING_string;
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN str:=%.str
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_PARAMNAME;
+                  $PARAMNAME.str:=str;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR 
+BEGIN
+INIT: BEGIN 
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN
+      END
+END;
+&
+
+%TYPENAME
+BASIS RULE
+  TYPENAME = IDENTIFIER/1
+
+SURFACE PART
+VAR str:TSTRING_string;
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN str:=%.str
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_TYPENAME;
+                  $TYPENAME.str:=str;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR 
+BEGIN
+INIT: BEGIN 
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN
+      END
+END;
+&

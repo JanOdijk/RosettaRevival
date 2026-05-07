@@ -1,0 +1,1808 @@
+%UTT
+BASIS RULE
+  UTT = LANGVERSION/1. [KEYSECTION/2].[RECSECTION/3].[ABBRSECTION/4].
+                       [VARCATSECTION/5]
+
+SURFACE PART
+VAR basetypes::setofidents;
+    newentries:BOOLEAN;
+
+<*
+ INIT:BEGIN newentries:=FALSE;
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN newentries:=%KEYSECTION.newentries
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN basetypes:=%ABBRSECTION.basetypes
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_UTT;
+                  $UTT.newentries:=newentries;
+                  $UTT.basetypes:=basetypes;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR 
+    basetypes::setofidents;
+    ident::ident;
+    newentries:BOOLEAN;
+BEGIN
+INIT:BEGIN basetypes:=$UTT.basetypes;
+           newentries:=$UTT.newentries;
+     END;
+<*
+1: <* SEND: BEGIN END
+      !LANGVERSION.
+      RECEIVE: BEGIN 
+                 TFILES_open(of1,'auxenv',6,3);
+                 BEGIN
+                   \of1.\GLOBAL.\\
+                   TAB(of1,5);"pragma C_include('string.pf');"\\
+                   TAB(of1,5);"pragma C_include('files.pf');"\\
+                   TAB(of1,5);"pragma C_include('lsdomaint.pf');"\\\\
+                   "PACKAGE LSAUXDOM;"\\\\
+                   "WITH strng,files,lsdomaint;"\\
+                   IF stillidents(basetypes) THEN BEGIN "TYPE "\\ END;
+                   WHILE stillidents(basetypes) DO
+                     BEGIN
+                     takeident(ident,basetypes);
+                     "SETOF" ""ident.str"" "=SET OF LSDOMAINT_"
+                       ""ident.str"" ";"\\
+                     END;
+                 END;
+                 TFILES_open(of2,'auxpas',6,3);
+                 BEGIN
+                   \of2.\GLOBAL.\\
+                   "EXPORT(lsauxdom);"\\
+              IF newentries THEN
+                    BEGIN TAB(of2,5);"pragma C_include('constfile.pf');"\\ END;
+                   TAB(of2,5);"pragma C_include('lsauxdom.pf');"\\
+                   TAB(of2,5);"pragma C_include('string.pf');"\\
+                   TAB(of2,5);"pragma C_include('files.pf');"\\
+                   TAB(of2,5);"pragma C_include('lsdomaint.pf');"\\   
+                   TAB(of2,5);"pragma C_include('strtokey.pf');"\\
+     
+                   "PROGRAM LSAUXDOM;"\\\\
+                   "WITH strng,files,lsdomaint,strtokey;"\\
+                              "FUNCTION auxkey(strkey:STRING_string):INTEGER;"\\
+                              "VAR int:INTEGER;"\\
+                              "BEGIN"\\
+                              " STRTOKEY_getSkey(strkey,int); auxkey:=int;"\\
+                              "END;"\\
+                 END;
+                 TFILES_open(of3,'substpas',8,3);
+                 BEGIN
+                   \of3.\GLOBAL.\\
+                   "EXPORT(ldsubsttovar);"\\
+                   TAB(of3,5);"pragma C_include('ldsubsttovar.pf');"\\    
+                   TAB(of3,5);"pragma C_include('lsdomaint.pf');"\\      
+                   TAB(of3,5);"pragma C_include('listree.pf');"\\    
+                   TAB(of3,5);"pragma C_include('lsstree.pf');"\\
+                   TAB(of3,5);"pragma C_include('maket.pf');"\\  
+                   "PROGRAM LDSUBSTTOVAR;"\\\\
+                   "WITH lsdomaint,listree,lsstree,maket;"\\
+                 END;
+               END
+   *>
+2: <* SEND: BEGIN END
+      !KEYSECTION.
+      RECEIVE: BEGIN 
+               END
+   *>
+3: <* SEND: BEGIN END
+      !RECSECTION.
+      RECEIVE: BEGIN END
+   *>
+4: <* SEND: BEGIN END
+      !ABBRSECTION.
+      RECEIVE: BEGIN END
+   *>
+5: <* SEND: BEGIN END
+      !VARCATSECTION.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL: BEGIN
+         BEGIN
+           \of1.\GLOBAL.\\\\
+           "END; {LSAUXDOM}"
+         END;
+         BEGIN
+           \of2.\GLOBAL.\\\\
+         END;
+         BEGIN
+           \of3.\GLOBAL.\\\\
+         END
+       END
+END;
+&
+
+
+%LANGVERSION
+BASIS RULE
+  LANGVERSION= LANGUAGE/2 . COLON/2 . IDENTIFIER/1 
+
+SURFACE PART
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_LANGVERSION;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR
+BEGIN
+INIT: BEGIN 
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN
+      END
+END;
+&
+
+
+%KEYSECTION
+BASIS RULE
+  KEYSECTION = KEYS/1 . LEFTARROW/2 . {ARGUMENTS/3} . RIGHTARROW/2
+
+SURFACE PART
+VAR newentries:BOOLEAN;
+
+<*
+ INIT:BEGIN newentries:=FALSE
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN 
+                         END
+       *>
+ 3:    <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN IF NOT(%ARGUMENTS.oldentry) THEN
+                               newentries:=TRUE
+                         END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_KEYSECTION;
+                  $KEYSECTION.newentries:=newentries
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR tempkey ::KEY;
+    keytable::setofKEYS;
+    newkeytable::setofKEYS;
+    maxstringlength:INTEGER;
+BEGIN
+INIT: BEGIN 
+        INITSETOFkeys(newkeytable);
+        INITSETOFkeys(keytable);
+        maxstringlength:=0;
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN
+              %%ARGUMENTS.maxstringlength:=maxstringlength;
+            END
+      !ARGUMENTS.
+      RECEIVE: BEGIN
+                 maxstringlength := %%ARGUMENTS.maxstringlength;
+                 IF %ARGUMENTS.oldentry THEN
+                   APPENDkey(%%ARGUMENTS.keyrec,keytable)  
+                 ELSE APPENDkey(%%ARGUMENTS.keyrec,newkeytable)
+               END
+   *>
+*>
+FINAL:BEGIN
+       IF stillkeys(keytable) THEN BEGIN \of1.\GLOBAL. "CONST" \\ END;
+        WHILE STILLkeys(keytable) do
+          BEGIN
+            TAKEkey(tempkey,keytable);
+            BEGIN \of1.\GLOBAL. 
+                  TAB(of1,2);
+                  ""tempkey.string"";
+                  TAB(of1,maxstringlength-tempkey.stringlength);
+                  " = ";
+                  ""tempkey.number"";
+                  ";" \\
+            END
+          END;
+        WHILE STILLkeys(newkeytable) DO
+          BEGIN
+          takekey(tempkey,newkeytable);
+          \of1.\GLOBAL.
+          " FUNCTION LSAUXDOM_" ""tempkey.string""
+           ":INTEGER; EXTERNAL;"\\ 
+          \of2.\GLOBAL.
+          " FUNCTION LSAUXDOM_" ""tempkey.string""
+           ":INTEGER;"\\
+          "BEGIN"\\
+          "LSAUXDOM_" ""tempkey.string"" ":="
+            "CONSTFILE_" ""tempkey.string""\\
+          "END;"\\
+          END
+      END
+END;
+&
+
+
+%ARGUMENTS
+BASIS RULE
+  ARGUMENTS = IDENTIFIER/1. [ EQUIVALENT/2 . ARGLIST/3]
+
+SURFACE PART
+VAR oldentry:BOOLEAN;
+
+<*
+ INIT:BEGIN oldentry:=FALSE
+      END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN oldentry:=TRUE
+                         END
+       *>
+ 3:    <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN 
+                         END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_ARGUMENTS;
+                  $ARGUMENTS.oldentry:=oldentry
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR StringLength : integer; 
+    tempkey     :: KEY;
+    TempString   : TSTRING_string;
+    oldentry     :BOOLEAN;
+BEGIN
+INIT: BEGIN oldentry:=$ARGUMENTS.oldentry END;
+<*
+1: <* SEND: BEGIN
+              TempString:=%.str;
+              TSTRING_Concat(tempkey.string,'LSAUXDOM_',TempString);
+              StringLength:=TSTRING_length(%.str);
+              tempkey.StringLength:=StringLength;
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN  END
+      !ARGLIST.
+      RECEIVE: BEGIN 
+                 tempkey.number:=%%ARGLIST.numb;
+               END
+   *>
+*>
+FINAL:BEGIN
+        IF not oldentry THEN tempkey.string:=tempstring;
+        $$ARGUMENTS.keyrec:=tempkey;
+        IF StringLength > $$ARGUMENTS.maxstringlength THEN
+                    $$ARGUMENTS.maxstringlength:=StringLength   
+      END
+END;
+&
+     
+
+%ARGLIST
+BASIS RULE
+  ARGLIST = LEFTARROW/1 . KEYtje/1 . EQUIVALENT/1 . NUMBER/2 .
+                         TERM/1 . EQUIVALENT/1 . TERMARGUMENT/4 .
+                     CATEGORY/1 . EQUIVALENT/1 . IDENTIFIER/3 . 
+            RIGHTARROW/1  
+SURFACE PART
+
+<*
+ INIT:BEGIN  
+      END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN 
+                         END
+       *>
+3:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN 
+                         END
+       *>
+4:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN 
+                         END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_ARGLIST;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR KeyNumber,
+    KeyTerm,
+    KeyCat  : TSTRING_string;
+
+BEGIN
+INIT: BEGIN END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !NUMBER.
+      RECEIVE: BEGIN
+                 KeyNumber:=%%NUMBER.numb
+               END
+   *>
+3: <* SEND: BEGIN 
+              KeyCat:=%.str
+            END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+4: <* SEND: BEGIN  END
+      !TERMARGUMENT.
+      RECEIVE: BEGIN 
+                 KeyTerm:=%%TERMARGUMENT.term
+               END
+   *>
+*>
+FINAL:BEGIN
+        $$ARGLIST.numb:=KeyNumber;
+      END
+END;
+&
+
+
+%NUMBER
+BASIS RULE
+  NUMBER = IDENTIFIER/1
+
+SURFACE PART
+HELP FUNCTION CheckNumber(str : TSTRING_string) :BOOLEAN;
+     VAR digits : TSTRING_string;
+     BEGIN
+       digits := '0123456789';
+       IF TSTRING_FindFirstNotInSet(str,digits) = 0 THEN
+             CheckNumber:=TRUE
+       ELSE  CheckNumber:=FALSE;         
+     END;
+
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:CheckNumber(%.str)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_NUMBER;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR str : TSTRING_string;
+BEGIN
+INIT: BEGIN END;
+<*
+1: <* SEND: BEGIN
+              str:=%.str;
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN 
+        $$NUMBER.numb:=str;
+      END
+END;
+&
+
+
+%TERMARGUMENT
+BASIS RULE
+  TERMARGUMENT = IDENTIFIER/1 | ABSTRACT/2 | PUNCTUATION/3
+
+SURFACE PART
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_TERMARGUMENT;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR term : TSTRING_string;
+    punct:: leesteken;
+BEGIN
+INIT: BEGIN 
+        term:='';
+        punct:=GeenLeesteken;
+      END;
+<*
+1: <* SEND: BEGIN
+              term:=%.str;
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN
+              term:='ABSTRACT';
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN
+            END
+      !PUNCTUATION.
+      RECEIVE: BEGIN
+                 punct:=%%PUNCTUATION.punct;
+               END
+   *>
+*>
+FINAL:BEGIN 
+        $$TERMARGUMENT.term:=term;
+      END
+END;
+&
+
+
+%PUNCTUATION
+BASIS RULE
+  PUNCTUATION = PUNC1|PUNC2|PUNC3|PUNC4|PUNC5|PUNC6|PUNC7
+  PUNC1       = LEFTARROW/1|RIGHTARROW/2|SQUAREOPEN/3|SQUARECLOSE/4
+  PUNC2       = ROUNDOPEN/5|ROUNDCLOSE/6|CURLYOPEN/7|CURLYCLOSE/8
+  PUNC3       = RIGHTQUOTE/9|DOUBLEQUOTE/11|PLUS/31|MINUS/12
+  PUNC4       = ASTERISK/13|EQUIVALENT/14|EXCLAMATION/15|QUARY/16|COLON/17
+  PUNC5       = COMMA/18|SEMICOLON/19|DOT/20|MONKEYTAIL/21|RAILING/22|DOLLAR/23
+  PUNC6       = PERCENT/24|ROOF/25|ANDSIGN/26|UNDERSCORE/27|BACKSLASH/28
+  PUNC7       = UPSLASH/28|FORWARDSLASH/30|INVQUARY/32|INVEXCLAMATION/33
+
+SURFACE PART
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+6:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+7:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+8:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+9:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+11:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+12:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+13:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+14:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+15:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+16:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+17:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+18:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+19:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+20:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+21:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+22:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+23:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+24:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+25:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+26:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+27:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+28:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+29:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+30:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+31:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+32:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+33:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_PUNCTUATION;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR punct :: leesteken;
+BEGIN
+INIT: BEGIN END;
+<*
+1: <* SEND: BEGIN
+              punct:=haakopen
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN
+              punct:=haaksluit
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN
+              punct:=rechtopen
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+4: <* SEND: BEGIN
+              punct:=rechtsluit
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+5: <* SEND: BEGIN
+              punct:=rondopen
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+6: <* SEND: BEGIN
+              punct:=rondsluit
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+7: <* SEND: BEGIN
+              punct:=acculadeopen
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+8: <* SEND: BEGIN
+              punct:=acculadesluit
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+9: <* SEND: BEGIN
+              punct:=quoterechts
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+11: <* SEND: BEGIN
+              punct:=dubbelequote
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+12: <* SEND: BEGIN
+              punct:=min
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+13: <* SEND: BEGIN
+              punct:=sterretje
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+14: <* SEND: BEGIN
+              punct:=is
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+15: <* SEND: BEGIN
+              punct:=uitroepteken
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+16: <* SEND: BEGIN
+              punct:=vraagteken
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+17: <* SEND: BEGIN
+              punct:=dubbelepunt
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+18: <* SEND: BEGIN
+              punct:=komma
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+19: <* SEND: BEGIN
+              punct:=puntcomma
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+20: <* SEND: BEGIN
+              punct:=punt
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+21: <* SEND: BEGIN
+              punct:=apestaartje
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+22: <* SEND: BEGIN
+              punct:=hekje
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+23: <* SEND: BEGIN
+              punct:=dollarteken
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+24: <* SEND: BEGIN
+              punct:=procent
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+25: <* SEND: BEGIN
+              punct:=dakje
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+26: <* SEND: BEGIN
+              punct:=en
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+27: <* SEND: BEGIN
+              punct:=onderstreepje
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+28: <* SEND: BEGIN
+              punct:=terugslash
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+29: <* SEND: BEGIN
+              punct:=verticaleslash
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+30: <* SEND: BEGIN
+              punct:=vooruitslash
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+31: <* SEND: BEGIN
+              punct:=plusteken
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+32: <* SEND: BEGIN
+              punct:=invvraagteken
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+33: <* SEND: BEGIN
+              punct:=invuitroepteken
+             END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN 
+        $$PUNCTUATION.punct:=punct
+      END
+END;
+&
+
+
+%RECSECTION
+BASIS RULE
+  RECSECTION = STANDARD/1 . RECORDS/1 . LEFTARROW/1 . 
+                              {NUMRECORDS/2} . RIGHTARROW/1
+
+SURFACE PART
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_RECSECTION;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR
+BEGIN 
+INIT: BEGIN 
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !NUMRECORDS.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN END
+END;
+&
+
+
+%NUMRECORDS
+BASIS RULE
+  NUMRECORDS = IDENTIFIER/1 . COLON/2 . TYPESECTION/4 . FIELDLIST/3
+SURFACE PART
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+3:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+4:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_NUMRECORDS;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR  ConcTypeId,
+     functionId,
+       recordId,
+         typeId:TSTRING_string;
+   recassign:LOCALFILE;
+BEGIN
+INIT: BEGIN INITLOCALFILE(recassign) END;
+<*
+1: <* SEND: BEGIN
+              recordId:=%.str; 
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN 
+            END
+      !FIELDLIST.
+      RECEIVE: BEGIN 
+                     \recassign.\LOCAL.
+                     " PROCEDURE LSAUXDOM_As" 
+                                 ""recordId"" "(VAR rec:" ""ConctypeId""
+                                              ");"\\
+                     "BEGIN"\\
+                     "WITH rec DO"\\
+                     "BEGIN"\\
+                     APPENDLOCFILE(%%FIELDLIST.recassign,recassign);
+                     "END"\\
+                     "END;"\\
+               END
+   *>
+4: <* SEND: BEGIN 
+            END
+      !TYPESECTION.
+      RECEIVE: BEGIN 
+                 typeId:=%%TYPESECTION.typeId;
+                 TSTRING_Concat(functionId,'LSAUXDOM_Cp',recordId);
+                 TSTRING_Concat(ConcTypeId,'LSDOMAINT_',typeId);
+                 BEGIN
+                  \of1.\GLOBAL. \\
+                   "  FUNCTION ";""functionId""\\
+                   TAB(of1,25); "(rec:";""ConcTypeId"";"):BOOLEAN;"\\
+                   TAB(of1,11);"EXTERNAL;"\\;
+                   "  PROCEDURE LSAUXDOM_As" ""recordId""\\
+                   TAB(of1,25); "(VAR rec:";""ConcTypeId"";");"\\
+                   TAB(of1,11);"EXTERNAL;"\\;
+                  \of2.\GLOBAL. \\
+                   " FUNCTION ";""functionId""\\
+                   TAB(of2,25); "(rec:";""ConcTypeId"";"):BOOLEAN;"\\
+                   "VAR Bool : BOOLEAN;"\\
+                   "BEGIN " \\
+                   TAB(of2,2); 
+                   "Bool := FALSE;"\\
+                   TAB(of2,2); 
+                   "WITH rec DO"\\
+                   TAB(of2,2);
+                   "BEGIN"\\
+                   TAB(of2,4);
+               END;
+             END
+   *>
+*>
+FINAL:BEGIN
+        BEGIN
+         \of2.\GLOBAL.
+         TAB(of2,2);
+         "END;{with}"\\
+         TAB(of2,2);
+         ""functionId"";":=Bool;"\\
+         "END;{function}"\\
+        END;
+        APPENDFILE(recassign,of2);
+      END;
+END;
+&
+
+
+%TYPESECTION
+BASIS RULE
+  TYPESECTION = IDENTIFIER/1
+
+SURFACE PART
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_TYPESECTION;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR typeId : TSTRING_string;
+BEGIN
+INIT: BEGIN 
+      END;
+<*
+1: <* SEND: BEGIN 
+              typeId:=%.str;
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN
+        $$TYPESECTION.typeId:=typeId;
+      END
+END;
+&
+
+%FIELDLIST
+BASIS RULE
+  FIELDLIST = CURLYOPEN/1 . {IDENTIFIER/2 . EQUIVALENT/3 . FIELDVALUE/4} 
+                          . CURLYCLOSE/1
+
+SURFACE PART
+VAR RecFieldCount : INTEGER;
+
+<*
+ INIT:BEGIN
+        RecFieldCount:=0;
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+3:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                           RecFieldCount:=RecFieldCount + 1;
+                         END
+       *>
+4:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_FIELDLIST;
+                  $FIELDLIST.RecFieldCount:=RecFieldCount;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR fieldId : TSTRING_string;
+    NumberOfFields : INTEGER;
+    recassign:LOCALFILE;
+BEGIN
+INIT: BEGIN 
+        INITLOCALFILE(recassign);
+        NumberOfFields:=$FIELDLIST.RecFieldCount
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN
+              fieldId:=%.str;
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+4: <* SEND: BEGIN
+              %%FIELDVALUE.fieldId:=fieldId;
+              %%FIELDVALUE.NumberOfFieldsInh:=NumberOfFields;
+            END
+      !FIELDVALUE.
+      RECEIVE: BEGIN 
+                 APPENDLOCFILE(%%FIELDVALUE.recassign,recassign);
+                 NumberOfFields:=%%FIELDVALUE.NumberOfFieldsSyn; 
+               END
+   *>
+*>
+FINAL:BEGIN
+            $$FIELDLIST.recassign:=recassign;
+      END
+END;
+&
+
+
+%FIELDVALUE
+BASIS RULE
+  FIELDVALUE = IDENTIFIER/1 | (SQUAREOPEN/2 . (SQUARECLOSE/3 |
+                              (IDENTIFIER/1 . {COMMA/4 . IDENTIFIER/1} .
+                                              SQUARECLOSE/3)))
+SURFACE PART
+
+<*
+ INIT:BEGIN
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+4:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_FIELDVALUE;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR field_value,
+    fieldId,
+    string     : TSTRING_string;
+    NumberOfFields : INTEGER;
+    recassign:LOCALFILE;
+BEGIN
+INIT: BEGIN
+        INITLOCALFILE(recassign);
+        field_value:='';
+        fieldId:=$$FIELDVALUE.fieldId;
+        NumberOfFields:=$$FIELDVALUE.NumberOfFieldsInh;
+      END;
+<*
+1: <* SEND: BEGIN
+              string:=%.str;
+              IF TSTRING_comparebegin(string,'KEY_')=0 THEN
+                BEGIN
+                TSTRING_extractend(string,string,5);
+                TSTRING_Append(field_value,'auxkey(''');
+                TSTRING_Append(field_value,string);
+                TSTRING_Append(field_value,''')');
+                END
+              ELSE TSTRING_Append(field_value,string);
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN 
+              TSTRING_Append(field_value,'[');
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN
+              TSTRING_Append(field_value,']');
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+4: <* SEND: BEGIN 
+              TSTRING_Append(field_value,',');
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN
+        BEGIN
+         \of2.\GLOBAL.
+          "IF  (" ""fieldId"" " = " ""field_value"" 
+             " ) THEN"\\
+        END;
+        IF NumberOfFields = 1 THEN
+        BEGIN
+          \of2.\GLOBAL.
+           TAB(of2,6);
+           "Bool:=TRUE;"\\
+        END;
+         \recassign.\LOCAL.
+         ""fieldId"" " := " ""field_value"" 
+                      ";"\\
+        $$FIELDVALUE.recassign:=recassign;
+        $$FIELDVALUE.NumberOfFieldsSyn:=NumberOfFields-1; 
+      END;
+END;
+&
+
+
+%ABBRSECTION
+BASIS RULE
+   ABBRSECTION = ABBRSETS/1 . LEFTARROW/2 . {NUMABBRS/3} . RIGHTARROW/2
+
+SURFACE PART
+VAR AbbrCounter :: INT;
+    ident::ident;
+    basetypes :: setofidents;
+HELP FUNCTION present(ident::ident;S1::setofidents):BOOLEAN;
+    VAR ident1::ident;
+        result:boolean;
+    begin
+    result:=false;
+    while stillidents(S1) and not(result) do
+      begin
+      takeident(ident1,S1);
+      result := (ident1.str=ident.str)
+      end;
+    present:=result
+    end;
+
+
+<*
+ INIT:BEGIN
+        AbbrCounter:=0;
+        INITsetofidents(basetypes);
+      END;
+1:      <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+3:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                           IF %NUMABBRS.basementioned THEN
+                             BEGIN
+                             ident.str:=%NUMABBRS.typeident;
+                             IF NOT(present(ident,basetypes)) THEN 
+                                       appendident(ident,basetypes);
+                             END;
+                           AbbrCounter:=AbbrCounter + 1; 
+                         END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_ABBRSECTION;
+                  $ABBRSECTION.basetypes:=basetypes;
+                  $ABBRSECTION.AbbrCounter:=AbbrCounter;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR NumOfAbbrs ::INT;
+BEGIN
+INIT: BEGIN 
+        NumOfAbbrs:=$ABBRSECTION.AbbrCounter;
+        BEGIN
+        END;
+      END;
+<*
+1: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN
+              %%NUMABBRS.NumOfAbbrsInh:=NumOfAbbrs;
+            END
+      !NUMABBRS.
+      RECEIVE: BEGIN
+                 NumOfAbbrs:=%%NUMABBRS.NumOfAbbrsSyn;
+               END
+   *>
+*>
+FINAL:BEGIN
+      END;
+END;
+&
+
+
+%NUMABBRS
+BASIS RULE
+  NUMABBRS = (SETTYPE/4.IDENTIFIER/5|BASETYPE/6.IDENTIFIER/5).IDENTIFIER/1.
+             EQUIVALENT/2 . ABBRLIST/3
+
+SURFACE PART
+VAR typeident:TSTRING_string;
+    basementioned:BOOLEAN;
+
+<*
+ INIT:BEGIN basementioned:=FALSE;
+            TSTRING_constantempty(typeident);
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+3:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+4:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+5:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN typeident:=%.str
+                         END
+       *>
+6:     <*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN basementioned:=TRUE
+                         END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_NUMABBRS;
+                  $NUMABBRS.typeident:=typeident;
+                  $NUMABBRS.basementioned:=basementioned;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR  tempabbr     : TSTRING_string;
+     NumOfAbbrs  :: INT;
+     typeident: TSTRING_string;
+     basementioned::bool;
+BEGIN
+INIT: BEGIN 
+        typeident:=$NUMABBRS.typeident;
+        basementioned:=$NUMABBRS.basementioned;
+        NumOfAbbrs:=$$NUMABBRS.NumOfAbbrsInh;
+      END;
+<*
+1: <* SEND: BEGIN
+              tempabbr:=%.str;
+              \of1.\GLOBAL.
+               " FUNCTION LSAUXDOM_" ""tempabbr""
+               IF basementioned then
+                 BEGIN ":SETOF" END
+               ELSE BEGIN ":LSDOMAINT_" END;
+               ""typeident"" ";EXTERNAL;"\\
+              \of2.\GLOBAL.
+               " FUNCTION LSAUXDOM_" ""tempabbr""
+               IF basementioned then
+                 BEGIN ":SETOF" END
+               ELSE BEGIN ":LSDOMAINT_" END;
+               ""typeident"" ";"\\
+               "BEGIN"\\
+               "LSAUXDOM_" ""tempabbr"" ":="\\
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN
+              %%ABBRLIST.NumOfAbbrsInh:=NumOfAbbrs;
+            END
+      !ABBRLIST.
+      RECEIVE: BEGIN 
+                 NumOfAbbrs:=%%ABBRLIST.NumOfAbbrsSyn;
+               END
+   *>
+4: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+5: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+6: <* SEND: BEGIN
+            END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+*>
+FINAL:BEGIN
+        \of2.\GLOBAL. "END;"\\
+        $$NUMABBRS.NumOfAbbrsSyn:=NumOfAbbrs;
+      END 
+END;
+&
+
+
+%ABBRLIST
+BASIS RULE 
+  ABBRLIST = SQUAREOPEN/1 . [ {IDENTIFIER/2 . COMMA/3} .
+                             IDENTIFIER/2 ] . SQUARECLOSE/4
+
+SURFACE PART
+
+<*
+ INIT:BEGIN
+       END;
+1 :    <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_ABBRLIST;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR str          : TSTRING_string;
+    AbbrCounter  ::INT;
+BEGIN
+INIT: BEGIN
+        AbbrCounter:=$$ABBRLIST.NumOfAbbrsInh; 
+        BEGIN
+        END;   
+      END;
+<*
+1: <* SEND: BEGIN 
+              BEGIN
+                \of2.\GLOBAL.
+                "["
+              END;
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN 
+              str:=%.str;
+                \of2.\GLOBAL.
+                ""str""
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN 
+              BEGIN
+                \of2.\GLOBAL.
+                ","\\
+              END;
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+4: <* SEND: BEGIN 
+              BEGIN
+                \of2.\GLOBAL.
+                "]"\\
+              END;
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN
+        AbbrCounter:=AbbrCounter - 1;
+        $$ABBRLIST.NumOfAbbrsSyn:=AbbrCounter;
+      END
+END;
+&
+
+%VARCATSECTION
+BASIS RULE 
+  VARCATSECTION = VARCATS/1.COLON/1.
+                             LEFTARROW/1 . {IDENTIFIER/2 . COLON/1 .
+                             IDENTIFIER/3} . RIGHTARROW/1
+
+SURFACE PART
+
+<*
+ INIT:BEGIN 
+       END;
+1 :    <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_VARCATSECTION;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR catname,varcatname:TSTRING_string;
+    attrstruct:TLDCONVREC_pCATattrstruct;
+BEGIN
+INIT: BEGIN \of3.\GLOBAL.
+            " PROCEDURE LDSUBSTTOVAR_copy(t1:LISTREE_pstree;"\\
+            "                           VAR t2:LISTREE_pstree;ind:INTEGER);"\\
+            "VAR lst1,lst2:LSSTREE_pstree;"\\
+            "BEGIN"\\
+            "lst1:=loopholes.retype(t1,LSSTREE_pstree);"\\
+            "CASE lst1^.cat OF" \\             
+      END;
+<*
+1: <* SEND: BEGIN 
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN catname:=%.str;
+                 ""catname"" " : BEGIN" \\
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+3: <* SEND: BEGIN varcatname:=%.str;
+                  \of3.\GLOBAL.
+                  "lst2:=MAKET_stree(" ""varcatname"" ");"\\
+                  attrstruct:=TLDCONVREC_catattrbs(catname);
+                   "lst2^.ls^." ""varcatname"" "field^.index:=ind;"\\
+                  WHILE attrstruct<>nil DO
+                   BEGIN
+                   "lst2^.ls^." ""varcatname"" "field^." 
+                               ""attrstruct^.fieldname"" ":="
+                   "lst1^.ls^." ""catname"" "field^."
+                               ""attrstruct^.fieldname"" ";"\\
+                   attrstruct:=attrstruct^.nextattr;
+                   END;
+                  "END;"\\
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN \of3.\GLOBAL.
+            "END;"\\
+            "t2:=loopholes.retype(lst2,LISTREE_pstree);"\\
+            "END;"\\
+      END
+END;
+&
+

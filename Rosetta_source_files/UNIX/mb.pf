@@ -1,0 +1,295 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : MB 
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  
+ *
+ *EMP:::===================================================================*)
+
+pragma c_include ('language.pf' );
+pragma c_include ('langdef.pf');
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+pragma c_include ('globdef.pf');
+pragma c_include ('interfaces.pf');
+
+Package MB;
+With GLOBDEF, INTERFACES;
+
+
+pragma calling_convention (language.C);
+pragma routine_aliasing_convention (RosLangDef.Rosetta_C_aliasing_conventions2);
+
+   Const
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : MB_maxnumberofmailboxes
+ *  Description    : Defines the maximum number of mailboxes to be used
+ *                   by one process
+ *
+ *EMP:::===================================================================*)
+      MB_maxnumberofmailboxes = 7;
+
+(*MPC:::===================================================================*
+ *
+ *  Constant name  : MB_maxmbxname
+ *  Description    : maximum number of characters to be used for mailboxname
+ *
+ *EMP:::===================================================================*)
+      MB_maxmbxname = 15;  
+
+   Type
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : MB_clienttype
+ *  Description    : Definition of the different clients
+ *
+ *EMP:::===================================================================*) 
+      MB_clienttype = (rosetta, lexed);
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : MB_actiontype
+ *  Description    : Definition of the different edit actions
+ *
+ *EMP:::===================================================================*) 
+      MB_actiontype = (exitlexed, editlemmas, showtranslation, 
+                       searchtranslation, selectmkey);
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : MB_languagetype
+ *  Description    : Definition of the different language
+ *
+ *EMP:::===================================================================*) 
+      MB_languagetype = (dutch, english, spanish);
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : MB_msgtype
+ *  Description    : Definition of the different types of messages
+ *
+ *EMP:::===================================================================*) 
+      MB_msgtype = (startmessage, stopmessage, ILFinished, AmbigInfo,
+                    ILNextSyn, ILNextLexSense, ILNextStructSense,
+                    NextWord, Inspect,
+                    EmptyAnResult, CorrectAnResult, Crashed);
+
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : MB_communicationblock
+ *  Description    : Defines the layout of the messages which will be used
+ *                   by the Rosetta system
+ *
+ *EMP:::===================================================================*)
+      MB_communicationblock = Record
+          wndport              : Integer;
+          case client          : MB_clienttype of
+          rosetta: (
+              msg              : MB_msgtype;
+              NextSyn          : BOOLEAN;
+              NextStructSense  : BOOLEAN;
+              NextLexSense     : BOOLEAN;
+              status           : GLOBDEF_status;
+              shortcircuitlevel: GLOBDEF_leveltype;
+              stoplevel        : GLOBDEF_leveltype;
+              clearwindow      : BOOLEAN;
+              IfDescr          : INTERFACES_IfDescr;
+              BatchMode        : BOOLEAN);
+          lexed: (
+              action           : MB_actiontype;
+              TargetLanguage   : MB_languagetype;
+              mkey             : INTEGER;
+              TranslationFound : BOOLEAN)
+          end;
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : MB_accesstype
+ *  Description    : Defines the different ways of mailbox access.
+ *
+ *EMP:::===================================================================*)
+      MB_accesstype = (takeaccess, putaccess);
+
+(*MPT:::===================================================================*
+ *
+ *  Type name      : MB_mbxid
+ *  Description    : 
+ *
+ *EMP:::===================================================================*)
+      MB_mbxid = integer (* 1..MB_maxnumberofmailboxes*);
+
+
+
+(*MPP:::===================================================================*
+ *
+ *  Procedure Name : MB_init
+ *  Description    : Initializes MB package.
+ *  Parameters     : maxMessageLength: maximum length of any message for
+ *                   the mailboxes
+ *                   create : when yes, this process creates all mailboxes
+ *                   when no, this process only uses existing mailboxes
+ *  Precondition   : MB package may not yet have been initialized.
+ *  Postcondition  : All MB functions are now ready to be used
+ *
+ *EMP:::===================================================================*)
+
+Procedure MB_init (
+    maxMessageLength : integer;
+    create           : GLOBDEF_yntype);
+External;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : MB_OPEN
+ *  Description    : Opens mailbox <mbx_name> for usage by the current
+ *                   process. 
+ *                   !! The implementation of this function is highly operating
+ *                   system dependent.!!
+ *  Parameters     : mbxname: string which identifies the mailbox.
+ *                   access : defines whether the mailbox will be used for 
+ *                            "taking" or "putting" 
+ *                   var mbx_id : unique specification of the mailbox, to be
+ *                                in subsequent mailbox function calls.
+ *  Result         : Status which indicates whether open action was
+ *                   successful.
+ *  Precondition   : If the mailbox has to be created, there may not
+ *                   already be a mailbox in the system with the same name.
+ *                   If an existing mailbox will be used, this mailbox must
+ *                   exist (sic!).
+ *  Postcondition  : IF <create> THEN 
+ *                      mailbox <mbxname> created with access <access>
+ *                   ELSE
+ *                      mailbox <mbxname> opened for useage with access 
+ *                      <access>
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+Function MB_open( 
+    const mbxname : string;
+          access  : MB_accesstype;
+      Var mbxid   : MB_mbxid) 
+                  : GLOBDEF_status;
+External;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : MB_CLOSE
+ *  Description    : Closes mailbox <mbx_name> for usage by the current
+ *                   process. 
+ *                   !! The implementation of this function is highly operating
+ *                   system dependent.!!
+ *  Parameters     : mbxid : unique identification of the mailbox.
+ *                   delete : specifies whether the mailbox must be deleted
+ *                            or not.
+ *  Result         : Status which indicates, whether close action was 
+ *                   successful.  
+ *  Precondition   : IF <delete> THEN 
+ *                      mailbox <mbxname> has been opened and created 
+ *                      by current process.
+ *                   ELSE 
+ *                      mailbox <mbxname> has been opened by current process. 
+ *  Postcondition  : IF <delete> THEN 
+ *                      mailbox <mbxname> deleted
+ *                   ELSE
+ *                      mailbox <mbxname> closed for useage 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+Function MB_close( 
+          mbxid   : MB_mbxid;
+          delete  : GLOBDEF_yntype) 
+                  : GLOBDEF_status; 
+External;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : MB_TAKE
+ *  Description    : The function takes a message out of the mailbox. This 
+ *                   message has a fixed layout. The mailbox will be big 
+ *                   enough to contain one message. If there is no message in 
+ *                   the specified mailbox, the current process is suspended 
+ *                   until a message arrives. In the other case the function 
+ *                   immediately returns control.
+ *                   !! The implementation of this function is highly operating
+ *                   system dependent.!!
+ *  Parameters     : mbxid : unique identification of the mailbox. 
+ *                   var message: parameter to which the message will be 
+ *                                assigned. 
+ *  Result         : Status which indicates, whether take action was 
+ *                   successful.  
+ *  Precondition   : mailbox <mbxname> has been opened by current process with
+ *                   read access.
+ *  Postcondition  : <message> contains the received communicationblock
+ *
+ *EMP:::===================================================================*)
+
+Function MB_take( 
+          mbxid     : MB_mbxid;
+      Var message   : MB_communicationblock) 
+                    : GLOBDEF_status; 
+External;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : MB_PUT
+ *  Description    : The function puts a message into the mailbox. This 
+ *                   message has a fixed layout. The mailbox will be big 
+ *                   enough to contain one message. 
+ *                   The current process is suspended 
+ *                   until the message is read by the receiving process. 
+ *                   !! The implementation of this function is highly operating
+ *                   system dependent.!!
+ *  Parameters     : mbxid: unique identification of the mailbox
+ *                   message: parameter which contains the message that will be
+ *                            put into the mailbox.
+ *  Result         : Status which indicates, whether put action was 
+ *                   successful.  
+ *  Precondition   : mailbox <mbxname> has been opened by current process with
+ *                   write access. 
+ *                   mailbox <mbxname> contains no message.
+ *  Postcondition  : <message> has been sent to mailbox <mbxname>
+ *
+ *EMP:::===================================================================*)
+
+Function MB_put( 
+    mbxid         : MB_mbxid;
+    const message : MB_communicationblock) 
+                  : GLOBDEF_status; 
+External;
+
+(*
+?ASYNCHRONOUS?
+Procedure MB_PUTHandler( 
+    mbxid         : MB_mbxid;
+    const message : MB_communicationblock);
+External;
+*)
+
+pragma calling_convention ();           (* switch off previous settings *)
+pragma routine_aliasing_convention ();
+
+END {MB};

@@ -1,0 +1,491 @@
+(*MPM:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : mrucomDECL 
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  
+ *
+ *EMP:::===================================================================*)
+
+pragma C_include ('strings.pf');
+pragma C_include ('tstring.pf');
+pragma C_include ('files.pf');
+pragma C_include ('mrucomlangspec.pf');
+
+PACKAGE mrucomDECL;
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+WITH STRINGS,
+     mrucomLANGSPEC,
+     TSTRING,
+     FILES;
+
+
+CONST
+   HINIT = -1;
+   HDUM  = -1;
+   HFINAL= 60;
+
+TYPE
+   mrucomDECL_Surfrulemode = (loccond, globcond);
+   mrucomDECL_psyntcat     = ^mrucomLANGSPEC_Category;
+   mrucomDECL_syntcatset   = SET OF mrucomLANGSPEC_Category;
+   mrucomDECL_nodeid         = HINIT..HFINAL;
+   mrucomDECL_plonodeid      = ^mrucomDECL_lonodeid;
+   mrucomDECL_lonodeid       = RECORD
+   			          next: mrucomDECL_plonodeid;
+   			          arg : mrucomDECL_nodeid
+   	 	               END;
+   mrucomDECL_pSnode       = ^mrucomDECL_Snode;
+   mrucomDECL_pRsnode      = ^mrucomDECL_Rsnode;
+   mrucomDECL_Rsnode       = RECORD
+                                sonnumber:mrucomDECL_nodeid;
+                                node    : mrucomDECL_pSnode;
+                                brother : mrucomDECL_pRsnode
+                             END;
+   mrucomDECL_Snode        = RECORD
+                                sonlist : mrucomDECL_pRsnode;
+                                minpos,
+                                maxpos  : integer;
+                                n       : integer;
+                                cl      : integer;
+                                connected : boolean;
+                                cat     : mrucomLANGSPEC_Category;
+                                ldfield : mrucomLANGSPEC_FieldDef
+                             END;
+   mrucomDECL_pLostree     = ^mrucomDECL_Lostree;
+   mrucomDECL_Lostree      = RECORD
+                                next    : mrucomDECL_pLostree;
+                                arg     : mrucomDECL_pSnode
+                             END;
+   mrucomDECL_pConnectionnode
+                           = ^mrucomDECL_Connectionnode;
+   mrucomDECL_pSingleSegmList
+                           = ^mrucomDECL_SingleSegmList;
+   mrucomDECL_Connectionnode 
+                           = RECORD
+                                list    : mrucomDECL_pSingleSegmList;
+                                next,
+                                prev    : mrucomDECL_pConnectionnode;
+                                idnr    : integer
+                             END;
+   mrucomDECL_SingleSegmList
+                           = RECORD
+                                next    : mrucomDECL_pSingleSegmlist;
+                                rn      : mrucomDECL_pConnectionnode;
+                                stree   : mrucomDECL_pSnode
+                             END;
+   mrucomDECL_psurfgraph     = ^mrucomDECL_surfgraphtype;
+   mrucomDECL_psurfgraphnode = ^mrucomDECL_surfgraphnode;
+   mrucomDECL_surfgraphtype  = RECORD
+   			          first,
+   			          last: mrucomDECL_psurfgraphnode
+   		               END;
+   mrucomDECL_plossurfgraphnode 
+                             = ^mrucomDECL_lossurfgraphnode;
+   mrucomDECL_surfgraphnodelist
+                             = RECORD
+   				   first,
+      				   last  : mrucomDECL_plossurfgraphnode;
+   			       END;
+   mrucomDECL_lossurfgraphnode 
+                             = RECORD
+   				   next :  mrucomDECL_plossurfgraphnode;
+   				   arg  :  mrucomDECL_psurfgraphnode
+   			       END;
+   mrucomDECL_surfgraphnode  = RECORD
+      			          left,
+   			          right: mrucomDECL_psurfgraphnode;
+   			          n    : mrucomDECL_nodeid;
+   			          cat  : mrucomDECL_psyntcat;
+   			          nextnodes: mrucomDECL_surfgraphnodelist;
+   			          nextcats,
+   			          nexttops : mrucomDECL_syntcatset;
+   			          completed,
+                                  alreadysearched:boolean
+   	                       END;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_newtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrucomDECL_newtop: mrucomDECL_psinglesegmlist; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_assignnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of newtop is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE mrucomDECL_assignnewtop(valeu: mrucomDECL_psinglesegmlist);EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_addnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE mrucomDECL_addnewtop(a: mrucomDECL_pSnode); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_status
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrucomDECL_status:boolean;EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_assignstatus
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of status is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE mrucomDECL_assignstatus(valeu:boolean); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_debug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrucomDECL_debug:boolean; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_assigndebug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of debug is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE mrucomDECL_assigndebug(valeu:boolean); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_surfgraph
+ *  Description    : 
+ *  Parameters     :0<i<=maxrnr 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrucomDECL_surfgraph(i:integer):mrucomDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_assignsurfgraph
+ *  Description    : 
+ *  Parameters     : o<i<=maxrnr
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of surfgraph(i) is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE mrucomDECL_assignsurfgraph(i: integer; valeu: mrucomDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_absent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrucomDECL_absent: mrucomDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : TAB
+ *  Description    : writes tab of 'indent' characters
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE TAB(VAR of1:FILES_text;indent:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : LOCALTAB
+ *  Description    : writes tab of 'indent' characters to local file
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LOCALTAB(VAR of1:LOCALFILE;indent:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDlocfile
+ *  Description    : appends local file of1 to local file of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDlocfile(of1:LOCALFILE;VAR of2:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : SAVElocfile
+ *  Description    : copies local file of1 'totally' to local file of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SAVElocfile(of1:LOCALFILE;VAR of2:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : INITlocalfile
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE INITlocalfile(VAR of1:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDfile
+ *  Description    : appends local file of1 to global of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : of1 is empty !!!!
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDfile(VAR of1:LOCALFILE;VAR of2:FILES_text); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDstring
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDstring(string1:TSTRING_string;VAR S:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_assignabsent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of absent is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE mrucomDECL_assignabsent(valeu: mrucomDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_Addconnectionnode
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE mrucomDECL_Addconnectionnode(VAR r: mrucomDECL_pconnectionnode;
+                                                  t: mrucomDECL_psnode); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_MakeTerminal
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrucomDECL_MakeTerminal(s: mrucomLANGSPEC_Category;
+                                            w: TSTRING_String): 
+                                            mrucomDECL_pSnode; EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_MakeNonTerminal
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrucomDECL_MakeNonTerminal(s: mrucomLANGSPEC_Category):
+                                            mrucomDECL_pSnode; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : mrucomDECL_Convinttostring
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION mrucomDECL_Convinttostring(int:INTEGER):
+                                            TSTRING_string; EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : counter
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION counter:INTEGER; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assigncounter
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE assigncounter(valeu:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : warning
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION warning:BOOLEAN; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assignwarning
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE assignwarning(valeu:BOOLEAN); EXTERNAL;
+
+FUNCTION converttointeger(CONST str1:STRING; len: INTEGER)
+:INTEGER; EXTERNAL;
+
+END {mrucomDECL};

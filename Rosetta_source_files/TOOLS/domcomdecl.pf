@@ -1,0 +1,491 @@
+(*MPM:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : domcomDECL 
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  
+ *
+ *EMP:::===================================================================*)
+
+pragma C_include ('strings.pf');
+pragma C_include ('tstring.pf');
+pragma C_include ('files.pf');
+pragma C_include ('domcomlangspec.pf');
+
+PACKAGE domcomDECL;
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+WITH STRINGS,
+     domcomLANGSPEC,
+     TSTRING,
+     FILES;
+
+
+CONST
+   HINIT = -1;
+   HDUM  = -1;
+   HFINAL= 60;
+
+TYPE
+   domcomDECL_Surfrulemode = (loccond, globcond);
+   domcomDECL_psyntcat     = ^domcomLANGSPEC_Category;
+   domcomDECL_syntcatset   = SET OF domcomLANGSPEC_Category;
+   domcomDECL_nodeid         = HINIT..HFINAL;
+   domcomDECL_plonodeid      = ^domcomDECL_lonodeid;
+   domcomDECL_lonodeid       = RECORD
+   			          next: domcomDECL_plonodeid;
+   			          arg : domcomDECL_nodeid
+   	 	               END;
+   domcomDECL_pSnode       = ^domcomDECL_Snode;
+   domcomDECL_pRsnode      = ^domcomDECL_Rsnode;
+   domcomDECL_Rsnode       = RECORD
+                                sonnumber:domcomDECL_nodeid;
+                                node    : domcomDECL_pSnode;
+                                brother : domcomDECL_pRsnode
+                             END;
+   domcomDECL_Snode        = RECORD
+                                sonlist : domcomDECL_pRsnode;
+                                minpos,
+                                maxpos  : integer;
+                                n       : integer;
+                                cl      : integer;
+                                connected : boolean;
+                                cat     : domcomLANGSPEC_Category;
+                                ldfield : domcomLANGSPEC_FieldDef
+                             END;
+   domcomDECL_pLostree     = ^domcomDECL_Lostree;
+   domcomDECL_Lostree      = RECORD
+                                next    : domcomDECL_pLostree;
+                                arg     : domcomDECL_pSnode
+                             END;
+   domcomDECL_pConnectionnode
+                           = ^domcomDECL_Connectionnode;
+   domcomDECL_pSingleSegmList
+                           = ^domcomDECL_SingleSegmList;
+   domcomDECL_Connectionnode 
+                           = RECORD
+                                list    : domcomDECL_pSingleSegmList;
+                                next,
+                                prev    : domcomDECL_pConnectionnode;
+                                idnr    : integer
+                             END;
+   domcomDECL_SingleSegmList
+                           = RECORD
+                                next    : domcomDECL_pSingleSegmlist;
+                                rn      : domcomDECL_pConnectionnode;
+                                stree   : domcomDECL_pSnode
+                             END;
+   domcomDECL_psurfgraph     = ^domcomDECL_surfgraphtype;
+   domcomDECL_psurfgraphnode = ^domcomDECL_surfgraphnode;
+   domcomDECL_surfgraphtype  = RECORD
+   			          first,
+   			          last: domcomDECL_psurfgraphnode
+   		               END;
+   domcomDECL_plossurfgraphnode 
+                             = ^domcomDECL_lossurfgraphnode;
+   domcomDECL_surfgraphnodelist
+                             = RECORD
+   				   first,
+      				   last  : domcomDECL_plossurfgraphnode;
+   			       END;
+   domcomDECL_lossurfgraphnode 
+                             = RECORD
+   				   next :  domcomDECL_plossurfgraphnode;
+   				   arg  :  domcomDECL_psurfgraphnode
+   			       END;
+   domcomDECL_surfgraphnode  = RECORD
+      			          left,
+   			          right: domcomDECL_psurfgraphnode;
+   			          n    : domcomDECL_nodeid;
+   			          cat  : domcomDECL_psyntcat;
+   			          nextnodes: domcomDECL_surfgraphnodelist;
+   			          nextcats,
+   			          nexttops : domcomDECL_syntcatset;
+   			          completed,
+                                  alreadysearched:boolean
+   	                       END;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_newtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION domcomDECL_newtop: domcomDECL_psinglesegmlist; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_assignnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of newtop is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE domcomDECL_assignnewtop(valeu: domcomDECL_psinglesegmlist);EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_addnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE domcomDECL_addnewtop(a: domcomDECL_pSnode); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_status
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION domcomDECL_status:boolean;EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_assignstatus
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of status is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE domcomDECL_assignstatus(valeu:boolean); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_debug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION domcomDECL_debug:boolean; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_assigndebug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of debug is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE domcomDECL_assigndebug(valeu:boolean); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_surfgraph
+ *  Description    : 
+ *  Parameters     :0<i<=maxrnr 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION domcomDECL_surfgraph(i:integer):domcomDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_assignsurfgraph
+ *  Description    : 
+ *  Parameters     : o<i<=maxrnr
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of surfgraph(i) is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE domcomDECL_assignsurfgraph(i: integer; valeu: domcomDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_absent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION domcomDECL_absent: domcomDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : TAB
+ *  Description    : writes tab of 'indent' characters
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE TAB(VAR of1:FILES_text;indent:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : LOCALTAB
+ *  Description    : writes tab of 'indent' characters to local file
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE LOCALTAB(VAR of1:LOCALFILE;indent:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDlocfile
+ *  Description    : appends local file of1 to local file of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDlocfile(of1:LOCALFILE;VAR of2:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : SAVElocfile
+ *  Description    : copies local file of1 'totally' to local file of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE SAVElocfile(of1:LOCALFILE;VAR of2:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : INITlocalfile
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE INITlocalfile(VAR of1:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDfile
+ *  Description    : appends local file of1 to global of2
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : of1 is empty !!!!
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDfile(VAR of1:LOCALFILE;VAR of2:FILES_text); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  PROCEDURE Name : APPENDstring
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE APPENDstring(string1:TSTRING_string;VAR S:LOCALFILE); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_assignabsent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of absent is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE domcomDECL_assignabsent(valeu: domcomDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_Addconnectionnode
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE domcomDECL_Addconnectionnode(VAR r: domcomDECL_pconnectionnode;
+                                                  t: domcomDECL_psnode); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_MakeTerminal
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION domcomDECL_MakeTerminal(s: domcomLANGSPEC_Category;
+                                            w: TSTRING_String): 
+                                            domcomDECL_pSnode; EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_MakeNonTerminal
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION domcomDECL_MakeNonTerminal(s: domcomLANGSPEC_Category):
+                                            domcomDECL_pSnode; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : domcomDECL_Convinttostring
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION domcomDECL_Convinttostring(int:INTEGER):
+                                            TSTRING_string; EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : counter
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION counter:INTEGER; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assigncounter
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE assigncounter(valeu:INTEGER); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : warning
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+FUNCTION warning:BOOLEAN; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : assignwarning
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+PROCEDURE assignwarning(valeu:BOOLEAN); EXTERNAL;
+
+FUNCTION converttointeger(CONST str1:STRING; len: INTEGER)
+:INTEGER; EXTERNAL;
+
+END {domcomDECL};

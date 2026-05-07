@@ -1,0 +1,778 @@
+%UTT
+BASIS RULE
+  UTT = PROCENT/1.{IDENTIFIER/2.ISCAT/1.GRAPH/3.
+                   [PLUS/1.IDENTIFIER/5.{PLUS/1.IDENTIFIER/6}].[PARAMS/4]}.PROCENT/1
+
+SURFACE PART
+VAR rulenames1,rulenames2::setofidts;
+    id::idt;
+    shorthands::setofshds;
+    shd::shd;
+
+<*
+ INIT:BEGIN initsetofidts(rulenames1);
+            initsetofshds(shorthands);
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN shd.str:=%.str
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN rulenames2:=%PARAMS.rulenames;
+                                WHILE stillidts(rulenames2) DO
+                                  BEGIN
+                                  takeidt(id,rulenames2);
+                                  appendidt(id,rulenames1)
+                                  END;
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+6:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_UTT;
+                  $UTT.shorthands:=shorthands;
+                  $UTT.rulenames:=rulenames1;
+                END
+*>
+END;
+
+PROCEDURAL PART
+TYPE stringtype = PACKED ARRAY [1..30] OF CHAR;
+VAR procpars:LOCALFILE;
+    emptyfile,locfile:LOCALFILE;
+    rulenames,rulenames1::setofidts;
+    id,rulename::idt;
+    i,rulecounter:INTEGER;
+    rulenaam,blockstr:TSTRING_string;
+    pairtotripleenv,pairtotriple,recordfile,tempfile2,tempfile1,tempfile,helpfile:LOCALFILE;
+    numberofstates,total::int;
+    shorthands::setofshds;
+    firsttime,newrule::bool;
+    node,finalnode,initialnode:plosnode;
+    cat:TSTRING_string;
+    tran::tran;
+    auto::auto;
+    autos,autos1::setofautos;
+    str:stringtype;len::int;
+    category:LIDOMAINT_syntcat;
+    emptys::setofptrs;ptr::ptr;
+HELP PROCEDURE converSTRING(str1:TSTRING_string;VAR str2:stringtype;VAR len:INTEGER);
+VAR i:INTEGER;ch:CHAR;
+BEGIN
+i:=0;
+WHILE i<>TSTRING_length(str1) DO
+  BEGIN
+  i:=i+1;
+  TSTRING_extractchar(ch,str1,i);
+  str2[i]:=ch;
+  END;
+len:=i;
+END;
+
+BEGIN 
+INIT:BEGIN initlocalfile(procpars);
+           initlocalfile(emptyfile);
+           initlocalfile(pairtotripleenv);
+           initlocalfile(pairtotriple);
+           initlocalfile(recordfile);
+           initlocalfile(helpfile);
+           initlocalfile(tempfile2);
+           initlocalfile(tempfile1);
+           initlocalfile(tempfile);
+           initsetofautos(autos);
+           newrule:=TRUE;
+           shorthands:=$UTT.shorthands;
+           firsttime:=TRUE;
+           total:=0;
+           rulecounter:=0;
+           TFILES_open(switchpas,'switchpas',9,3);
+           \tempfile2.\LOCAL.
+           " PROCEDURE LDSURFSWITCH_copy"
+              "(int1:INTEGER;params:ITEMS_params;" "VAR params1:ITEMS_params);"\\
+           "BEGIN CASE int1 OF"\\
+           \tempfile1.\LOCAL.
+           " FUNCTION LDSURFSWITCH_comp"
+              "(int1:INTEGER;params,params1:ITEMS_params):BOOLEAN;"\\
+           "BEGIN CASE int1 OF"\\
+           \tempfile.\LOCAL.
+           " PROCEDURE LDSURFSWITCH_make"
+              "(int1:INTEGER;VAR params:ITEMS_params);"\\
+           "BEGIN CASE int1 OF"\\
+           \switchpas.\GLOBAL.
+           "EXPORT(ldsurfswitch);"
+           "pragma C_include('items.pf');"\\
+           "pragma C_include('mem.pf');"\\
+           "pragma C_include('ldsurfswitch.pf');"\\
+           "pragma C_include('lsrulepars.pf');"\\
+           "pragma C_include('liprims.pf');"\\
+           "pragma C_include('listree.pf');"\\
+           "pragma C_include('lsstree.pf');"\\
+           "pragma C_include('surfrulesblocks.pf');"\\
+           "PROGRAM LDSURFSWITCH;"\\
+          "WITH items,mem,lsrulepars,liprims,listree,lsstree,surfrulesblocks;"\\
+           " FUNCTION LDSURFSWITCH_body"
+             "(int1,int2:INTEGER;params:ITEMS_params;"
+                                "stree:LISTREE_pstree):BOOLEAN;"\\
+           "BEGIN CASE int1 OF"\\
+
+           \helpfile.\LOCAL.
+
+           rulenames:=$UTT.rulenames;
+           rulenames1:=rulenames;
+           takeidt(rulename,rulenames1);
+     END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN cat:=%.str
+               END
+   *>
+3: <* SEND: BEGIN %%GRAPH.shorthands:=shorthands;
+            END
+      !.
+      RECEIVE: BEGIN 
+               numberofstates:=numberofstates + %GRAPH.numberofstates;
+               newrule:=FALSE;
+               END
+   *>
+4: <* SEND: BEGIN newrule:=TRUE END;
+      !PARAMS.
+      RECEIVE: BEGIN appendlocfile(%%PARAMS.procpars,procpars);
+
+                     total:=total+numberofstates+2;
+                     finalnode^.arg.state:=numberofstates+1;
+                     numberofstates:=0;
+                     takeidt(rulename,rulenames1);
+               END
+   *>
+5: <* SEND: BEGIN rulecounter:=rulecounter+1;
+            END
+      !.
+      RECEIVE: BEGIN rulenaam:=%.str;
+                  \tempfile2.\LOCAL.
+                  """rulecounter""" 
+                  ":loopholes.retype(params1," ""rulenaam"" "typ)^:="
+                  "loopholes.retype(params," ""rulenaam"" "typ)^;"\\
+                  \tempfile1.\LOCAL.
+                  """rulecounter""" ":LDSURFSWITCH_comp:=" 
+                  "comp_" ""rulenaam""
+                  "(loopholes.retype(params," ""rulenaam"" "typ),"
+                  "loopholes.retype(params1," ""rulenaam"" "typ));"\\
+                  \tempfile.\LOCAL.
+                  """rulecounter""" 
+                   ":MEM_newdefault(loopholes.SIZEof(" ""rulenaam"" "rec),"
+                  "loopholes.retype(params,MEM_ptr));"\\
+                  \switchpas.\GLOBAL.
+                  IF NOT firsttime THEN BEGIN "END;"\\ END;
+                  """rulecounter""" ":CASE int2 OF"\\
+                  "LIPRIMS_Hinit:BEGIN" " LDSURFSWITCH_body:=TRUE;"\\
+                  ""rulenaam"" "_0(loopholes.retype(params,"
+                  ""rulenaam"" "typ)); END;"\\
+                  firsttime:=FALSE;
+               END
+   *>
+6: <* SEND: BEGIN blockstr:=%.str;
+            END
+      !.
+      RECEIVE: BEGIN ""blockstr"" ":BEGIN LDSURFSWITCH_body:="\\
+                     ""rulenaam"" "_" ""blockstr""
+                     "(loopholes.retype(params," ""rulenaam"" "typ),"
+                     "loopholes.retype(stree,LSSTREE_pstree));"\\
+                     "END;"\\
+               END
+   *>
+*>
+FINAL: BEGIN \tempfile.\LOCAL.
+             "END END;"
+             \tempfile1.\LOCAL.
+             "END END;"
+             \tempfile2.\LOCAL.
+             "END END;"
+             \switchpas.\GLOBAL.
+             "END END END;"\\
+             appendfile(tempfile,switchpas);
+             appendfile(tempfile1,switchpas);
+             appendfile(tempfile2,switchpas);
+
+
+             \procspas.\GLOBAL.
+
+             TFILES_open(parsenv,'parsenv',7,3);
+             \parsenv.\GLOBAL.
+             "pragma C_include('lsdomaint.pf');"\\
+             "PACKAGE LSRULEPARS;"\\
+             "WITH lsdomaint;"
+             rulenames1:=rulenames;
+             i:=0;
+             WHILE stillidts(rulenames1) DO
+               BEGIN
+               takeidt(id,rulenames1);
+               i:=i+1;
+               END;
+             "CONST LSRULEPARS_maxrulenr=" """i""" ";"\\
+             "TYPE"\\
+             "LSRULEPARS_ruletype = ("
+             rulenames1:=rulenames;
+             WHILE stillidts(rulenames1) DO
+               BEGIN
+               takeidt(id,rulenames1);
+               ""id.str"" "_"
+               IF stillidts(rulenames1) THEN BEGIN "," \\ END;
+               END;
+             ");"\\
+             "LSRULEPARS_rulenrtype = 1..LSRULEPARS_maxrulenr;"\\
+             rulenames1:=rulenames;
+             WHILE stillidts(rulenames1) DO
+               BEGIN
+               takeidt(id,rulenames1);
+               ""id.str"" "typ=^" ""id.str"" "rec;"\\
+               END;
+             appendfile(procpars,parsenv);
+             "LSRULEPARS_record = RECORD"\\
+             "CASE LSRULEPARS_ruletype OF"\\
+             rulenames1:=rulenames;
+             WHILE stillidts(rulenames1) DO
+               BEGIN
+               takeidt(id,rulenames1);
+               ""id.str"" "_:(" ""id.str"" "ptr:"
+                        ""id.str"" "typ);"\\
+               END;
+             "END; END;"\\
+       END
+END;
+&
+
+%PARAMS
+BASIS RULE
+  PARAMS = {HEKJE/1.IDENTIFIER/3.HEKJE/1.IDENTIFIER/2.ISCAT/2.IDENTIFIER/4.
+           {IDENTIFIER/2.COLON/2.IDENTIFIER/4.[SEMICOLON/2]}.
+           IDENTIFIER/2.SEMICOLON/2}
+
+SURFACE PART
+VAR id::idt;
+    rulenames::setofidts;
+
+<*
+ INIT:BEGIN initsetofidts(rulenames);
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN id.str:=%.str;
+                                appendidt(id,rulenames);
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_PARAMS;
+                  $PARAMS.rulenames:=rulenames;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR procpars:LOCALFILE;str:TSTRING_string;
+BEGIN 
+INIT:BEGIN initlocalfile(procpars);
+          \procpars.\LOCAL.
+     END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+2: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN ""str""
+               END
+   *>
+3: <* SEND: BEGIN str:=%.str
+           END
+      !.
+      RECEIVE: BEGIN ""str""
+               END
+   *>
+4: <* SEND: BEGIN str:=%.str
+           END
+      !.
+      RECEIVE: BEGIN ""str""\\
+               END
+   *>
+*>
+FINAL: BEGIN $$PARAMS.procpars:=procpars;
+       END
+END;
+&
+
+
+
+%GRAPH
+BASIS RULE
+  GRAPH = CONCGRAPH/2.{VERTLINE/1.CONCGRAPH/2}
+SURFACE PART
+  VAR numofconcgraphs::int;
+      numberofstates::int;
+
+<*
+ INIT:BEGIN 
+         numberofstates:=0;
+         numofconcgraphs:=0
+       END;
+ 1    :<*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+ 2    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         numberofstates:=numberofstates+%CONCGRAPH.numberofstates;
+                         numofconcgraphs:=numofconcgraphs+1
+                         END
+       *>
+ FINAL: #CONDITION: TRUE
+         #ACTION: BEGIN
+                  SEND_GRAPH;
+                  $GRAPH.numberofstates:=numberofstates;
+                  $GRAPH.numofconcgraphs:=numofconcgraphs
+                  END
+*>
+END;
+
+PROCEDURAL PART
+VAR shorthands::setofshds;
+    possempty::bool;
+    nodebefore::int;
+    nodeafter::int;
+    tran::tran;
+    basestate::int;
+    iteration::int;
+BEGIN
+INIT: BEGIN shorthands:=$$GRAPH.shorthands;
+            iteration:=$$GRAPH.iteration;
+            nodebefore:=$$GRAPH.nodebefore;
+            nodeafter:=$$GRAPH.nodeafter;
+            basestate:=$$GRAPH.basestate;
+            possempty:=FALSE;
+      END;
+<*
+1: <* SEND: BEGIN  END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN %%CONCGRAPH.shorthands:=shorthands;
+                  %%CONCGRAPH.nodebefore:=nodebefore;
+                  %%CONCGRAPH.nodeafter:=nodeafter;
+                  %%CONCGRAPH.iteration:=iteration;
+                  %%CONCGRAPH.basestate:=basestate;
+            END
+      !CONCGRAPH.
+      RECEIVE: BEGIN basestate:=%%CONCGRAPH.basestate;
+                     possempty:=possempty OR %%CONCGRAPH.possempty;
+               END
+   *>
+*>
+FINAL:BEGIN $$GRAPH.possempty:=possempty;
+            $$GRAPH.basestate:=basestate;
+      END
+END;
+&
+ 
+%CONCGRAPH
+BASIS RULE
+  CONCGRAPH = ELEMGRAPH/2.{DOT/1.ELEMGRAPH/2}
+SURFACE PART
+  VAR numofelemgraphs,numberofstates::int;
+
+<*
+ INIT:BEGIN 
+         numberofstates:=0;
+         numofelemgraphs:=0;
+       END;
+ 1    :<*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+ 2    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         numberofstates:=numberofstates+%ELEMGRAPH.numberofstates;
+                         numofelemgraphs:=numofelemgraphs+1
+                         END
+       *>
+ FINAL: #CONDITION: TRUE
+         #ACTION: BEGIN
+                  SEND_CONCGRAPH;
+                  $CONCGRAPH.numberofstates:=numberofstates+numofelemgraphs-1;
+                  $CONCGRAPH.numofelemgraphs:=numofelemgraphs
+                  END
+*>
+END;
+
+PROCEDURAL PART
+VAR shorthands::setofshds;
+    possempty::bool;
+    node:plosnode;
+    iteration::int;
+    nodebefore,nodeafter::int;
+    nodebefore1,nodeafter1::int;
+    numofelemgraphs,i::int;
+    tran::tran;
+    basestate::int;
+HELP PROCEDURE mergetran(tran::tran;VAR trans::setoftrans);
+     VAR trans1::setoftrans;tran1::tran;found::bool;
+     BEGIN
+     trans1:=trans;
+     found:=FALSE;
+     WHILE stilltrans(trans1) AND NOT found DO BEGIN
+        taketran(tran1,trans1);
+        found:=(tran1.node=tran.node) AND
+               (tran1.cat=tran.cat) AND
+               (tran1.kind=tran.kind) AND
+               (tran1.block=tran.block)
+        END;
+     IF NOT found THEN appendtran(tran,trans)
+     END;
+BEGIN
+INIT: BEGIN shorthands:=$$CONCGRAPH.shorthands;
+            nodebefore:=$$CONCGRAPH.nodebefore;
+            iteration:=$$CONCGRAPH.iteration;
+            nodeafter:=$$CONCGRAPH.nodeafter;
+            numofelemgraphs:=$CONCGRAPH.numofelemgraphs;
+            basestate:=$$CONCGRAPH.basestate;
+            possempty:=TRUE;
+            i:=0;
+      END;
+<*
+1: <* SEND: BEGIN  END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN %%ELEMGRAPH.shorthands:=shorthands;
+                  i:=i+1;
+                  %%ELEMGRAPH.basestate:=basestate;
+                  %%ELEMGRAPH.nodebefore:=nodebefore1;
+                  %%ELEMGRAPH.nodeafter:=nodeafter1;
+            END
+      !ELEMGRAPH.
+      RECEIVE: BEGIN possempty:=possempty AND %%ELEMGRAPH.possempty;
+                     basestate:=%%ELEMGRAPH.basestate;
+                     IF i<>numofelemgraphs THEN basestate:=basestate+1;
+               END
+   *>
+*>
+FINAL:BEGIN $$CONCGRAPH.possempty:=possempty;
+            $$CONCGRAPH.basestate:=basestate;
+      END
+END;
+&
+ 
+%ELEMGRAPH
+BASIS RULE
+  ELEMGRAPH = (ROUNDOPEN/1.GRAPH/2.ROUNDCLOSE/1)|
+                    (SQUAREOPEN/1.GRAPH/3.SQUARECLOSE/1)|
+                    (CURLYOPEN/1.GRAPH/4.CURLYCLOSE/1)|
+                    IDENTIFIER/5.SLASH/1.NUMBER/6|
+                    IDENTIFIER/7
+SURFACE PART
+  VAR graphtype::graphtypetype;
+      numberofstates::int;
+
+<*
+ INIT:BEGIN
+         graphtype:=atomgraph
+       END;
+ 1    :<*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+ 2    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         numberofstates:=%GRAPH.numberofstates;
+                         graphtype:=enclosedgraph
+                         END
+       *>
+ 3    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         numberofstates:=%GRAPH.numberofstates;
+                         graphtype:=optgraph
+                         END
+       *>
+ 4    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         numberofstates:=%GRAPH.numberofstates;
+                         graphtype:=stargraph
+                         END
+       *>
+ 5    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         numberofstates:=0;
+                         graphtype:=atomgraph
+                         END
+       *>
+ 6    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         graphtype:=atomgraph
+                         END
+       *>
+ 7    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN 
+                         numberofstates:=0;
+                         graphtype:=shorthand
+                         END
+       *>
+
+ FINAL: #CONDITION: TRUE
+         #ACTION: BEGIN
+                  SEND_ELEMGRAPH;
+                  $ELEMGRAPH.numberofstates:=numberofstates;
+                  $ELEMGRAPH.graphtype:=graphtype
+                  END
+*>
+END;
+
+PROCEDURAL PART
+VAR shorthands::setofshds;
+    shd::shd;
+    tran::tran;
+    found,possempty::bool;
+    iteration,basestate,nodebefore,nodeafter::int;
+HELP PROCEDURE mergetran(tran::tran;VAR trans::setoftrans);
+     VAR trans1::setoftrans;tran1::tran;found::bool;
+     BEGIN
+     trans1:=trans;
+     found:=FALSE;
+     WHILE stilltrans(trans1) AND NOT found DO BEGIN
+        taketran(tran1,trans1);
+        found:=(tran1.node=tran.node) AND
+               (tran1.cat=tran.cat) AND
+               (tran1.kind=tran.kind) AND
+               (tran1.block=tran.block)
+        END;
+     IF NOT found THEN appendtran(tran,trans)
+     END;
+BEGIN
+INIT: BEGIN shorthands:=$$ELEMGRAPH.shorthands;
+            iteration:=$$ELEMGRAPH.iteration;
+            nodebefore:=$$ELEMGRAPH.nodebefore;
+            nodeafter:=$$ELEMGRAPH.nodeafter;
+            basestate:=$$ELEMGRAPH.basestate;
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN %%GRAPH.shorthands:=shorthands;
+                  %%GRAPH.nodebefore:=nodebefore;
+                  %%GRAPH.nodeafter:=nodeafter;
+                  %%GRAPH.basestate:=basestate;
+                  %%GRAPH.iteration:=iteration;
+            END
+      !GRAPH.
+      RECEIVE: BEGIN possempty:=%%GRAPH.possempty;
+                     basestate:=%%GRAPH.basestate;
+               END
+   *>
+3: <* SEND: BEGIN %%GRAPH.shorthands:=shorthands;
+                  %%GRAPH.nodebefore:=nodebefore;
+                  %%GRAPH.nodeafter:=nodeafter;
+                  %%GRAPH.basestate:=basestate;
+                  %%GRAPH.iteration:=iteration;
+            END
+      !GRAPH.
+      RECEIVE: BEGIN possempty:=TRUE;
+                     basestate:=%%GRAPH.basestate;
+               END
+   *>
+4: <* SEND: BEGIN %%GRAPH.shorthands:=shorthands;
+                  %%GRAPH.nodebefore:=nodebefore;
+                  %%GRAPH.nodeafter:=nodeafter;
+                  %%GRAPH.basestate:=basestate;
+                  %%GRAPH.iteration:=nodebefore;
+            END
+      !GRAPH.
+      RECEIVE: BEGIN possempty:=TRUE;
+                     basestate:=%%GRAPH.basestate;
+               END
+   *>
+5: <* SEND: BEGIN possempty:=FALSE;
+                  tran.cat:=%.str;
+                  tran.kind:=primary;
+                  tran.surfcat:=FALSE;
+                  loopholes.retype(tran.node,INTEGER):=nodeafter;
+                  loopholes.retype(tran.node,plosnode)^.arg.procstate:=TRUE;
+            END
+      !.
+      RECEIVE: BEGIN END
+   *>
+6: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN tran.block:=%NUMBER.int;
+                     IF loopholes.retype(iteration,plosnode)=NIL THEN
+                         mergetran(tran,
+                           loopholes.retype(nodebefore,plosnode)^.arg.trans);
+                     IF loopholes.retype(iteration,plosnode)<>NIL THEN BEGIN
+                       loopholes.retype(tran.node,INTEGER):=iteration;
+                       loopholes.retype(tran.node,plosnode)^.arg.procstate:=TRUE;
+                       mergetran(tran,
+                            loopholes.retype(nodebefore,plosnode)^.arg.trans);
+                       END;
+               END
+   *>
+7: <* SEND: BEGIN %%GRAPH.shorthands:=shorthands;
+                  %%GRAPH.iteration:=iteration;
+                  %%GRAPH.nodebefore:=nodebefore;
+                  %%GRAPH.nodeafter:=nodeafter;
+                  %%GRAPH.basestate:=basestate;
+                  found:=FALSE;
+                  WHILE stillshds(shorthands) AND not found DO BEGIN
+                    takeshd(shd,shorthands);
+                    found:=(TSTRING_compare(%.str,shd.str)=0);
+                    END;
+                  IF found THEN BEGIN
+             SURFLINKCODE_GRAPHproc(loopholes.retype(shd.tree,SURFLINKDECL_psnode),
+                                         %%GRAPH.iteration,
+                                         %%GRAPH.shorthands,
+                                         %%GRAPH.nodebefore,
+                                         %%GRAPH.nodeafter,
+                                         %%GRAPH.possempty,
+                                         %%GRAPH.basestate);
+                    END
+                  ELSE writeln('shorthand ',%.str,' not found');
+            END
+      !.
+      RECEIVE: BEGIN possempty:=%%GRAPH.possempty;
+                     basestate:=%%GRAPH.basestate;
+               END
+   *>
+*>
+FINAL:BEGIN $$ELEMGRAPH.possempty:=possempty;
+            $$ELEMGRAPH.basestate:=basestate;
+      END
+END;
+&
+ 
+%NUMBER
+BASIS RULE
+  NUMBER = IDENTIFIER/1
+SURFACE PART
+VAR str1:STRING(5);
+    int,len:STRING_range;
+HELP FUNCTION EXTRACT(str:TSTRING_string):BOOLEAN;
+VAR ch:CHAR;result:BOOLEAN;
+BEGIN
+TSTRING_extractchar(ch,str,1);
+result:=(ch IN ['1','2','3','4','5','6','7','8','9']);
+IF TSTRING_length(str)=2 THEN 
+   BEGIN
+   TSTRING_extractchar(ch,str,2);
+   result:=(ch IN ['0','1','2','3','4','5','6','7','8','9']) AND result
+   END;
+EXTRACT:=result
+END;
+
+
+<*
+ INIT:BEGIN
+       END;
+ 1    :<*
+        LOCALCONDITION: EXTRACT(%.str)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          TSTRING_extractchars(str1,len,%.str,1,STRING_length(%.str));
+                          int:=converttointeger(str1,len);
+                          END
+       *>
+ FINAL: #CONDITION: TRUE
+         #ACTION: BEGIN
+                  SEND_NUMBER;
+                  $NUMBER.int:=int;
+                  END
+*>
+END;
+
+PROCEDURAL PART
+VAR
+BEGIN
+INIT: BEGIN END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN END
+END;
+&
+

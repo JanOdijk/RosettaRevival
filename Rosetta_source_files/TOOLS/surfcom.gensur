@@ -1,0 +1,1417 @@
+
+
+%UTT
+BASIS RULE
+  UTT = PROCENT/1.IDENTIFIER/2.{RULESPEC/3}.PROCENT/1
+
+SURFACE PART
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_UTT;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR rulenumber::int;
+BEGIN 
+INIT:BEGIN TFILES_open(RTNfile,'rtnfile',7,3);
+           TFILES_open(BLOCKSenv,'blocksenv',9,3);
+           TFILES_open(BLOCKSpas,'blockspas',9,3);
+           rulenumber:=0;
+     END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+3: <* SEND: BEGIN rulenumber:=rulenumber+1;%%RULESPEC.number:=rulenumber; END
+      !RULESPEC.
+      RECEIVE: BEGIN appendfile(%%RULESPEC.procpars,RTNfile);
+                     appendfile(%%RULESPEC.blockenv,blocksenv);
+                     appendfile(%%RULESPEC.blockpas,blockspas);
+               END
+   *>
+*>
+FINAL: BEGIN
+       END
+END;
+&
+
+
+%RULESPEC
+BASIS RULE
+  RULESPEC = IDENTIFIER/2.REGULAREXPRESSION/1.COLON/1.
+              IDENTIFIER/5.ISCAT/1.GRAPH/3.
+             COLON/1.RULEBODY/4
+SURFACE PART
+VAR rulename:TSTRING_string;
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN rulename:=%.str
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_RULESPEC;
+                  $RULESPEC.rulename:=rulename;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR str,rulename:TSTRING_string;
+    number::int;
+    procpars,blockenv,blockpas:LOCALFILE;
+BEGIN 
+INIT:BEGIN number:=$$RULESPEC.number;
+     END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+2: <* SEND: BEGIN rulename:=%.str END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+3: <* SEND: BEGIN END
+      !GRAPH.
+      RECEIVE: BEGIN 
+               END
+   *>
+4: <* SEND: BEGIN \RTNfile.\GLOBAL. "+" ""rulename""\\
+                  %%RULEBODY.number:=number;
+                  %%RULEBODY.rulename:=rulename 
+            END
+      !RULEBODY.
+      RECEIVE: BEGIN procpars:=%%RULEBODY.procpars;
+                     blockpas:=%%RULEBODY.blockpas;
+                     blockenv:=%%RULEBODY.blockenv;
+               END
+   *>
+5: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN \RTNfile.\GLOBAL.
+                     ""str"" "="\\
+               END
+   *>
+*>
+FINAL: BEGIN 
+             $$RULESPEC.procpars:=procpars;
+             $$RULESPEC.blockenv:=blockenv;
+             $$RULESPEC.blockpas:=blockpas;
+       END
+END;
+&
+
+%GRAPH
+BASIS RULE
+  GRAPH = {ROUNDOPEN/1|ROUNDCLOSE/1|DOT/4|ISCAT/4|IDENTIFIER/3}.
+          {SLASH/4.{ROUNDOPEN/1|ROUNDCLOSE/1|DOT/4|ISCAT/4|IDENTIFIER/3}}.CONDITIONSANDACTIONS/1
+SURFACE PART
+
+
+<*
+ INIT:BEGIN
+       END;
+ 1    :<*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+ 2    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+ 3    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+ 4    :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION: BEGIN
+                         END
+       *>
+ FINAL: #CONDITION: TRUE
+         #ACTION: BEGIN
+                  SEND_GRAPH;
+                  END
+*>
+END;
+
+PROCEDURAL PART
+VAR str:TSTRING_string;
+BEGIN
+INIT: BEGIN \RTNfile.\GLOBAL.
+      END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+2: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN ""str""\\
+               END
+   *>
+3: <* SEND: BEGIN str:=%.str
+            END 
+      !.
+      RECEIVE: BEGIN ""str""\\
+               END 
+   *>
+4: <* SEND: BEGIN  str:=%.str
+            END
+      !.
+      RECEIVE: BEGIN ""str""\\
+               END
+   *>
+*>
+FINAL:BEGIN 
+      END
+END;
+&
+ 
+%NUMBER
+BASIS RULE
+  NUMBER = IDENTIFIER/1
+SURFACE PART
+VAR str:TSTRING_string;
+HELP FUNCTION EXTRACT(str:TSTRING_string):BOOLEAN;
+VAR ch:CHAR;result:BOOLEAN;
+BEGIN
+TSTRING_extractchar(ch,str,1);
+result:=(ch IN ['1','2','3','4','5','6','7','8','9']);
+IF TSTRING_length(str)=2 THEN 
+   BEGIN
+   TSTRING_extractchar(ch,str,2);
+   result:=(ch IN ['0','1','2','3','4','5','6','7','8','9']) AND result
+   END;
+EXTRACT:=result
+END;
+
+
+<*
+ INIT:BEGIN
+       END;
+ 1    :<*
+        LOCALCONDITION: EXTRACT(%.str)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN str:=%.str
+                          END
+       *>
+ FINAL: #CONDITION: TRUE
+         #ACTION: BEGIN
+                  SEND_NUMBER;
+                  $NUMBER.str:=str
+                  END
+*>
+END;
+
+PROCEDURAL PART
+VAR
+BEGIN
+INIT: BEGIN END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN END
+   *>
+*>
+FINAL:BEGIN END
+END;
+&
+
+
+%RULEBODY
+BASIS RULE
+  RULEBODY = [VARCAT/1.{IDENTIFIER/2.COLON/1.[COLON/1.[COLON/7]].IDENTIFIER/3.
+ SEMICOLON/1}].LEFTSTAR/1.INITBLOCK/5.{BLOCK/4}.FINALBLOCK/6.
+             IDENTIFIER/1.SEMICOLON/1
+
+SURFACE PART
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+6:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+7:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_RULEBODY;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR procpars,blockpas,blockenv:LOCALFILE;
+    number::int;
+    str,rulename:TSTRING_string;
+    first,write::bool;
+    parameters::setofidents;
+    id::ident;
+BEGIN 
+INIT:BEGIN initlocalfile(procpars);
+           initlocalfile(blockenv);
+           initlocalfile(blockpas);
+           initsetofidents(parameters);
+           first:=TRUE;
+           write:=FALSE;
+           rulename:=$$RULEBODY.rulename;
+           number:=$$RULEBODY.number;
+           \procpars.\LOCAL. "#" ""rulename"" "#REC = RECORD"\\
+     END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+2: <* SEND: BEGIN str:=%.str; 
+            END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+3: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN IF write THEN BEGIN
+                       IF TSTRING_comparechars(str,'BOOLEAN',7)<>0 THEN "LSDOMAINT_"
+                       ""str""\\
+                       END;
+                     write:=FALSE;
+               END
+   *>
+4: <* SEND: BEGIN %%BLOCK.rulename:=rulename;
+                  %%BLOCK.parameters:=parameters;
+            END
+      !BLOCK.
+      RECEIVE: BEGIN appendlocfile(%%BLOCK.blockenv,blockenv);
+                     appendlocfile(%%BLOCK.blockpas,blockpas);
+               END
+   *>
+5: <* SEND: BEGIN %%INITBLOCK.rulename:=rulename;
+                  %%INITBLOCK.parameters:=parameters;
+            END
+      !INITBLOCK.
+      RECEIVE: BEGIN appendlocfile(%%INITBLOCK.blockenv,blockenv);
+                     appendlocfile(%%INITBLOCK.blockpas,blockpas);
+               END
+   *>
+6: <* SEND: BEGIN %%FINALBLOCK.rulename:=rulename;
+            END
+      !FINALBLOCK.
+      RECEIVE: BEGIN appendlocfile(%%FINALBLOCK.blockenv,blockenv);
+                     appendlocfile(%%FINALBLOCK.blockpas,blockpas);
+               END
+   *>
+7: <* SEND: BEGIN IF NOT first THEN ";" 
+                  first:=FALSE;
+                  id.str:=str;
+                  appendident(id,parameters);
+            END
+      !.
+      RECEIVE: BEGIN ""str"" ":" write:=TRUE;
+               END
+   *>
+*>
+FINAL: BEGIN \procpars.\LOCAL. " END;"\\
+            $$RULEBODY.procpars:=procpars;
+             \blockenv.\LOCAL.
+            " FUNCTION comp_" ""rulename"" 
+            "(rec1,rec2:" ""rulename"" "typ):BOOLEAN;EXTERNAL;"\\
+            $$RULEBODY.blockenv:=blockenv;
+             \blockpas.\LOCAL.
+            " FUNCTION comp_" ""rulename"" 
+            "(rec1,rec2:" ""rulename"" "typ):BOOLEAN;"\\
+            "BEGIN WITH rec1^ DO comp_" ""rulename"" ":="\\
+            IF NOT(stillidents(parameters)) THEN BEGIN "TRUE" \\ END;
+            WHILE stillidents(parameters) DO BEGIN
+              takeident(id,parameters);
+              "(" ""id.str"" "=rec2^." 
+                    ""id.str"" ")"
+              IF stillidents(parameters) THEN " AND" \\
+              END;
+            "END;"\\
+            $$RULEBODY.blockpas:=blockpas;
+       END
+END;
+&
+
+%BLOCK
+BASIS RULE
+  BLOCK = NUMBER/2.COLON/1.LEFTSTAR/1.LOCALCONDITION/1.COLON/1.
+          PASCALTOGLOBAL/3.COLON/1.HEKJE/1.CONDITION/1.COLON/1.PASCALTOHEKJE/4.
+          ACTION/1.COLON/1.PSTOSTARRIGHT/5
+SURFACE PART
+VAR blocknumber:TSTRING_string;
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN blocknumber:=%NUMBER.str
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_BLOCK;
+                  $BLOCK.number:=blocknumber;
+                END;
+*>
+END;
+
+PROCEDURAL PART
+VAR blockenv,blockpas:LOCALFILE;
+    rulename,blocknumber,str:TSTRING_string;
+    parameters::setofidents;
+BEGIN 
+INIT:BEGIN initlocalfile(blockenv);
+           initlocalfile(blockpas);
+           parameters:=$$BLOCK.parameters;
+           rulename:=$$BLOCK.rulename;
+           blocknumber:=$BLOCK.number;
+           \blockenv.\LOCAL.
+           "FUNCTION " ""rulename"" "_"
+                   ""blocknumber"" \\ "(VAR rec:" ""rulename"" 
+                   "typ;{VAR synrel:LSDOMAINT_synrel;}"
+                   "b:LSSTREE_pstree):BOOLEAN;EXTERNAL;"\\
+           \blockpas.\LOCAL.
+           "FUNCTION " ""rulename"" "_"
+                   ""blocknumber"" \\ "(VAR rec:" ""rulename"" 
+                   "typ;{VAR synrel:LSDOMAINT_synrel;}"
+                   "b:LSSTREE_pstree):BOOLEAN;"\\
+           "VAR result:BOOLEAN;"\\
+           "BEGIN WITH rec^ DO BEGIN result:=FALSE;IF "\\
+     END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+2: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN \RTNfile.\GLOBAL. "+" ""str""\\
+                     \blockpas.\LOCAL.
+               END
+   *>
+3: <* SEND: BEGIN END
+      !.{PASCALTOGLOBAL}
+      RECEIVE: BEGIN {appendlocfile(%%PASCALTOGLOBAL.copy,blockpas);
+                    \\"THEN IF"\\}
+               END
+   *>
+4: <* SEND: BEGIN END
+      !PASCALTOHEKJE.
+      RECEIVE: BEGIN appendlocfile(%%PASCALTOHEKJE.copy,blockpas);
+                   \\"THEN result:=TRUE;IF result THEN"\\
+               END
+   *>
+5: <* SEND: BEGIN %%PSTOSTARRIGHT.parameters:=parameters END
+      !PSTOSTARRIGHT.
+      RECEIVE: BEGIN appendlocfile(%%PSTOSTARRIGHT.copy,blockpas);
+               END
+   *>
+*>
+FINAL: BEGIN $$BLOCK.blockenv:=blockenv;
+             "END;" ""rulename"" "_" ""blocknumber""
+             ":=result;"\\
+{             "DEBUG_writestr('<-" ""rulename"" "_"
+            ""blocknumber"" "',DEBUG_MaxIO,0,TRUE);"\\
+            "IF result THEN"
+             " DEBUG_writestr('TRUE',DEBUG_MaxIO,0,TRUE)"\\
+            "ELSE"
+             " DEBUG_writestr('FALSE',DEBUG_MaxIO,0,TRUE);"\\
+             "DEBUG_writeline(TRUE);"\\}
+             "END;"\\
+             $$BLOCK.blockpas:=blockpas; 
+       END
+END;
+&
+
+%INITBLOCK
+BASIS RULE
+  INITBLOCK = HINITCAT/2.COLON/1.PASCALTOEND/3
+
+SURFACE PART
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_INITBLOCK;
+                END;
+*>
+END;
+
+PROCEDURAL PART
+VAR blockpas,blockenv:LOCALFILE;
+    rulename:TSTRING_string;
+    parameters::setofidents;
+BEGIN 
+INIT:BEGIN parameters:=$$INITBLOCK.parameters;
+           \blockenv.\LOCAL.
+           rulename:=$$INITBLOCK.rulename;
+           initlocalfile(blockenv);
+           "PROCEDURE " ""rulename"" "_0(VAR rec:"
+           ""rulename"" "typ);EXTERNAL;"\\
+           \blockpas.\LOCAL.
+           initlocalfile(blockpas);
+           "PROCEDURE " ""rulename"" "_0(VAR rec:"
+           ""rulename"" "typ);"\\
+           "BEGIN WITH rec^ DO BEGIN"\\
+     END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+3: <* SEND: BEGIN %%PASCALTOEND.parameters:=parameters END
+      !PASCALTOEND.
+      RECEIVE: BEGIN appendlocfile(%%PASCALTOEND.copy,blockpas);
+               END
+   *>
+*>
+FINAL: BEGIN "END;END;"\\
+             $$initblock.blockenv:=blockenv;
+             $$initblock.blockpas:=blockpas;
+       END
+END;
+&
+
+%FINALBLOCK
+BASIS RULE
+  FINALBLOCK = HFINALCAT/2.COLON/1.
+               HEKJE/1.CONDITION/1.COLON/1.PASCALTOHEKJE/4.
+               ACTION/1.COLON/1.PSTOSTARRIGHT/5
+SURFACE PART
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_FINALBLOCK;
+                END;
+*>
+END;
+
+PROCEDURAL PART
+VAR blockpas,blockenv:LOCALFILE;
+    rulename:TSTRING_string;
+BEGIN 
+INIT:BEGIN \blockenv.\LOCAL.
+           rulename:=$$FINALBLOCK.rulename;
+           initlocalfile(blockenv);
+           "FUNCTION " ""rulename"" "_F"\\
+           "(VAR rec:" ""rulename"" 
+           "typ;VAR topset:LISTREE_setofstrees):BOOLEAN;EXTERNAL;"\\
+           \blockpas.\LOCAL.
+           initlocalfile(blockpas);
+           "FUNCTION " ""rulename"" "_F"\\
+           "(VAR rec:" ""rulename"" 
+           "typ;VAR topset:LISTREE_setofstrees):BOOLEAN;"\\
+           "VAR result:BOOLEAN;top:LSSTREE_pstree;"\\
+           "BEGIN LISTREE_initsetofstrees(topset);"
+           "WITH rec^ DO BEGIN result:="\\
+     END;
+<*
+1: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN
+               END
+   *>
+3: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+4: <* SEND: BEGIN END
+      !PASCALTOHEKJE.
+      RECEIVE: BEGIN appendlocfile(%%PASCALTOHEKJE.copy,blockpas);
+                   \\";IF result THEN"\\
+               END
+   *>
+5: <* SEND: BEGIN initsetofidents(%%PSTOSTARRIGHT.parameters) END
+      !PSTOSTARRIGHT.
+      RECEIVE: BEGIN appendlocfile(%%PSTOSTARRIGHT.copy,blockpas);
+               END
+   *>
+*>
+FINAL: BEGIN
+             $$finalblock.blockenv:=blockenv;
+             "END;" ""rulename"" "_F"
+             ":=result;"\\
+             "DEBUG_writestr('<-" ""rulename"" "_F "
+            "',DEBUG_MaxIO,0,TRUE);"
+            "IF LISTREE_stillstrees(topset) THEN"
+             " DEBUG_writestr('TRUE',DEBUG_MaxIO,0,TRUE)"\\
+            "ELSE"
+             " DEBUG_writestr('FALSE',DEBUG_MaxIO,0,TRUE);"
+             "Debug_WriteLine(TRUE);"\\
+             "END;"\\
+             $$finalblock.blockpas:=blockpas;
+             initlocalfile($$finalblock.blockenv);
+             initlocalfile($$finalblock.blockpas);
+       END
+END;
+&
+
+%PASCALTOHEKJE
+BASIS RULE
+  PASCALTOHEKJE = {PASCAL1}.HEKJE/7
+  PASCAL1 = ROUNDOPEN/1|ROUNDCLOSE/1|COMMA/1|IDENTIFIER/1|PROCENT/2|DOT/4|
+            AUX/6|KEYtje/3|COLON/1|SEMICOLON/5|ISCAT/1|UNDERSCORE/8
+
+SURFACE PART
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+6:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+7:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+8:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_PASCALTOHEKJE;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR copy:LOCALFILE;
+    writekey,writefield,writeextra::bool;
+    str,str1:TSTRING_string;
+BEGIN 
+INIT:BEGIN \copy.\LOCAL.
+           writeextra:=FALSE;
+           writekey:=FALSE;
+           writefield:=FALSE;
+           initlocalfile(copy);
+     END;
+<*
+1: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN IF TSTRING_comparechars(str,'IN',2)=0 THEN " "
+                     IF TSTRING_comparechars(str,'NOT',3)=0 THEN " "
+                     IF TSTRING_comparechars(str,'AND',3)=0 THEN " "
+                     TSTRING_constant(str1,'END',3);
+                     IF TSTRING_comparebegin(str1,str)=0 THEN " "
+                     IF TSTRING_comparechars(str,'OR',2)=0 THEN " "
+                     IF TSTRING_comparechars(str,'IF',2)=0 THEN " "
+                     IF writekey THEN IF str[STRING_length(str)]=')' THEN BEGIN
+                     TSTRING_extractbegin(str,str,STRING_length(str)-1);
+                     writeextra:=TRUE;
+                       END;
+                     ""str""
+                     IF TSTRING_comparechars(str,'IN',2)=0 THEN " "
+                     TSTRING_constant(str1,'NOT',3);
+                     IF TSTRING_compareend(str,str1)=0 THEN " "
+                     IF TSTRING_comparechars(str,'IF',2)=0 THEN " "
+                     IF TSTRING_comparechars(str,'OR',2)=0 THEN " "
+                     IF TSTRING_comparechars(str,'AND',3)=0 THEN " "
+                     IF TSTRING_comparechars(str,'END',3)=0 THEN " "
+                     IF writekey THEN BEGIN
+                       "')"
+                       IF writeextra THEN ")"
+                       writeextra:=FALSE;
+                       writekey:=FALSE;
+                       END;
+               END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN \\"b^.ls^."
+                     writefield:=TRUE;
+               END
+   *>
+3: <* SEND: BEGIN writekey:=TRUE END
+      !.
+      RECEIVE: BEGIN "auxkey('"
+               END
+   *>
+4: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN IF writefield THEN BEGIN
+                     "field^"
+                     writefield:=FALSE;
+                     END;
+                     "."
+               END
+   *>
+5: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN ""str""\\
+               END
+   *>
+6: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN \\"LSAUXDOM"
+               END
+   *>
+7: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+8: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN IF NOT writekey THEN "_"
+               END
+   *>
+*>
+FINAL: BEGIN $$PASCALTOHEKJE.copy:=copy
+       END
+END;
+&
+
+%PASCALTOGLOBAL
+BASIS RULE
+  PASCALTOGLOBAL = {PASCAL2}.GLOBAL/7
+  PASCAL2 = ROUNDOPEN/1|ROUNDCLOSE/1|COMMA/1|IDENTIFIER/1|PROCENT/2|DOT/4|AUX/6|KEYtje/3|
+           COLON/1|SEMICOLON/5|ISCAT/1|UNDERSCORE/8
+
+SURFACE PART
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+6:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+7:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+8:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_PASCALTOGLOBAL;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR copy:LOCALFILE;
+    writekey,writefield,writeextra::bool;
+    str,str1:TSTRING_string;
+BEGIN 
+INIT:BEGIN \copy.\LOCAL.
+           writeextra:=FALSE;
+           writekey:=FALSE;
+           writefield:=FALSE;
+           initlocalfile(copy);
+     END;
+<*
+1: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN IF TSTRING_comparechars(str,'IN',2)=0 THEN " "
+                     IF TSTRING_comparechars(str,'NOT',3)=0 THEN " "
+                     IF TSTRING_comparechars(str,'IF',2)=0 THEN " "
+                     IF TSTRING_comparechars(str,'OR',2)=0 THEN " "
+                     TSTRING_constant(str1,'END',3);
+                     IF TSTRING_comparebegin(str1,str)=0 THEN " "
+                     IF TSTRING_comparechars(str,'AND',3)=0 THEN " "
+                     IF writekey THEN IF str[STRING_length(str)]=')' THEN BEGIN
+                     TSTRING_extractbegin(str,str,STRING_length(str)-1);
+                     writeextra:=TRUE;
+                       END;
+                     ""str""
+                     IF TSTRING_comparechars(str,'IN',2)=0 THEN " "
+                     TSTRING_constant(str1,'NOT',3);
+                     IF TSTRING_compareend(str,str1)=0 THEN " "
+                     IF TSTRING_comparechars(str,'IF',2)=0 THEN " "
+                     IF TSTRING_comparechars(str,'OR',2)=0 THEN " "
+                     IF TSTRING_comparechars(str,'END',3)=0 THEN " "
+                     IF TSTRING_comparechars(str,'AND',3)=0 THEN " "
+                     IF writekey THEN BEGIN
+                       "')"
+                       IF writeextra THEN ")"
+                       writeextra:=FALSE;
+                       writekey:=FALSE;
+                       END;
+               END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN \\"b^.ls^."
+                     writefield:=TRUE;
+               END
+   *>
+3: <* SEND: BEGIN writekey:=TRUE END
+      !.
+      RECEIVE: BEGIN "auxkey('"
+               END
+   *>
+4: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN IF writefield THEN BEGIN
+                     "field^"
+                     writefield:=FALSE;
+                     END;
+                     "."
+               END
+   *>
+5: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN ""str""\\
+               END
+   *>
+6: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN \\"LSAUXDOM"
+               END
+   *>
+7: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+8: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN IF NOT writekey THEN "_"
+               END
+   *>
+*>
+FINAL: BEGIN $$PASCALTOGLOBAL.copy:=copy
+       END
+END;
+&
+
+%PSTOSTARRIGHT
+BASIS RULE
+  PSTOSTARRIGHT = {PASCAL3}.STARRIGHT/7
+  PASCAL3 = ROUNDOPEN/1|ROUNDCLOSE/1|COMMA/1|IDENTIFIER/1|PROCENT/2|DOT/4|
+            AUX/6|KEYtje/3|MAKE/9|ISCAT/1|
+            SEMICOLON/5|COLON/1.ISCAT/11|UNDERSCORE/8|DOLLAR/10
+
+SURFACE PART
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+6:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+7:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+8:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+9:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+10:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+11:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN 
+                          END
+       *>
+FINAL: #CONDITION: TRUE
+       #ACTION: BEGIN
+                  SEND_PSTOSTARRIGHT;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR copy,result:LOCALFILE;
+    writebracket,writekey,writefield,writeextra::bool;
+    str,str1:TSTRING_string;
+    write,dontlook:BOOLEAN;
+    parameters1,parameters::setofidents;
+    id::ident;
+BEGIN 
+INIT:BEGIN \result.\LOCAL.
+           parameters:=$$PSTOSTARRIGHT.parameters;
+           initlocalfile(result);
+           "BEGIN"\\
+           write:=FALSE;
+           dontlook:=FALSE;
+           writeextra:=FALSE;
+           writekey:=FALSE;
+           writebracket:=FALSE;
+           writefield:=FALSE;
+           initlocalfile(copy);
+           \copy.\LOCAL.
+     END;
+<*
+1: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN parameters1:=parameters;
+                     IF NOT(dontlook) THEN WHILE stillidents(parameters1) DO BEGIN
+                       takeident(id,parameters1);
+                       IF id.str=str THEN write:=TRUE
+                       END;
+                     IF TSTRING_comparechars(str,'IN',2)=0 THEN " "
+                     TSTRING_constant(str1,'END',3);
+                     IF TSTRING_comparebegin(str1,str)=0 THEN \\
+                     IF TSTRING_comparechars(str,'ELSE',4)=0 THEN \\
+                     IF TSTRING_comparechars(str,'THEN',4)=0 THEN 
+                       BEGIN \\ dontlook:=FALSE END;
+                     IF TSTRING_comparechars(str,'NOT',3)=0 THEN " "
+                     IF TSTRING_comparechars(str,'IF',2)=0 THEN 
+                       BEGIN " " dontlook:=TRUE END;
+                     IF TSTRING_comparechars(str,'OR',2)=0 THEN " "
+                     IF TSTRING_comparechars(str,'AND',3)=0 THEN " "
+                     IF writekey THEN IF str[STRING_length(str)]=')' THEN BEGIN
+                     TSTRING_extractbegin(str,str,STRING_length(str)-1);
+                     writeextra:=TRUE;
+                       END;
+                     ""str""
+                     IF TSTRING_comparechars(str,'IN',2)=0 THEN " "
+                     IF TSTRING_comparechars(str,'BEGIN',5)=0 THEN \\
+                     IF TSTRING_comparechars(str,'ELSE',4)=0 THEN \\
+                     IF TSTRING_comparechars(str,'THEN',4)=0 THEN \\
+                     TSTRING_constant(str1,'NOT',3);
+                     IF TSTRING_compareend(str,str1)=0 THEN " "
+                     IF TSTRING_comparechars(str,'IF',2)=0 THEN " "
+                     IF TSTRING_comparechars(str,'OR',2)=0 THEN " "
+                     IF TSTRING_comparechars(str,'END',3)=0 THEN " "
+                     IF TSTRING_comparechars(str,'AND',3)=0 THEN " "
+                     IF writekey THEN BEGIN
+                       "')"
+                       IF writeextra THEN ")"
+                       writeextra:=FALSE;
+                       writekey:=FALSE;
+                       END;
+                     IF writebracket THEN BEGIN ");"\\
+                       "LISTREE_appendstree(top::LISTREE_pstree,topset);"
+                       writebracket:=FALSE;
+                       END;
+               END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN \\"b^.ls^."
+                     writefield:=TRUE;
+               END
+   *>
+3: <* SEND: BEGIN writekey:=TRUE END
+      !.
+      RECEIVE: BEGIN "auxkey('"
+               END
+   *>
+4: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN IF writefield THEN BEGIN
+                     "field^"
+                     writefield:=FALSE;
+                     END;
+                     "."
+               END
+   *>
+5: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN ""str""\\
+                     IF write THEN appendlocfile(copy,result);
+                     initlocalfile(copy);
+                     write:=FALSE;
+                     dontlook:=FALSE;
+               END
+   *>
+6: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN \\"LSAUXDOM"
+               END
+   *>
+7: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+                     IF write THEN appendlocfile(copy,result);
+               END
+   *>
+8: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN IF NOT (writekey OR writebracket) THEN "_"
+               END
+   *>
+9: <* SEND: BEGIN writebracket:=TRUE END
+      !.
+      RECEIVE: BEGIN "top:=MAKET_stree("
+               END
+   *>
+10: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN \\"top^.ls^."
+                     writefield:=TRUE;
+               END
+   *>
+11: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN dontlook:=TRUE; "="
+               END
+   *>
+*>
+FINAL: BEGIN \result.\LOCAL. IF not write THEN "END;" \\
+              $$PSTOSTARRIGHT.copy:=result
+       END
+END;
+&
+
+ 
+%PASCALTOEND
+BASIS RULE
+  PASCALTOEND = {IDENTIFIER/9.COLON/7.[COLON/8].ISCAT/1|PROCENT/2|AUX/4|KEYtje/5|
+                COLON/1|DOT/1|SEMICOLON/3|UNDERSCORE/1|IDENTIFIER/1|
+                ROUNDOPEN/1|ROUNDCLOSE/1|COMMA/1}
+
+SURFACE PART
+VAR str:TSTRING_string;
+
+<*
+ INIT:BEGIN 
+       END;
+1:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN str:=%.str;
+                          END
+       *>
+2:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+3:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+4:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+5:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+7:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+8:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+9:     <*
+        LOCALCONDITION:TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                          END
+       *>
+FINAL: #CONDITION: (TSTRING_compare(str,'END')=0) 
+       #ACTION: BEGIN
+                  SEND_PASCALTOEND;
+                END
+*>
+END;
+
+PROCEDURAL PART
+VAR copy:LOCALFILE;
+    write,writekey::bool;
+    str:TSTRING_string;
+    parameters1,parameters::setofidents;
+    id::ident;
+BEGIN 
+INIT:BEGIN initlocalfile(copy);\copy.\LOCAL.
+           writekey:=FALSE;write:=FALSE;
+           parameters:=$$PASCALTOEND.parameters;
+     END;
+<*
+1: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN IF write THEN BEGIN
+                       IF TSTRING_comparechars(str,'END',3)=0 THEN \\
+                       IF TSTRING_comparechars(str,'END',3)<>0 THEN ""str""
+                       IF writekey THEN BEGIN writekey:=FALSE; ")" END;
+                       IF TSTRING_comparechars(str,'BEGIN',5)=0 THEN \\
+                       END;
+               END
+   *>
+2: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN 
+               END
+   *>
+3: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN IF write THEN BEGIN ""str""\\ write:=FALSE END;
+               END
+   *>
+4: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN IF write THEN BEGIN \\"LSAUXDOM_" END;
+               END
+   *>
+5: <* SEND: BEGIN writekey:=TRUE END
+      !.
+      RECEIVE: BEGIN IF write THEN "auxkey("
+               END
+   *>
+7: <* SEND: BEGIN {str:=%.str} END
+      !.
+      RECEIVE: BEGIN {""str""}
+               parameters1:=parameters;
+               WHILE stillidents(parameters1) DO BEGIN
+                 takeident(id,parameters1);
+                 IF id.str=str THEN BEGIN
+                   write:=TRUE;
+                   ""str"" ":"
+                   END;
+                 END;                 
+               END
+   *>
+8: <* SEND: BEGIN END
+      !.
+      RECEIVE: BEGIN ""str"" ":"
+               write:=TRUE;
+               END
+   *>
+9: <* SEND: BEGIN str:=%.str END
+      !.
+      RECEIVE: BEGIN write:=FALSE;
+               END
+   *>
+*>
+FINAL: BEGIN $$PASCALTOEND.copy:=copy 
+       END
+END;
+&

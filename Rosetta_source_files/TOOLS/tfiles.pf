@@ -1,0 +1,186 @@
+(*MPD:::===================================================================*
+ *
+ *  Rosetta Project
+ *
+ *  Module Title    : FILES
+ *  Creation date   :  10-JUN-1988
+ *  Author          : Rene Leermakers, copy from general:FILES_.env
+ *
+ *  Copyright (c) 1986, by Nederlandse Philips Bedrijven BV.
+ *
+ *  Remarks         : This module defines some basic operations on
+ *                    text FILES_. 
+ *
+ *                    A text FILES_ consists of characters, lines and
+ *                    pages. The reading and writing of CHAR, INTEGER, BOOLEAN,
+ *                    string and STRING_String is supported. Also procedures
+ *                    are provided 1) to skip spaces, complete lines and
+ *                    pages, 2) to detect end-of-line, end-of-page and
+ *                    end-of-file conditions, 3) to end a line or a page,
+ *                    4) to reread the lastread character, 5) to determine how
+ *                    many characters have been read/written in the current
+ *                    line, 6) to open/close (local) FILES_ for (shared) reading,
+ *                    writing or appending and 7) to translate logical names.
+ *
+ *                    The routine ReadAgain makes it easy to implement
+ *                    parsers, f.e. if the last read character was a digit
+ *                    then ReadAgain followed by ReadInteger will read and
+ *                    convert an integer, but if it was a letter then ReadAgain
+ *                    followed by ReadStr will read the complete string.
+ *                    Also end-of-line/end-of-file conditions are detectable
+ *                    in a more convinient way.
+ *
+ *                    The Open routine makes it possible to open a file,
+ *                    linked to an external file, either for reading or
+ *                    for writing/appending. Moreover it makes it possible to
+ *                    mark the external file for exclusive use, shared reading
+ *                    or shared reading and writing.
+ *
+ *                    The write functions automatically insert an end-of-line
+ *                    in the output stream if more then MaxIO characters are
+ *                    bying written in the current line. This prevents the
+ *                    system from breaking down in such a case. The insertion
+ *                    is done at the proper places; strings and integers are
+ *                    never splitt over two lines, if it does not fit on the
+ *                    current line all of it will be written on the next line.
+ *
+ *                    A call to TFILES_Done will return TRUE IFF the last
+ *                    Read, Open/Close or Translate action went well. The
+ *                    ReadAgain routine has no effect on this.
+ *
+ *EMP:::===================================================================*)
+
+
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+pragma C_include('tstring.pf');
+pragma C_include('files.pf');
+pragma C_include('str.pf');
+
+
+PACKAGE TFILES;
+
+WITH tstring,files,str;
+
+ FUNCTION TFILES_Done
+                    : BOOLEAN;
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : TFILES_Open
+ *  Description     : opens a file
+ *  Parameters      : VAR f : FILES_Text
+ *                    name : PACKED ARRAY [lb1..ub1: INTEGER] OF CHAR
+ *                    len : FILES_NameRange
+ *                    mode : FILES_Mode
+ *  Precondition    : lb1=1
+ *  Postcondition   : The external file named name[1..min(ub1,len)] is
+ *                    connected to the file-variable f.
+ *                    The name may be any valid VMS file-name or logical-name.
+ *                    The file is opened according to mode.
+ *                    A call of TFILES_Done will return TRUE IFF all went well.
+ *  Side Effects    : Possibly a new file is created!
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE TFILES_Open (VAR f : FILES_Text;
+                                 CONST name : string;
+                                 len : FILES_NameRange;
+                                 mode : FILES_Mode);
+EXTERNAL;
+
+
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : TFILES_Close
+ *  Description     : closes a previous opened file
+ *  Parameters      : VAR f : FILES_Text
+ *  Precondition    : f was previously opened using TFILES_Open
+ *  Postcondition   : f is closed
+ *                    A call of TFILES_Done will return TRUE IFF all went well.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE TFILES_Close (VAR f : FILES_Text);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : TFILES_WriteStr
+ *  Description     : writes string to text file
+ *  Parameters      : VAR f : FILES_Text
+ *                    str : PACKED ARRAY [lb1..ub1: INTEGER] OF CHAR
+ *                    len,
+ *                    width : FILES_IORange
+ *                    LeftJustify : FILES_LeftJustify
+ *  Precondition    : f is in write state AND lb1=1
+ *  Postcondition   : str[1..min(ub,len)] is written to f using at least width
+ *                    chars.
+ *                    The written string is justified according to LeftJustify.
+ *                    If the string does not fit on the current line, then the
+ *                    complete string is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *                    If the string does not fit on the current line, then the
+ *                    complete string is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE TFILES_WriteStr (VAR f :FILES_Text;
+                                     CONST str : string;
+                                     len,
+                                     width : FILES_IORange;
+                                     LeftJustify : FILES_LeftJustify);
+EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Procedure Name  : TFILES_WriteString
+ *  Description     : writes STRING_string to text file
+ *  Parameters      : VAR f : FILES_Text
+ *                    str : STRING_String
+ *                    width : FILES_IORange
+ *                    LeftJustify : FILES_LeftJustify
+ *  Precondition    : f is in write state
+ *  Postcondition   : str is written to f using atleast width chars
+ *                    The written string is justified according to LeftJustify.
+ *                    If the string does not fit on the current line, then the
+ *                    complete string is written on a new line! Preceding and
+ *                    trailing spaces are written as far as possible in the
+ *                    currentline, remaining spaces are written on the new line.
+ *  Side Effects    : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE TFILES_WriteString (VAR f :FILES_Text;
+                                        str : TSTRING_String;
+                                        width : FILES_IORange;
+                                        LeftJustify : FILES_LeftJustify);
+EXTERNAL;
+
+
+
+
+ PROCEDURE TFILES_WriteInteger (VAR f :FILES_Text;
+                                         i : INTEGER;
+                                         width : FILES_IORange;
+                                         LeftJustify : FILES_LeftJustify);
+EXTERNAL;
+
+
+
+ PROCEDURE TFILES_WriteLine (VAR f : FILES_Text;
+                                      b : BOOLEAN);
+EXTERNAL;
+
+
+END {FILES_};

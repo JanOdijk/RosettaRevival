@@ -1,0 +1,313 @@
+(*MPM:::===================================================================*
+ *
+ *  Rosetta Project                                                 
+ *                                                                  
+ *  Module Title    : SEGCOMDECL 
+ *  Creation date   :                                               
+ *  Author          :                                               
+ *                                                                  
+ *  Copyright (c) 1985, by Nederlandse Philips Bedrijven BV.        
+ *                                                                  
+ *  Remarks         :  
+ *
+ *EMP:::===================================================================*)
+pragma C_include('segcomlangspec.pf');
+pragma C_include('string.pf');
+
+(*=========================================================================*
+ *  Imported modules
+ *=========================================================================*)
+
+PACKAGE SEGCOMDECL;
+WITH STRNG,
+     SEGCOMLANGSPEC;
+
+CONST
+   HINIT = -1;
+   HDUM  = -1;
+   HFINAL= 60;
+
+TYPE
+   SEGCOMDECL_Surfrulemode = (loccond, globcond);
+   SEGCOMDECL_psyntcat     = ^SEGCOMLANGSPEC_Category;
+   SEGCOMDECL_syntcatset   = SET OF SEGCOMLANGSPEC_Category;
+   SEGCOMDECL_pSnode       = ^SEGCOMDECL_Snode;
+   SEGCOMDECL_pRsnode      = ^SEGCOMDECL_Rsnode;
+   SEGCOMDECL_Rsnode       = RECORD
+                                node    : SEGCOMDECL_pSnode;
+                                brother : SEGCOMDECL_pRsnode
+                             END;
+   SEGCOMDECL_Snode        = RECORD
+                                sonlist : SEGCOMDECL_pRsnode;
+                                minpos,
+                                maxpos  : integer;
+                                n       : integer;
+                                cl      : integer;
+                                connected : boolean;
+                                cat     : SEGCOMLANGSPEC_Category;
+                                ldfield : SEGCOMLANGSPEC_FieldDef
+                             END;
+   SEGCOMDECL_pLostree     = ^SEGCOMDECL_Lostree;
+   SEGCOMDECL_Lostree      = RECORD
+                                next    : SEGCOMDECL_pLostree;
+                                arg     : SEGCOMDECL_pSnode
+                             END;
+   SEGCOMDECL_pConnectionnode
+                           = ^SEGCOMDECL_Connectionnode;
+   SEGCOMDECL_pSingleSegmentList
+                           = ^SEGCOMDECL_SingleSegmentList;
+   SEGCOMDECL_Connectionnode 
+                           = RECORD
+                                list    : SEGCOMDECL_pSingleSegmentList;
+                                next,
+                                prev    : SEGCOMDECL_pConnectionnode;
+                                idnr    : integer
+                             END;
+   SEGCOMDECL_SingleSegmentList
+                           = RECORD
+                                next    : SEGCOMDECL_pSingleSegmentlist;
+                                rn      : SEGCOMDECL_pConnectionnode;
+                                stree   : SEGCOMDECL_pSnode
+                             END;
+   SEGCOMDECL_psurfgraph     = ^SEGCOMDECL_surfgraphtype;
+   SEGCOMDECL_psurfgraphnode = ^SEGCOMDECL_surfgraphnode;
+   SEGCOMDECL_surfgraphtype  = RECORD
+   			          first,
+   			          last: SEGCOMDECL_psurfgraphnode
+   		               END;
+   SEGCOMDECL_nodeid         = HINIT..HFINAL;
+   SEGCOMDECL_plonodeid      = ^SEGCOMDECL_lonodeid;
+   SEGCOMDECL_lonodeid       = RECORD
+   			          next: SEGCOMDECL_plonodeid;
+   			          arg : SEGCOMDECL_nodeid
+   	 	               END;
+   SEGCOMDECL_plossurfgraphnode 
+                             = ^SEGCOMDECL_lossurfgraphnode;
+   SEGCOMDECL_surfgraphnodelist
+                             = RECORD
+   				   first,
+      				   last  : SEGCOMDECL_plossurfgraphnode;
+   			       END;
+   SEGCOMDECL_lossurfgraphnode 
+                             = RECORD
+   				   next :  SEGCOMDECL_plossurfgraphnode;
+   				   arg  :  SEGCOMDECL_psurfgraphnode
+   			       END;
+   SEGCOMDECL_surfgraphnode  = RECORD
+      			          left,
+   			          right: SEGCOMDECL_psurfgraphnode;
+   			          n    : SEGCOMDECL_nodeid;
+   			          cat  : SEGCOMDECL_psyntcat;
+   			          nextnodes: SEGCOMDECL_surfgraphnodelist;
+   			          nextcats,
+   			          nexttops : SEGCOMDECL_syntcatset;
+   			          completed,
+                                  alreadysearched:boolean
+   	                       END;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_newtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SEGCOMDECL_newtop: SEGCOMDECL_psinglesegmentlist; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_assignnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of newtop is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE SEGCOMDECL_assignnewtop(valeu: SEGCOMDECL_psinglesegmentlist);EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_addnewtop
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE SEGCOMDECL_addnewtop(a: SEGCOMDECL_pSnode); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_status
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SEGCOMDECL_status:boolean;EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_assignstatus
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of status is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE SEGCOMDECL_assignstatus(valeu:boolean); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_debug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SEGCOMDECL_debug:boolean; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_assigndebug
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of debug is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE SEGCOMDECL_assigndebug(valeu:boolean); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_surfgraph
+ *  Description    : 
+ *  Parameters     :0<i<=maxrnr 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SEGCOMDECL_surfgraph(i:integer):SEGCOMDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_assignsurfgraph
+ *  Description    : 
+ *  Parameters     : o<i<=maxrnr
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of surfgraph(i) is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+  PROCEDURE SEGCOMDECL_assignsurfgraph(i: integer; valeu: SEGCOMDECL_psurfgraph); EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_absent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SEGCOMDECL_absent: SEGCOMDECL_psurfgraph; EXTERNAL;
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_assignabsent
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : valeu of absent is 'valeu'
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE SEGCOMDECL_assignabsent(valeu: SEGCOMDECL_psurfgraph); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_Addconnectionnode
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ PROCEDURE SEGCOMDECL_Addconnectionnode(VAR r: SEGCOMDECL_pconnectionnode;
+                                                  t: SEGCOMDECL_psnode); EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_MakeTerminal
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SEGCOMDECL_MakeTerminal(s: SEGCOMLANGSPEC_Category;
+                                            w: STRING_String): 
+                                            SEGCOMDECL_pSnode; EXTERNAL;
+
+
+(*MPF:::===================================================================*
+ *
+ *  Function Name  : SEGCOMDECL_MakeNonTerminal
+ *  Description    : 
+ *  Parameters     : 
+ *  Result         :  
+ *  Precondition   : 
+ *  Postcondition  : 
+ *  Side Effects   : 
+ *
+ *EMP:::===================================================================*)
+
+ FUNCTION SEGCOMDECL_MakeNonTerminal(s: SEGCOMLANGSPEC_Category):
+                                            SEGCOMDECL_pSnode; EXTERNAL;
+
+
+END {SEGCOMDECL};
