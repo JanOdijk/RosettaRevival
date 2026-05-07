@@ -1,0 +1,919 @@
+DUTCH 18
+&
+
+The following rules of Non Obligatory Control (NOC) exist:
+\begin{description}
+   \item[TNOC1] for objrel, indobjrel antecedents (not EMPTYVAR)
+   \item[TNOC2] for subjrel antecedents (not EMPTYVAR)
+   \item[TNOC3] for prepobj, aanobj, voorobj, byobj antecedents (Not EMPTYVAR)
+   \item[TNOC4] split antecedents, subjrel
+   \item[TNOC5] split antecedents, objrel, indobjrel
+   \item[TNOC6] split antecedents, prepobjrel, aanobjrel, voorobjrel, byobjrel
+   \item[TNOC7] EMPTYVAR antecedent, objrel, indobjrel
+   \item[TNOC8] EMPTYVAR antecedent, subjrel
+   \item[TNOC9] EMPTYVAR antecedent, byobjrel
+\end{description}
+
+Rules TNOC5-TNOC9 are in dutch:tc_noc2.mrule
+
+All these rules assume that the sentence that the controlled subject is in
+bears relation extraposrel/...
+Rules must be added for cases where the relevant sentence bears the relation 
+leftdislocrel (Are these possible in Dutch?, or are only NPs possible!).
+
+It is assumed that EMPTYs cannot occur in prepobjrels, aanobjrels, voorobjrels.
+This might very well be wrong (cf. bij iemand op iets aandringen,
+Hij drong er bij Piet op aan dit snel te doen vs. Hij drong er op aan dit snel
+te doen.
+If so, then the relevant rule for this case must be added
+
+
+
+\newpage
+\begin{verbatim}
+%
+% TRANSFORMATION TNOC1
+                         (* nonsubject antecedent *)
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu2,
+                      I1:rel1/T1,
+                      mu3,
+                      head/VERB{VERBrec1}[mu4],
+                      mu5
+                    ],
+             mu6,
+             extraposrel/I4::SENTENCE{SENTENCErec1}
+                        [ I2:sig1,
+                          I5:sig2,
+                          subjrel/T2,
+                          I3:mu7 
+                        ],
+             mu8
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu2,
+                      I1:rel1/T1,
+                      mu3,
+                      head/VERB{VERBrec1}[mu4],
+                      mu5
+                    ],
+             mu6,
+             extraposrel/I4::SENTENCE{SENTENCErec1}
+                        [ I2:sig1,
+                          I5:sig2,
+                          I3:mu7 
+                        ],
+             mu8
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: rel1 IN [objrel, indobjrel]
+       I2: ALL(sig1, shiftrel/..)
+       I3: (NOT EXIST (mu7, [shiftrel/..])) AND
+           (NOT EXIST (mu7, [conjrel/..] ))
+       I4: SENTENCErec1.PROsubject = true
+       I5: ALL(sig2, conjrel/..)
+      >
+
+<
+   SUBRULE
+      <
+       T1:NPVAR{NPVARrec1}
+       T2:NPVAR{NPVARrec2}
+      >
+      <T1:NPVAR{NPVARrec1}>
+
+      COMP
+         <
+          C1:( ((rel1 = objrel) AND (VERBrec1.Controller = object)) OR
+              ((rel1 = indobjrel) AND (VERBrec1.controller = indobj)) ) AND
+              (NPVARrec1 = NPVARrec2 EXCEPT FOR [cases] ) AND
+              (NPVARrec2.cases = [Nominative])
+          A1: @
+         >
+      DECOMP
+         <
+          C1:( ((rel1 = objrel) AND (VERBrec1.Controller = object)) OR
+              ((rel1 = indobjrel) AND (VERBrec1.controller = indobj)) ) 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := [Nominative]
+         >
+
+
+   SUBRULE
+      <
+       T1:CNVAR{CNVARrec1}
+       T2:CNVAR{CNVARrec2} 
+      >
+      <T1:CNVAR{CNVARrec1}>
+
+      COMP
+         <
+          C1:( ((rel1 = objrel) AND (VERBrec1.Controller = object)) OR
+              ((rel1 = indobjrel) AND (VERBrec1.controller = indobj)) ) AND
+              (CNVARrec1 = CNVARrec2 EXCEPT FOR [cases] ) AND
+              (CNVARrec2.cases = [Nominative])
+          A1: @
+         >
+      DECOMP
+         <
+          C1:( ((rel1 = objrel) AND (VERBrec1.Controller = object)) OR
+              ((rel1 = indobjrel) AND (VERBrec1.controller = indobj)) ) 
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := [Nominative]
+         >
+
+>
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] TNOC1
+\item[* relevant examples:]
+x1 x2 gedwongen heeft [ x2 de boeken te lezen ] $\rightarrow$
+x1 x2 gedwongen heeft [ de boeken te lezen ]\\
+(* Piet heeft hem gedwongen de boeken te lezen *)
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] XPPROPtoCLAUSE
+\item[* class:] (name of rule, transformation or filter class) TC:Controlrules?
+\item[* date of creation:] 9-MAR-1987 11:45:29  
+\item[* author:] Jan Odijk
+\item[* copied from:] --
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 16/03/87\ \ \ \ \ author:Jan Odijk\\
+Subrules with T1=EMPTYVAR have been removed. They should be dealt with by means
+of BIGPROs.
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To interpret the subject of extraposed complement sentences as
+identical to the direct object or the indirect object of the clause, and to
+delete it 
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:] One for NPVAR, one
+for CNVAR. 
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] none
+\item[\  \ suggested semantics:] dna
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TNOC2
+                         (* subject antecedent *)
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             subjrel/T1,
+             mu2,
+             predrel/VERBP{VERBPrec1}
+                    [ mu3,
+                      head/VERB{VERBrec1}[mu4],
+                      mu5
+                    ],
+             mu6,
+             extraposrel/I4::SENTENCE{SENTENCErec1}
+                        [ I2:sig1,
+                          I5:sig2,
+                          subjrel/T2,
+                          I3:mu7 
+                        ],
+             mu8
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             subjrel/T1,
+             mu2,
+             predrel/VERBP{VERBPrec1}
+                    [ mu3,
+                      head/VERB{VERBrec1}[mu4],
+                      mu5
+                    ],
+             mu6,
+             extraposrel/I4::SENTENCE{SENTENCErec1}
+                        [ I2:sig1,
+                          I5:sig2,
+                          I3:mu7 
+                        ],
+             mu8
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I2: ALL(sig1, shiftrel/..)
+       I3: (NOT EXIST (mu7, [shiftrel/..]) ) AND 
+           (NOT EXIST (mu7, [conjrel/..]) )
+       I4: SENTENCErec1.PROsubject = true
+       I5: ALL(sig2, conjrel/..)
+      >
+
+<
+   SUBRULE
+      <
+       T1:NPVAR{NPVARrec1}
+       T2:NPVAR{NPVARrec2}
+      >
+      <T1:NPVAR{NPVARrec1}>
+
+      COMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             AND
+              (NPVARrec1 = NPVARrec2 EXCEPT FOR [cases] ) AND
+              (NPVARrec2.cases = [Nominative])
+          A1: @
+         >
+      DECOMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                            
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := [Nominative]
+         >
+
+
+   SUBRULE
+      <
+       T1:CNVAR{CNVARrec1}
+       T2:CNVAR{CNVARrec2} 
+      >
+      <T1:CNVAR{CNVARrec1}>
+
+      COMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             AND
+              (CNVARrec1 = CNVARrec2 EXCEPT FOR [cases] ) AND
+              (CNVARrec2.cases = [Nominative])
+          A1: @
+         >
+      DECOMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                            
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := [Nominative]
+         >
+
+>
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] TNOC2
+\item[* relevant examples:]
+x1 x2 beloofd heeft [ x2 de boeken te lezen ] $\rightarrow$
+x1 x2 beloofd heeft [ de boeken te lezen ]\\
+(* Piet heeft hem beloofd de boeken te lezen *)
+x1 geprobeerd heeft [ x1 de boeken te lezen ] $\rightarrow$
+x1 geprobeerd heeft [ de boeken te lezen ]\\
+(* Piet heeft geprobeerd de boeken te lezen *)
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] XPPROPtoCLAUSE
+\item[* class:] (name of rule, transformation or filter class) TC:Controlrules?
+\item[* date of creation:]  10-MAR-1987 09:50:14 
+\item[* author:] Jan Odijk
+\item[* copied from:]  TNOC1
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 16/03/87\ \ \ \ \ author:Jan Odijk\\
+Subrules with T1=EMPTYVAR have been removed. They should be dealt with by means
+of BIGPROs.
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To interpret the subject of extraposed complement sentences as
+identical to the subject of the CLAUSE, and to delete it 
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:] One for NPVAR, one 
+for CNVAR.
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] none
+\item[\  \ suggested semantics:] dna
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TNOC3
+                         (* prepobj, aanobj, voorobj, byobj antecedent *)
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu2,
+                      I1:rel1/VARPREPP{VARPREPPrec1}
+                             [ mu9,
+                               objrel/T1,
+                               mu10 
+                             ],
+                      mu3,
+                      head/VERB{VERBrec1}[mu4],
+                      mu5
+                    ],
+             mu6,
+             extraposrel/I4::SENTENCE{SENTENCErec1}
+                        [ I2:sig1,
+                          I5:sig2,
+                          subjrel/T2,
+                          I3:mu7 
+                        ],
+             mu8
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             predrel/VERBP{VERBPrec1}
+                    [ mu2,
+                      I1:rel1/VARPREPP{VARPREPPrec1}
+                             [ mu9,
+                               objrel/T1,
+                               mu10 
+                             ],
+                      mu3,
+                      head/VERB{VERBrec1}[mu4],
+                      mu5
+                    ],
+             mu6,
+             extraposrel/I4::SENTENCE{SENTENCErec1}
+                        [ I2:sig1,
+                          I5:sig2,
+                          I3:mu7 
+                        ],
+             mu8
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: rel1 IN [prepobjrel, aanobjrel, voorobjrel, byobjrel]
+       I2: ALL(sig1, shiftrel/..)
+       I3: (NOT EXIST (mu7, [shiftrel/..])) AND
+           (NOT EXIST (mu7, [conjrel/..] ))
+       I4: SENTENCErec1.PROsubject = true
+       I5: ALL(sig2, conjrel/..)
+      >
+
+<
+   SUBRULE
+      <
+       T1:NPVAR{NPVARrec1}
+       T2:NPVAR{NPVARrec2}
+      >
+      <T1:NPVAR{NPVARrec1}>
+
+      COMP
+         <
+          C1: ((rel1 IN [ aanobjrel, voorobjrel]) AND 
+               (VERBrec1.Controller = indobj )               
+              )                                                       OR
+              ( (rel1 = byobjrel) AND (VERBrec1.controller = subject)
+              )                                                       OR
+              ((rel1 = prepobjrel)                AND 
+               (VERBrec1.Controller = prepobj )               
+              )                                                      
+                                                                           AND
+              (NPVARrec1 = NPVARrec2 EXCEPT FOR [cases] ) AND
+              (NPVARrec2.cases = [Nominative])
+          A1: @
+         >
+      DECOMP
+         <
+          C1: ((rel1 IN [ aanobjrel, voorobjrel]) AND 
+               (VERBrec1.Controller = indobj )               
+              )                                                       OR
+              ( (rel1 = byobjrel) AND (VERBrec1.controller = subject)
+              )                                                       OR
+              ((rel1 = prepobjrel)                AND 
+               (VERBrec1.Controller = prepobj )               
+              )                                                      
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := [Nominative]
+         >
+
+
+   SUBRULE
+      <
+       T1:CNVAR{CNVARrec1}
+       T2:CNVAR{CNVARrec2} 
+      >
+      <T1:CNVAR{CNVARrec1}>
+
+      COMP
+         <
+          C1: ((rel1 IN [ aanobjrel, voorobjrel]) AND 
+              (VERBrec1.Controller = indobj )               
+              )                                                       OR
+              ( (rel1 = byobjrel) AND (VERBrec1.controller = subject)
+              )                                                       OR
+              ((rel1 = prepobjrel)                AND 
+               (VERBrec1.Controller = prepobj )               
+              )                                                      
+                                                                           AND
+              (CNVARrec1 = CNVARrec2 EXCEPT FOR [cases] ) AND
+              (CNVARrec2.cases = [Nominative])
+          A1: @
+         >
+      DECOMP
+         <
+          C1: ((rel1 IN [ aanobjrel, voorobjrel]) AND 
+               (VERBrec1.Controller = indobj )               
+              )                                                       OR
+              ( (rel1 = byobjrel) AND (VERBrec1.controller = subject)
+              )                                                       OR
+              ((rel1 = prepobjrel)                AND 
+               (VERBrec1.Controller = prepobj )               
+              )                                                      
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := [Nominative]
+         >
+
+
+>
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] TNOC3
+\item[* relevant examples:]
+x1 aan x2 gevraagd heeft [ x2 de boeken te lezen ] $\rightarrow$
+x1 aan x2 gevraagd heeft [ de boeken te lezen ]\\
+(Piet heeft aan Klaas gevraagd de boeken te lezen )   
+door x1 geprobeerd werd [ x1 de boeken te lezen ] $\rightarrow$
+door x1 geprobeerd werd [ de boeken te lezen ]\\
+( Er werd door Piet geprobeerd de boeken te lezen )
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] XPPROPtoCLAUSE
+\item[* class:] (name of rule, transformation or filter class) TC:Controlrules?
+\item[* date of creation:]  10-MAR-1987 10:08:40 
+\item[* author:] Jan Odijk
+\item[* copied from:]  TNOC1
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 16/03/87\ \ \ \ \ author:Jan Odijk\\
+Subrules with T1=EMPTYVAR have been removed. They should be dealt with by means
+of BIGPROs.
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To interpret the subject of extraposed complement sentences as
+identical to the prepositional object (aanobjrel, voorobjrel or prepobjrel) of 
+the CLAUSE, 
+or as identical to the object of the byobjrel/ in the CLAUSE, and to
+delete the interpreted subject.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:] One for NPVAR, one
+for CNVAR.
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] none
+\item[\  \ suggested semantics:] dna
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+Maybe it is necessary, desirable to split this rule into two rules, one for
+aanobjrel/.., voorobjrel/.., prepobjrel/.., and one for byobjrel/.. .
+
+\end{enumerate}
+\end{description}
+
+
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TNOC4
+                         (* split antecedents, subject antecedent *)
+< m1:CLAUSE{CLAUSErec1}
+           [ mu1,
+             subjrel/T1,
+             mu2,
+             predrel/VERBP{VERBPrec1}
+                    [ mu3,
+                      head/VERB{VERBrec1}[mu4],
+                      mu5
+                    ],
+             mu6,
+             extraposrel/I4::SENTENCE{SENTENCErec1}
+                        [ I2:sig1,
+                          I5:sig2,
+                          subjrel/NP{NPrec1}[head/BIGPRO{BIGPROrec1}[head/T2]],
+                          I3:mu7 
+                        ],
+             mu8
+           ]
+>
+
+< m :CLAUSE{CLAUSErec1}
+           [ mu1,
+             subjrel/T1,
+             mu2,
+             predrel/VERBP{VERBPrec1}
+                    [ mu3,
+                      head/VERB{VERBrec1}[mu4],
+                      mu5
+                    ],
+             mu6,
+             extraposrel/I4::SENTENCE{SENTENCErec1}
+                        [ I2:sig1,
+                          I5:sig2,
+                          I3:mu7 
+                        ],
+             mu8
+           ]
+>
+
+   MATCHCONDITIONS
+      <
+       I2: ALL(sig1, shiftrel/..)
+       I3: (NOT EXIST (mu7, [shiftrel/..]) ) AND 
+           (NOT EXIST (mu7, [conjrel/..]) )
+       I4: SENTENCErec1.PROsubject = true
+       I5: ALL(sig2, conjrel/..)
+      >
+
+<
+   SUBRULE (*NPVAR, first person *)
+      <
+       T1:NPVAR{NPVARrec1}
+       T2:BBIGPRO(AUX_wijbigprokey){BBIGPROrec1}
+      >
+      <T1:NPVAR{NPVARrec1}>
+
+      COMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                            AND
+              (NPrec1 = AUX_NPONwijBGPR)
+          A1: @
+         >
+      DECOMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             
+          A1: NPrec1 := AUX_NPONwijBGPR
+         >
+
+   SUBRULE (*NPVAR, second person *)
+      <
+       T1:NPVAR{NPVARrec1}
+       T2:BBIGPRO(AUX_julliebigprokey){BBIGPROrec1}
+      >
+      <T1:NPVAR{NPVARrec1}>
+
+      COMP
+         <
+          C1:((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             AND
+              (NPrec1 = AUX_NPONjullieBGPR) AND
+              (NPVARrec1.person <> 1)
+          A1: @
+         >
+      DECOMP
+         <
+          C1:((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             AND
+              (NPVARrec1.person <> 1) 
+          A1: NPrec1 := AUX_NPONjullieBGPR
+         >
+
+   SUBRULE (*NPVAR, third person *)
+      <
+       T1:NPVAR{NPVARrec1}
+       T2:BBIGPRO(AUX_zijplbigprokey){BBIGPROrec1}
+      >
+      <T1:NPVAR{NPVARrec1}>
+
+      COMP
+         <
+          C1:((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                            AND
+              (NPrec1 = AUX_NPONjullieBGPR) AND
+              (NPVARrec1.person  = 3)
+          A1: @
+         >
+      DECOMP
+         <
+          C1:((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             AND
+              (NPVARrec1.person = 3)
+          A1: NPrec1 := AUX_NPONjullieBGPR
+         >
+
+   SUBRULE (*NPVAR, fourth person *)
+      <
+       T1:NPVAR{NPVARrec1}
+       T2:BBIGPRO(AUX_ubigprokey){BBIGPROrec1}
+      >
+      <T1:NPVAR{NPVARrec1}>
+
+      COMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             AND
+              (NPrec1 = AUX_NPONuBGPR)
+          A1: @
+         >
+      DECOMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             
+          A1: NPrec1 := AUX_NPONuBGPR
+         >
+
+
+   SUBRULE (*CNVAR, first person *)
+      <
+       T1:CNVAR{CNVARrec1}
+       T2:BBIGPRO(AUX_wijbigprokey){BBIGPROrec1}
+      >
+      <T1:CNVAR{CNVARrec1}>
+
+      COMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             AND
+              (NPrec1 = AUX_NPONwijBGPR)
+          A1: @
+         >
+      DECOMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                            
+          A1: NPrec1 := AUX_NPONwijBGPR
+         >
+
+   SUBRULE (*CNVAR, second person *)
+      <
+       T1:CNVAR{CNVARrec1}
+       T2:BBIGPRO(AUX_julliebigprokey){BBIGPROrec1}
+      >
+      <T1:CNVAR{CNVARrec1}>
+
+      COMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             AND
+              (NPrec1 = AUX_NPONjullieBGPR) 
+          A1: @
+         >
+      DECOMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                            
+          A1: NPrec1 := AUX_NPONjullieBGPR
+         >
+
+   SUBRULE (*CNVAR, third person *)
+      <
+       T1:CNVAR{CNVARrec1}
+       T2:BBIGPRO(AUX_zijplbigprokey){BBIGPROrec1}
+      >
+      <T1:CNVAR{CNVARrec1}>
+
+      COMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             AND
+              (NPrec1 = AUX_NPONjullieBGPR) 
+          A1: @
+         >
+      DECOMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             
+          A1: NPrec1 := AUX_NPONjullieBGPR
+         >
+
+   SUBRULE (*CNVAR, fourth person *)
+      <
+       T1:CNVAR{CNVARrec1}
+       T2:BBIGPRO(AUX_ubigprokey){BBIGPROrec1}
+      >
+      <T1:CNVAR{CNVARrec1}>
+
+      COMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                             AND
+              (NPrec1 = AUX_NPONuBGPR) 
+          A1: @
+         >
+      DECOMP
+         <
+          C1: ((VERBrec1.controller = subject       ) OR 
+               (synzijn IN CLAUSErec1.synvpefs AND
+                EXIST(mu3,[predrel/ADJP{}[mu9]])
+               )
+              )                                            
+          A1: NPrec1 := AUX_NPONuBGPR
+         >
+
+>
+&
+
+\end{verbatim}
+
+\newpage
+\begin{description}
+\item[* name:] TNOC4
+\item[* relevant examples:]
+Ik sprak met Piet af ons voortaan beter te gedragen
+Jij sprak met Piet af je voortaan beter te gedragen.
+\item[* language:] (Dutch, English, Spanish) Dutch
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] XPPROPtoCLAUSE
+\item[* class:] (name of rule, transformation or filter class) TC:Controlrules?
+\item[* date of creation:]   16-MAR-1987 13:17:29 
+\item[* author:] Jan Odijk
+\item[* copied from:]   TNOC2
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To interpret the subject of extraposed complement sentences as
+referring to a group containing the reference of the subject of the CLAUSE, and
+to delete this subject. ( Split antecedents)
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:] 
+Four for NPVAR, four for CNVAR. Per person there is another subrule, 
+necessary
+because the right BBIGPRO must be chosen. {\em gij} as antecedent not dealt with.
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] none
+\item[\  \ suggested semantics:] dna
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+%%

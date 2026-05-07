@@ -1,0 +1,1736 @@
+ENGLISH 65 
+
+&
+\begin{verbatim}
+
+(* file contains 3 ADVPrules + QPsgs + QPrules  *)
+
+%
+% RULE RADVPamountmod  (* planned: complementafhandeling; cf RC ADVPdegreemod *)
+
+< m1: ADVP{ADVPrec1}[I3:mu1]
+  m2: T1
+>
+
+< m : ADVP{ADVPrec1}[I2:rel1/T2,
+                 I3:mu1
+                ]
+>
+
+   MATCHCONDITIONS
+      <
+       m2: (T1.cat IN [ADVP] WITH T1.REC.actsubcefs * [degreeadv] <> []) 
+           OR
+           ((T1.cat IN [NP] WITH T1.REC.actsubcs * [unitnoun] <> [])
+                                                   (*, amountnp *) OR
+            (T1.cat IN [NP] WITH T1.REC.actcomas * [mass] <> []) 
+           ) 
+       I2: ((T2.cat IN [ADVP] WITH T2.REC.actsubcefs * [degreeadv] <> [] ) AND
+            (rel1 IN [degreemodrel])
+           ) OR
+           (((T2.cat IN [NP] WITH T2.REC.actsubcs * [unitnoun] <> []) 
+                                                   (* amountnp *) OR
+            (T2.cat IN [NP] WITH T2.REC.actcomas * [mass] <> []) 
+           ) AND
+            (rel1 IN [premodrel])
+           )
+       I3: NOT EXIST(mu1, [premodrel/..]) AND
+           NOT EXIST(mu1, [degreemodrel/..])
+        m1: ADVPrec1.temporal = false
+        m: ADVPrec1.temporal = false
+        
+      >
+
+
+< 
+   SUBRULE (* 1 *)    (* almost too, too funny *)
+      <T1:ADVP{ADVPrec3}[mu9] >
+      <T2:ADVP{ADVPrec4}[mu9] >
+
+      COMP
+         <
+          C1: ADVPrec3.superdeixis = ADVPrec1.superdeixis
+          A1: ADVPrec4 := ADVPrec3;
+              ADVPrec4.superdeixis := omegadeixis;
+              rel1 := degreemodrel;
+         >
+
+      DECOMP
+         <
+          C1: ADVPrec4.superdeixis = omegadeixis
+          A1: ADVPrec3 := ADVPrec4;
+              ADVPrec3.superdeixis := ADVPrec1.superdeixis;
+         >
+
+   SUBRULE (* 2 *) (* three meters too, a bit too, less(NP??) funny *)
+      <T1:NP{NPrec1}[mu8] >
+      <T2:NP{NPrec2}[mu9] >
+
+      COMP
+         <
+          C1: NPrec1.superdeixis = ADVPrec1.superdeixis AND
+              NPrec1.cases = []
+          A1: QUOTE_assigncase(NPrec1,mu8,NPrec2,mu9,[Nominative]); 
+              NPrec2.superdeixis := omegadeixis;
+              NPrec2.generic := omegageneric;
+              rel1 := premodrel;
+
+         >
+
+      DECOMP
+         <
+          C1: NPrec2.generic = omegageneric AND
+              NPrec2.superdeixis = omegadeixis AND
+              nominative IN NPrec2.cases
+          A1: QUOTE_assigncase(NPrec2, mu9, NPrec1, mu8, []); 
+              NPrec1.superdeixis := ADVPrec1.superdeixis;
+              NPrec1.generic := nogeneric;
+         >
+
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RADVPamountmod
+\item[* relevant examples:] one meter too long, a bit(/bridge?) too far ,
+too MUCH (??should be deleted) confused, so funny
+\item[* language:] Dutch
+\item[* kind of rule:]  M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class) RC:ADVPamountmod
+\item[* date of creation:] 19-FEB-1988 10:39:15  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] Introduction of amount/degree modifiers to a ADVP.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+
+% RULE RADVPFOROBJMOD     (* also TO as preposition is possible:
+                             you are too kind to me;
+                             choice between TO and FOR dependent of 
+                             subc of ADJ/ADV *)
+
+< m1: I2::ADVP{ADVPrec1}[I1:mu1,
+                         head/ADV{ADVrec1}[mu2],
+                         mu3
+                        ]  
+  m2: T1
+>
+
+< m : I2::ADVP{ADVPrec1}
+              [forobjrel/PREPP{PREPPrec1}
+                                      [head/PREP(AUX_forprepkey){PREPrec1},
+                                       I1:objrel/T1
+                                      ],
+               mu1,
+               head/ADV{ADVrec1}[mu2],
+               mu3
+              ]
+>
+
+   MATCHCONDITIONS
+      <I1: NOT EXIST(mu1, [forobjrel/..])
+       m2: T1.cat IN [NPVAR,CNVAR]
+       I2: ADVPrec1.thanas = tocompl  (* too *)
+      >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RADVPforobjMOD
+\item[* relevant examples:] I + too $\rightarrow$ too for me 
+ (too long for me )
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] ADVPformation
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-JUN-1990 14:03:47  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] Introduction of a forobj-modifier into an ADVP.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+% RULE RADVPinfcomplmod
+
+< m1: ADVP{ADVPrec1}[mu1, head/ADV{ADVrec1}[mu2]]
+  m2: I5::SENTENCE{SENTENCErec1}[mu5]
+>
+
+
+< m : ADVP{ADVPrec1}[mu1,
+                     head/ADV{ADVrec1}[mu2],
+                     toinfcomplrel/I6::SENTENCE{SENTENCErec2}[mu5]
+                    ]
+
+>
+
+
+   MATCHCONDITIONS
+      <m1: ADVPrec1.thanas = tocompl
+       m:  ADVPrec1.thanas = tocompl 
+       I5: SENTENCErec1 = 
+                          {
+                           prosubject: true
+                           finiteness: infinite
+                           infsort: toinf
+                          } AND
+           SENTENCErec1.mood IN [declarative, proobjmod]           
+       I6: SENTENCErec2 = 
+                          {
+                           prosubject: true
+                           finiteness: infinite
+                           infsort   : toinf
+                          } AND
+           SENTENCErec2.mood IN [declarative, proobjmod]           
+
+      >
+
+      COMP
+         <
+          C1: SENTENCErec1.superdeixis = ADVPrec1.superdeixis
+          A1: SENTENCErec2 := SENTENCErec1;
+              SENTENCErec2.superdeixis := omegadeixis;
+
+         >
+      DECOMP
+         <
+          C1: SENTENCErec2.superdeixis = omegadeixis
+          A1: SENTENCErec1 := SENTENCErec2;
+              SENTENCErec1.superdeixis := ADVPrec1.superdeixis;
+         >
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RADVPinfcomplmod
+\item[* relevant examples:] too .. to be true (too beautiful to be true);
+too .. to eat (too hot to eat PROOBJ)
+\item[* language:] English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:]  ADVPformation
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-JUN-1990 13:08:55  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]Introduction of a infinitival modifier to an ADVP.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+%SUBGRAMMAR QPFormation
+
+ (RQTOQP1/1 | RQTOQP2/2 (* | RQTOQP3/3 *) )
+
+. RQPsuperdeixis/10
+
+. [ RQPforobjmod/4 ]
+
+. [RQPCOMPARATIVEcomplmod/5 | RQPSUPERLATIVEcomplmod/6 
+   | RQPinfcomplmod/7 ]
+
+. {TQPAccCaseAssignment/10 | TQPofCOMPLCaseAssignment/11}
+
+. [RQPamountmod/8]
+
+. {RQPSubstitution1/9}
+
+HEAD:
+<
+Q                  BASIC EXPRESSION
+>
+
+(* IMPORT: *)
+<
+ 5 : < ARGUMENT 2       NPVAR          BASIC EXPRESSION
+       ARGUMENT 2       CNVAR          BASIC EXPRESSION
+       ARGUMENT 2       NP             FROM (NPFORMATION)
+       ARGUMENT 2       ADVP           FROM (ADVPFORMATION)
+       ARGUMENT 2       PREPP          FROM (PREPPFORMATION)
+       ARGUMENT 2       QP             FROM (QPFORMATION)
+       ARGUMENT 2       DETP           FROM (DETPFORMATION)
+     >
+ 6 : < ARGUMENT 2       NPVAR          BASIC EXPRESSION
+       ARGUMENT 2       NP             FROM (NPFORMATION)
+     >
+ 9 : < ARGUMENT 2       NP             FROM (NPFORMATION)
+     >
+>
+
+EXPORT:
+<
+QP              
+>
+&
+
+(* 
+REMARKS:
+
+In deze subgrammatica worden QPs  gevormd met het oog op het niet-predicatieve 
+gebruik van QPs in bijvoorbeeld: 
+
+(i)   Hij heeft genoeg boeken
+(ii)  Hij heeft boeken genoeg/zat
+(iii) Hij heeft genoeg boeken om een bibliotheek te beginnen
+(iv)  Piet is minder lang (dan Jan) 
+
+Cf. ook REMARKS bij SUBGRAMMAR QPtoQPPROP
+*)
+\end{verbatim}
+\newpage
+\begin{verbatim}
+SUBGRAMMAR QPtoQPPROP
+
+ RSTARTQPPROP1
+
+
+HEAD:
+<
+QP           FROM            QPFORMATION
+>
+
+(*
+IMPORT:
+<
+QP           FROM            QPFORMATION
+NPVAR                        BASIC EXPRESSION
+CNVAR                        BASIC EXPRESSION
+SENTENCEVAR                  BASIC EXPRESSION
+>
+*)
+<>
+EXPORT:
+<
+QPPROP
+>
+
+(* 
+REMARKS:
+
+In deze subgrammatica wordt QPPROP gevormd met het oog op het predicatieve 
+gebruik van QPs in bijvoorbeeld: 
+
+(i)  Nu is het genoeg
+(ii) Dit is meer dan Piet kan velen. 
+
+
+Voor het gemak wordt voorlopig aangenomen dat QP de te 
+importeren  hoofdcategorie  is voor deze subgrammatica. 
+Mochten er argumenten blijken te zijn 
+om QPPROPs isomorf aan XPPROP's af te leiden, dan moet 
+de opzet van deze subgrammatica en die van QPformation gewijzigd worden.
+*)
+&
+\end{verbatim}
+\newpage
+\begin{verbatim}
+% RULE RQTOQP1      (* subgrammar-definition requires this to be a rule, 
+                       not a transformation *)
+
+< m1: Q{Qrec1}
+>
+
+< m : QP{QPrec1}[head/Q{Qrec1}]
+>
+
+
+      COMP
+         <
+          C1: true
+          A1: QPrec1 := COPYT_qTOqp(Qrec1)
+         >
+      DECOMP
+         <
+          C1: QPrec1 = COPYT_qTOqp(Qrec1) AND
+              QPrec1.superdeixis = omegadeixis AND
+              QPrec1.thanascompl = false
+
+          A1: @
+         >
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RQTOQP1 
+\item[* relevant examples:] more, less, enough, much, most (alleen DETP).
+\item[* language:] English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] QPFormation
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 27-MAY-1988 11:01:27  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] formation of a QP level
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% RULE RQTOQP2       (*  *)
+                     (* subgrammar-definition requires this to be a rule, 
+                       not a transformation *)
+< m1: Q(KEY_mostQkey){Qrec1}
+>
+
+< m : QP{QPrec1}[artrel/ART(KEY_theartkey){ARTrec1},
+                 head/Q(KEY_mostQkey){Qrec1}]
+>
+
+
+
+      COMP
+         <
+          C1: true
+          A1: QPrec1 := COPYT_qTOqp(Qrec1)
+         >
+
+      DECOMP
+         <
+          C1: QPrec1 = COPYT_qTOqp(Qrec1) AND
+              QPrec1.superdeixis = omegadeixis AND
+              QPrec1.thanascompl = false
+          A1: @
+         >
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:]  RQTOQP2
+\item[* relevant examples:] most $\rightarrow$ the most (nooit DETP)
+\item[* language:] English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] QPFormation
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 18-AUG-1987 17:01:27  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] formation of a QP level for 'most', with introduction of 'the'
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item {\em most} in the intensifier interpretation is dealt with by RQtoQP1.
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% RULE RQPCOMPARATIVEcomplmod
+
+< m1: QP{QPrec1}[head/Q{Qrec1}]
+  m2: T1
+>
+
+< m : QP{QPrec1}[head/Q{Qrec1},
+                 thanascomplrel/THANP{THANPrec1}
+                         [head/THANAS(KEY_thanthanaskey){THANASrec1},
+                          I2:complrel/T2
+                         ]
+                    ]
+>
+
+   MATCHCONDITIONS
+      < m1: QPrec1.thanas = thancompl
+        m2: T1.CAT IN [NPVAR, CNVAR, ADVP, PREPP, QP, DETP, OPENADJPPROP]
+        m : QPrec1.thanas = thancompl 
+        I2: (T2.CAT IN [NPVAR, CNVAR] 
+                 WITH T2.REC.cases = []) OR
+            (T2.CAT IN [ADVP, PREPP, QP, DETP, ADJP] )
+      >
+
+<
+   SUBRULE (* 1: PREPP *)
+      < T1: PREPP{PREPPrec1}[mu1] >
+      < T2: PREPP{PREPPrec2}[mu1] >
+
+      COMP
+         <
+          C1: PREPPrec1.superdeixis = QPrec1.superdeixis
+          A1: PREPPrec2 := PREPPrec1;
+              PREPPrec2.superdeixis := omegadeixis;
+         >
+      DECOMP
+         <
+          C1: PREPPrec2.superdeixis = omegadeixis
+          A1: PREPPrec1 := PREPPrec2;
+              PREPPrec1.superdeixis := QPrec1.superdeixis;
+         >
+
+   SUBRULE (* 2: ADVP *)
+      < T1: ADVP{ADVPrec1}[mu1] >
+      < T2: ADVP{ADVPrec2}[mu1] >
+
+      COMP
+         <
+          C1: ADVPrec1.superdeixis = QPrec1.superdeixis
+          A1: ADVPrec2 := ADVPrec1;
+              ADVPrec2.superdeixis := omegadeixis;
+         >
+      DECOMP
+         <
+          C1: ADVPrec2.superdeixis = omegadeixis
+          A1: ADVPrec1 := ADVPrec2;
+              ADVPrec1.superdeixis := QPrec1.superdeixis;
+         >
+
+
+   SUBRULE (* 3 *) (* more than possible *)
+
+      <T1: OPENADJPPROP{OPENADJPPROPrec3}
+                  [subjrel/EMPTY(KEY_zeroemptykey){EMPTYrec1},
+                   predrel/ADJP{ADJPrec3}[mu2] 
+                  ]
+      >
+
+      <T2: ADJP{ADJPrec3}[mu2] >
+
+
+     COMP
+         <
+          C1: OPENADJPPROPrec3.superdeixis = QPrec1.superdeixis
+          A1: @
+
+         >
+      DECOMP
+         <
+          C1: true
+          A1: OPENADJPPROPrec3 := COPYT_ADJPtoADJPPROP(ADJPrec3);
+              OPENADJPPROPrec3.aktionsarts := [stative];
+              OPENADJPPROPrec3.prosubject := true;
+              OPENADJPPROPrec3.superdeixis := QPrec1.superdeixis;
+         >
+
+
+   SUBRULE (* 4: QP *)
+
+      < T1: QP{QPrec3}[mu1] >
+      < T2: QP{QPrec4}[mu1] >
+
+      COMP
+         <
+          C1: QPrec3.superdeixis = QPrec1.superdeixis
+          A1: QPrec4 := QPrec3;
+              QPrec4.superdeixis := omegadeixis;
+         >
+      DECOMP
+         <
+          C1: QPrec4.superdeixis = omegadeixis
+          A1: QPrec3 := QPrec4;
+              QPrec3.superdeixis := QPrec1.superdeixis;
+         >
+
+   SUBRULE (* 5: NPVAR *)
+      < T1: NPVAR{NPVARrec1} >
+      < T2: NPVAR{NPVARrec2} >
+
+(*case is dealt with by TQPAccCaseassignment *)
+
+      COMP
+         <
+          C1: NPVARrec1.superdeixis = QPrec1.superdeixis
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.superdeixis := omegadeixis;           
+         >
+      DECOMP
+         <
+          C1: NPVARrec2.superdeixis = omegadeixis
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.superdeixis := QPrec1.superdeixis;
+         >
+
+   SUBRULE (* 6: CNVAR *)
+      < T1: CNVAR{CNVARrec1} >
+      < T2: CNVAR{CNVARrec2} >
+
+      COMP
+         <
+          C1: CNVARrec1.superdeixis = QPrec1.superdeixis
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.superdeixis := omegadeixis;
+         >
+
+      DECOMP
+         <
+          C1: CNVARrec1.superdeixis = omegadeixis
+          A1: CNVARrec1 := CNVARrec2;
+              CNVARrec1.superdeixis := QPrec1.superdeixis;
+         >
+
+SUBRULE (* 7 *) (* less than three; provisional account to be replaced by
+                   a rule that modifies a NUM that is the head of DETP (within
+                   subgrammar DETPformation)  *)
+
+      < T1: DETP{DETPrec1}[mu9] >
+      < T2: DETP{DETPrec2}[mu9] >
+ 
+      COMP
+         <
+          C1: DETPrec1.superdeixis = QPrec1.superdeixis AND
+              DETPrec1.definite = indef
+          A1: DETPrec2 := DETPrec1;
+              DETPrec2.superdeixis := omegadeixis;
+         >
+      DECOMP
+         <
+          C1: DETPrec2.superdeixis = omegadeixis AND
+              DETPrec2.definite = indef
+          A1: DETPrec1 := DETPrec2;
+              DETPrec1.superdeixis := QPrec1.superdeixis;
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RQPCOMPARATIVEcomplmod
+\item[* relevant examples:] less than Pete, more than ever, longer than me
+\item[* language:] English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] QPformation
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 11-MAY-1988 14:25:08  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 27/10/88\ \ \ \ \ author: Lisette Appelo
+\item date: 31/07/89\ \ \ \ \ author: Margreet Sanders\\
+Set required cases to [] i.s.o. [nominative] ([] is English default).\\
+\end{enumerate}
+\item[* task:]Introduction of a comparative complement to {\em more} or
+{\em less}.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems: Probably it might be necesary to have an attribute for QP 
+indicating the syntactic category of T1 under complrel. In earlier versions of
+the domain
+the attribute thanascompl in ASPrecord and THANPrecord was supposed to
+keep track of this information. According to a domain modification in august 87
+this attribute has a new dunction in QP ( and accordingly a new value set): it
+indicates the kind of complement a certain quantifier or adverb inherently has.
+\\ 
+\item modifications:27/10/88: Splitting into subrules. Superdeixis condition/
+actions for XP categories added.\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% RULE RQPSUPERLATIVEcomplmod
+< m1: QP{QPrec1}[mu1, head/Q{Qrec1}]
+  m2: T1
+>
+
+
+< m : QP{QPrec1}[mu1,
+                 head/Q{Qrec1},
+                 ofcomplrel/PREPP{PREPPrec1}
+                           [head/PREP(KEY_ofPREPkey){PREPrec1},
+                            I2:complrel/T2
+                           ]
+                    ]
+
+>
+
+
+   MATCHCONDITIONS
+      < m1: QPrec1.thanas = ofcompl
+        m:  QPrec1.thanas = ofcompl
+        I2: T2.CAT IN [NPVAR]
+        m2: T1.CAT IN [NPVAR]
+       >
+
+<
+
+   SUBRULE
+      <T1: NPVAR{NPVARrec1}>
+      <T2: NPVAR{NPVARrec2}>
+
+      COMP
+         <
+          C1: NPVARrec1.superdeixis = QPrec1.superdeixis
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec1.superdeixis := omegadeixis;
+         >
+      DECOMP
+         <
+          C1: NPVARrec1.superdeixis = omegadeixis
+          A1: QPrec1.thanas := ofcompl;
+              NPVARrec1 := NPVARrec2;
+              NPVARrec1.superdeixis := QPrec1.superdeixis;
+
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RQPSUPERLATIVEcomplmod
+\item[* relevant examples:] most .. of all 
+\item[* language:] English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] QPFormation
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 11-MAY-1988 17:01:24  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 27/10/88\ \ \ \ \ author: Lisette Appelo
+\end{enumerate}
+\item[* task:]Introduction of a superlative complement to {\em most}.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems: see RQPCOMPARATIVEcomplmod
+
+\item modifications: 27/10/88: Splitting into subrules. Superdeixis conditions/
+actions for NP added.\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+\newpage
+\begin{verbatim}
+% RULE RQPFOROBJMOD     (* also TO as preposition is possible:
+                             you are too kind to me;
+                             choice between TO and FOR dependent of 
+                             subc of ADJ/ADV *)
+
+< m1: I2::QP{QPrec1}[I1:mu1,
+                         head/Q{Qrec1},
+                         mu3
+                        ]  
+  m2: T1
+>
+
+< m : I2::QP{QPrec1}
+              [forobjrel/PREPP{PREPPrec1}
+                                      [head/PREP(AUX_forprepkey){PREPrec1},
+                                       I1:objrel/T1
+                                      ],
+               mu1,
+               head/Q{Qrec1},
+               mu3
+              ]
+>
+
+   MATCHCONDITIONS
+      <I1: NOT EXIST(mu1, [forobjrel/..])
+       m2: T1.cat IN [NPVAR,CNVAR]
+       I2: QPrec1.thanas = tocompl  (* enough *)
+      >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RQPforobjMOD
+\item[* relevant examples:] I + enough $\rightarrow$ enough for me 
+ (long enough for me )
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] ADVPformation
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-JUN-1990 14:03:47  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] Introduction of a forobj-modifier into a QP.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+% RULE RQPinfcomplmod
+
+< m1: QP{QPrec1}[mu1, head/Q{Qrec1}]
+  m2: I5::SENTENCE{SENTENCErec1}[mu5]
+>
+
+
+< m : QP{QPrec1}[mu1,
+                 head/Q{Qrec1},
+                 toinfcomplrel/I6::SENTENCE{SENTENCErec2}[mu5]
+                ]
+
+>
+
+
+   MATCHCONDITIONS
+      <m1: QPrec1.thanas = tocompl
+       m:  QPrec1.thanas = tocompl 
+       I5: SENTENCErec1 = 
+                          {
+                           prosubject: true
+                           finiteness: infinite
+                           infsort: toinf
+                          } AND
+           SENTENCErec1.mood IN [declarative, proobjmod]           
+       I6: SENTENCErec2 = 
+                          {
+                           prosubject: true
+                           finiteness: infinite
+                           infsort   : toinf
+                          } AND
+           SENTENCErec2.mood IN [declarative, proobjmod]           
+
+      >
+
+      COMP
+         <
+          C1: SENTENCErec1.superdeixis = QPrec1.superdeixis
+          A1: SENTENCErec2 := SENTENCErec1;
+              SENTENCErec2.superdeixis := omegadeixis;
+
+         >
+      DECOMP
+         <
+          C1: SENTENCErec2.superdeixis = omegadeixis
+          A1: SENTENCErec1 := SENTENCErec2;
+              SENTENCErec1.superdeixis := QPrec1.superdeixis;
+         >
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RQPinfcomplmod
+\item[* relevant examples:] enough to come (interested enough to come);
+(?? )enough to buy (nice enough to buy ).
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 20-JUN-1990 14:57:22  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]Introduction of a infinitival modifier to a QP.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+% RULE RQPamountmod 
+
+< m1: QP{QPrec1}[I3:mu1]
+  m2: T1
+>
+
+< m : QP{QPrec1}[I2:rel1/T2,
+                 I3:mu1
+                ]
+>
+
+   MATCHCONDITIONS
+      <
+       m2: (T1.cat IN [ADVP] WITH T1.REC.actsubcefs * [degreeadv] <> [])
+           OR
+           ((T1.cat IN [NP] WITH T1.REC.actsubcs * [unitnoun] <> [])
+                                                   (*, amountnp *) OR
+            (T1.cat IN [NP] WITH T1.REC.actcomas * [mass] <> []) 
+           ) 
+       I2: ((T2.cat IN [ADVP] WITH T2.REC.actsubcefs * [degreeadv] <> []) AND 
+            (rel1 IN [degreemodrel])
+           ) OR
+           (((T2.cat IN [NP] WITH T2.REC.actsubcs * [unitnoun] <> []) 
+                                                   (* amountnp *) OR
+            (T2.cat IN [NP] WITH T2.REC.actcomas * [mass] <> []) 
+           ) AND
+            (rel1 IN [premodrel])
+           )
+       I3: NOT EXIST(mu1, [premodrel/..]) AND
+           NOT EXIST(mu1, [degreemodrel/..])
+      >
+
+
+< 
+   SUBRULE (* 1 *)    (* too much *)
+      <T1:ADVP{ADVPrec1}[mu9] >
+      <T2:ADVP{ADVPrec2}[mu9] >
+
+      COMP
+         <
+          C1: ADVPrec1.superdeixis = QPrec1.superdeixis
+          A1: ADVPrec2 := ADVPrec1;
+              ADVPrec2.superdeixis := omegadeixis;
+              rel1 := degreemodrel;
+         >
+
+      DECOMP
+         <
+          C1: ADVPrec2.superdeixis = omegadeixis
+          A1: ADVPrec1 := ADVPrec2;
+              ADVPrec1.superdeixis := QPrec1.superdeixis;
+         >
+
+
+   SUBRULE (* 2 *) 
+      <T1:NP{NPrec1}[mu8] >
+      <T2:NP{NPrec2}[mu9] >
+
+(* conditie op amountnp toevoegen; vereist domeinaanpassing en aanpassing van 
+   RNPformation  *)
+
+      COMP
+         <
+          C1: NPrec1.superdeixis = QPrec1.superdeixis AND
+              NPrec1.cases = []
+          A1: QUOTE_assigncase(NPrec1,mu8,NPrec2,mu9,[Nominative]); 
+              NPrec2.superdeixis := omegadeixis;
+              NPrec2.generic := omegageneric;
+              rel1 := premodrel;
+         >
+
+      DECOMP
+         <
+          C1: NPrec2.superdeixis = omegadeixis AND
+              NPrec2.generic = omegageneric AND
+              nominative IN NPrec2.cases
+          A1: QUOTE_assigncase(NPrec2, mu9, NPrec1, mu8, []); 
+              NPrec1.superdeixis := QPrec1.superdeixis;
+              NPrec1.generic := nogeneric;
+         >
+
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RQPamountmod
+\item[* relevant examples:] a meter less long, a bit further , 
+much more at ease
+\item[* language:] English
+\item[* kind of rule:]  M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class) RC:QPamountmod
+\item[* date of creation:] 19-FEB-1988 10:39:15  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] Introduction of amount modifiers to a QP.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TQPofCOMPLCaseAssignment
+< m1 : QP{QPrec2}[head/Q{Qrec1},
+                  ofcomplrel/PREPP{PREPPrec1}
+                         [mu1,
+                          I1:complrel/T1
+                         ]
+                    ]
+
+>
+< m : QP{QPrec2}[head/Q{Qrec1},
+                 ofcomplrel/PREPP{PREPPrec1}
+                         [mu1,
+                          I2:complrel/T2
+                         ]
+                    ]
+>
+   MATCHCONDITIONS
+      <
+       I1:T1.CAT IN [NP, NPVAR, CNVAR] WITH T1.REC.cases = []
+       I2:T2.CAT IN [NP, NPVAR, CNVAR] WITH 
+                               T2.REC.cases * [accusative] <> []
+      >
+
+<
+   SUBRULE
+      <T1: NPVAR{NPVARrec1} >
+      <T2: NPVAR{NPVARrec2} >
+
+      COMP
+         <
+          C1: true
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := [accusative]
+         >
+      DECOMP
+         <
+          C1: true
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.cases := []
+         >
+
+   SUBRULE
+      <T1: NP{NPrec1}[mu2]>
+      <T2: NP{NPrec2}[mu3]>
+
+      COMP
+         <
+          C1: true
+          A1: QUOTE_AssignCase(NPrec1, mu2, NPrec2, mu3, [accusative])
+         >
+      DECOMP
+         <
+          C1: true
+          A1: QUOTE_AssignCase(NPrec2, mu3, NPrec1, mu2, [])
+         >
+
+   SUBRULE
+      <T1: CNVAR{CNVARrec1} >
+      <T2: CNVAR{CNVARrec2} >
+
+      COMP
+         <
+          C1: true
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := [accusative]
+         >
+      DECOMP
+         <
+          C1: true
+          A1: CNVARrec1 := CNVARrec2;
+              CNVARrec1.cases := []
+         >
+>
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TQPofCOMPLCASEAssignment
+\item[* relevant examples:]
+\item[* language:] English 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] QPformation
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-APR-1988 16:19:16  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 31/07/89\ \ \ \ \ author: Margreet Sanders\\
+Added mu's to subrule 2, and a proper case-copying function
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TQPAccCaseAssignment   
+< m1 : QP{QPrec2}[head/Q{Qrec1},
+                  thanascomplrel/THANP{THANPrec1}
+                         [mu1,
+                          I2:complrel/T1
+                         ]
+                 ]
+
+>
+< m : QP{QPrec2}[head/Q{Qrec1},
+                 thanascomplrel/THANP{THANPrec1}
+                         [mu1,
+                          I1:complrel/T2
+                         ]
+                ]
+>
+   MATCHCONDITIONS
+      <
+       I1:T2.CAT IN [NP, NPVAR, CNVAR] WITH Accusative IN T2.REC.cases 
+       I2:T1.CAT IN [NP, NPVAR, CNVAR] WITH T1.REC.cases = []
+      >
+
+<
+   SUBRULE (* 1. *)
+      <T1: NPVAR{NPVARrec1} >
+      <T2: NPVAR{NPVARrec2} >
+
+      COMP
+         <
+          C1: true
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := [Accusative]
+         >
+
+      DECOMP
+         <
+          C1: true
+          A1: NPVARrec1 := NPVARrec2;
+              NPVARrec1.cases := []
+         >
+
+   SUBRULE (* 2. *)
+      <T1: NP{NPrec1}[mu2] >
+      <T2: NP{NPrec2}[mu3] >
+
+      COMP
+         <
+          C1: true
+          A1: QUOTE_AssignCase(NPrec1, mu2, NPrec2, mu3, [Accusative])
+         >
+      DECOMP
+         <
+          C1: true
+          A1: QUOTE_AssignCase(NPrec2, mu3, NPrec1, mu2, [])
+         >
+
+   SUBRULE (* 3. *)
+      <T1: CNVAR{CNVARrec1} >
+      <T2: CNVAR{CNVARrec2} >
+
+      COMP
+         <
+          C1: true
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := [Accusative]
+         >
+      DECOMP
+         <
+          C1: true
+          A1: CNVARrec1 := CNVARrec2;
+              CNVARrec1.cases := []
+         >
+>
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TQPAccCASEAssignment
+\item[* relevant examples:] more books than he, longer than me
+\item[* language:]  English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] QPformation
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-APR-1988 16:19:16  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 31/07/89\ \ \ \ \ author: Margreet Sanders\\
+Added a proper case-copying function;\\
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] Assignment of Accusative case to the QP-complement.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+This treatment ignores the possibility that ellipsis is involved.
+There is no rule for assigning nominative case to complements of 
+comparative QPs. Nominative case may occur when the elliptical nature
+of the construction is more salient, but only seldom.
+Cf. {\em John did more than I/they (did)}.
+Nominative case with ellipsis (i.e. without a verbal PRO-form such as 
+{\em did}) 
+is not ungrammatical, but sometimes
+considered rather formal, for example by PdW and Quirk. 
+Unfortunately, in some cases an accusative complement 
+seems not correct either: {\em more books than *them}. A non-elliptic 
+form is required here. 
+Further research is needed.
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% RULE RQPsuperdeixis
+< m1:QP{QPrec1}[mu1] 
+>
+
+< m :QP{QPrec2}[mu1] 
+>
+
+   PARAMETERS
+      <
+       super : deixistype
+      >
+
+      COMP
+         <
+          C1: QPrec1.superdeixis = omegadeixis AND
+              super IN [presentdeixis, pastdeixis]
+          A1: QPrec2 := QPrec1;
+              QPrec2.superdeixis := super;
+         >
+      DECOMP
+         <
+          C1: QPrec2.superdeixis IN [presentdeixis, pastdeixis]
+          A1: QPrec1 := QPrec2;
+              QPrec1.superdeixis := omegadeixis;
+              super := QPrec2.superdeixis;
+         >
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RQPsuperdeixis
+\item[* relevant examples:]
+\item[* language:] English
+\item[* kind of rule:] M-rule
+\item[* subgrammar:] QPformation
+\item[* class:] RC:Qpsuperdeixis
+\item[* date of creation:] 27-OCT-1988
+\item[* author:] Lisette Appelo
+\item[* copied from:] RQPsuperdeixis dutch
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] Assign the superdeixis value of the parameter to the QP node 
+in generation and give the the parameter the value of the superdeixis attribute 
+of the QP node  in analysis.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{The superdeixis value of the QP node is 
+checked with the higher constituent in the substitution rule and made omega in 
+generation. In analysis the QP node gets a superdeixis value in de 
+substitution rules from the higher constituent.}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE RQPSubstitution1
+
+< m1 : QP{QPrec1}[head/Q{Qrec1},
+                  thanascomplrel/THANP{THANPrec1}
+                         [I1:mu1,
+                          I2:complrel/NPVAR{NPVARrec1}
+                         ]
+                    ]
+SUBST:
+ m2: NP{NPrec1}[mu5]
+>
+
+< m : QP{QPrec1}[head/Q{Qrec1},
+                 thanascomplrel/THANP{THANPrec1}
+                         [I1:mu1,
+                          complrel/NP{NPrec2}[mu6]
+                         ]
+                    ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: EXIST(mu1, [head/..])
+       I2: NPVARrec1.index = LEVEL AND
+           NPVARrec1.cases <> []
+      >
+
+   PARAMETERS
+      <
+       LEVEL
+      >
+
+      COMP
+         <
+          C1:NPVARrec1 = COPYT_nptovar(NPrec1) 
+                       EXCEPT FOR [cases, superdeixis] AND
+
+             NPrec1.cases = [] AND 
+             NPrec1.generic = nogeneric AND
+             NPrec1.superdeixis = QPrec1.superdeixis
+          A1:QUOTE_assigncase(NPrec1, mu5, NPrec2, mu6, NPVARrec1.cases);
+             NPrec2.generic := omegageneric;
+             NPrec2.superdeixis := omegadeixis
+         >
+
+      DECOMP
+         <
+          C1: NPrec2.generic = omegageneric AND
+              NPrec2.superdeixis = omegadeixis AND
+              NPrec2.cases <> []
+          A1: NPVARrec1 := COPYT_nptovar(NPrec2);
+              NPVARrec1.index := LEVEL;
+              QUOTE_assigncase(NPrec2, mu6, NPrec1, mu5, []) ;
+              NPrec1.generic := nogeneric;
+              NPrec1.superdeixis := QPrec1.superdeixis;
+         >
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RQPSubstitution1
+\item[* relevant examples:]
+\item[* language:] English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] QPformation
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 19-APR-1988 17:11:45  
+\item[* author:] Franciska de Jong
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 27/10/88\ \ \ \ \ author: Lisette Appelo
+\item date: 31/07/89\ \ \ \ \ author: Margreet Sanders\\
+Made default case for NPrec1 [] (i.s.o. [nominative]; copying error?)
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] Substitution of NPs that function as the complement of a THANAS.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\ As in generation this rule apllies before all other 
+substitution rules the substituent will have narrow scope.
+
+\item modifications: 27/10/88: Changed value for NPrec.superdeixis from 
+presentdeixis to QPrec.superdeixis.\\
+
+\end{enumerate}
+\end{description}
+%%
+

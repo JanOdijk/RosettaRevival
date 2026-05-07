@@ -1,0 +1,258 @@
+ENGLISH 17
+
+&
+\newpage
+\begin{verbatim}
+%
+% RULE RObjReciproSubst
+< m1: CLAUSE{CLAUSErec1}
+             [ mu1,
+               predrel/VERBP{VERBPrec1}
+                      [ mu3,
+                        I3:rel2/I4::NPVAR{NPVARrec1},
+                        mu4 
+                      ],
+               mu5
+             ] 
+ SUBST:
+ m2: NP{NPrec1}[I1:sig1]
+>
+
+< m : CLAUSE{CLAUSErec1}
+             [ mu1,
+               predrel/VERBP{VERBPrec1}
+                   I7:[ mu3,
+                        I3:rel2/NP{NPrec2}[I2:sig2],
+                        mu4 
+                      ],
+               I5:mu5
+             ] 
+>
+
+   MATCHCONDITIONS
+      <
+        I1: EXIST (sig1, [head/RECIPRO{RECIPROrec1}])
+        I2: EXIST (sig2, [head/RECIPRO{RECIPROrec1}])
+        I3: rel2 IN [objrel, indobjrel]      
+        I4: NPVARrec1.index = LEVEL
+        I5: NOT EXIST (mu5, [rel1/I51::NP{NPrec3}[mu8]]) AND
+            NOT EXIST (mu5, [rel1/PREPP{PREPPrec1}
+                                 [mu7, objrel/I51::NP{NPrec3}[mu8]]
+                            ] )
+          I51: NPrec3.NPhead = reciproNP
+        I7: RIGHTTOLEFT (* intentionally absent in generation *)
+      >
+
+   PARAMETERS
+      <
+       LEVEL
+       antecedent     : indextype
+       multitudepar   : onetype
+      >
+
+<
+   SUBRULE (* 1. ant = subjrel *)
+      < mu1: [mu2, I5:subjrel/T1, mu6] >
+      < mu1: [mu2, I8:subjrel/T1, mu6] >
+
+   MATCHCONDITIONS
+      <
+        I5: (T1.CAT IN [NPVAR, CNVAR] 
+                    WITH T1.REC.index = antecedent)  AND
+            QUOTE_reciproant(T1)
+        I8: T1.CAT IN [NPVAR, CNVAR] AND
+            QUOTE_reciproant(T1)
+      >
+
+      COMP
+         <
+          C1: multitudepar = RECIPROrec1.one AND
+              NPVARrec1 = COPYT_NPtoVAR(NPrec1) 
+                                EXCEPT FOR [cases] AND
+              NPrec1.cases = [] AND
+              NPrec1.NPhead = reciproNP AND
+              NPrec1.generic = nogeneric 
+            C11: CLAUSErec1.deixis = omegadeixis AND
+                 NPrec1.superdeixis = CLAUSErec1.superdeixis
+            A11: QUOTE_AssignCase(NPrec1, sig1, NPrec2, sig2, NPVARrec1.cases)
+            C12: CLAUSErec1.deixis <> omegadeixis AND
+                 NPrec1.superdeixis = CLAUSErec1.deixis
+            A12: QUOTE_AssignCase(NPrec1, sig1, NPrec2, sig2, NPVARrec1.cases)
+          A1: NPrec2.superdeixis := omegadeixis;
+              NPrec2.generic := omegageneric
+         >
+      DECOMP
+         <
+          C1: NPrec2.NPhead = reciproNP AND
+              NPrec2.superdeixis = omegadeixis AND
+              NPrec2.generic = omegageneric
+            C11: CLAUSErec1.deixis = omegadeixis
+            A11: QUOTE_AssignCase(NPrec2, sig2, NPrec1, sig1, []);
+                 NPrec1.superdeixis := CLAUSErec1.superdeixis
+            C12: CLAUSErec1.deixis <> omegadeixis
+            A12: QUOTE_AssignCase(NPrec2, sig2, NPrec1, sig1, []);
+                 NPrec1.superdeixis := CLAUSErec1.deixis
+          A1: NPVARrec1 := COPYT_NPtoVAR(NPrec2);
+              antecedent := T1.REC.index ;
+              NPVARrec1.index := LEVEL;
+              NPVARrec1.generic := nogeneric;
+              NPrec1.generic := nogeneric;
+              multitudepar := RECIPROrec1.one
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RObjReciproSubst
+\item[* relevant examples:] They gave each other a book
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] clauseTOsentence
+\item[* class:] (name of rule, transformation or filter class) RC\_
+ReciprocalSpelling
+\item[* date of creation:] 8-SEP-1988
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch RreciprocalSubst1
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 16/02/89\ \ \ \ \ author: margreet sanders\\
+Adapted for distinction between dualis reading (each other) and multitude 
+reading (one another). In transfer, a mapping of the `each other' version to a 
+multitude meaning is allowed in analysis only.
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to substitute a reciprocal for an NPVAR which can be related to 
+another NPVAR on basis of the attribute `index' of that other NPVAR. 
+It is assumed that the reciprocal is a basic expression. 
+\item[\ \ strategy:] (also: deviations from accepted proposals) The index of 
+the antecedent must be remembered in translation, to check for the correct 
+links between the reciprocal and its antecedent. The function ReciproAnt only 
+checks for the number of the antecedent NP/CN: it must be plural (NP), or 
+singular (for a reciproNP or oneNP) or it must be a set containing plural (for 
+CN).\\
+The inelegant use of a sig as daughter of the NP is necessary because of the 
+function Assigncase, which needs a sig or mu as second and fourth argument.
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:] There will be more 
+subrules, one for every possible position of the antecedent.
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] see below under {\em 
+dictionary\/}
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+In the English pronoun.dict, the genitive forms of the RECIPRO also occur as 
+`basic expressions' (each other's, one another's). It is assumed that the NP 
+formation subgrammar will prohibit formation of NPs with nothing but such a 
+RECIPRO. The attribute {\em one\/} should distinguish {\em each other\/} from {
+\em one another\/}. In the dictionary, {\em one another} is accepted in analysis 
+only; in the current rule, the same strategy is adopted.
+\item rules:\\
+It is assumed that in generation, no condition on the order in which successive 
+recipros are substituted is needed, since there the parameters going with the 
+rule specify only one possible solution.
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER FpreRecipro1
+< m : CLAUSE{CLAUSErec1}
+            [ mu1, 
+              predrel/VERBP{VERBPrec1}
+                     [mu2],
+              mu3 
+            ]
+>
+  
+   MATCHCONDITIONS
+      <
+       m: EXIST (mu1,[../I11::NP{NPrec1}[mu4]])        OR
+          (EXIST (mu2,[../I11::NP{NPrec1}[mu4]]) AND
+           EXIST (mu2,[head/I12::VERB{VERBrec1}[mu5]])
+          )                                            OR
+          EXIST (mu3,[../I11::NP{NPrec1}[mu4]])
+        I11: NPrec1.NPhead = reciproNP
+        I12: VERBrec1.reflexivity <> reciprocal
+      >
+
+         <
+          C1: true
+          A1: @
+         >
+
+&
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] FpreRecipro1
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] clauseTOsentence
+\item[* class:] (name of rule, transformation or filter class) RC\_
+ReciprocalSpelling
+\item[* date of creation:] 8-SEP-1988
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch Fprerecipro1
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 05/04/90\laxed conditions to let pass inherently reciprocal verbs
+ \ \ \ \ author: Andr\'{e} Schenk
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+%%
+

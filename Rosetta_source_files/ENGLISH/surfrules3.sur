@@ -1,0 +1,627 @@
+%ENGLISH
+&
+%ADJP1srule
+
+REGULAREXPRESSION:
+ 
+ADJP = ADVP/1 . ADJP/2
+
+CONDITIONSANDACTIONS:
+
+
+VAR  preADVfound ::: BOOLEAN;
+     reqvar :: polarityEFFSETtype;
+     envvar :: polarityEFFSETtype;
+     classvar :: timeadvclasstype;
+     deixisvar :: deixistype;
+     aspectvar :: aspecttype;
+     retrovar :: retrotype;
+     actuseefsvar :: adjuseEFFSETtype;
+     temporalvar :: temporaltype;
+     actsubcefsvar :: adjsubceffsettype;
+     thetaadjvar :: thetaadjtype;
+     adjpatternefsvar :: synpatterneffsettype;
+     moodvar :: xpmoodtype;
+ 
+
+<*
+ 
+HINIT: BEGIN
+         preADVfound := false;
+         reqvar := [omegapol, pospol, negpol];
+         envvar := [omegapol, pospol, negpol];
+         classvar := omegaTimeAdvClass;
+         deixisvar := omegadeixis;
+         aspectvar := omegaAspect;
+         retrovar := false;
+         actuseefsvar := [];
+         temporalvar := false;
+         actsubcefsvar := [otheradj];
+         thetaadjvar := omegathetaadjp;
+         adjpatternefsvar := [];
+         moodvar := nowh;
+
+       END;
+
+1: 
+       <*
+         LOCALCONDITION: (preXPAdv in %ADVP.actsubcefs)  AND
+                         (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := modrel;
+                              preADVfound := true
+                   
+                            END
+       *>
+
+2: 
+       <*
+         LOCALCONDITION: (%ADJP.coord <> corrcoord)
+         GLOBAL: #CONDITION: preADVfound = true
+
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+			      reqvar := %ADJP.req;
+			      envvar := %ADJP.env;
+			      classvar := %ADJP.class;
+			      deixisvar := %ADJP.deixis;
+			      aspectvar := %ADJP.aspect;
+			      retrovar := %ADJP.retro;
+			      actuseefsvar := %ADJP.actuseefs;
+			      actsubcefsvar := %ADJP.actsubcefs;
+			      thetaadjvar := %ADJP.thetaadj;
+			      adjpatternefsvar := %ADJP.adjpatternefs;
+			      temporalvar := %ADJP.temporal;
+                            END
+       *>
+
+HFINAL: #CONDITION: TRUE
+        #ACTION: BEGIN
+                    MAKET_ADJP;
+         	    $ADJP.req := reqvar;
+		    $ADJP.class := classvar;
+		    $ADJP.deixis := deixisvar;
+		    $ADJP.aspect := aspectvar;
+		    $ADJP.retro := retrovar;
+		    $ADJP.actuseefs := actuseefsvar;
+		    $ADJP.actsubcefs := actsubcefsvar;
+		    $ADJP.thetaadj := thetaadjvar;
+		    $ADJP.adjpatternefs := adjpatternefsvar;
+		    $ADJP.mood := moodvar;                     
+                    $ADJP.temporal := temporalvar;         
+                 END
+*>
+END;
+& 
+
+%ADJP2rule
+
+REGULAREXPRESSION:
+ 
+ADJP =   [QP/7 | ADVP/8 | ADVP/88 | NP/9 | NP/25] . ADJ/1 . [QP/14]
+      . ({ NP/6 | PREPP/11 | PREPP/12 | PREPP/27 | THANP/18 })
+
+
+CONDITIONSANDACTIONS:
+ 
+VAR
+COMPARATIVEexpected ::: BOOLEAN; !(* to account for the relation of e.g. 
+                                     'a bit' and -er in 'a bit smaller' *)
+COMPARATIVEfound ::: BOOLEAN;    !(* idem *)   
+COMPARATIVEcomplexpected ::: BOOLEAN; !(* to exclude ADVP `so'
+                                          (thatcompl) without complement *)
+                                          
+COMPARATIVEcomplfound :: BOOLEAN;    !(* idem *)   
+ofcomplpossible ::: BOOLEAN;      !(* to account for the compl to 'most' *)
+THANPpossible ::: BOOLEAN;        !(* to account for teh occurrence of THANP
+                                    *)   
+SUPERLATIVEexpected :: BOOLEAN;   !(* To retrict the occurrece of 'the'
+                                      without QP 'most' to contexts  with a
+                                      superlative ADJ. *) 
+SUPERLATIVEfound ::: BOOLEAN;    !(* idem *)   
+DEGREEMODfound ::: BOOLEAN;    !(* To exclude the occurrence of more than one
+                                   degree-modifier *)
+tocomplexpected ::: BOOLEAN;
+HOPexpected :: BOOLEAN;
+HOPfound  ::: BOOLEAN;
+DONPfound ::: BOOLEAN;
+PREPOBJfound  ::: BOOLEAN;
+COMPLfound :: BOOLEAN;
+DEGREECOMPLfound ::: BOOLEAN; 
+
+classvar         :: timeadvclasstype;
+deixisvar        :: deixistype;
+aspectvar        :: aspecttype;
+retrovar         :: retrotype;
+actuseefsvar     :: adjuseeffsettype;
+actsubcefsvar    :: adjsubceffsettype;
+thetaadjvar      :: thetaadjtype;
+adjpatternefsvar :: synpatterneffsettype;
+moodvar          :: xpmoodtype; 
+temporalvar      :: temporaltype;
+
+?
+HELP
+
+!(* MET locargrel is nog geen rekening gehouden *) 
+!(* sentential complements are supposed to be extraposed *) 
+
+PROCEDURE reduceadjpatterns(VAR adjps::synpatternEFFSETtype);
+BEGIN 
+   IF (DONPfound )
+   THEN adjps := adjps * [synMEASUREPHRASE];
+   IF (PREPOBJfound )
+   THEN adjps := adjps * (AUX_prepobjvps );
+END !(*reduceadjpatterns*);
+ 
+!(*reduceadjsubcs*)
+?
+
+
+<* 
+HINIT: BEGIN
+         COMPARATIVEexpected := false;
+         COMPARATIVEfound := false;
+         COMPARATIVEcomplexpected := false;
+         COMPARATIVEcomplfound := false;
+         THANPpossible := false;
+         ofcomplpossible := false;
+         SUPERLATIVEexpected := false;
+         SUPERLATIVEfound := false;
+         DEGREEMODfound := false;  
+         HOPexpected := false;  
+         HOPfound := false;  
+         tocomplexpected := false;
+         PREPOBJfound  := false;
+         DONPfound  := false;
+         COMPLfound := false;
+         DEGREECOMPLfound := false;
+
+	 classvar         := omegaTimeAdvClass;
+	 deixisvar        := omegadeixis;
+	 aspectvar        := omegaAspect;
+	 retrovar         := false;
+	 actuseefsvar     := [];
+	 actsubcefsvar    := [otheradj];
+	 thetaadjvar      := omegathetaadjp;
+	 adjpatternefsvar := [];
+	 moodvar          := nowh;
+         temporalvar      := false;
+
+       END;
+
+  
+1: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL           := head;
+                              IF %ADJ.compform = compar
+                              THEN  BEGIN
+                                      THANPpossible := true;
+                                      DEGREEMODfound := true;
+                                      comparativefound := true
+                                    END;
+                              IF %ADJ.compform = super
+                                 THEN BEGIN
+                                        ofcomplpossible := true;
+                                        DEGREEMODfound := true;
+                                        SUPERLATIVEfound := true
+                                      END;
+			      classvar         := %ADJ.class;
+			      deixisvar        := %ADJ.deixis;
+			      aspectvar        := %ADJ.aspect;
+			      retrovar         := %ADJ.retro;
+			      actuseefsvar     := %ADJ.uses;
+			      actsubcefsvar    := %ADJ.subcs;
+			      thetaadjvar      := %ADJ.thetaadj;
+			      adjpatternefsvar := %ADJ.adjpatterns;
+                              temporalvar      := %ADJ.temporal;
+                            END
+       *>
+
+6: !(* eventueel conditie toevoegen die vereist het hoofd van de ADJP een 
+      measure-adj is *)
+       <*
+         LOCALCONDITION: (accusative in %NP.cases) AND
+                         (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: NOT DONPfound
+                 #ACTION:   BEGIN
+                              SYNREL := objrel;
+                              DONPfound := true;
+                              COMPLfound := true;
+                            END
+       *>
+
+
+
+7:  
+       <*
+         LOCALCONDITION: %QP.hop = false 
+
+         GLOBAL: #CONDITION: (NOT DEGREEMODfound) 
+                 #ACTION:   BEGIN
+                              SYNREL := degreemodrel;
+                              DEGREEMODfound := true;
+                              moodvar := %QP.mood;
+                              If %QP.thanas = tocompl
+                                  THEN tocomplexpected := true;
+                              IF %QP.thanas = omegacompl
+                              THEN COMPARATIVEexpected := true; 
+                                 (* to exclude: much/some beautiful als ADJP *)
+                              IF %QP.thanas IN  [ascompl, thancompl]
+                              THEN THANPpossible := true;
+                              IF %QP.thanas IN  [ ofcompl] 
+                              THEN BEGIN 
+                                   ofcomplpossible := true
+                                   END;
+                              IF %QP.thanas IN  [ ofcompl] 
+                              THEN BEGIN 
+                                   actuseefsvar :=
+                                               [attributive, nominalised]
+                                                  (* 'most' zonder 'the' *)
+                                   END;
+
+                            END
+       *>
+
+8: 
+       <*
+         LOCALCONDITION: (%ADVP.actsubcefs * [degreeadv] <> []) AND
+                         (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT DEGREEMODfound) 
+                 #ACTION:   BEGIN
+                              SYNREL := degreemodrel;
+                              DEGREEMODfound := true;
+                              If %ADVP.thanas = ascompl
+                              THEN THANPpossible := true;
+                              If %ADVP.thanas = thatcompl
+                              THEN COMPARATIVEcomplexpected := true;
+                              If %ADVP.thanas = tocompl
+                              THEN tocomplexpected := true;
+
+                              moodvar := %ADVP.mood;
+                           END
+       *>
+
+88:                                         !(* almost ... enough *)
+       <*
+         LOCALCONDITION: (%ADVP.actsubcefs * [Numadv] <> []) AND
+                         (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT DEGREEMODfound) 
+                 #ACTION:   BEGIN
+                              SYNREL := premodrel;
+                              HOPexpected := true;
+                              moodvar := %ADVP.mood;
+                           END
+       *>
+9: 
+       <*
+         LOCALCONDITION: (unitnoun IN %NP.actsubcs)  OR
+                         ((%NP.definite = indef) AND
+                          (mass IN %NP.actcomas ) 
+                         ) (* amountnp *)  AND
+                         (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT DEGREEMODfound) 
+                 #ACTION:   BEGIN
+                              SYNREL := degreemodrel;
+                              DEGREEMODfound := true
+                            END
+       *>
+
+25: 
+       <*
+         LOCALCONDITION: (unitnoun IN %NP.actsubcs) OR
+                         ((%NP.definite = indef) AND
+                          (mass IN %NP.actcomas ) 
+                         ) (* amountnp *) AND 
+                         (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT DEGREEMODfound) 
+                 #ACTION:   BEGIN
+                              SYNREL := premodrel;
+                              comparativeexpected := true;
+                            END
+       *>
+
+14:    <*
+         LOCALCONDITION: %QP.hop = true
+         GLOBAL: #CONDITION: NOT DEGREEMODfound
+                 #ACTION:   BEGIN
+                              SYNREL := hoprel;
+                              DEGREEMODfound := true;
+                              HOPfound := true;
+                            END
+       *>
+
+27:
+       <*
+         LOCALCONDITION: (%PREPP.coord <> corrcoord) AND
+                         (%PREPP.headkey = KEY_ofprepkey)
+         GLOBAL: #CONDITION: ofcomplpossible = true
+                 #ACTION:   BEGIN
+                              SYNREL := ofcomplrel;
+                             END
+       *>
+ 
+
+11: 
+       <*
+         LOCALCONDITION: (%PREPP.coord <> corrcoord)
+         GLOBAL: #CONDITION: NOT PREPOBJfound
+                 #ACTION:   BEGIN
+                              SYNREL := prepobjrel;
+                              PREPOBJfound := true;
+                              COMPLfound := true;
+                            END
+       *>
+
+18: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (THANPpossible) AND
+                             (NOT DEGREECOMPLfound)
+                 #ACTION:   BEGIN
+                              SYNREL := postadjrel; 
+                              DEGREECOMPLfound := true
+                            END
+       *>
+
+ 
+HFINAL: #CONDITION: COMPLfound <= 
+                        ((adjpatternefsvar * [synnoadjpargs] = [])
+                                        !(* FJ, 29/11/88*) OR
+                         (actsubcefsvar 
+                          * [forsubjectiveadj, tosubjectiveadj] <> []) 
+                                        !(* FJ, 27/07/89;
+                                           met het oog op voorobjmods *) 
+                        )
+                    
+
+        #ACTION: reduceadjpatterns(adjpatternefsvar);
+                 IF    (adjpatternefsvar <> []) AND
+                       (actsubcefsvar <> []) AND 
+                       (NOT ((COMPARATIVEexpected) 
+                              AND (NOT COMPARATIVEfound))) AND
+                       (NOT ((COMPARATIVEcomplexpected) 
+                              AND (NOT COMPARATIVEcomplfound))) AND
+                       (NOT ((SUPERLATIVEexpected) 
+                              AND (NOT SUPERLATIVEfound))) AND
+                       (NOT ((HOPexpected)
+                             AND (NOT HOPfound)))
+ 
+                   THEN BEGIN
+                     MAKET_ADJP;
+                     $ADJP.req         := [pospol,negpol,omegapol];
+                     $ADJP.env         := [pospol,negpol,omegapol];
+		     $ADJP.class       := classvar;
+		     $ADJP.deixis      := deixisvar;
+		     $ADJP.aspect      := aspectvar;
+		     $ADJP.retro       := retrovar;
+		     $ADJP.actuseefs   := actuseefsvar;
+		     $ADJP.actsubcefs  := actsubcefsvar;
+		     $ADJP.thetaadj    := thetaadjvar;
+		     $ADJP.adjpatternefs := adjpatternefsvar;
+		     $ADJP.mood        := moodvar;                     
+                     $ADJP.temporal    := temporalvar;         
+                 END
+
+*>
+END;
+&
+
+
+%QP1rule
+
+REGULAREXPRESSION:
+
+QP = ([ADVP/1 | NP/2 ]) . [ART/3] . Q/4 . [ THANP/5 ]
+ 
+CONDITIONSANDACTIONS:
+
+VAR 
+         MOSTexpected  :: BOOLEAN;
+         MOSTfound     :: BOOLEAN;
+         COMPLfound     ::: BOOLEAN;
+         definitevar    :: deftype;
+         posspredvar    :: posspredtype;
+         possnumbersvar :: numberSETtype;
+         posscomasvar   :: posscomaSETtype;
+         moodvar        :: xpmoodtype;
+         thanasvar      :: thanascompltype;
+         thanascomplvar :: compltype;
+         hopvar         :: hoptype;
+
+ 
+
+
+<* 
+HINIT: BEGIN
+         MOSTexpected   := false;
+         MOSTfound      := false;
+         COMPLfound     := false;
+         definitevar    := omegadef;
+         posspredvar    := false;
+         possnumbersvar := [singular];
+         posscomasvar   := [count];
+         moodvar        := nowh;
+         thanasvar      := omegacompl;
+         thanascomplvar := false;
+         hopvar         := false;
+       END;
+
+
+1:    
+       <*
+         LOCALCONDITION: degreeadv IN %ADVP.actsubcefs  !(* te (veel) *)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := premodrel
+                            END
+       *>  
+
+2: 
+       <*
+         LOCALCONDITION: ((%NP.actsubcs * [unitnoun ] <> []) OR
+                          (%NP.actcomas * [mass] <> []))  AND
+                         (%NP.definite = indef)  !(* amountnp *) AND
+                         (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := premodrel
+
+                            END
+       *>  
+
+3: 
+       <*
+         LOCALCONDITION: %ART.key = KEY_theARTkey
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := artrel;
+                              MOSTexpected := true
+                            END
+       *>  
+
+4: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              IF %Q.key = KEY_mostQkey
+                              THEN MOSTfound := true;
+                              SYNREL := head;
+                              definitevar  := %Q.definite;
+                              posspredvar  := %Q.posspred;
+                              possnumbersvar := %Q.possnumbers;
+                              posscomasvar := %Q.posscomas;
+                              moodvar      := %Q.mood;
+                              thanasvar    := %Q.thanas;
+                              hopvar       := %Q.hop;
+                            END
+       *>
+
+5: 
+       <*
+         LOCALCONDITION: true 
+         GLOBAL: #CONDITION: NOT COMPLfound 
+                 #ACTION:   BEGIN
+                              SYNREL := thanascomplrel;
+                              COMPLfound := true;
+                            END
+       *>
+
+
+HFINAL: #CONDITION: true
+        #ACTION: BEGIN
+                 MAKET_QP;
+                 IF (NOT ((MOSTexpected) 
+                              AND (NOT MOSTfound))) 
+                   THEN 
+                     BEGIN
+                      $QP.definite   := definitevar;
+                      $QP.posspred   := posspredvar;
+                      $QP.possnumbers := possnumbersvar;
+                      $QP.posscomas  := posscomasvar;
+                      $QP.mood       := moodvar;
+                      $QP.thanas     := thanasvar;
+                      $QP.thanascompl := thanascomplvar;
+                      $QP.hop        := hopvar;
+                     END
+           
+                END
+*>
+END;
+& 
+
+
+
+
+%THANPrule
+
+REGULAREXPRESSION:
+
+THANP =   THANAS/1 . (NP/2 | PREPP/3 | ADVP/4 | DETP/5 | QP/6) 
+
+
+CONDITIONSANDACTIONS:
+
+VAR
+    thanasvar  :: thanascompltype;
+
+
+
+<* 
+HINIT: BEGIN
+         thanasvar := omegacompl;
+       END;
+
+1: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+                              IF %THANAS.key = KEY_thanthanaskey
+                              THEN thanasvar := thancompl;
+                              IF %THANAS.key = KEY_asthanaskey
+                              THEN thanasvar := ascompl;
+                             END
+
+      *>
+2: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := complrel
+                            END
+       *>
+3: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := complrel
+                            END
+       *>
+4: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := complrel
+                            END
+       *>
+
+5: 
+       <*
+         LOCALCONDITION: %DETP.definite = indef
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := complrel
+                            END
+       *>
+
+6: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := complrel
+                            END
+       *>
+
+HFINAL: #CONDITION: true
+        #ACTION: BEGIN
+                    MAKET_THANP;
+                    $THANP.req    := [pospol,negpol,omegapol];
+                    $THANP.env    := [pospol,negpol,omegapol];
+                    $THANP.thanas := thanasvar;
+                 END  
+*>
+END;
+& 
+
+%%

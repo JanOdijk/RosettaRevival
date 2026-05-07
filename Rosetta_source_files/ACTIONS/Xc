@@ -1,0 +1,26 @@
+#! /bin/sh -e
+trap 'echo "c: Error during compilation" ; exit 1' 0
+echo "  " >> warnings
+echo "Xc: $1:$2"
+if test -s $1/source/$2.c 
+then
+  src=$1/source/$2.c
+else
+  src=$RBS_ARCHIVE$RBS_RELEASE/$1/$2.c
+fi
+if test -s $2.o
+then  rm -f $2.o
+fi
+cc -target sun4 -g -DDEVELOPMENT -D_NO_PROTO -DSTRINGS_ALIGNED -DNO_REGEX \
+                   -DNO_ISDIR -DUSE_RE_COMP -DUSE_GETWD \
+              -I/cadappl/X11/usr/include \
+              -I$1/source -I$1/target -I$RBS_ARCHIVE$RBS_RELEASE/$1 \
+              -Iunix/source -Iunix/target -I$RBS_ARCHIVE$RBS_RELEASE/unix \
+              -DXAW_BC  -target sun4 -c $src 1>> warnings 2>&1
+
+if test -s $2.o 
+then 
+  rm -f $1/target/$2.o
+  mv $2.o $1/target/$2.o
+fi
+trap 0

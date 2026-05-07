@@ -1,0 +1,896 @@
+ENGLISH 9
+
+&
+There are 4 punctuationrules:
+\begin{description}
+  \item[RNoPunc] for subordinate clauses; it makes subordinate clauses pass
+                this rule class
+  \item[RQuMark] places a `?' after main clause questions
+  \item[RExclam] places a `!' after imperatives and in analysis after 
+                 letsmood-sentences; places a `.' after letsmood sentences
+  \item[RPeriod] places a `.' after all other main clauses
+\end{description}
+In analysis the absence of punctuation marks is allowed.\\
+There are no rules yet for colons, semicolons and quotes.\\[3 ex]
+
+In this file is included the Comma Incorporation Transformation, together with 
+its filters.
+
+
+\newpage
+\begin{verbatim}
+%
+% RULE RNoPunc
+< m1: T1
+>
+
+< m : T1
+>
+
+<
+   SUBRULE (* 1. SENTENCE *)
+      < T1: SENTENCE{SENTENCErec1}[mu1] >
+      < T1: SENTENCE{SENTENCErec1}[mu1] >
+
+   MATCHCONDITIONS
+      <
+       T1 : SENTENCErec1.senttype = subordinateclause
+      >
+ 
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+   SUBRULE (* 2. NP *)
+      < T1: NP{NPrec1}[mu1] >
+      < T1: NP{NPrec1}[mu1] >
+
+   MATCHCONDITIONS
+      <
+       T1 : NPrec1.NPhead IN [sentNP, openIngNP]
+      >
+ 
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+   SUBRULE (* 3. PREPP *)
+      < T1: PREPP{PREPPrec1}[mu1] >
+      < T1: PREPP{PREPPrec1}[mu1] >
+
+   MATCHCONDITIONS
+      <
+       T1: EXIST (mu1, [objrel/I1::NP{NPrec1}[mu2]])
+       I1: NPrec1.NPhead IN [sentNP, openIngNP]
+      >
+ 
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+   SUBRULE (* 4. CLOSEDVERBPPROP *)
+      < T1: CLOSEDVERBPPROP{CLOSEDVERBPPROPrec1}[mu1] >
+      < T1: CLOSEDVERBPPROP{CLOSEDVERBPPROPrec1}[mu1] >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RNoPunc
+\item[* relevant examples:] \mbox[]
+subrule 1: that he left, for you to go, etc\\
+subrule 2: (my) leaving the house so quietly\\
+subrule 3: Before (?my) leaving the house, (he said...), etc.\\
+subrule 4: the house built by a famous architect
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] Clausetosentence
+\item[* class:] (name of rule, transformation or filter class) RC\_Punc
+\item[* date of creation:] 10-JUN-1988 
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch RPunc0
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 16/10/88\ \ \ \ \ author: margreet sanders\\
+adapted to let other structures than SENTENCEs also go through this rule
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% RULE RQuMark
+< m1: SENTENCE{SENTENCErec1}[mu1] 
+>
+
+< m : SENTENCE{SENTENCErec1}[mu1, 
+                             I2:sig1 ]
+>
+
+   MATCHCONDITIONS
+      <
+       I2: ALL (sig1, puncrel/PUNC(AUX_quPUNCkey){PUNCrec2})
+      >
+
+<
+   SUBRULE (* 1. A question mark exists in analysis *)
+      < >
+      < sig1: [puncrel/PUNC(AUX_quPUNCkey){PUNCrec3}] >
+
+      COMP
+         <
+          C1:SENTENCErec1.senttype = mainclause AND
+             SENTENCErec1.mood IN [yesnointerrogative, whinterrogative]
+          A1:@
+         >
+      DECOMP
+         <
+          C1:SENTENCErec1.senttype = mainclause AND
+             SENTENCErec1.mood IN [yesnointerrogative, whinterrogative]
+          A1:@
+         >
+
+   SUBRULE (* 2. No question mark in analysis *)
+      < >
+      < sig1:[] >
+
+       (* no COMP part *)
+
+      DECOMP
+         <
+          C1:SENTENCErec1.senttype = mainclause AND
+             SENTENCErec1.mood IN [yesnointerrogative, whinterrogative]
+          A1:@
+         >
+>
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RQuMark
+\item[* relevant examples:] Did you see her? Who left?
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] Clausetosentence
+\item[* class:] (name of rule, transformation or filter class) RC\_Punc
+\item[* date of creation:] 10-JUN-1988 
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch Rpunc1
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to introduce a Question mark at the end of a question. 
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:] One subrule for the 
+case there is no question mark in analysis, and one for the case there is.
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] In analysis, a question 
+mark need not be present
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+See RPeriod
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% RULE RExclam
+< m1: SENTENCE{SENTENCErec1}[mu1] 
+>
+
+< m : SENTENCE{SENTENCErec1}[mu1, 
+                             I2:sig1 ]
+>
+
+   MATCHCONDITIONS
+      <
+       I2: ALL (sig1, puncrel/PUNC(AUX_exclamPUNCkey){PUNCrec2}) 
+           OR
+           ALL (sig1, puncrel/PUNC(AUX_periodPUNCkey){PUNCrec1})
+      >
+
+<
+   SUBRULE (* 1. there is an exclamation mark in analysis *)
+      < >
+      < sig1: [puncrel/PUNC(AUX_exclamPUNCkey){PUNCrec3}] >
+
+      COMP
+         <
+          C1: SENTENCErec1.senttype = mainclause AND
+              SENTENCErec1.mood = imperativemood
+          A1: @
+         >
+      DECOMP
+         <
+          C1: SENTENCErec1.senttype = mainclause AND
+              SENTENCErec1.mood IN [imperativemood, letsmood]
+          A1: @
+         >
+
+   SUBRULE (* 2. no exlamation mark in analysis *)
+      < >
+      < sig1: [] >
+
+     (* no COMP part *)
+
+      DECOMP
+         <
+          C1: SENTENCErec1.senttype = mainclause AND
+              SENTENCErec1.mood IN [imperativemood, letsmood]
+          A1: @
+         >
+
+   SUBRULE (* 3. there is a period; only for letsmood *)
+      < >
+      < sig1: [puncrel/PUNC(AUX_periodPUNCkey){PUNCrec3}] >
+
+      COMP
+         <
+          C1: SENTENCErec1.senttype = mainclause AND
+              SENTENCErec1.mood = letsmood
+          A1: @
+         >
+      DECOMP
+         <
+          C1: SENTENCErec1.senttype = mainclause AND
+              SENTENCErec1.mood = letsmood
+          A1: @
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RExclam
+\item[* relevant examples:] Go home! Let's go home. (Anal.\ only:) Let's go 
+home!
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] clauseTOsentence
+\item[* class:] (name of rule, transformation or filter class) RC\_Punc
+\item[* date of creation:] 10-JUN-1988
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch Rpunc2
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 21/02/89\ \ \ \ \ author: margreet sanders\\
+Adapted for letsmood
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to introduce an exclamation mark after commands, and a period 
+after letsmood sentences.
+\item[\ \ strategy:] (also: deviations from accepted proposals) The letsmood 
+sentences receive their period here instead of in RPeriod, because Dutch and 
+Spanish assume that all letsmoods are real imperatives (they cannot take a 
+period). Hence, either the IL mapping of the punctuation rules in English must 
+allow for Rperiod to map ont LExclam, or RExclam must be adapted. The latter 
+option was chosen. It is assumed that in analysis, a letsmood may take an 
+exclamation mark.
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:] One subrule for the 
+case there is an exclamation mark in analysis, one subrule for the case there 
+isn't; one subrule for letsmood periods.
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] in analysis, no exclamation 
+mark need be present; for letsmoods, an exclamation mark may be present in 
+analysis.
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+See RPeriod
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% RULE RPeriod
+< m1: SENTENCE{SENTENCErec1}[mu1] 
+>
+
+< m : SENTENCE{SENTENCErec1}[mu1, 
+                             I2:sig1 ]
+>
+
+   MATCHCONDITIONS
+      <
+        I2: ALL (sig1, puncrel/PUNC(AUX_periodPUNCkey){PUNCrec2})       
+      >
+
+<
+   SUBRULE (* 1. There is a period in analysis *)
+      < >
+      < sig1: [puncrel/PUNC(AUX_periodPUNCkey){PUNCrec3}] >
+
+      COMP
+         <
+          C1: SENTENCErec1.senttype = mainclause AND
+              SENTENCErec1.mood = declarative
+          A1: @
+         >
+      DECOMP
+         <
+          C1: SENTENCErec1.senttype = mainclause AND
+              SENTENCErec1.mood = declarative
+          A1: @
+         >
+
+   SUBRULE (* 2. no period in analysis *)
+      < >
+      < sig1: [] >
+
+      (* no COMP part *)
+
+      DECOMP
+         <
+          C1: SENTENCErec1.senttype = mainclause AND
+              SENTENCErec1.mood = declarative
+          A1: @
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RPeriod
+\item[* relevant examples:] That was enough for today. ; \ \ I'll ask my friends 
+in the E.E.C..
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] Clausetosentence
+\item[* class:] (name of rule, transformation or filter class) RC\_Punc
+\item[* date of creation:] 10-JUN-1988 
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch Rpunc3
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 21/02/89\ \ \ \ \ author: margreet sanders\\
+Removed letsmood sentences from this subrule. They are dealt with by RExclam 
+now.
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to introduce a period at the end of declarative sentences
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:] one subrule for 
+the case there is a period in analysis, one for the case there isn't
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] in analysis, no period 
+need be present
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+It is assumed that periods going with abbreviations are part of the word, not 
+separate puncrels. Therefore, it's impossible to check for such a period in the 
+M-rules. If double periods (see example above) are considered unacceptable, a 
+special rule has to written for the generative lay-out component to remove one.
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+Not yet solved: absence of punctuation when we are dealing with a sentence-
+final embedded sentence in quotation marks (He said: 
+`I'll go home early today.' \ \ He said: `Dare you call me a liar?')
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TCommaIncorp
+< m1: SENTENCE{SENTENCErec1}
+              [ I1:leftdislocrel/N1
+                             [ mu1, 
+                               puncrel/PUNC(KEY_commaPUNCkey){PUNCrec1}
+                             ],
+                mu2
+              ]
+>
+
+< m : SENTENCE{SENTENCErec1}
+              [ I1:leftdislocrel/N1[mu1],
+                puncrel/PUNC(KEY_commaPUNCkey){PUNCrec1},
+                mu2
+              ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: N1.CAT IN [SENTENCE] OR
+           ( N1.CAT IN [PREPP] AND
+             EXIST (mu1, [objrel/I11::NP{NPrec1}[mu3]]) )
+       I11: NPrec1.NPhead IN [sentNP, openIngNP]
+      >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TCommaIncorp
+\item[* relevant examples:] [Before he left] , he closed the door $\rightarrow$ 
+[Before he left,] he closed the door
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) TC\_CommaIncorp
+\item[* date of creation:] 15-MAR-1989 
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch Tpopldlcomma
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To incorporate (analytically speaking) the comma in the 
+(leftdislocrel) embedded clause; this is needed because it is doubtful whether 
+the grammar can deal with an initial comma in all the rules between here and 
+the ConjSent Substitution rules (where the comma is deleted). The Surface 
+Parser is not capable of putting the comma in the embedded clause straight away
+(ask Jan O. why...)
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER FpostCommaIncorp
+< m : SENTENCE{SENTENCErec1}
+              [I1: leftdislocrel/N1
+                             [ mu1, 
+                               puncrel/PUNC(KEY_commaPUNCkey){PUNCrec1}
+                             ],
+                 mu2
+              ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: N1.CAT IN [SENTENCE] OR
+           ( N1.CAT IN [PREPP] AND
+             EXIST (mu1, [objrel/I11::NP{NPrec1}[mu3]]) )
+       I11: NPrec1.NPhead IN [sentNP, openIngNP]
+      >
+
+
+         <
+          C1: true
+          A1: @
+         >
+
+&
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] FpostCommaIncorp
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) TC\_CommaIncorp
+\item[* date of creation:] 15-MAR-1989 
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch Fpopldlcomma
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to prevent any structures with an incorporated comma to go to 
+the surface parser (since the TCommaIncorp is optional, two structures would go 
+to the surface parser, one with and one without incorporation)
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER FpreCommaIncorp
+< m : SENTENCE{SENTENCErec1}
+              [ I1:leftdislocrel/N1[ mu1],
+                puncrel/PUNC(KEY_commaPUNCkey){PUNCrec1},
+                mu2
+              ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: N1.CAT IN [SENTENCE] OR
+           ( N1.CAT IN [PREPP] AND
+             EXIST (mu1, [objrel/I11::NP{NPrec1}[mu3]]) )
+       I11: NPrec1.NPhead IN [sentNP, openIngNP]
+      >
+
+         <
+          C1: true
+          A1: @
+         >
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] FPreCommaIncorp
+\item[* relevant examples:] 
+\item[* language:] English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) TC\_CommaIncorp
+\item[* date of creation:] 15-MAR-1989
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch Fprepopldl
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to prevent any structures which still have an unincorporated 
+comma to go to the rest of the grammar (in analysis). In these cases,
+TCommaIncorp must be applied obligatorily.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% RULE Rcoordintro
+< m1:SENTENCE{SENTENCErec1}[mu1] 
+  m2:COORD{COORDrec1}
+>
+
+< m :SENTENCE{SENTENCErec1}[argrel/COORD{COORDrec1},mu1]
+>
+
+      COMP
+         <
+          C1: COORDrec1.Sintroducer = true AND
+              SENTENCErec1.senttype = mainclause
+          A1: @
+         >
+      DECOMP
+         <
+          C1: COORDrec1.Sintroducer = true AND
+              SENTENCErec1.senttype = mainclause
+          A1: @
+         >
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Rcoordintro
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 8-JAN-1991 17:13:51  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+
+\newpage
+\begin{verbatim}
+% FILTER Fprecoordintro
+< m :SENTENCE{SENTENCErec1}[argrel/COORD{COORDrec1},mu1]
+>
+  
+         <
+          C1: true
+          A1: @
+         >
+
+
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] Fprecoordintro
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 9-JAN-1991 10:45:56  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+%%
+

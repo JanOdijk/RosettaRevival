@@ -1,0 +1,626 @@
+ENGLISH 100
+
+&
+\begin{verbatim}
+%
+%SUBGRAMMAR Utterance
+
+( RUTTSENT/1 | RUTTNP/2 | RUTTADVP/3 | RUTTADJP/4 | RUTTPREPP/5 |
+  RUTTEXCLAM/6
+)
+
+.[RaddEXCLAM/7]
+
+HEAD:
+<
+SENTENCE FROM (CLAUSEtoSENTENCE)
+NP       FROM (NPFORMATION)
+ADVP     FROM (ADVPFORMATION)
+ADJP     FROM (ADJPFORMULAtoADJPPROP)
+PREPP    FROM (PREPPFORMATION)
+>
+
+(* no IMPORT *)
+<
+>
+
+EXPORT:
+<
+UTT
+>
+
+&
+\end{verbatim}
+\newpage
+\begin{verbatim}
+
+% RULE RUttSent
+< m1: T1
+>
+
+< m : UTT{UTTrec1}[head/T1]
+>
+
+<
+   SUBRULE
+      < T1: SENTENCE{SENTENCErec1}[mu1] >
+      < T1: SENTENCE{SENTENCErec1}[mu1] >
+
+      COMP
+         <
+          C1: SENTENCErec1.senttype = mainclause  AND
+              SENTENCErec1.finiteness = finite    AND
+              QUOTE_polarityOK(T1)                AND
+              (NOT QUOTE_varsintree(T1))          AND
+              (NOT QUOTE_acconetheyintree(T1))
+          A1: @
+         >
+      DECOMP
+         <
+          C1: SENTENCErec1.senttype = mainclause AND
+              SENTENCErec1.finiteness = finite AND
+              QUOTE_polarityOK(T1)             AND
+              (NOT QUOTE_acconetheyintree(T1))
+          A1: @
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RUttSent
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] UTTERANCE
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 8-JUN-1988
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch RUtt1
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To form an utterance out of a sentence and to check  polarity.
+Only finite sentences are accepted as utterance, (Cf. Dutch, where infinitive 
+whinterrogative sentences are also accepted: {\em Wat te doen? }. If English
+also wants these sentences ({\em What to do in a case like that?\/}), an extra 
+mooddetermination rule must be written, for mainclause whtoinfs).
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% RULE RUttNP
+< m1: T1
+>
+
+< m : UTT{UTTrec1}[head/T2]
+>
+
+   PARAMETERS
+      <
+       casespar : caseSETtype
+      >
+
+<
+   SUBRULE
+      < T1: NP{NPrec1}[mu1] >
+      < T2: NP{NPrec2}[mu2] >
+
+      COMP
+         <
+          C1: NPrec1.generic = nogeneric AND
+              NPrec1.cases = [] AND
+              QUOTE_polarityOK(T1) AND  
+              (NOT QUOTE_varsintree(T1)) AND
+              ( casespar = [nominative] OR
+                casespar = [accusative] )
+          A1: NPrec2.generic := omegageneric;
+              QUOTE_AssignCase(NPrec1, mu1, NPrec2, mu2, casespar);
+         >
+      DECOMP
+         <
+          C1: NPrec2.generic = omegageneric AND
+              QUOTE_polarityOK(T2)
+            C11: nominative IN NPrec2.cases
+            A11: casespar := [nominative]
+            C12: NPrec2.cases = [accusative]
+            A12: casespar := [accusative]
+          A1: QUOTE_AssignCase(NPrec2, mu2, NPrec1, mu1, []);
+              NPrec1.generic := nogeneric;
+              NPrec1.superdeixis := presentdeixis
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RUttNP
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] UTTERANCE
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 08-JUN-1988 
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch RuttNp
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 07/07/89\ \ \ \ \ author: margreet sanders\\
+added parameter to pass on case. If the case might be nominative, this is the 
+only case that is accepted in analysis.
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To turn NPs into UTTs to be able to test and translate bare NPs.
+Also, a check on polarity is performed.
+\item[\ \ strategy:] (also: deviations from accepted proposals) The model needs
+a subrule to allow for the definition of a T1/T2, which is needed as input 
+to the polarity checking function.
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE RUttADVP
+< m1: T1
+>
+
+< m : UTT{UTTrec1}[head/T2]
+>
+
+<
+   SUBRULE
+      < T1: ADVP{ADVPrec1}[mu1] >
+      < T2: ADVP{ADVPrec2}[mu1] >
+
+      COMP
+         <
+          C1: ADVPrec1.superdeixis = presentdeixis AND
+              QUOTE_polarityOK(T1)                 AND
+              (NOT QUOTE_varsintree(T1))
+          A1: ADVPrec2 := ADVPrec1;
+              ADVPrec2.superdeixis := omegadeixis
+         >
+      DECOMP
+         <
+          C1: ADVPrec2.superdeixis = omegadeixis AND
+              QUOTE_polarityOK(T2)
+          A1: ADVPrec1 := ADVPrec2;
+              ADVPrec1.superdeixis := presentdeixis
+         >
+>
+
+&
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RUttADVP
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) ENGLISH
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] UTTERANCE
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 8-JUN-1988 
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch RUTTADVP
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To be able to test and translate bare ADVPs. Also, a check on 
+polarity is performed
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+
+% RULE RUttADJP
+< m1: T1
+>
+
+< m : UTT{UTTrec1}[head/T2]
+>
+
+<
+   SUBRULE
+      < T1: ADJP{ADJPrec1}[mu1] >
+      < T2: ADJP{ADJPrec1}[mu1] >
+
+      COMP
+         <
+          C1: QUOTE_polarityOK(T1) AND
+              (NOT QUOTE_varsintree(T1))
+          A1: @
+         >
+      DECOMP
+         <
+          C1: QUOTE_polarityOK(T2)
+          A1: @
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RUttADJP
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] UTTERANCE
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 8-JUN-1988
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch RUTTADJP
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 08/11/88\ \ \ \ \ author:Franciska de Jong
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To create Utterances to test and translate bare ADJPs. Also, a 
+check on polarity is performed.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+It is assumed that in the ADJPFORMULAtoADJPPROP subgrammar, Franciska has a 
+rule to transform an ADJPPROP `back to' a simple ADJP.
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+08/11/88: all references to .superdeixis for ADJP deleted.
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+
+% RULE RUttPREPP
+< m1: T1
+>
+
+< m : UTT{UTTrec1}[head/T2]
+>
+
+<
+   SUBRULE
+      < T1: PREPP{PREPPrec1}[mu1] >
+      < T2: PREPP{PREPPrec2}[mu1] >
+
+      COMP
+         <
+          C1: PREPPrec1.superdeixis = presentdeixis AND
+              QUOTE_polarityOK(T1)                  AND
+              (NOT QUOTE_varsintree(T1))
+          A1: PREPPrec2 := PREPPrec1;
+              PREPPrec2.superdeixis := omegadeixis
+         >
+      DECOMP
+         <
+          C1: PREPPrec2.superdeixis = omegadeixis AND
+              QUOTE_polarityOK(T2)
+          A1: PREPPrec1 := PREPPrec2;
+              PREPPrec1.superdeixis := presentdeixis
+         >
+>
+&
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RUttPREPP
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) ENGLISH
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] UTTERANCE
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 13-SEP-1988
+\item[* author:] margreet sanders
+\item[* copied from:] 
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To create an UTT above a PREPP, to be able to test and translate 
+bare PREPPs. Also, a check on polarity is performed.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE RUTTEXCLAM
+< m1:EXCLAM{EXCLAMrec1} 
+>
+
+< m :UTT{UTTrec1}[head/EXCLAM{EXCLAMrec1}]
+>
+
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RUTTEXCLAM
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 30-MAR-1990 09:28:18  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% RULE RaddExclam
+< m1:UTT{UTTrec1}[head/SENTENCE{SENTENCErec1}[mu1]] 
+  m2:EXCLAM{EXCLAMrec1}
+>
+
+< m :UTT{UTTrec1}
+        [ modrel/EXCLAM{EXCLAMrec1},
+          puncrel/PUNC(KEY_commaPUNCkey){PUNCrec1},
+          head/SENTENCE{SENTENCErec1}[mu1]
+        ] 
+>
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RaddExclam
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 30-MAR-1990 09:29:22  
+\item[* author:] 
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+
+%%
+
+

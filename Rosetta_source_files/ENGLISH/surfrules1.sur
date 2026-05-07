@@ -1,0 +1,928 @@
+%ENGLISH
+&
+
+%UTT
+
+REGULAREXPRESSION:
+
+UTT = NP/1  | PREPP/3 | SENTENCE/2 | ADJP/4
+
+CONDITIONSANDACTIONS:
+
+
+<*
+ HINIT:BEGIN
+       END;
+
+1     :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head
+                          END
+        *>
+
+
+2     :<*
+        LOCALCONDITION: (%SENTENCE.senttype = mainclause) AND
+                        (%SENTENCE.finiteness = finite) 
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                          END
+        *>
+
+3: 
+       <*
+         LOCALCONDITION: (NOT %PREPP.stranded)
+         GLOBAL: #CONDITION: TRUE
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+
+                            END
+       *>
+
+4: 
+       <*
+         LOCALCONDITION: TRUE
+         GLOBAL: #CONDITION: TRUE
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+
+                            END
+       *>
+
+
+
+HFINAL: #CONDITION: TRUE
+        #ACTION: BEGIN
+                 MAKET_UTT;
+                 END
+*>
+END;
+&
+
+
+
+% VERBPrule
+
+REGULAREXPRESSION:
+
+VERBP = AUXVERBS . [VERB/1] . [NP/3] . [PART/2] . [NP/4] . [PART/2]
+        . [REST] . [PREPP/11] . [SENTENCE/5] . [PREPP/6] . [PREPP/18]
+
+AUXVERBS = [VERB/7] . [VERB/8] . [VERB/9]
+
+REST = PREPP/10 | 
+       PREPP/12 | ADVP/14 |
+       PREPP/13 | ADVP/15 |
+       ADJP/16 |
+       NP/17 |
+       PREPP/19 |
+       VERBP/20 |
+       PROSENT/21
+        
+CONDITIONSANDACTIONS:
+!(* 1=HEAD, 3=IO, 4=DO, 5=COMPL, 6=PO, 7=AUXREL, 8=PROGAUXREL, 9=PASSAUXREL
+ 10=PO, 11=PO, 12=LOCARG, 13=DIRARG, 14=LOCARG, 15=DIRARG, 16= PRED,
+ 17=PRED, 18=BYOBJ, 19=PRED, 20=COMPL 21=PROSENT*)
+
+VAR
+   ADJPpredfound      :: BOOLEAN;
+   adjunctsvar        ::: adjunctSETtype;
+   adjunctsefsvar     ::: adjunctSETtype;
+   adjvpefsvar        :: synpatterneffSETtype;
+   asifcomplfound     :: BOOLEAN;
+   auxfound           ::: BOOLEAN;  !(* auxrel has been found *)
+   auxverbfound       :: BOOLEAN;   !(* any auxiliary verb has been found *)
+   byobjfound         :: BOOLEAN;
+   caseassignervar    ::: BOOLEAN;
+   classesvar         :: classSETtype;
+   complfound         ::: BOOLEAN;
+   complinfvar        :: inftype;
+   complmodusvar      :: modustype;
+   complmoodvar       :: moodtype;
+   complprosubjectvar :: BOOLEAN;
+   dirargfound        :: BOOLEAN;
+   envvar             :: polarityeffsettype;
+   foundauxesvar      :: auxSETtype;
+   headfound          :: BOOLEAN;
+   headmodusvar       :: modustype;
+   indobjfound        ::: BOOLEAN;
+   locargfound        :: BOOLEAN;
+   modusvar           :: modustype;
+   NPpredfound        :: BOOLEAN;
+   objfound           :: BOOLEAN;
+   partfound          ::: BOOLEAN; 
+   passauxfound       ::: BOOLEAN;
+   particlevar        ::: keytype;
+   possvoicesvar      ::: voiceSETtype;
+   predfound          ::: BOOLEAN;
+   prepkeyvar1        ::: keytype;
+   prepkeyvar2        ::: keytype;
+   prepobjfound       ::: BOOLEAN;
+   prepobj2found      ::: BOOLEAN;
+   PREPPpredfound     :: BOOLEAN;
+   progauxfound       ::: BOOLEAN;
+   reflexivityvar     :::  reflexivetype;
+   reqvar             :: polarityeffsettype;
+   SENTcomplfound     :: BOOLEAN;
+   strandedPPfound    :: BOOLEAN;
+   synvpefsvar        ::: synpatterneffsettype;
+   synvpsvar          :: synpatternsettype;
+   tensevar           :: tensetype;
+   thetavpvar         ::: thetavptype;
+   verbnumbersvar     :: numbersettype;
+   verbpersonsvar     :: personSETtype;
+   VERBPcomplfound    :: BOOLEAN;
+   voicevar           :: voicetype;
+?
+HELP
+FUNCTION headmodusandauxok:BOOLEAN;
+BEGIN
+         headmodusandauxok :=
+                     ((headmodusvar = participle)    AND
+                       ((NOT auxverbfound)         OR
+                       passauxfound
+                       )
+                      );
+END; {headmodusandauxok}
+{checks whether headmodus and auxiliary verbs are compatible for passives. 
+called in hfinal}
+
+PROCEDURE reduce(VAR vps::synpatterneffSETtype);
+BEGIN
+  IF complmoodvar = declarative
+  THEN vps := vps * AUX_declcomplvps;
+  IF complmoodvar IN [whinterrogative, yesnointerrogative]
+  THEN vps := vps * AUX_qcomplvps;
+  IF complmodusvar = infinitive
+  THEN vps := vps * AUX_infinitecomplvps;
+  IF (complmoodvar = declarative)    AND
+     (complmodusvar = indicative)
+  THEN vps := vps * AUX_indcomplvps;
+  IF (complmoodvar = declarative)    AND
+     (complmodusvar = subjunctive)
+  THEN vps := vps * AUX_subjcomplvps;
+  IF complmodusvar = ingform
+  THEN vps := vps * AUX_ingcomplvps;
+  IF complinfvar = inf
+  THEN vps := vps * AUX_infcomplvps;
+  IF complinfvar = toinf
+  THEN vps := vps * AUX_toinfcomplvps;
+  IF complinfvar = fortoinf
+  THEN vps := vps * AUX_fortocomplvps;
+  IF complinfvar = accing
+  THEN vps := vps * (AUX_closedcomplvps * AUX_ingcomplvps);
+  IF complinfvar = opening
+  THEN vps := vps * AUX_openingcomplvps;
+  IF SENTcomplfound AND (complprosubjectvar = TRUE)
+  THEN vps := vps * AUX_opencomplvps;
+  IF SENTcomplfound                        AND
+     (complprosubjectvar = FALSE)          AND
+     (complmodusvar <> indicative )        AND
+     (complmodusvar <> subjunctive)
+ (*    ([complmodusvar] * [indicative, subjunctive] *)
+  THEN vps := vps * AUX_closedcomplvps;
+  IF asifcomplfound
+  THEN vps := vps * AUX_asifcomplvps;
+
+  IF (vps * AUX_closedvppvps <> [])        AND
+     (NOT verbpcomplfound)
+  THEN vps := vps - AUX_closedvppvps;
+
+END; {reduce}
+
+?
+
+<* 
+HINIT: BEGIN
+
+         asifcomplfound     := FALSE;
+         adjunctsvar        := [];
+         adjunctsefsvar     := [];
+         ADJPpredfound      := FALSE;
+         adjvpefsvar        := [];
+         auxfound           := FALSE; 
+         auxverbfound       := FALSE; 
+         byobjfound         := FALSE;
+         caseassignervar    := FALSE;
+	 classesvar         := [];
+         complfound         := FALSE;
+         complinfvar        := omegainf;
+         complmodusvar      := omegamodus;
+         complmoodvar       := omegamood;
+         complprosubjectvar := FALSE;
+         dirargfound        := FALSE;
+	 envvar             := [pospol, negpol, omegapol];
+         foundauxesvar      := [];
+         headfound          := FALSE;
+         headmodusvar       := omegamodus;
+         indobjfound        := FALSE;
+         locargfound        := FALSE;
+	 modusvar           := omegamodus;
+         NPpredfound        := FALSE;
+         objfound           := FALSE;
+         partfound          := FALSE;
+	 particlevar        := 0;
+         passauxfound       := FALSE;
+         predfound          := FALSE;
+         prepkeyvar1        := 0;
+         prepkeyvar2        := 0;
+         prepobjfound       := FALSE;
+         prepobj2found      := FALSE;
+	 possvoicesvar      := [active];
+         PREPPpredfound     := FALSE;
+         progauxfound       := FALSE;
+         reflexivityvar     := notreflexive;
+	 reqvar             := [pospol, negpol, omegapol];
+         SENTcomplfound     := FALSE;
+	 synvpefsvar        := [synBE, synNP];
+	 synvpsvar          := [synBE, synNP];
+         tensevar           := omegatense;
+	 thetavpvar         := omegathetavp;
+	 verbpersonsvar     := [];
+	 verbnumbersvar     := [];
+         VERBPcomplfound    := FALSE;
+         voicevar           := omegavoice;
+
+       END;
+ 
+
+1: !(* head/VERB *)
+       <*
+         LOCALCONDITION: (%VERB.subc IN [mainverb,haveverb])              OR
+                         ((%VERB.subc IN [beverb])      AND
+                         (%VERB.modus <> indicative)    AND
+                         (%VERB.modus <> subjunctive)
+                          (*[%VERB.modus] * [indicative, subjunctive] = []*)
+                         )
+         GLOBAL: #CONDITION: (passauxfound <= (%VERB.modus = participle)) AND
+                             (((NOT passauxfound) AND 
+                               progauxfound
+                              )            <= (%VERB.modus = ingform)
+                             )                                            AND
+                             (((NOT passauxfound) AND
+                               (NOT progauxfound) AND
+                               auxfound
+                              )            <= (%VERB.modus = participle)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+                              synvpsvar     := %VERB.synvps;
+                              adjunctsvar   := %VERB.adjuncts;
+                              thetavpvar    := %VERB.thetavp;
+                              IF (NOT auxverbfound)
+                              THEN modusvar := %VERB.modus;
+                              headmodusvar := %VERB.modus;
+                              verbpersonsvar  := %VERB.persons;
+                              verbnumbersvar  := %VERB.numbers;
+                              synvpefsvar   := %VERB.synvps;
+                              classesvar    := %VERB.classes;
+                              tensevar      := %VERB.tense;
+                              possvoicesvar   := %VERB.possvoices;
+                              reflexivityvar := %VERB.reflexivity;
+			      particlevar     := %VERB.particle;
+                              prepkeyvar1   := %VERB.prepkey1;
+                              prepkeyvar2   := %VERB.prepkey2;
+                              headfound     := TRUE;
+                              caseassignervar := %VERB.caseassigner;
+                            END
+       *>
+
+2:  !(* partrel/PART *)
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: (%PART.key = particlevar) AND
+                             (NOT partfound)
+                 #ACTION:   BEGIN
+                              SYNREL := partrel;
+                              partfound := TRUE;
+                            END
+       *>
+
+3: 
+       <*
+         LOCALCONDITION: accusative IN %NP.cases
+         GLOBAL: #CONDITION: (synvpefsvar * AUX_indobjvps <> []) OR 
+                             (benfactNP in adjunctsvar) OR
+                             (reflexivityvar IN [indobjrefl])
+                 #ACTION:   BEGIN
+                              SYNREL := indobjrel;
+                              indobjfound := TRUE;
+                              IF (reflexivityvar IN [indobjrefl])
+                                THEN
+                                  synvpefsvar := synvpefsvar;
+                              IF (benfactNP IN adjunctsvar)
+                                THEN
+                                 adjunctsefsvar := adjunctsefsvar + [benfactNP]
+                                ELSE
+                                 synvpefsvar := synvpefsvar * AUX_indobjvps;
+                            END
+       *>
+
+4: 
+       <*
+         LOCALCONDITION: ((NOT (nominative IN %NP.cases)) OR 
+                          (%NP.nphead <> perspronp)
+                         )                               AND
+                          (%NP.nphead <> openingNP)
+         GLOBAL: #CONDITION: ((synvpefsvar * AUX_objvps <> []) OR 
+                              (reflexivityvar IN [dobjrefl]))      AND
+                             (partfound <= (%NP.nphead <> itnp))   AND
+                             (indobjfound <= (%NP.nphead <> itnp)) AND
+                             (
+                              ((thetavpvar <> vp010) AND (thetavpvar<>vp012))
+                             (*[thetavpvar] * [vp010, vp012] = []*) OR
+                              caseassignervar
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := objrel;
+                              objfound := TRUE;
+                              IF (reflexivityvar IN [dobjrefl])
+                                THEN 
+                                  synvpefsvar := synvpefsvar
+                                ELSE
+                                  synvpefsvar := synvpefsvar * AUX_objvps;
+                            END
+       *>
+
+5: 
+       <*
+         LOCALCONDITION: (%SENTENCE.senttype = subordinateclause)   AND
+                         (
+                          (%SENTENCE.finiteness <> finite) OR
+                          ((%SENTENCE.mood IN [declarative])    AND
+                           (%SENTENCE.conjkey = 0 ))
+                         )                                          AND
+                         (
+                          (NOT %SENTENCE.adverbial)  OR
+                          (%SENTENCE.conjkey = KEY_asifconjkey)
+                         )                                          AND
+                         (%SENTENCE.mood IN
+                           [declarative, yesnointerrogative, WHinterrogative])
+                                                                    AND
+                         (((%SENTENCE.infsort <> inf) OR
+                           (%SENTENCE.finiteness <> infinite)
+                          )                                    OR
+                          (%SENTENCE.prosubject = FALSE)
+                         )                                          AND
+                         (%SENTENCE.infsort <> possing)          
+         GLOBAL: #CONDITION: synvpefsvar * AUX_sentcomplvps <> []
+                 #ACTION:   BEGIN 
+                              SYNREL := complrel;
+                              complfound := TRUE;
+                              IF %SENTENCE.conjkey = KEY_asifconjkey
+                              THEN asifcomplfound := TRUE;
+                              complmoodvar := %SENTENCE.mood;
+                              complmodusvar := %SENTENCE.modus;
+                              complprosubjectvar := %SENTENCE.prosubject;
+                              complinfvar := %SENTENCE.infsort;
+                              synvpefsvar := synvpefsvar * AUX_sentcomplvps;
+                              SENTcomplfound := TRUE;
+                            END
+       *>
+
+6: 
+       <*
+         LOCALCONDITION: TRUE
+         GLOBAL: #CONDITION: (NOT prepobjfound)               AND
+                             (NOT prepobj2found)              AND
+                             ((complfound) OR (predfound))
+                                                              AND
+                             (%PREPP.headkey = prepkeyvar1)   AND
+                             (synvpefsvar * AUX_prepobjvps <> [])
+                 #ACTION:   BEGIN
+                              SYNREL := prepobjrel;
+                              synvpefsvar := synvpefsvar * AUX_prepobjvps;
+                              prepobjfound := TRUE;
+                            END
+       *>
+
+7: 
+       <*
+         LOCALCONDITION: (%VERB.modus IN [infinitive, ingform])             AND
+                         (%VERB.subc = haveverb)                            AND
+                         (%VERB.thetavp = thetavpaux)
+         GLOBAL: #CONDITION: TRUE
+                 #ACTION:   BEGIN
+                              SYNREL := auxrel;
+                              auxfound := TRUE;
+                              auxverbfound := TRUE;
+                              modusvar := %VERB.modus;
+                              foundauxesvar := foundauxesvar + [aux];
+                            END
+       *>
+
+
+
+8: 
+       <*
+         LOCALCONDITION: (%VERB.modus IN [infinitive, ingform, participle]) AND
+                         (%VERB.subc = beverb)                              AND
+                         (%VERB.thetavp = thetavpaux)                       AND
+                         (synBE IN %VERB.synvps )
+         GLOBAL: #CONDITION: (NOT auxfound)        OR
+                             (%VERB.modus = participle)
+                 #ACTION:   BEGIN
+                              SYNREL := progauxrel;
+                              progauxfound := TRUE;
+                              auxverbfound := TRUE;
+                              IF (NOT auxfound)
+                              THEN modusvar := %VERB.modus;
+                              foundauxesvar := foundauxesvar + [prog];
+
+                            END
+       *>
+
+9: 
+       <*
+         LOCALCONDITION: (%VERB.modus IN [infinitive, ingform, participle]) AND
+                         (%VERB.subc = beverb)                              AND
+                         (%VERB.thetavp = thetavpaux)
+!(*                                               <= means implies:*)
+         GLOBAL: #CONDITION: (progauxfound               <=  
+                              (%VERB.modus = ingform)
+                             )                                   AND
+                             (((NOT progauxfound)        AND
+                               auxfound
+                              )                               <=
+                              (%VERB.modus = participle)
+                             )
+                 #ACTION:   BEGIN
+                              SYNREL := passauxrel;
+                              passauxfound := TRUE;
+                              auxverbfound := TRUE;
+                              IF ((NOT auxfound)      AND
+                                  (NOT progauxfound)
+                                 )
+                              THEN modusvar := %VERB.modus;
+                              voicevar := passive;
+                              foundauxesvar := foundauxesvar + [pass];
+                            END
+       *>
+
+10: 
+       <*
+         LOCALCONDITION:  TRUE
+         GLOBAL: #CONDITION: ((%PREPP.headkey = prepkeyvar1)   AND
+                              (synvpefsvar * AUX_prepobjvps <> []))  OR
+                             ((%PREPP.headkey = KEY_forprepkey)   AND
+                              (benfactPP IN adjunctsvar))
+                 #ACTION:   BEGIN
+                              SYNREL := prepobjrel;
+                              IF (benfactPP IN adjunctsvar)
+                                THEN
+                                 adjunctsefsvar := adjunctsefsvar + [benfactPP]
+                                ELSE
+                                 synvpefsvar := synvpefsvar * AUX_prepobjvps;
+                              prepobjfound := TRUE;
+                              strandedPPfound := %PREPP.stranded;
+                            END
+       *>
+
+11: 
+       <*
+         LOCALCONDITION: TRUE
+         GLOBAL: #CONDITION: (%PREPP.headkey = prepkeyvar2)   AND
+                             (synvpefsvar * AUX_twoprepobjvps <> [])
+                 #ACTION:   BEGIN
+                              SYNREL := prepobjrel;
+                              synvpefsvar := synvpefsvar * AUX_twoprepobjvps;
+                              prepobj2found := TRUE;
+                              strandedPPfound := %PREPP.stranded;
+                            END
+       *>
+
+12: 
+       <*
+         LOCALCONDITION: loc IN %PREPP.actsubcefs
+         GLOBAL: #CONDITION: (synvpefsvar * AUX_locargvps <> []) OR
+                             (locadjunct IN adjunctsvar)
+                 #ACTION:   BEGIN
+                              SYNREL := locargrel;
+                              locargfound := true;
+                              IF (locadjunct IN adjunctsvar)
+                                THEN
+                                  adjunctsefsvar := adjunctsefsvar + [locadjunct]
+                                ELSE
+                                  synvpefsvar := synvpefsvar * AUX_locargvps;
+                            END
+       *>
+
+13: 
+       <*
+         LOCALCONDITION: dir IN %PREPP.actsubcefs
+         GLOBAL: #CONDITION: (synvpefsvar * AUX_dirargvps <> []) OR
+                             (diradjunct IN adjunctsvar)
+                 #ACTION:   BEGIN
+                              SYNREL := dirargrel;
+                              dirargfound := true;
+                               IF (diradjunct IN adjunctsvar)
+                                THEN 
+                                  adjunctsefsvar := adjunctsefsvar + [diradjunct]
+                                ELSE
+                                  synvpefsvar := synvpefsvar * AUX_dirargvps;
+                             END
+       *>
+
+14: 
+       <*
+         LOCALCONDITION: locadv IN %ADVP.actsubcefs
+         GLOBAL: #CONDITION: (synvpefsvar * AUX_locargvps <> []) OR
+                             (locadjunct IN adjunctsvar)
+                 #ACTION:   BEGIN
+                              SYNREL := locargrel;
+                              locargfound := TRUE;
+                              IF (locadjunct IN adjunctsvar)
+                                THEN
+                                  adjunctsefsvar := adjunctsefsvar + [locadjunct]
+                                ELSE
+                                  synvpefsvar := synvpefsvar * AUX_locargvps;
+                            END
+       *>
+
+15: 
+       <*
+         LOCALCONDITION: diradv IN %ADVP.actsubcefs
+         GLOBAL: #CONDITION: (synvpefsvar * AUX_dirargvps <> []) OR
+                             (diradjunct IN adjunctsvar)
+                 #ACTION:   BEGIN
+                              SYNREL := dirargrel;
+                              dirargfound := TRUE;
+                              IF (diradjunct IN adjunctsvar)
+                                THEN 
+                                  adjunctsefsvar := adjunctsefsvar + [diradjunct]
+                                ELSE
+                                  synvpefsvar := synvpefsvar * AUX_dirargvps;
+                            END
+       *>
+
+16: 
+       <*
+         LOCALCONDITION: predicative IN %ADJP.actuseefs
+         GLOBAL: #CONDITION: ((synvpefsvar * AUX_adjppredvps <> []) OR
+                              (resAP IN adjunctsvar))
+                 #ACTION:   BEGIN
+                              SYNREL := predrel;
+                              predfound := TRUE;
+                              ADJPpredfound := TRUE;
+                              IF (resAP IN adjunctsvar)
+                                THEN
+                                 adjunctsefsvar := adjunctsefsvar + [resAP]
+                                ELSE
+                                 synvpefsvar := synvpefsvar * AUX_adjppredvps;
+                              adjvpefsvar := %ADJP.adjpatternefs;
+                            END
+       *>
+
+17: 
+       <*
+         LOCALCONDITION: (%NP.cases <> [nominative])        AND
+                         (%NP.posspred = TRUE)
+         GLOBAL: #CONDITION: ((synvpefsvar * AUX_NPpredvps <> []) OR
+                              (resNP in adjunctsvar))
+                 #ACTION:   BEGIN
+                              SYNREL := predrel;
+                              predfound := TRUE;
+                              NPpredfound := TRUE;
+                              IF (resNP IN adjunctsvar)
+                                THEN
+                                 adjunctsefsvar := adjunctsefsvar * [resNP]
+                                ELSE
+                                 synvpefsvar := synvpefsvar * AUX_NPpredvps;
+                            END
+       *>
+
+18: 
+       <*
+         LOCALCONDITION: %PREPP.headkey = KEY_doorbyprepkey
+         GLOBAL: #CONDITION: passive IN possvoicesvar
+                 #ACTION:   BEGIN
+                              SYNREL := byobjrel;
+                              IF voicevar IN [omegavoice, passive]
+                              THEN voicevar := passive;
+                              byobjfound := TRUE;
+                            END
+       *>
+
+19: 
+       <*
+         LOCALCONDITION: other IN %PREPP.actsubcefs
+         GLOBAL: #CONDITION: ((synvpefsvar * AUX_PREPPpredvps <> []) OR
+                              (resPP IN adjunctsvar))
+                 #ACTION:   BEGIN
+                              SYNREL := predrel;
+                              predfound := TRUE;
+                              PREPPpredfound := TRUE;
+                              IF (resPP IN %VERB.adjuncts)
+                                THEN
+                                 adjunctsefsvar := adjunctsefsvar + [resPP]
+                                ELSE
+                                 synvpefsvar := synvpefsvar * AUX_PREPPpredvps;
+                            END
+       *>
+
+20: 
+       <*
+         LOCALCONDITION: (%VERBP.voice = passive  )    AND
+                         (%VERBP.foundauxes = []  )
+         GLOBAL: #CONDITION: synvpefsvar * AUX_CLOSEDvppvps <> []
+                 #ACTION:   BEGIN
+                              SYNREL := predrel;
+                              synvpefsvar := synvpefsvar * AUX_CLOSEDvppvps;
+                              VERBPcomplfound := TRUE;
+                            END
+       *>
+
+21:    !(* alleen voor SO, nog niet voor NOT*)
+       <*     
+         LOCALCONDITION: TRUE
+         GLOBAL: #CONDITION: synvpefsvar * AUX_SOPROSENTVPS <> []
+                 #ACTION:   BEGIN
+                              SYNREL := complrel;
+                              synvpefsvar := synvpefsvar * AUX_SOPROSENTVPS;
+                            END
+       *>
+
+
+
+
+HFINAL: #CONDITION: (synvpefsvar <> [])             AND
+                    (headfound           OR
+                     objfound            OR
+                     predfound
+                    )                               AND
+                    ((NOT headfound)
+                         <= (NOT auxverbfound)
+                    )
+        #ACTION: BEGIN
+                 reduce(synvpefsvar);
+                 IF (synvpefsvar <> [])
+                 THEN
+                    BEGIN
+		    IF (passive IN possvoicesvar)           AND
+			headmodusandauxok                   AND
+			(voicevar IN [passive, omegavoice]) AND
+			(modusvar <> omegamodus)            AND
+                        (objfound <= (thetavpvar IN [vp123]))
+
+		    THEN 
+		       BEGIN
+		       MAKET_VERBP;
+			 $VERBP.req        := reqvar;
+			 $VERBP.env        := envvar;
+			 $VERBP.synvps     := synvpsvar;
+                         $VERBP.adjuncts   := adjunctsefsvar;
+			 $VERBP.thetavp    := thetavpvar;
+			 $VERBP.modus      := modusvar;
+			 $VERBP.persons    := verbpersonsvar;
+			 $VERBP.numbers    := verbnumbersvar;
+			 $VERBP.aspect     := omegaaspect;
+			 IF (tensevar = omegatense) 
+			   THEN $VERBP.deixis  := omegadeixis
+			   ELSE IF (tensevar = presenttense) 
+				THEN $VERBP.deixis := presentdeixis
+				ELSE IF (tensevar = pasttense)
+				     THEN $VERBP.deixis := pastdeixis;
+			 $VERBP.retro      := false;
+			 IF (modusvar IN [infinitive, ingform, participle])
+			   THEN $VERBP.finiteness := infinite
+			   ELSE IF (modusvar IN [indicative,
+						 subjunctive])
+				THEN $VERBP.finiteness := finite; 
+			 $VERBP.voice      := passive;
+			 $VERBP.synvpefs   := synvpefsvar;
+			 $VERBP.classes    := classesvar;
+                         $VERBP.headfound  := headfound;
+			 $VERBP.foundauxes := foundauxesvar;
+			 $VERBP.adjvpefs   := adjvpefsvar;
+                         $VERBP.Scomplfound := SENTcomplfound;
+                         $VERBP.reflexivity := reflexivityvar;
+                         !(* $VERBP.infsort    := ; *)
+                         $VERBP.objfound   := objfound;
+                         $VERBP.indobjfound := indobjfound;
+                         $VERBP.locargfound := locargfound;
+                         $VERBP.dirargfound := dirargfound;
+                         $VERBP.prepobjfound := prepobjfound;
+                         $VERBP.prepobj2found := prepobj2found;
+                         $VERBP.nppredfound := nppredfound;
+                         $VERBP.adjppredfound := adjppredfound;
+                         $VERBP.prepppredfound := prepppredfound;
+                         $VERBP.strandedfound := strandedPPfound;
+                         $VERBP.vpcomplfound := VERBPcomplfound;
+		      END !(* passive *);
+
+     
+     !(*Active*)
+		    IF  (active IN possvoicesvar)                  AND
+			(voicevar <> passive)
+
+		    THEN 
+		      BEGIN
+			 MAKET_VERBP;
+			 $VERBP.req        := reqvar;
+			 $VERBP.env        := envvar;
+			 $VERBP.synvps     := synvpsvar;
+                         $VERBP.adjuncts   := adjunctsefsvar;
+			 $VERBP.thetavp    := thetavpvar;
+			 IF (modusvar IN [infinitive, ingform, participle])
+			   THEN $VERBP.finiteness := infinite
+			   ELSE IF (modusvar IN [indicative,
+						 subjunctive, omegamodus])
+				THEN $VERBP.finiteness := finite; 
+			 $VERBP.modus      := modusvar;
+			 $VERBP.persons    := verbpersonsvar;
+			 $VERBP.numbers    := verbnumbersvar;
+			 $VERBP.aspect     := omegaaspect;
+			 $VERBP.retro      := false;
+			 IF (tensevar = omegatense) 
+			   THEN $VERBP.deixis  := omegadeixis
+			   ELSE IF (tensevar = presenttense) 
+				THEN $VERBP.deixis := presentdeixis
+				ELSE IF (tensevar = pasttense)
+				     THEN $VERBP.deixis := pastdeixis;
+			 $VERBP.voice      := active;
+			 $VERBP.synvpefs   := synvpefsvar;
+			 $VERBP.classes    := classesvar;
+                         $VERBP.headfound  := headfound;
+			 $VERBP.foundauxes := foundauxesvar;
+                         $VERBP.Scomplfound := SENTcomplfound;
+                         $VERBP.reflexivity := reflexivityvar;
+                         !(* $VERBP.infsort    := ; *)
+                         $VERBP.objfound   := objfound;
+                         $VERBP.indobjfound := indobjfound;
+                         $VERBP.locargfound := locargfound;
+                         $VERBP.dirargfound := dirargfound;
+                         $VERBP.prepobjfound := prepobjfound;
+                         $VERBP.prepobj2found := prepobj2found;
+                         $VERBP.nppredfound := nppredfound;
+                         $VERBP.adjppredfound := adjppredfound;
+                         $VERBP.prepppredfound := prepppredfound;
+                         $VERBP.strandedfound := strandedPPfound;
+                         $VERBP.vpcomplfound := VERBPcomplfound;
+		      END; !(* active *);
+                    END; !(*IF synvpefsvar <> []*)
+		 END; !(*final action*)
+*>
+END;
+& !(* VERBP *)
+
+
+
+%VERBNEGrule
+
+REGULAREXPRESSION:
+
+VERB = (VERB/1 . GLUE/2 . NEG/3)   
+
+
+CONDITIONSANDACTIONS:
+
+VAR
+
+   reqvar           :: polaritysettype;
+   envvar           :: polaritysettype;
+   conjclassesvar   :: conjclassesettype;
+   ingformvar       :: ingformtype;
+   sformvar         :: sformtype;
+   affixvar         :: affixtype;
+   modusvar         :: modustype;
+   tensevar         :: tensetype;
+   personsvar       :: personsettype;
+   numbersvar       :: numbersettype;
+   particlevar      :: keytype;
+   possvoicesvar    :: voicesettype;
+   reflexivityvar   :: reflexivetype;
+   synvpsvar        :: synpatternsettype;
+   thetavpvar       :: thetavptype;
+   CaseAssignervar  :: caseassignertype;
+   oblcontrolvar    :: oblcontroltype;
+   prepkey1var      :: keytype;
+   prepkey2var      :: keytype;
+   controllervar    :: controllertype;
+   classesvar       :: classSETtype;
+   thatdelvar       :: thatdeltype;
+ 
+
+<* 
+
+HINIT: BEGIN
+	 reqvar             := [pospol,negpol,omegapol];
+	 envvar             := [pospol,negpol,omegapol];
+	 conjclassesvar     := [10];
+         ingformvar         := reging;
+         sformvar           := regs;
+         affixvar           := noaffix;
+	 modusvar           := omegamodus;
+	 tensevar           := omegatense;
+	 personsvar         := [];
+	 numbersvar         := [];
+	 particlevar        := 0;
+	 possvoicesvar      := [active,passive];
+	 reflexivityvar     := notreflexive;
+	 synvpsvar          := [];
+	 thetavpvar         := omegathetavp;
+	 CaseAssignervar    := true;
+         oblcontrolvar      := omegaoblcontrol;
+	 prepkey1var        := 0;
+	 prepkey2var        := 0;
+	 controllervar      := none;
+         classesvar         := [durativeclass];
+         thatdelvar         := omegadel;          
+
+       END;
+ 
+
+ 
+1: !(* head/VERB *)
+       <*
+         LOCALCONDITION: (%VERB.subc IN [modalverb, beverb, 
+                                         doaux, haveverb])     AND
+                         ((%VERB.modus = indicative)       OR
+                          ((%VERB.modus = infinitive) AND
+                           (%VERB.subc = doaux)
+                          )
+                         )                                     AND
+                         ( (%VERB.subc <> beverb) OR
+                           (%VERB.persons <> [1]) OR
+                           (%VERB.numbers <> [singular]) )
+         GLOBAL: #CONDITION: true
+                 #ACTION: BEGIN
+                            SYNREL := head;
+                            conjclassesvar := %VERB.conjclasses;
+                            ingformvar     := %VERB.ingform;
+                            sformvar       := %VERB.sform;
+                            affixvar       := %VERB.affix;
+                            modusvar       := %VERB.modus;
+                            tensevar       := %VERB.tense;
+                            personsvar     := %VERB.persons;
+                            numbersvar     := %VERB.numbers;
+                            particlevar    := %VERB.particle;
+                            possvoicesvar  := %VERB.possvoices;
+                            reflexivityvar := %VERB.reflexivity;
+                            synvpsvar      := %VERB.synvps;
+                            thetavpvar     := %VERB.thetavp;
+                            CaseAssignervar:= %VERB.CaseAssigner;
+                            oblcontrolvar  := %VERB.oblcontrol;
+                            prepkey1var    := %VERB.prepkey1;
+                            prepkey2var    := %VERB.prepkey2;
+                            controllervar  := %VERB.controller;
+                            classesvar     := %VERB.classes;
+                            thatdelvar     := %VERB.thatdel;
+                          END
+       *>
+
+2: !(* gluerel/GLUE *)
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := gluerel;
+                            END
+       *>
+
+3: !(* negrel/NEG *)
+       <*
+         LOCALCONDITION: (%NEG.key = KEY_notNEGkey) OR
+                         (%NEG.key = KEY_not2NEGkey)   (*for cannot*)
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := negrel;
+                            END
+       *>
+
+
+
+HFINAL: #CONDITION: true
+        #ACTION: BEGIN
+		     MAKET_VERB;
+		     $VERB.req            := reqvar;
+		     $VERB.env            := envvar;
+		     $VERB.conjclasses    := conjclassesvar;
+                     $VERB.ingform        := ingformvar;
+                     $VERB.sform          := sformvar;
+                     $VERB.affix          := affixvar;
+		     $VERB.modus          := modusvar;
+		     $VERB.tense          := tensevar;
+		     $VERB.persons        := personsvar;
+		     $VERB.numbers        := numbersvar;
+		     $VERB.particle       := particlevar;
+		     $VERB.possvoices     := possvoicesvar;
+		     $VERB.reflexivity    := reflexivityvar;
+		     $VERB.synvps         := synvpsvar;
+		     $VERB.thetavp        := thetavpvar;
+		     $VERB.CaseAssigner   := CaseAssignervar;
+		     $VERB.subc           := notaux;
+                     $VERB.oblcontrol     := oblcontrolvar;
+		     $VERB.prepkey1       := prepkey1var;
+		     $VERB.prepkey2       := prepkey2var;
+		     $VERB.controller     := controllervar;
+                     $VERB.classes        := classesvar;
+		     $VERB.thatdel        := thatdelvar;
+                 END
+*>
+END;
+& !(* VERBNEG *)
+
+%%

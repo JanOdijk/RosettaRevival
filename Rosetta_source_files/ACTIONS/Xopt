@@ -1,0 +1,18 @@
+#! /bin/sh -e
+trap 'echo "Xopt: Error during linking" ; exit 1' 0
+echo "Xopt: $1:$2"
+actecute mopt $1 $2
+rm -f linkfile
+echo "#! /bin/sh -e" > linkfile
+echo "cc -target sun4 -o $1/target/$2.exe -g -DDEVELOPMENT -D_NO_PROTO -DSTRINGS_ALIGNED \\" >> linkfile
+echo " -DNO_REGEX -DNO_ISDIR -DUSE_RE_COMP -DUSE_GETWD -L/cadappl/X11/usr/lib \\" >> linkfile
+if test -s $1/target/$2.opt
+then cat $1/target/$2.opt >> linkfile
+else cat $RBS_ARCHIVE$RBS_RELEASE/$1/$2.opt >> linkfile
+fi
+echo " -lMrm -lXs -lXm -lXt -lXext -lX11 \\" >> linkfile
+echo "1>> warnings 2>&1" >> linkfile
+chmod u+x linkfile
+echo "  "  >> warnings
+linkfile
+trap 0

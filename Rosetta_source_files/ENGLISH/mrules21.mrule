@@ -1,0 +1,938 @@
+ENGLISH 21
+
+&
+
+
+\noindent
+
+The actual shiftrule is in TC\_WhShift2; this rule has so many subrules that it 
+needed a separate file. 
+\begin{description}
+\item[TNoWhShift] to let structures where shifting does not apply pass
+\item[TNoWhInfShift] to let infinitives with a wh-subject pass
+\item[TExtrapWhShift] for shifting out of an extraposed subordinate clause
+\item[TComplWhShift] for shifting out of an embedded subordinate clause
+\item[TStrandedWhShift] for shifting of the object of some prepp (locargrel, 
+dirargrel, prepobjrel)
+\end{description}
+
+No rules have been written yet for shift of the object of the prepobj in an 
+NP(VAR) (Who did you take advantage of (idiom); Who did you take a picture of).
+Since the order of shift and substitution is undefined there, no solution for 
+this case is apparent.\\
+Also to be written is a rule for shift of the object of a THANP: Who are you 
+bigger than? (The Dutch version needs no shift: Groter dan wie ben jij?)
+
+\newpage
+\begin{verbatim}
+
+%
+% TRANSFORMATION TNoWhShift
+< m1: CLAUSE{CLAUSErec1}
+            [ I1:mu1, 
+              predrel/VERBP{VERBPrec1}[I2:mu2], 
+              I3:mu3 
+            ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+            [ I1:mu1, 
+              predrel/VERBP{VERBPrec1}[I2:mu2], 
+              I3:mu3 
+            ]
+>
+
+
+   MATCHCONDITIONS
+      <
+       I1: NOT EXIST (mu1, [I11:../T1]) OR
+           ( EXIST (mu1, [I11:shiftrel/T1]) AND
+             EXIST (mu1, [I13:../VERB{VERBrec1}[mu5]]) )
+       I2: NOT EXIST (mu2, [I11:../T1]) AND
+           NOT EXIST (mu2, [complrel/I5::SENTENCE{SENTENCErec1}[I4:mu4]])
+       I3: NOT EXIST (mu3, [I11:../T1])  AND
+           NOT EXIST (mu3, [extraposrel/I5::SENTENCE{SENTENCErec1}[I4:mu4]])
+       I4: EXIST (mu4, [I11:shiftrel/T1]) OR 
+           ( EXIST (mu4, [I12:subjrel/T2]) AND
+             SENTENCErec1.finiteness = infinite )
+         I11: ( T1.CAT IN [PREPP, VARPREPP, PREPPVAR, ADJP, 
+                           ADVP, ADVPVAR, NPVAR] 
+                WITH T1.REC.mood IN [wh, relativexpmood, topicmood] ) 
+              OR
+              ( T1.CAT IN [CNVAR] )
+         I12: ( T2.CAT IN [NPVAR] WITH T2.REC.mood IN [wh, relativexpmood])
+              OR 
+              ( T2.CAT IN [CNVAR] )
+         I13: VERBrec1.subc = modalverb
+       I5: SENTENCErec1.mood = declarative
+      >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TNoWhShift
+\item[* relevant examples:] x1 did leave, x1 said that he had left, to leave 
+now (is a crime), x1 does not know who has left, etc.
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] clauseTOsentence
+\item[* class:] (name of rule, transformation or filter class) TC\_WhShift
+\item[* date of creation:] 10-JUN-1988 
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch Twhshift0
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 03/10/89\ \ \ \ \ author: margreet sanders\\
+Added VARPREPP and added topicmood.
+\item date: 04/10/89\ \ \ \ \ author: margreet sanders\\
+allowed shiftrel/.. in case there is a modal
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to let clauses in which there is nothing to shift pass this 
+transformation class
+\item[\ \ strategy:] (also: deviations from accepted proposals) NPs are still 
+not mentioned in the present rule, i.e.\ a shifted wh-NP may pass through the 
+NoShift rule. This is needed to prevent many ambiguous paths in analysis of 
+sentences like `What did you think Pete saw', where the order of shift and 
+substitution interacts. This is a problem for predicative NPs (What do you 
+think he is). No solution is apparent: blocking of (de)substitution of shifted 
+NPs in declarative subsentences (i.e.\ not turning an NP into an NPVAR during 
+the rule cycle of the embedded clause) is not possible, since it is not known 
+that the clause has been/will be a subsentence.
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TNoWhInfShift
+< m1: I1::CLAUSE{CLAUSErec1}
+                [ mu1, 
+                  I2:subjrel/T1,
+                  mu3 
+                ]
+>
+
+< m : I1::CLAUSE{CLAUSErec1}
+                [ mu1, 
+                  I2:subjrel/T1,
+                  mu3 
+                ]
+>
+
+
+   MATCHCONDITIONS
+      <
+       I1: CLAUSErec1.finiteness = infinite
+       I2: ( T1.CAT IN [NPVAR] WITH T1.REC.mood IN [wh, relativexpmood])
+           OR ( T1.CAT IN [CNVAR] )
+      >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TNoWhInfShift
+\item[* relevant examples:] (seem) who to have done it
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] clauseTOsentence
+\item[* class:] (name of rule, transformation or filter class) TC\_WhShift
+\item[* date of creation:] 12-AUG-1988 
+\item[* author:] margreet sanders
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to let infinite clauses with a wh-subject still pass this 
+transformation class. This is needed for TSubjToSubjRaising (in the 
+ObjectOK rules), where only subjects are moved to the higher clause, not 
+shiftrels.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TExtrapWhShift
+< m1: CLAUSE{CLAUSErec1}
+            [ I1:mu2,
+              extraposrel/I2::SENTENCE{SENTENCErec1}
+                         [ I3:shiftrel/T1,
+                           I4:mu3
+                         ]
+             ] 
+>
+
+< m : CLAUSE{CLAUSErec1}
+            [ I3:shiftrel/T1,
+              I1:mu2,
+              extraposrel/I2::SENTENCE{SENTENCErec1}
+                         [ I4:mu3 ]
+            ] 
+>
+
+   MATCHCONDITIONS
+      <
+       I1: NOT EXIST (mu2, [I11:rel1/..])
+       I2: SENTENCErec1.mood = declarative
+       I3: (T1.CAT IN [PREPP, VARPREPP, PREPPVAR, ADJP, ADVP, 
+                       ADVPVAR, NPVAR]
+               WITH T1.REC.mood IN [wh, relativexpmood, topicmood]) OR
+           (T1.CAT IN [CNVAR])                                             OR
+           ((T1.CAT IN [NP])          AND
+            (QUOTE_VARinNP(T1))
+           )
+       I4: NOT EXIST (mu3, [I11:rel1/..])
+         I11: rel1 IN [shiftrel, leftdislocrel]
+      >
+
+
+<
+   SUBRULE (* 1 *)
+      <T1: T2 >
+      <T1: T2 >
+
+   MATCHCONDITIONS
+      <
+       T1: (T2.CAT IN [PREPP, VARPREPP, PREPPVAR, ADJP, ADVP, 
+                       ADVPVAR, NPVAR]
+               WITH T2.REC.mood IN [wh, relativexpmood, topicmood]) OR
+           (T2.CAT IN [CNVAR])
+      >
+
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+   SUBRULE (* 2 *)
+      <T1: NP{NPrec1}[mu5, I6:detrel/T3, mu4] >
+      <T1: NP{NPrec1}[mu5, I6:detrel/T3, mu4]  >
+
+   MATCHCONDITIONS
+      <
+       I6: (T3.CAT IN [NPVAR]
+                    WITH T3.REC.mood IN [wh, topicmood, relativexpmood]) OR
+           (T2.CAT IN [CNVAR])
+      >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TExtrapWhshift
+\item[* relevant examples:] see TComplWhShift
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) TC\_WhShift
+\item[* date of creation:] 14-JUN-1988 
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch TWhshift2
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 01/09/88\ \ \ \ \ author: margreet sanders, jan odijk: removed 
+subrule 2 (which took care of the shifting of subjrel NPVARs from an infinite 
+embedded 
+sentence), since these sentences are never extraposed and hence all should go to 
+the next transformation, TComplWhShift.
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to shift wh-elemements from an extraposed sentence into the 
+higher sentence
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TComplWhShift
+< m1: CLAUSE{CLAUSErec1}[mu8]
+>
+
+< m : CLAUSE{CLAUSErec1}[mu9]
+>
+
+<
+   SUBRULE (* 1. shift from shiftrel *)
+      < mu8: [ I1:mu2,
+               predrel/VERBP{VERBPrec1}
+                      [ mu1,
+                        complrel/I2::SENTENCE{SENTENCErec1}
+                                [ I3:shiftrel/T1,
+                                  I4:mu7
+                                ],
+                        mu4
+                      ],
+               mu5
+             ]
+      >
+
+      < mu9: [ I3:shiftrel/T1,
+               I1:mu2,
+               predrel/VERBP{VERBPrec1}
+                      [ mu1,
+                        complrel/I2::SENTENCE{SENTENCErec1}
+                                [ I4:mu7 ],
+                        mu4
+                      ],
+               mu5
+             ]
+      >
+
+   MATCHCONDITIONS
+      <
+       I1: NOT EXIST (mu2, [I11:rel1/..])
+       I2: SENTENCErec1.mood = declarative
+       I3: (T1.CAT IN [PREPP, VARPREPP, PREPPVAR, ADJP, ADVP, 
+                       ADVPVAR, NPVAR]
+              WITH T1.REC.mood IN [wh, relativexpmood, topicmood]) OR
+           (T1.CAT IN [CNVAR])
+       I4: NOT EXIST (mu7, [I11:rel1/..])
+         I11: rel1 IN [shiftrel, leftdislocrel]
+      >
+
+         COMP
+            <
+             C1: true
+             A1: @
+            >
+         DECOMP
+            <
+             C1: true
+             A1: @
+            >
+
+   SUBRULE (* 2. shift from subjrel *)
+      < mu8: [ I1:mu2,
+               predrel/VERBP{VERBPrec1}
+                      [ mu1,
+                        complrel/I2::SENTENCE{SENTENCErec1}
+                                [ I3:subjrel/T1,
+                                  I4:mu7
+                                ],
+                        mu4
+                      ],
+               mu5
+             ]
+      >
+
+      < mu9: [ I3:shiftrel/T1,
+               I1:mu2,
+               predrel/VERBP{VERBPrec1}
+                      [ mu1,
+                        complrel/I2::SENTENCE{SENTENCErec1}
+                                [ I4:mu7 ],
+                        mu4
+                      ],
+               mu5
+             ]
+      >
+
+   MATCHCONDITIONS
+      <
+       I1: NOT EXIST (mu2, [I11:rel1/..])
+       I2: SENTENCErec1.mood = declarative AND
+           SENTENCErec1.finiteness = infinite AND
+           SENTENCErec1.PROsubject = false
+       I3: ( T1.CAT IN [NPVAR] WITH T1.REC.mood IN [wh,relativexpmood])
+           OR ( T1.CAT IN [CNVAR] )
+       I4: NOT EXIST (mu7, [I11:rel1/..])
+         I11: rel1 IN [shiftrel, leftdislocrel]
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.synvpefs * AUX_ClosedInfComplVps <> [] AND
+              CLAUSErec1.thetavp = vp120
+          A1: @
+         >
+      DECOMP
+         <
+          C1: CLAUSErec1.synvpefs * AUX_ClosedInfComplVps <> [] AND
+              CLAUSErec1.thetavp = vp120
+          A1: @
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TComplWhshift
+\item[* relevant examples:] \mbox{}\\
+1. you did see [whom him hit] yesterday $\rightarrow$ whom 
+you did see [him hit] yesterday\\
+2. you did see [whom escape] $\rightarrow$ whom you did see [escape]\\
+$^{*}$who seemed [to be ill] $\leftarrow$ seemed [who to be ill]
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) TC\_WhShift
+\item[* date of creation:] 12-AUG-1988 
+\item[* author:] margreet sanders
+\item[* copied from:] TExtrapShift
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to shift wh-elemements from an embedded non-extraposed 
+sentence into the higher sentence
+\item[\ \ strategy:] (also: deviations from accepted proposals) especially for 
+analysis of closedtoinfs, conditions on the CLAUSE are formulated, to prevent 
+false paths starting here, in which the shifted element would be placed in the 
+subject position of the embedded sentence right away, without having functioned 
+as the subject of the main clause first (and hence being blocked by the 
+ObjectOKrules).
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:] one subrule for 
+every case 
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+
+% TRANSFORMATION TStrandedWhShift
+< m1: CLAUSE{CLAUSErec1}
+            [ I1:sig1, 
+              I2:mu1 ]
+>
+
+< m : CLAUSE{CLAUSErec2}
+            [ I1:sig1, 
+              I3:mu2 ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: ALL (sig1, leftdislocrel/..)
+       I2: NOT EXIST (mu1, [I21:rel1/..])
+           I21: rel1 IN [leftdislocrel, shiftrel]
+       I3: NOT EXIST (mu2, [leftdislocrel/..])  AND
+           QUOTE_FIRSTrel(mu2, shiftrel)         
+           (* not really necessary *)
+      >
+
+<
+   SUBRULE (* 1. prepobjrel, obj from VARPREPP *)
+      < mu1: [mu9, 
+              predrel/VERBP{VERBPrec1}
+                     [I6:mu6, 
+                      I8:prepobjrel/VARPREPP{VARPREPPrec1}
+                                [ head/PREP{PREPrec1},
+                                  I9:objrel/T1
+                                ],
+                      I7:mu7], 
+              mu12] >
+
+      < mu2: [I9:shiftrel/T1,
+              mu9, 
+              predrel/VERBP{VERBPrec1}
+                     [I6:mu6, 
+                      prepobjrel/I5::PREPP{PREPPrec1}
+                                [ head/PREP{PREPrec1} ],
+                      I7:mu7], 
+              mu12] >
+
+   MATCHCONDITIONS
+      <
+       I5: PREPPrec1 = { stranded : true
+                         mood     : nowh
+                         specQ    : omegaspec }
+       I6: ALL (mu6, I61:rel6/..) AND 
+           NOT EXIST (mu6, [I62:rel2/T3]) 
+         I61: QUOTE_VPrelprec(rel6, prepobjrel)
+       I7: ALL (mu7, I71:rel7/..) AND 
+           NOT EXIST (mu7, [I62:rel2/T3]) 
+         I71: QUOTE_VPrelprec(prepobjrel, rel7)
+       I8: VARPREPPrec1.stranded = false AND
+           VARPREPPrec1.mood IN [wh, relativexpmood, topicmood] 
+       I9: ( T1.CAT IN [NPVAR] WITH 
+                   T1.REC.mood IN [wh, relativexpmood, topicmood])
+             OR ( T1.CAT IN [CNVAR] )                          OR
+           (T1.CAT IN [NP] WITH
+            ((T1.REC.mood = wh) AND
+             (QUOTE_VARinNP(T1)
+             )
+            )
+           )
+       I62: rel2 IN [predrel, locargrel, dirargrel] OR
+            ( rel2 IN [complrel] AND T3.CAT IN [PREPP] )
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.synvpefs * AUX_prepobjvps <> [] OR
+              CLAUSErec1.adjuncts * [benfactPP] <> []
+            C11: (T1.CAT IN [NPVAR, NP] WITH 
+                        (T1.REC.specQ = VARPREPPrec1.specQ AND
+                         T1.REC.mood = VARPREPPrec1.mood) )
+            A11: PREPPrec1 := VARPREPPrec1;
+                 PREPPrec1.mood := nowh;
+                 PREPPrec1.specQ := omegaspec
+            C12: T1.CAT IN [CNVAR, NP] AND
+                 VARPREPPrec1.specQ = yesspec AND
+                 VARPREPPrec1.mood = relativexpmood
+            A12: PREPPrec1 := VARPREPPrec1;
+                 PREPPrec1.mood := nowh;
+                 PREPPrec1.specQ := omegaspec
+          A1: CLAUSErec2 := CLAUSErec1;
+              PREPPrec1.stranded := true
+         >
+
+      DECOMP
+         <
+          C1: CLAUSErec2.synvpefs * AUX_prepobjvps <> [] OR
+              CLAUSErec2.adjuncts * [benfactPP] <> []
+            C11: (T1.CAT IN [NPVAR, NP] WITH 
+                   T1.REC.mood IN [wh, relativexpmood, topicmood])
+               C111: CLAUSErec2.synvpefs * AUX_prepobjvps <> []
+               A111: CLAUSErec1 := CLAUSErec2;
+                    CLAUSErec1.synvpefs :=  
+                            (CLAUSErec2.synvpefs * AUX_prepobjvps);
+               C112: CLAUSErec2.adjuncts * [benfactPP] <> []
+               A112: CLAUSErec1 := CLAUSErec2;
+            A11: VARPREPPrec1 := PREPPrec1;
+                 VARPREPPrec1.mood := T1.REC.mood;
+                 VARPREPPrec1.specQ := T1.REC.specQ
+            C12: T1.CAT IN [CNVAR, NP]
+               C121: CLAUSErec2.synvpefs * AUX_prepobjvps <> []
+               A121: CLAUSErec1 := CLAUSErec2;
+                    CLAUSErec1.synvpefs :=  
+                            (CLAUSErec2.synvpefs * AUX_prepobjvps);
+               C122: CLAUSErec2.adjuncts * [benfactPP] <> []
+               A122: CLAUSErec1 := CLAUSErec2;
+            A12: VARPREPPrec1 := PREPPrec1;
+                 VARPREPPrec1.mood := relativexpmood;
+                 VARPREPPrec1.specQ := yesspec
+          A1: VARPREPPrec1.stranded := false;
+         > 
+
+   SUBRULE (* 2. dirargrel, obj from PREPP *)
+      < mu1: [mu9, 
+              predrel/VERBP{VERBPrec1}
+                     [I6:mu6, 
+                      I8:dirargrel/PREPP{PREPPrec1}
+                                  [ head/PREP{PREPrec1},
+                                    I9:objrel/T1
+                                  ],
+                      I7:mu7], 
+              mu12] >
+
+      < mu2: [I9:shiftrel/T1,
+              mu9, 
+              predrel/VERBP{VERBPrec1}
+                     [I6:mu6, 
+                      dirargrel/I5::PREPP{PREPPrec2}
+                               [ head/PREP{PREPrec1} ],
+                      I7:mu7], 
+              mu12] >
+
+   MATCHCONDITIONS
+      <
+       I5: PREPPrec2 = { stranded : true
+                         mood     : nowh
+                         specQ    : omegaspec }
+       I6: ALL (mu6, I61:rel6/..) AND 
+           NOT EXIST (mu6, [I62:rel2/T3]) 
+         I61: QUOTE_VPrelprec(rel6, dirargrel)
+       I7: ALL (mu7, I71:rel7/..) AND 
+           NOT EXIST (mu7, [I62:rel2/T3]) 
+         I71: QUOTE_VPrelprec(dirargrel, rel7)
+       I8: PREPPrec1.stranded = false AND
+           PREPPrec1.mood IN [wh, relativexpmood, topicmood]
+       I9: (T1.CAT IN [NPVAR] WITH 
+                      T1.REC.mood IN [wh, relativexpmood, topicmood])
+           OR (T1.CAT IN [CNVAR] )                          OR
+           (T1.CAT IN [NP] WITH
+            ((T1.REC.mood = wh) AND
+             (QUOTE_VARinNP(T1)
+             )
+            )
+           )
+       I62: rel2 IN [predrel, locargrel, dirargrel] OR
+            ( rel2 IN [complrel] AND T3.CAT IN [PREPP] )
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.synvpefs * AUX_dirargvps <> [] OR
+              CLAUSErec1.adjuncts * [diradjunct] <> []
+            C11: T1.CAT IN [NPVAR, NP] WITH 
+                         (T1.REC.mood = PREPPrec1.mood AND
+                          T1.REC.specQ = PREPPrec1.specQ)
+            A11: PREPPrec2 := PREPPrec1;
+                 PREPPrec2.mood := nowh;
+                 PREPPrec2.specQ := omegaspec
+            C12: T1.CAT IN [CNVAR, NP] AND
+                 PREPPrec1.mood = relativexpmood AND
+                 PREPPrec1.specQ = yesspec
+            A12: PREPPrec2 := PREPPrec1;
+                 PREPPrec2.mood := nowh;
+                 PREPPrec2.specQ := omegaspec
+          A1: CLAUSErec2 := CLAUSErec1;
+              PREPPrec2.stranded := true
+         >
+
+      DECOMP
+         <
+          C1: CLAUSErec2.synvpefs * AUX_dirargvps <> [] OR
+              CLAUSErec2.adjuncts * [diradjunct] <> []
+            C11: T1.CAT IN [NPVAR, NP] WITH 
+                        T1.REC.mood IN [wh, relativexpmood, topicmood]
+                C111: CLAUSErec2.synvpefs * AUX_dirargvps <> []
+                A111: CLAUSErec1 := CLAUSErec2;
+                      CLAUSErec1.synvpefs :=  
+                             (CLAUSErec2.synvpefs * AUX_dirargvps);
+                C112: CLAUSErec2.adjuncts * [diradjunct] <> []
+                A112: CLAUSErec1 := CLAUSErec2;
+            A11: PREPPrec1 := PREPPrec2;
+                 PREPPrec1.mood := T1.REC.mood;
+                 PREPPrec1.specQ := T1.REC.specQ
+            C12: T1.CAT IN [CNVAR, NP]
+                C121: CLAUSErec2.synvpefs * AUX_dirargvps <> []
+                A121: CLAUSErec1 := CLAUSErec2;
+                      CLAUSErec1.synvpefs :=  
+                            (CLAUSErec2.synvpefs * AUX_dirargvps);
+                C122: CLAUSErec2.adjuncts * [diradjunct] <> []
+                A122: CLAUSErec1 := CLAUSErec2;
+            A12: PREPPrec1 := PREPPrec2;
+                 PREPPrec1.mood := relativexpmood;
+                 PREPPrec1.specQ := yesspec
+          A1: PREPPrec1.stranded := false;
+         >
+
+   SUBRULE (* 3. locargrel, obj from PREPP *)
+      < mu1: [mu9, 
+              predrel/VERBP{VERBPrec1}
+                     [I6:mu6, 
+                      I8:locargrel/PREPP{PREPPrec1}
+                                  [ head/PREP{PREPrec1},
+                                    I9:objrel/T1
+                                  ],
+                      I7:mu7], 
+              mu12] >
+
+      < mu2: [I9:shiftrel/T1,
+              mu9, 
+              predrel/VERBP{VERBPrec1}
+                     [I6:mu6, 
+                      locargrel/I5::PREPP{PREPPrec2}
+                               [ head/PREP{PREPrec1} ],
+                      I7:mu7], 
+              mu12] >
+
+   MATCHCONDITIONS
+      <
+       I5: PREPPrec2 = { stranded : true
+                         mood     : nowh
+                         specQ    : omegaspec }
+       I6: ALL (mu6, I61:rel6/..) AND 
+           NOT EXIST (mu6, [I62:rel2/T3]) 
+         I61: QUOTE_VPrelprec(rel6, locargrel)
+       I7: ALL (mu7, I71:rel7/..) AND 
+           NOT EXIST (mu7, [I62:rel2/T3]) 
+         I71: QUOTE_VPrelprec(locargrel, rel7)
+       I8: PREPPrec1.stranded = false AND
+           PREPPrec1.mood IN [wh, relativexpmood, topicmood]
+       I9: (T1.CAT IN [NPVAR] WITH 
+                   T1.REC.mood IN [wh, relativexpmood, topicmood])
+           OR (T1.CAT IN [CNVAR] )                          OR
+           (T1.CAT IN [NP] WITH
+            ((T1.REC.mood = wh) AND
+             (QUOTE_VARinNP(T1)
+             )
+            )
+           )
+       I62: rel2 IN [predrel, locargrel, dirargrel] OR
+            ( rel2 IN [complrel] AND T3.CAT IN [PREPP] )
+      >
+
+      COMP
+         <
+          C1: CLAUSErec1.synvpefs * AUX_locargvps <> [] OR
+              CLAUSErec1.adjuncts * [locadjunct] <> []
+            C11: T1.CAT IN [NPVAR, NP] WITH 
+                         (T1.REC.mood = PREPPrec1.mood AND
+                          T1.REC.specQ = PREPPrec1.specQ)
+            A11: PREPPrec2 := PREPPrec1;
+                 PREPPrec2.mood := nowh;
+                 PREPPrec2.specQ := omegaspec
+            C12: T1.CAT IN [CNVAR, NP] AND
+                 PREPPrec1.mood = relativexpmood AND
+                 PREPPrec1.specQ = yesspec
+            A12: PREPPrec2 := PREPPrec1;
+                 PREPPrec2.mood := nowh;
+                 PREPPrec2.specQ := omegaspec
+          A1: CLAUSErec2 := CLAUSErec1;
+              PREPPrec2.stranded := true
+         >
+
+      DECOMP
+         <
+          C1: CLAUSErec2.synvpefs * AUX_locargvps <> [] OR
+              CLAUSErec2.adjuncts * [locadjunct] <> []
+            C11: T1.CAT IN [NPVAR, NP] WITH 
+                        T1.REC.mood IN [wh, relativexpmood, topicmood]
+                C111: CLAUSErec2.synvpefs * AUX_locargvps <> []
+                A111: CLAUSErec1 := CLAUSErec2;
+                      CLAUSErec1.synvpefs :=  
+                            (CLAUSErec2.synvpefs * AUX_locargvps);
+                C112: CLAUSErec2.adjuncts * [locadjunct] <> []
+                A112: CLAUSErec1 := CLAUSErec2;
+            A11: PREPPrec1 := PREPPrec2;
+                 PREPPrec1.mood := T1.REC.mood;
+                 PREPPrec1.specQ := T1.REC.specQ
+            C12: T1.CAT IN [CNVAR, NP]
+                C121: CLAUSErec2.synvpefs * AUX_locargvps <> []
+                A121: CLAUSErec1 := CLAUSErec2;
+                      CLAUSErec1.synvpefs :=  
+                            (CLAUSErec2.synvpefs * AUX_locargvps);
+                C122: CLAUSErec2.adjuncts * [locadjunct] <> []
+                A122: CLAUSErec1 := CLAUSErec2;
+            A12: PREPPrec1 := PREPPrec2;
+                 PREPPrec1.mood := relativexpmood;
+                 PREPPrec1.specQ := yesspec
+          A1: PREPPrec1.stranded := false;
+         >
+
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TStrandedWhShift
+\item[* relevant examples:]\mbox{}\\
+\begin{description}
+    \item[1. obj from prepobjrel] What did you talk to John about - \\
+       Whom did you talk to - about our new car; \\
+       .. which you talked to John about \\ .. whom you talked to about our new 
+car\\
+  (Note that no condition is 
+formulated on the presence of another prepobj somewhere in the VERBP. The right 
+match should follow automatically from the conditions on (VAR)PREPP and NPVAR.
+    \item[2. obj from dirargrel] Which house did he move to; .. which he 
+moved to 
+    \item[3. obj from locargrel] Which town do you live in; .. which you live 
+in
+\end{description}
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) TC\_WhShift
+\item[* date of creation:] 14-JUN-1988
+\item[* author:] Margreet Sanders
+\item[* copied from:] Dutch TWhShift1a and TWhShift1b
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 28/9/88\ \ \ \ \ author: margreet sanders\\
+Adapted for shift of relativexpmood-NPVARs and for shift of CNVARs
+\item date: 07/05/91\ \ \ \ \ author:Petra de Wit\\
+Adapted to allow stranded shift out of adjuncts 
+\end{enumerate}
+\item[* task:] to move a wh-element or a relative inside a prepp to the 
+beginning of the sentence, and put it in shiftrel, leaving the prep in stranded 
+position
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:] one subrule for 
+every position the shifted element must be put back in (analysis)
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:] In analysis the synvpefs
+of the CLAUSE is reduced in accordance with the relation/cat introduced. 
+In generation this reduction is not necessary, since there is only one element 
+in the set to begin with.
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+It is assumed that for (VAR)PREPPs, the mood has been copied from the object 
+under it, or (in case of CNVAR objects) has been set to relativexpmood. The 
+appropriate rules have been written for PREPP and PPPROP subgrammars, 
+startrules (prepobjrel/VARPREPP) and for byobjs (voice rules).
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+Subrules 10 of TWhShift and 1 of TStrandedWhShift now both 
+work in generation, so both {\em To whom did you talk about our new car\/} and 
+{\em Whom did you talk to about our new car\/} are produced. A decision still 
+has to be taken which of this two rules should get a lower bonus.
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+%%
+
+

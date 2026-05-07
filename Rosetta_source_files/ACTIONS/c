@@ -1,0 +1,22 @@
+#! /bin/sh -e
+trap 'echo "c: Error during compilation" ; exit 1' 0
+echo "  " >> warnings
+echo "cc: $1:$2 $CCGLOBARG"
+if test -s $1/source/$2.c 
+then
+  src=$1/source/$2.c
+else
+  src=$RBS_ARCHIVE$RBS_RELEASE/$1/$2.c
+fi
+if test -s $2.o
+then  rm -f $2.o
+fi
+cc -g -c -DSUN4 -I$1/source -I$1/target -I$RBS_ARCHIVE$RBS_RELEASE/$1 \
+             -I/usr/local/informix/include \
+     $CCGLOBARG $src 1>> warnings 2>&1
+if test -s $2.o 
+then 
+  rm -f $1/target/$2.o
+  mv $2.o $1/target/$2.o
+fi
+trap 0

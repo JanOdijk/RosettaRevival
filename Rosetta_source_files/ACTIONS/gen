@@ -1,0 +1,109 @@
+echo gen $1: $2
+#
+# component    = p1
+# compiler = p2
+#
+#
+ actecute pas tools mrusurcom
+ actecute pas tools mrusurcomcode
+ actecute pas tools mrusurcomgraph
+ actecute pas tools mrusurcomgraphdef
+ actecute pas tools mrusurcomdecl
+ actecute pas tools mrusurcomscanner
+ actecute pas tools mrusurcomparser
+ actecute pas tools mrusurcomrules
+ actecute gendom tools $2
+ actecute pas tools $2_mrusurcomwrite
+ actecute mopt tools gencom5
+ echo "pp -o tools/target/$2surcom.exe \\" > linkfile
+ cat tools/target/gencom5.opt >> linkfile
+ echo "tools/target/$2_mrusurcomwrite.o \\" >> linkfile
+ echo "tools/target/mrusurcom.o \\" >> linkfile
+ echo "tools/target/mrusurcomcode.o \\" >> linkfile
+ echo "tools/target/mrusurcomdecl.o \\" >> linkfile
+ echo "tools/target/mrusurcomgraph.o \\" >> linkfile
+ echo "tools/target/mrusurcomgraphdef.o \\" >> linkfile
+ echo "tools/target/mrusurcomparser.o \\" >> linkfile
+ echo "tools/target/mrusurcomrules.o \\" >> linkfile
+ echo "tools/target/mrusurcomscanner.o \\" >> linkfile
+ linkfile $1 $2
+ actecute gensur tools $2 $1
+ actecute gencomp tools gencom.p $2.p $2
+ actecute pas tools $2
+ actecute gencomp tools gencomdecl.pf $2decl.pf $2
+ actecute gencomp tools gencomscanner.pf $2scanner.pf $2
+ actecute gencomp tools gencomparser.pf $2parser.pf $2
+ actecute gencomp tools gencomscanner.p $2scanner.p $2
+ actecute pas tools $2scanner
+ actecute pas tools $2langspec
+ actecute gencomp tools gencomdecl.p $2decl.p $2
+ actecute pas tools $2decl
+ actecute gencomp tools gencomgraphdef.pf $2graphdef.pf $2
+ actecute gencomp tools gencomparser.p $2parser.p $2
+ actecute pas tools $2parser
+ actecute gencomp tools gencomgraph.pf $2graph.pf $2
+ actecute pas tools $2graphdef
+ actecute gencomp tools gencomgraph.p $2graph.p $2
+ actecute pas tools $2graph
+ actecute pas $1 $2rules
+ actecute pas tools $2maket
+ actecute pas tools $2code
+ echo "opt: $1:$2"
+ echo "pp -o $1/target/$2.exe \\" > linkfile
+#
+#generate gencom1.opt from mother of all opt files
+ actecute mopt tools gencom1
+#
+ cat tools/target/gencom1.opt >> linkfile
+#
+#
+#
+ if ( test "$2" = "afxpr") || (test "$2" = "ilacom")
+ then
+#
+#generate gencom2.opt from mother of all opt files
+ actecute mopt dutch gencom2
+#
+ cat dutch/target/gencom2.opt >> linkfile
+#
+#generate gencom3.opt from mother of all opt files
+ actecute mopt dutch gencom3
+#
+ cat dutch/target/gencom3.opt >> linkfile
+#
+#generate gencom4.opt from mother of all opt files
+ actecute mopt dutch gencom4
+#
+ cat dutch/target/gencom4.opt >> linkfile
+ fi
+#
+#
+#
+ if ( test "$1" = "dutch") || (test "$1" = "english") || (test "$1" = "spanish")
+ then
+#
+#generate gencom2.opt from mother of all opt files
+ actecute mopt $1 gencom2
+#
+ cat $1/target/gencom2.opt >> linkfile
+   if (test "$2"="mrucom") || (test "$2"="tracom")
+   then
+   #generate gencom3.opt from mother of all opt files
+    actecute mopt $1 gencom3
+   #
+   cat $1/target/gencom3.opt >> linkfile
+   fi
+   if (test "$2"="mrucom") 
+   then
+   #generate gencom4.opt from mother of all opt files
+    actecute mopt $1 gencom4
+   #
+   cat $1/target/gencom4.opt >> linkfile
+   fi
+ fi
+ if test -s tools/source/gencom.opt
+ then cat tools/source/gencom.opt >> linkfile
+ else cat $RBS_ARCHIVE$RBS_RELEASE/tools/gencom.opt >> linkfile
+ fi
+ chmod 700 linkfile
+ linkfile $1 $2

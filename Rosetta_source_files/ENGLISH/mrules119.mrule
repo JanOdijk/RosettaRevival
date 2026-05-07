@@ -1,0 +1,867 @@
+
+
+
+ENGLISH 119
+&
+
+\newpage
+\begin{verbatim}
+%
+
+
+%SUBGRAMMAR Coordination
+
+ (RCoordS/1 | RsimplePPcoord/3 | RsimpleOpenPPPcoord/5)
+.{RCoorditS/2 | RitskPPcoord/4}
+
+
+
+
+HEAD:
+<
+COORD BASIC EXPRESSION
+>
+
+
+(* IMPORT: *)
+<
+  1: < 
+       ARGUMENT 1   SENTENCE         FROM (CLAUSETOSENTENCE)
+       ARGUMENT 2   SENTENCE         FROM (CLAUSETOSENTENCE)
+     >
+>
+
+
+EXPORT:
+<
+SENTENCE
+PREPP
+NP
+ADVP
+OPENPREPPPROP
+CLOSEDPREPPPROP
+OPENNPPROP
+CLOSEDNPPROP
+OPENADJPPROP
+CLOSEDADJPPROP
+OPENADVPPROP
+CLOSEDADVPPROP
+>
+&
+
+
+\newpage
+\begin{verbatim}
+% RULE RsimpleopenPPPcoord
+< m1:COORD{COORDrec1}
+  m2:OPENPREPPPROP{OPENPREPPPROPrec1}
+         [ subjrel/NPVAR{NPVARrec1},
+           predrel/PREPP{PREPPREC1}[mu1]
+         ]
+  m3:OPENPREPPPROP{OPENPREPPPROPrec2}
+         [ subjrel/NPVAR{NPVARrec2},
+           predrel/PREPP{PREPPREC2}[mu2]
+         ]
+>
+
+< m :OPENPREPPPROP{OPENPREPPPROPrec3}
+         [ subjrel/NPVAR{NPVARrec3},
+           predrel/PREPP{PREPPrec3}
+	       [ argrel/PREPP{PREPPrec5}[mu1],
+                 conjrel/COORD{COORDrec1},
+                 argrel/PREPP{PREPPrec6}[mu2] 
+               ]
+         ]
+>
+
+      COMP
+         <
+          C1: ppc IN COORDrec1.patterns                         AND
+              simple IN COORDrec1.kinds                         AND
+              PREPPrec1.mood = PREPPrec2.mood                   AND
+              PREPPrec1.actsubcefs * PREPPrec2.actsubcefs <> [] AND
+              PREPPrec1.class = PREPPrec2.class                 AND
+              PREPPrec1.aspect = PREPPrec2.aspect               AND
+              PREPPrec1.retro = PREPPrec2.retro                 AND
+              PREPPrec1.superdeixis = PREPPrec2.superdeixis     AND
+              PREPPrec1.stranded = false                        AND
+              PREPPrec2.stranded = false                        AND
+              PREPPrec1.coord = nocoord                         AND
+              PREPPrec2.coord = nocoord                         AND
+              (PREPPrec1.deixis = PREPPrec2.deixis OR
+               PREPPrec1.deixis = omegadeixis      OR
+               PREPPrec2.deixis = omegadeixis
+              )                                                 AND
+              OPENPREPPPROPrec1.mood = OPENPREPPPROPrec2.mood                   AND
+              OPENPREPPPROPrec1.actsubcefs * OPENPREPPPROPrec2.actsubcefs <> [] AND
+              OPENPREPPPROPrec1.class = OPENPREPPPROPrec2.class                 AND
+              OPENPREPPPROPrec1.aspect = OPENPREPPPROPrec2.aspect               AND
+              OPENPREPPPROPrec1.retro = OPENPREPPPROPrec2.retro                 AND
+              OPENPREPPPROPrec1.superdeixis = OPENPREPPPROPrec2.superdeixis     AND
+              (OPENPREPPPROPrec1.deixis = OPENPREPPPROPrec2.deixis OR
+               OPENPREPPPROPrec1.deixis = omegadeixis      OR
+               OPENPREPPPROPrec2.deixis = omegadeixis
+              )                                                 AND
+              NPVARrec1 = NPVARrec2                             AND
+              OPENPREPPPROPrec1.synppefs = PREPPrec1.synppefs   AND
+              OPENPREPPPROPrec2.synppefs = PREPPrec2.synppefs   AND
+              OPENPREPPPROPrec1.thetapp = PREPPrec1.thetapp     AND
+              OPENPREPPPROPrec2.thetapp = PREPPrec2.thetapp
+              C11: PREPPrec1.headkey = PREPPrec2.headkey
+              A11: PREPPrec3.headkey := PREPPrec1.headkey;
+                   OPENPREPPPROPrec3 := OPENPREPPPROPrec1;
+                   OPENPREPPPROPrec3.headkey := PREPPrec1.headkey;
+              C12: PREPPrec1.headkey <> PREPPrec2.headkey
+              A12: PREPPrec3.headkey := 0;
+                   OPENPREPPPROPrec3 := OPENPREPPPROPrec1;
+                   OPENPREPPPROPrec3.headkey := 0;
+          A1: PREPPrec5 := PREPPrec1;
+              PREPPrec6 := PREPPrec2;
+              PREPPrec5.superdeixis := omegadeixis; 
+              PREPPrec6.superdeixis := omegadeixis; 
+              PREPPrec3 :=
+                  {
+                   req:               [pospol, negpol, omegapol]
+                   env:               [pospol, negpol, omegapol]
+                   mood:              PREPPrec1.mood
+                   synppefs:          []
+                   thetapp:           omegathetapp   
+
+                   class:             PREPPrec1.Class
+                   aspect:            PREPPrec1.aspect
+                   retro:             PREPPrec1.retro
+                   superdeixis:       PREPPrec1.superdeixis
+
+                   stranded:          PREPPrec1.stranded
+                   coord:             simplecoord 
+                  };
+              PREPPrec3.actsubcefs  := PREPPrec1.actsubcefs * 
+                                              PREPPrec2.actsubcefs;
+              QUOTE_AssSpecmax(PREPPrec1.specq, 
+                                              PREPPrec2.specq,PREPPrec3.specq);
+              QUOTE_assdeixismax(PREPPrec1.deixis, PREPPrec2.deixis, 
+                    PREPPrec3.deixis);
+              OPENPREPPPROPrec3.actsubcefs  := OPENPREPPPROPrec1.actsubcefs * 
+                                              OPENPREPPPROPrec2.actsubcefs;
+              OPENPREPPPROPrec3.synppefs := [];
+              OPENPREPPPROPrec3.thetapp := omegathetapp;
+              QUOTE_AssSpecmax(OPENPREPPPROPrec1.specq, 
+                               OPENPREPPPROPrec2.specq,OPENPREPPPROPrec3.specq);
+              QUOTE_assdeixismax(OPENPREPPPROPrec1.deixis, 
+                        OPENPREPPPROPrec2.deixis, OPENPREPPPROPrec3.deixis);
+              NPVARrec3 := NPVARrec1;
+         >
+      DECOMP
+         <
+          C1: ppc IN COORDrec1.patterns       AND
+              simple IN COORDrec1.kinds       AND
+              PREPPrec5.mood = PREPPrec6.mood AND
+              PREPPrec5.actsubcefs * PREPPrec6.actsubcefs <> [] AND
+              PREPPrec5.class = PREPPrec6.class                 AND
+              PREPPrec5.aspect = PREPPrec6.aspect               AND
+              PREPPrec5.retro = PREPPrec6.retro                 AND
+              PREPPrec5.superdeixis = omegadeixis               AND
+              PREPPrec6.superdeixis = omegadeixis               AND
+              PREPPrec5.stranded = false                        AND
+              PREPPrec6.stranded = false                        AND
+              PREPPrec5.coord = nocoord                         AND
+              PREPPrec6.coord = nocoord                         AND
+              (PREPPrec5.deixis = PREPPrec6.deixis OR
+               PREPPrec5.deixis = omegadeixis      OR
+               PREPPrec6.deixis = omegadeixis
+              )                                                 AND
+              PREPPrec3 =
+                  {
+                   req:               [pospol, negpol, omegapol]
+                   env:               [pospol, negpol, omegapol]
+                   mood:              PREPPrec5.mood
+                   synppefs:          []
+                   thetapp:           omegathetapp   
+
+                   class:             PREPPrec5.Class
+                   aspect:            PREPPrec5.aspect
+                   retro:             PREPPrec5.retro
+
+                   stranded:          PREPPrec5.stranded
+                   coord:             simplecoord 
+                  }                                                    AND
+              PREPPrec3.actsubcefs  = PREPPrec5.actsubcefs * 
+                                              PREPPrec6.actsubcefs     AND
+              QUOTE_specmax(PREPPrec5.specq, 
+                     PREPPrec6.specq, PREPPrec3.specq)                 AND
+              QUOTE_deixismax(PREPPrec5.deixis, PREPPrec6.deixis, 
+                    PREPPrec3.deixis)                                  AND
+              OPENPREPPPROPrec3 =
+                  {
+                   req:               [pospol, negpol, omegapol]
+                   env:               [pospol, negpol, omegapol]
+                   mood:              PREPPrec3.mood
+                   synppefs:          []
+                   thetapp:           omegathetapp   
+
+                   class:             PREPPrec3.Class
+                   aspect:            PREPPrec3.aspect
+                   retro:             PREPPrec3.retro
+
+                  }                                                    AND
+              OPENPREPPPROPrec3.actsubcefs * PREPPrec5.actsubcefs <> [] AND
+              QUOTE_specmax(PREPPrec5.specq, 
+                     PREPPrec6.specq, OPENPREPPPROPrec3.specq)         AND
+              QUOTE_deixismax(PREPPrec5.deixis, PREPPrec6.deixis, 
+                    OPENPREPPPROPrec3.deixis)
+              C11: PREPPrec5.headkey = PREPPrec6.headkey AND
+                   PREPPrec3.headkey = PREPPrec5.headkey AND
+                   OPENPREPPPROPrec3.headkey = PREPPREC5.headkey
+              A11: @
+              C12: PREPPrec5.headkey <> PREPPrec6.headkey AND
+                   PREPPrec3.headkey = 0                  AND
+                   OPENPREPPPROPrec3.headkey = 0
+              A12: @
+          A1: PREPPrec1 := PREPPrec5;
+              PREPPrec2 := PREPPrec6;
+              PREPPrec1.superdeixis := PREPPrec3.superdeixis;
+              PREPPrec2.superdeixis := PREPPrec3.superdeixis;
+              NPVARrec1 := NPVARrec3;
+              NPVARrec2 := NPVARrec3;
+              OPENPREPPPROPrec1 := OPENPREPPPROPrec3;
+              OPENPREPPPROPrec2 := OPENPREPPPROPrec3;
+              OPENPREPPPROPrec1.synppefs := PREPPrec5.synppefs;
+              OPENPREPPPROPrec2.synppefs := PREPPrec6.synppefs;
+              OPENPREPPPROPrec1.headkey := PREPPrec5.headkey;
+              OPENPREPPPROPrec2.headkey := PREPPrec6.headkey;
+              OPENPREPPPROPrec1.thetapp := PREPPrec5.thetapp;
+              OPENPREPPPROPrec2.thetapp := PREPPrec6.thetapp;
+         >
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RsimpleopenPPPcoord
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 16-FEB-1990 16:32:10  
+\item[* author:] Andr\'{e} Schenk
+\item[* copied from:] RsimplePPcoord
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE RsimplePPcoord
+< m1:COORD{COORDrec1}
+  m2:PREPP{PREPPrec1}[mu1]
+  m3:PREPP{PREPPrec2}[mu2] 
+>
+
+< m :PREPP{PREPPrec3}
+         [ argrel/PREPP{PREPPrec5}[mu1],
+           conjrel/COORD{COORDrec1},
+           argrel/PREPP{PREPPrec6}[mu2] 
+         ]
+>
+
+      COMP
+         <
+          C1: ppc IN COORDrec1.patterns       AND
+              simple IN COORDrec1.kinds       AND
+              PREPPrec1.mood = PREPPrec2.mood AND
+              PREPPrec1.actsubcefs * PREPPrec2.actsubcefs <> [] AND
+              PREPPrec1.class = PREPPrec2.class                 AND
+              PREPPrec1.aspect = PREPPrec2.aspect               AND
+              PREPPrec1.retro = PREPPrec2.retro                 AND
+              PREPPrec1.superdeixis = PREPPrec2.superdeixis     AND
+              PREPPrec1.stranded = false                        AND
+              PREPPrec2.stranded = false                        AND
+              PREPPrec1.coord = nocoord                         AND
+              PREPPrec2.coord = nocoord                         AND
+              (PREPPrec1.deixis = PREPPrec2.deixis OR
+               PREPPrec1.deixis = omegadeixis      OR
+               PREPPrec2.deixis = omegadeixis
+              )
+              C11: PREPPrec1.headkey = PREPPrec2.headkey
+              A11: PREPPrec3.headkey := PREPPrec1.headkey;
+              C12: PREPPrec1.headkey <> PREPPrec2.headkey
+              A12: PREPPrec3.headkey := 0;
+          A1: PREPPrec5 := PREPPrec1;
+              PREPPrec6 := PREPPrec2;
+              PREPPrec5.superdeixis := omegadeixis; 
+              PREPPrec6.superdeixis := omegadeixis; 
+              PREPPrec3 :=
+                  {
+                   req:               [pospol, negpol, omegapol]
+                   env:               [pospol, negpol, omegapol]
+                   mood:              PREPPrec1.mood
+                   synppefs:          []
+                   thetapp:           omegathetapp   
+
+                   class:             PREPPrec1.Class
+                   aspect:            PREPPrec1.aspect
+                   retro:             PREPPrec1.retro
+                   superdeixis:       PREPPrec1.superdeixis
+
+                   stranded:          PREPPrec1.stranded
+                   coord:             simplecoord 
+                  };
+              PREPPrec3.actsubcefs  := PREPPrec1.actsubcefs * 
+                                              PREPPrec2.actsubcefs;
+              QUOTE_AssSpecmax(PREPPrec1.specq, 
+                                              PREPPrec2.specq,PREPPrec3.specq);
+              QUOTE_assdeixismax(PREPPrec1.deixis, PREPPrec2.deixis, 
+                    PREPPrec3.deixis);
+         >
+      DECOMP
+         <
+          C1: ppc IN COORDrec1.patterns       AND
+              simple IN COORDrec1.kinds       AND
+              PREPPrec5.mood = PREPPrec6.mood AND
+              PREPPrec5.actsubcefs * PREPPrec6.actsubcefs <> [] AND
+              PREPPrec5.class = PREPPrec6.class                 AND
+              PREPPrec5.aspect = PREPPrec6.aspect               AND
+              PREPPrec5.retro = PREPPrec6.retro                 AND
+              PREPPrec5.superdeixis = omegadeixis               AND
+              PREPPrec6.superdeixis = omegadeixis               AND
+              PREPPrec5.stranded = false                        AND
+              PREPPrec6.stranded = false                        AND
+              PREPPrec5.coord = nocoord                         AND
+              PREPPrec6.coord = nocoord                         AND
+              (PREPPrec5.deixis = PREPPrec6.deixis OR
+               PREPPrec5.deixis = omegadeixis      OR
+               PREPPrec6.deixis = omegadeixis
+              )                                                 AND
+              PREPPrec3 =
+                  {
+                   req:               [pospol, negpol, omegapol]
+                   env:               [pospol, negpol, omegapol]
+                   mood:              PREPPrec5.mood
+                   synppefs:          []
+                   thetapp:           omegathetapp   
+
+                   class:             PREPPrec5.Class
+                   aspect:            PREPPrec5.aspect
+                   retro:             PREPPrec5.retro
+
+                   stranded:          PREPPrec5.stranded
+                   coord:             simplecoord 
+                  }                                                    AND
+              PREPPrec3.actsubcefs  = PREPPrec5.actsubcefs * 
+                                              PREPPrec6.actsubcefs     AND
+              QUOTE_specmax(PREPPrec5.specq, 
+                     PREPPrec6.specq, PREPPrec3.specq)                 AND
+              QUOTE_deixismax(PREPPrec5.deixis, PREPPrec6.deixis, 
+                    PREPPrec3.deixis)
+              C11: PREPPrec5.headkey = PREPPrec6.headkey AND
+                   PREPPrec3.headkey = PREPPrec5.headkey
+              A11: @
+              C12: PREPPrec5.headkey <> PREPPrec6.headkey AND
+                   PREPPrec3.headkey = 0
+              A12: @
+          A1: PREPPrec1 := PREPPrec5;
+              PREPPrec2 := PREPPrec6;
+              PREPPrec1.superdeixis := PREPPrec3.superdeixis;
+              PREPPrec2.superdeixis := PREPPrec3.superdeixis;
+         >
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RsimplePPcoord
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 13-FEB-1990 10:42:20  
+\item[* author:] Andr\'{e} Schenk
+\item[* copied from:] Dutch:RsimplePPcoord
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+\newpage
+\begin{verbatim}
+% RULE RitskPPcoord
+< m1:PREPP{PREPPrec1}[mu1]
+  m2:PREPP{PREPPrec2}[mu2] 
+>
+
+< m :PREPP{PREPPrec3}
+         [ argrel/PREPP{PREPPrec4}[mu2],
+           conjrel/PUNC(KEY_commaPUNCkey){PUNCrec1},
+           mu1
+         ]
+>
+
+      COMP
+         <
+          C1: PREPPrec1.coord = simplecoord                     AND
+              PREPPrec1.mood = PREPPrec2.mood                   AND
+              PREPPrec1.actsubcefs * PREPPrec2.actsubcefs <> [] AND
+              PREPPrec1.class = PREPPrec2.class                 AND
+              PREPPrec1.aspect = PREPPrec2.aspect               AND
+              PREPPrec1.retro = PREPPrec2.retro                 AND
+              PREPPrec1.superdeixis = PREPPrec2.superdeixis     AND
+              PREPPrec2.stranded = false                        AND
+              PREPPrec2.coord = nocoord                         
+              C11: (
+                    PREPPrec1.deixis = PREPPrec2.deixis    OR
+                    PREPPrec2.deixis = omegadeixis            
+                   )
+                   C111: PREPPrec1.headkey = PREPPrec2.headkey
+                         C1111: PREPPrec1.specq = PREPPrec2.specq OR
+                                PREPPrec2.specq = nospec
+                         A1111: PREPPrec3 := PREPPrec1;
+                         C1112: PREPPrec1.specq = nospec AND
+                                PREPPrec2.specq = yesspec
+                         A1112: PREPPrec3 := PREPPrec1;    
+                                PREPPrec3.specq := yesspec;
+                   A111: @
+                   C112: PREPPrec1.headkey <> PREPPrec2.headkey
+                         C1121: PREPPrec1.specq = PREPPrec2.specq OR
+                                PREPPrec2.specq = nospec
+                         A1121: PREPPrec3 := PREPPrec1;
+                         C1122: PREPPrec1.specq = nospec AND
+                                PREPPrec2.specq = yesspec
+                         A1122: PREPPrec3 := PREPPrec1;    
+                                PREPPrec3.specq := yesspec;
+                   A112: PREPPrec3.headkey := 0;
+              A11: @
+              C12: PREPPrec1.deixis = omegadeixis  AND
+                   PREPPrec2.deixis <> omegadeixis
+                   C121: PREPPrec1.headkey = PREPPrec2.headkey
+                         C1211: PREPPrec1.specq = PREPPrec2.specq OR
+                                PREPPrec2.specq = nospec
+                         A1211: PREPPrec3 := PREPPrec1;
+                         C1212: PREPPrec1.specq = nospec AND
+                                PREPPrec2.specq = yesspec
+                         A1212: PREPPrec3 := PREPPrec1;    
+                                PREPPrec3.specq := yesspec;
+                   A121: @
+                   C122: PREPPrec1.headkey <> PREPPrec2.headkey
+                         C1221: PREPPrec1.specq = PREPPrec2.specq OR
+                                PREPPrec2.specq = nospec
+                         A1221: PREPPrec3 := PREPPrec1;
+                         C1222: PREPPrec1.specq = nospec AND
+                                PREPPrec2.specq = yesspec
+                         A1222: PREPPrec3 := PREPPrec1;    
+                                PREPPrec3.specq := yesspec;
+                   A122: PREPPrec3.headkey := 0;
+              A12: PREPPrec3.deixis := PREPPrec2.deixis 
+          A1: PREPPrec4 := PREPPrec2;
+              PREPPrec4.superdeixis := omegadeixis; 
+         >
+      DECOMP
+         <
+          C1: PREPPrec3.coord = simplecoord                     AND
+              PREPPrec3.mood = PREPPrec4.mood                   AND
+              PREPPrec3.actsubcefs * PREPPrec4.actsubcefs <> [] AND
+              PREPPrec3.class = PREPPrec4.class                 AND
+              PREPPrec3.aspect = PREPPrec4.aspect               AND
+              PREPPrec3.retro = PREPPrec4.retro                 AND
+              PREPPrec4.superdeixis = omegadeixis               AND
+              PREPPrec4.stranded = false                        AND
+              PREPPrec4.coord = nocoord                         
+              C11: (
+                    PREPPrec3.deixis = PREPPrec4.deixis    OR
+                    PREPPrec4.deixis = omegadeixis            
+                   )
+                   C111: PREPPrec3.headkey = PREPPrec4.headkey
+                         C1111: PREPPrec3.specq = PREPPrec4.specq OR
+                                PREPPrec4.specq = nospec
+                         A1111: PREPPrec1 := PREPPrec3;
+                         C1112: PREPPrec3.specq = yesspec AND
+                                PREPPrec4.specq = yesspec
+                         A1112: PREPPrec1 := PREPPrec3;    
+                                PREPPrec3.specq := nospec;
+                   A111: @
+                   C112: PREPPrec3.headkey = 0 AND
+                         PREPPrec3.headkey <> PREPPrec4.headkey
+                         C1121: PREPPrec3.specq = PREPPrec4.specq OR
+                                PREPPrec4.specq = nospec
+                         A1121: PREPPrec1 := PREPPrec3;
+                         C1122: PREPPrec3.specq = yesspec AND
+                                PREPPrec4.specq = yesspec
+                         A1122: PREPPrec1 := PREPPrec3;    
+                                PREPPrec1.specq := nospec;
+                   A112: @
+              A11: @
+              C12: PREPPrec3.deixis = PREPPrec4.deixis AND
+                   PREPPrec4.deixis <> omegadeixis
+                   C121: PREPPrec3.headkey = PREPPrec4.headkey
+                         C1211: PREPPrec3.specq = PREPPrec4.specq OR
+                                PREPPrec4.specq = nospec
+                         A1211: PREPPrec1 := PREPPrec3;
+                         C1212: PREPPrec3.specq = yesspec AND
+                                PREPPrec4.specq = yesspec
+                         A1212: PREPPrec1 := PREPPrec3;    
+                                PREPPrec3.specq := nospec;
+                   A121: @
+                   C122: PREPPrec3.headkey = 0 AND
+                         PREPPrec3.headkey <> PREPPrec4.headkey
+                         C1221: PREPPrec3.specq = PREPPrec4.specq OR
+                                PREPPrec4.specq = nospec
+                         A1221: PREPPrec1 := PREPPrec3;
+                         C1222: PREPPrec3.specq = yesspec AND
+                                PREPPrec4.specq = yesspec
+                         A1222: PREPPrec1 := PREPPrec3;    
+                                PREPPrec1.specq := nospec;
+                   A122: @
+              A12: PREPPrec1.deixis := omegadeixis; 
+          A1: PREPPrec2 := PREPPrec4;
+              PREPPrec2.superdeixis := PREPPrec3.superdeixis; 
+         >
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RitsimplePPcoord
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 13-FEB-1990 10:47:14  
+\item[* author:] Andr\'{e} Schenk
+\item[* copied from:] Dutch:RitsimplePPcoord
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+
+% RULE RcoordS
+< m1:COORD{COORDrec1}
+  m2:SENTENCE{SENTENCErec1}[mu1]
+  m3:SENTENCE{SENTENCErec2}[mu2] 
+>
+
+< m :SENTENCE{SENTENCErec3}
+         [ argrel/SENTENCE{SENTENCErec5}[mu1],
+           head/COORD{COORDrec1},
+           argrel/SENTENCE{SENTENCErec6}[mu2]
+         ]
+>
+
+      COMP
+         <
+          C1: SENTENCErec1 =
+                 {
+                   mood       : SENTENCErec2.mood
+                   senttype   : SENTENCErec2.senttype
+                   PROsubject : SENTENCErec2.PROsubject
+                   modus      : SENTENCErec2.modus
+                   finiteness : SENTENCErec2.finiteness
+                   infsort    : SENTENCErec2.infsort
+                   superdeixis: SENTENCErec2.superdeixis
+                   adverbial  : SENTENCErec2.adverbial
+                   temporal   : SENTENCErec2.temporal
+                 }
+          A1: SENTENCErec3 := SENTENCErec2;
+              SENTENCErec5 := SENTENCErec1;
+              SENTENCErec6 := SENTENCErec2;
+              SENTENCErec5.superdeixis := omegadeixis;
+              SENTENCErec6.superdeixis := omegadeixis;
+         >
+      DECOMP
+         <
+          C1: SENTENCErec3 = SENTENCErec6 EXCEPT FOR [superdeixis] AND
+              SENTENCErec5.superdeixis = omegadeixis AND
+              SENTENCErec6.superdeixis = omegadeixis AND
+              SENTENCErec5 =
+                 {
+                   mood       : SENTENCErec6.mood
+                   senttype   : SENTENCErec6.senttype
+                   PROsubject : SENTENCErec6.PROsubject
+                   modus      : SENTENCErec6.modus
+                   finiteness : SENTENCErec6.finiteness
+                   infsort    : SENTENCErec6.infsort
+                   adverbial  : SENTENCErec6.adverbial
+                   temporal   : SENTENCErec6.temporal
+                 }
+          A1: SENTENCErec1 := SENTENCErec5;
+              SENTENCErec2 := SENTENCErec6;
+              SENTENCErec1.superdeixis := SENTENCErec3.superdeixis;
+              SENTENCErec2.superdeixis := SENTENCErec3.superdeixis;
+              
+         >
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RcoordS
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 14-FEB-1990 10:58:36  
+\item[* author:] Andr\'{e} Schenk
+\item[* copied from:] Dutch:RcoordS
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% RULE RcoorditS
+< m1:SENTENCE{SENTENCErec1}[I1:mu1, head/COORD{COORDrec1}, mu2]
+  m2:SENTENCE{SENTENCErec2}[mu3] 
+>
+
+< m : SENTENCE{SENTENCErec1}
+           [ argrel/SENTENCE{SENTENCErec2}[mu3],
+             puncrel/PUNC(KEY_commaPUNCkey){PUNCrec1},
+             I1:mu1, head/COORD{COORDrec1}, mu2]
+>
+
+
+   MATCHCONDITIONS
+      <
+       I1: NOT EXIST(mu1, [head/COORD{}])
+      >
+
+      COMP
+         <
+          C1:  SENTENCErec1 =
+                 {
+                   mood       : SENTENCErec2.mood
+                   senttype   : SENTENCErec2.senttype
+                   PROsubject : SENTENCErec2.PROsubject
+                   modus      : SENTENCErec2.modus
+                   finiteness : SENTENCErec2.finiteness
+                   infsort    : SENTENCErec2.infsort
+                   superdeixis: SENTENCErec2.superdeixis
+                   adverbial  : SENTENCErec2.adverbial
+                   temporal   : SENTENCErec2.temporal
+                 }
+          A1: @
+         >
+      DECOMP
+         <
+          C1:  SENTENCErec1 =
+                 {
+                   mood       : SENTENCErec2.mood
+                   senttype   : SENTENCErec2.senttype
+                   PROsubject : SENTENCErec2.PROsubject
+                   modus      : SENTENCErec2.modus
+                   finiteness : SENTENCErec2.finiteness
+                   infsort    : SENTENCErec2.infsort
+                   superdeixis: SENTENCErec2.superdeixis
+                   adverbial  : SENTENCErec2.adverbial
+                   temporal   : SENTENCErec2.temporal
+                 }
+          A1: @
+         >
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] RcoorditS
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 14-FEB-1990 10:55:45  
+\item[* author:] Andr\'{e} Schenk
+\item[* copied from:] Dutch:RcoorditS
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+
+
+
+
+%%
+

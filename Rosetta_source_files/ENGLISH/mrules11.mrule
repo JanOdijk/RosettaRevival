@@ -1,0 +1,887 @@
+ENGLISH 11
+
+&
+\newpage
+\begin{verbatim}
+%
+% TRANSFORMATION TNegAuxAdapt
+< m1: SENTENCE{SENTENCErec1}
+              [ mu1,
+                I1:auxrel/VERB{VERBrec1}[mu2],
+                negrel/NEG(KEY_notNEGkey){NEGrec1},
+                mu3
+              ]
+>
+
+< m : SENTENCE{SENTENCErec1}
+              [ mu1,
+                auxrel/VERB{VERBrec2}
+                      [ I1:head/VERB{VERBrec1}[mu2],
+                        gluerel/GLUE{GLUErec1},
+                        negrel/NEG(KEY_notNEGkey){NEGrec1}
+                      ],
+                mu3
+              ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: VERBrec1.subc IN [modalverb, beverb, doaux, haveverb]
+           AND 
+           NOT EXIST (mu2, [head/SUBVERB{SUBVERBrec1}
+                                [I11:head/BVERB(KEY1){BVERBrec1}] ])
+         I11: KEY1 = KEY_may1BVERBkey OR
+              Key1 = KEY_may2BVERBkey
+      >
+
+      COMP
+         <
+          C1: VERBrec1 <> { subc    : beVerb
+                            persons : [1]
+                            numbers : [singular] 
+                            tense   : presenttense }
+          A1: VERBrec2 := VERBrec1;
+              VERBrec2.subc := notaux
+         >
+
+      DECOMP
+         <
+          C1: VERBrec2 = VERBrec1 EXCEPT FOR [subc] AND
+              VERBrec2.subc = notaux AND
+              ( VERBrec1 <> { subc    : beVerb
+                              persons : [1]
+                              numbers : [singular] 
+                              tense   : presenttense } OR
+                SENTENCErec1 = { mood      IN [yesnointerrogative,
+                                               whinterrogative]
+                                 senttype   : mainclause
+                                 modus      : indicative
+                                 finiteness : finite } )
+          A1: @
+         >
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TNegAuxAdapt
+\item[* relevant examples:] \mbox{}
+He did not do it $\rightarrow$ He didn't do it\\
+They are not at home $\rightarrow$ They aren't at home\\
+You must not do that $\rightarrow$ You mustn't do that\\
+He can not sing $\rightarrow$ he can't sing etc.
+
+In analysis also: \\
+I am not in the right mood $\rightarrow$ I aren't in the right mood (although 
+only needed in tag questions: I am smothering you, aren't I?) (see 
+modifications 11/12/89)\\
+I am not in the right mood $\rightarrow$ I ain't in the right mood
+
+A different glue rule exists for {\em cannot\/}, using a 
+different string than `not', i.e.\ `nòt'. The rule is ordered only after the 
+inversion rules, since a 
+construction like {\em Cannot you be quiet\/} seems awkward, while {\em He 
+cannot come\/} is perfectly OK. 
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] ClauseToSentence
+\item[* class:] (name of rule, transformation or filter class) TC\_NegAuxAdapt
+\item[* date of creation:] 9-FEB-1989 14:00:20  
+\item[* author:] margreet sanders
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 24/10/89\ \ \ \ \ author: margreet sanders\\
+Excluded {\em may\/} from the rule, since in generation the system crashed on 
+it (there is no glue rule for this case). The skey `maymightBVERBkey' has not 
+been excluded, since there is a rule for {\em mightn't\/}. I do not know 
+whether this same key is also used for a present tense; in that case, thre 
+still can be crashes.
+\item date: 11/12/89\ \ \ \ \ author: margreet sanders\\
+Added condition on present tense of {\em be\/}, since {\em I wasn't\/} is of 
+course allowed;\\
+Excluded {\em aren't/ain't\/} in analysis when the sentence is not a 
+(presenttense) question. This should be limited even further, so that they are 
+only accepted in tag questions, but these are not dealt with in Rosetta yet. 
+Also, if {\em aren't\/} must ever be generated for tag questions, there is a 
+problem with the glue rules: they now make both {\em aren't\/} and 
+{\em ain't\/}  from {\em am\/} + GLUE + {\em not\/}. Perhaps here a second {\em 
+n\`{o}t\/} must be used too, just like for {\em cannot\/} (see 
+TC\_CanNegIncorp); if that is done, the current rule must have an extra subrule 
+to deal with that {\em n\`{o}t\/} in analysis.
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to contract the negation and the modal or auxiliary 
+(prior to inversion = TC\_AuxToComp, in case of interrogatives). 
+The rule must be ordered after DoBeDeletion, since 
+otherwise {\em be\/} and {\em not\/} would not be adjacent yet.
+\item[\ \ strategy:] (also: deviations from accepted proposals) It has not been 
+decided yet whether the transformation should be optional, or should work in 
+analysis only. A filter FPreNegAuxAdapt has been written to ensure that no
+incorporated NEGs remain in analysis.
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER FPreNegAuxAdapt
+
+< m : SENTENCE{SENTENCErec1}[ I1:mu1 ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: EXIST (mu1, [I11:auxrel/VERB{VERBrec1}[mu2]])
+         I11: VERBrec1.subc = notaux
+      >
+
+         <
+          C1: true
+          A1: @
+         >
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] FPreNegAuxAdapt
+\item[* relevant examples:] He wasn't fair, You oughtn't do that, we didn't 
+know, etc.
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] ClauseToSentence
+\item[* class:] (name of rule, transformation or filter class) TC\_NegAuxAdapt
+\item[* date of creation:] 9-FEB-1989 14:38:21  
+\item[* author:] margreet sanders
+\item[* copied from:] 
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to stop any sentence (mainly in analysis) that still has 
+{\em not\/} contracted to a modal or auxiliary. Note that in generation, 
+there may be other structures than SENTENCEs passing this filter (NP, PREPP, 
+VERBPPROP).
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TAuxToComp
+< m1: I5::SENTENCE{SENTENCErec1}
+                  [ I1:sig1,
+                    subjrel/T1,
+                    I2:sig2,
+                    auxrel/VERB{VERBrec1}[mu2],
+                    I3:mu3
+                  ]
+>
+
+< m : I5::SENTENCE{SENTENCErec1}
+                  [ I1:sig1,
+                    conjrel/VERB{VERBrec1}[mu2],
+                    subjrel/T1,
+                    I2:sig2,
+                    I3:mu3
+                  ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: ALL (sig1, shiftrel/..)
+       I2: ALL (sig2, I21:rel1/..)
+       I3: NOT EXIST (mu3, [I21:rel1/..])
+         I21: rel1 IN AUX_preauxAdvRels
+       I5: SENTENCErec1.senttype = mainclause
+       m1: SENTENCErec1.mood = yesnointerrogative OR
+           EXIST (sig1, [shiftrel/..]) 
+       m : SENTENCErec1.mood = yesnointerrogative OR
+           EXIST (sig1, [shiftrel/..]) 
+      >
+
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TAuxToComp
+\item[* relevant examples:] \mbox{}\\
+1. Who you did see leave $\rightarrow$ Who did you see leave\\
+2. In which garden/Where you did see that rose $\rightarrow$ In which garden/
+where did you see that rose\\
+3. You did leave $\rightarrow$ Did you leave\\
+4. No sooner he had seen me, than ... $\rightarrow$ No sooner had he seen me 
+than...\\
+5. You did not leave $\rightarrow$ Did you not leave\\
+6. You didn't leave $\rightarrow$ Didn't you leave (the `notaux' is moved; this 
+verb has the original verb and the negation under it)
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] clauseTOsentence
+\item[* class:] (name of rule, transformation or filter class) TC\_AuxToComp
+\item[* date of creation:] 24-MAY-1988 11:12:20  
+\item[* author:] margreet sanders
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] inversion of subject and finite for yes/no questions and for 
+sentences with a shiftrel
+\item[\ \ strategy:] (also: deviations from accepted proposals) In case of a 
+shiftrel, it is assumed that we are always dealing with a wh-shift or an adverb 
+or 
+conjunction (how to know what should be placed in shiftrel and 
+which one shouldn't is as yet unclear to me; in shiftrel are the
+composite conjunction {\em No sooner ... than\/} and sentence-inital 
+occurrences of the adverbs {\em hardly (... when), 
+seldom, scarcely, rarely, little\/}, and {\em barely\/}).\\
+For topicalisation causing inversion (always when a negative adjunct is 
+preposed, except {\em not yet\/}), a shiftrel is assumed ({\em Not a finger 
+did I lay on him, Never will I make that mistake again\/}), while topicalisation 
+not causing inversion would bear the 
+relation leftdislocrel ({\em ?This book she gave me\/}). Relative shift only 
+occurs with T2.CAT = ..VAR, and hence is excluded from the present rule.
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+Subject - operator inversion in other cases has not been accounted for yet
+(Quirk, pp. 948 - 950):\\
+1. So + ADV was ... that/as to ... (So dark it was that I couldn't find it)\\
+\ \ \ (Same for `In such a/to such + NP ... that ...)\\
+\ \ \ Perhaps emphatic fronting of all so/such elements causes inversion; a 
+case of shiftrel topicalisation?\\
+2. Preposed `So' as object or predicate substitute: So say the rest of us (Note
+that this is inversion of the {\em verb\/}, not of the auxiliary!), So do we\\
+3. Optative subjunctive: Far be it ..., Suffice it to ..., Long live ...; May .
+.. (p.\ 411-412)\\
+4. Only in this way ...; Often had I intended ...; Well do I remember\\
+5. Throwing the hammer is champion William Anderson, who...\\
+Subject - verb inversion (without any operator) is described by Quirk only for
+ergatives (p. 948): Here comes the bus, There, at the summit, stood the castle,
+Away went the car like a whirlwind etc.
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Tauxtocomp2
+< m1: I5::SENTENCE{SENTENCErec1}
+                  [ I1:sig1,
+                    I2:sig2,
+                    auxrel/VERB{VERBrec1}[mu2],
+                    I4:sig4,
+                    I3:mu3
+                  ]
+>
+
+< m : I5::SENTENCE{SENTENCErec1}
+                  [ I1:sig1,
+                    conjrel/VERB{VERBrec1}[mu2],
+                    I2:sig2,
+                    I4:sig4,
+                    I3:mu3
+                  ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: ALL (sig1, shiftrel/..)
+       I2: ALL (sig2, I21:rel1/..)
+       I3: NOT EXIST (mu3, [I21:rel1/..])
+         I21: rel1 IN AUX_preauxAdvRels
+       I4: ALL (sig4, negrel/..)
+       I5: SENTENCErec1.senttype = mainclause
+       m1: SENTENCErec1.mood = imperativemood AND
+           (EXIST (mu2, [negrel/..]) OR
+            EXIST (sig4,[negrel/..]))
+       m : SENTENCErec1.mood = imperativemood AND
+           (EXIST (mu2, [negrel/..]) OR
+            EXIST (sig4,[negrel/..]))
+      >
+
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Tauxtocomp2
+\item[* relevant examples:] (YOU) Don't open the door $\rightarrow$ Don't
+(YOU) open the door
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 13-JUN-1991 16:44:26  
+\item[* author:] Petra de Wit
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] To move negated do (either incorporated or not) into conjrel. 
+Notice that positive 'do' 
+should not be raised, since then it would not be deleted in Tdodeletion, 
+yielding the not ungrammatical, but improper translation "DO open the door".
+This type of imperative should get a special translation into Dutch and has not 
+been dealt with yet.
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+If rules are written to generate imperatives with lexical subjects such as {\em 
+everybody, you}, these rules need to be evaluated again on their proper 
+functioning. 
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TNoAuxToComp
+< m1: T1
+>
+
+< m : T1
+>
+
+<
+   SUBRULE (* 1. SENTENCE *)
+      < T1: SENTENCE{SENTENCErec1}[ mu1 ] >
+      < T1: SENTENCE{SENTENCErec1}[ mu1 ] >
+
+   MATCHCONDITIONS
+      <
+       T1: (SENTENCErec1.senttype <> mainclause)           OR 
+           (NOT EXIST (mu1, [subjrel/..]))                 OR
+           ( SENTENCErec1.mood <> yesnointerrogative AND 
+             NOT EXIST (mu1, [shiftrel/..])  )             AND
+           ( 
+             SENTENCErec1.mood = imperativemood ->
+             (NOT EXIST (mu1, [auxrel/VERB{}[I5:mu5]]) AND
+              NOT EXIST (mu1, [negrel/..]))
+           )
+       I5: EXIST (mu5, [negrel/..])
+      >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+   SUBRULE (* 2. NP *)
+      < T1: NP{NPrec1}[ mu1 ] >
+      < T1: NP{NPrec1}[ mu1 ] >
+
+   MATCHCONDITIONS
+      <
+       T1: NPrec1.NPhead IN [openIngNP, sentNP]
+      >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+   SUBRULE (* 3. PREPP *)
+      < T1: PREPP{PREPPrec1}[ mu1 ] >
+      < T1: PREPP{PREPPrec1}[ mu1 ] >
+
+   MATCHCONDITIONS
+      <
+       T1: EXIST (mu1, [objrel/I1::NP{NPrec1}[mu2]])
+       I1: NPrec1.NPhead IN [openIngNP, sentNP]
+      >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+
+   SUBRULE (* 4. CLOSEDVERBPPROP *)
+      < T1: CLOSEDVERBPPROP{CLOSEDVERBPPROPrec1}[ mu1 ] >
+      < T1: CLOSEDVERBPPROP{CLOSEDVERBPPROPrec1}[ mu1 ] >
+
+      COMP
+         <
+          C1: true
+          A1: @
+         >
+      DECOMP
+         <
+          C1: true
+          A1: @
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TNoAuxToComp
+\item[* relevant examples:] \mbox{}
+subrule 1: I do walk in the garden, Who did go away, (I don't 
+know) how to solve this, (I didn't know) that he does play the guitar\\
+subrule 2: Knowing this, My knowing this\\
+subrule 3: without knowing it, without my knowing it\\
+subrule 4: the house built by a famous architect
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] clauseTOsentence
+\item[* class:] (name of rule, transformation or filter class) TC\_AuxToComp
+\item[* date of creation:] 26-MAY-1988 14:32:32  
+\item[* author:] margreet sanders
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: 16/10/88\ \ \ \ \ author: margreet sanders\\
+adapted for other structures than SENTENCEs
+\item date: 22/06/91\ \ \ \ \ author: Petra de Wit
+adapted to stop negative imperatives
+\end{enumerate}
+\item[* task:] to let sentences for which no inversion is needed pass this 
+transformation class
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+It is assumed that the wh-subject of a wh-question has not moved to shiftrel, 
+but is still in subject position.
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TCanNegIncorp
+< m1: SENTENCE{SENTENCErec1}
+              [ mu1,
+                I1:auxrel/VERB{VERBrec1}[mu2],
+                negrel/NEG(KEY_notNEGkey){NEGrec1},
+                mu3
+              ]
+>
+
+< m : SENTENCE{SENTENCErec1}
+              [ mu1,
+                auxrel/VERB{VERBrec2}
+                      [ I1:head/VERB{VERBrec1}[mu2],
+                        gluerel/GLUE{GLUErec1},
+                        negrel/NEG(KEY_not2NEGkey){NEGrec2}
+                      ],
+                mu3
+              ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: VERBrec1.subc IN [modalverb] AND 
+           EXIST (mu2, [head/SUBVERB{SUBVERBrec1}
+                            [I11:head/BVERB(KEY1){BVERBrec1}] ])
+         I11: KEY1 = KEY_can1BVERBkey OR
+              KEY1 = KEY_can2BVERBkey
+      >
+
+      COMP
+         <
+          C1: VERBrec1.tense = presenttense
+          A1: VERBrec2 := VERBrec1;
+              VERBrec2.subc := notaux
+         >
+      DECOMP
+         <
+          C1: VERBrec1.tense = presenttense AND
+              VERBrec2 = VERBrec1 EXCEPT FOR [subc] AND
+              VERBrec2.subc = notaux
+          A1: @
+         >
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TCanNegIncorp
+\item[* relevant examples:] 
+He can not sing $\rightarrow$ he cannot sing 
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] ClauseToSentence
+\item[* class:] (name of rule, transformation or filter class) TC\_NegAuxAdapt
+\item[* date of creation:] 9-FEB-1989 14:00:20  
+\item[* author:] margreet sanders
+\item[* copied from:] TNegAuxAdapt
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to contract the negation to the modal {\em can\/} to form {\em 
+cannot\/}, in case no 
+inversion took place ($^{*}$Cannot you come?), so this transformation is ordered 
+crucially after TC\_AuxToComp. The form {\em can't\/} has been made before the 
+inversion rules, since it can undergo inversion: {\em Can't you stop that\/}.
+\item[\ \ strategy:] (also: deviations from accepted proposals) It has not been 
+decided yet whether the transformation should be optional (as it is now), 
+or should work in 
+analysis only. A filter FPreCanNegIncorp has been written to ensure that no
+incorporated {\em nòt} remains in analysis.
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER FPreCanNegIncorp
+
+< m : SENTENCE{SENTENCErec1}
+              [ mu1,
+                auxrel/I1::VERB{VERBrec2}
+                      [head/VERB{VERBrec1}
+                           [head/SUBVERB{SUBVERBrec1}
+                                [I2:head/BVERB(KEY1){BVERBrec1}]
+                           ],
+                       gluerel/GLUE{GLUErec1},
+                       negrel/NEG(KEY_not2NEGkey){NEGrec1}
+                      ],
+                mu3
+              ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: VERBrec2.subc = notaux
+       I2: KEY1 = KEY_can1BVERBkey OR
+           KEY1 = KEY_can2BVERBkey
+      >
+
+         <
+          C1: true
+          A1: @
+         >
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] FPreCanNegIncorp
+\item[* relevant examples:] He cannot do that
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] ClauseToSentence
+\item[* class:] (name of rule, transformation or filter class) TC\_NegAuxAdapt
+\item[* date of creation:] 25-OCT-1989 
+\item[* author:] margreet sanders
+\item[* copied from:] 
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to stop any sentence (in analysis) that has {\em cannot\/}, 
+since this string must be reanalysed as {\em can\/} + a different {\em not\/}
+(to be able to distinguish between {\em can't\/} and {\em cannot\/}).
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+\newpage
+\begin{verbatim}
+% FILTER Fcannegincorp
+< m : SENTENCE{SENTENCErec1}
+              [ mu1,
+                I1:auxrel/VERB{VERBrec1}[mu2],
+                negrel/NEG(KEY_notNEGkey){NEGrec1},
+                mu3
+              ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: VERBrec1.subc IN [modalverb] AND 
+           EXIST (mu2, [head/SUBVERB{SUBVERBrec1}
+                            [I11:head/BVERB(KEY1){BVERBrec1}] ])
+         I11: KEY1 = KEY_can1BVERBkey OR
+              KEY1 = KEY_can2BVERBkey
+      >
+
+         <
+          C1: VERBrec1.tense = presenttense
+          A1: @
+         >
+
+&
+\end{verbatim}
+  \newpage
+\begin{description}
+\item[* name:] Fcannegincorp
+\item[* relevant examples:] can + not $\rightarrow$ cannot
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 14-MAR-1990 08:45:41  
+\item[* author:] Jan Odijk
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to guarantee obligatory application of tcannegincorp
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+
+%%

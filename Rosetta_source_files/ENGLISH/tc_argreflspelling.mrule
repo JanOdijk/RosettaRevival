@@ -1,0 +1,2868 @@
+ENGLISH 18
+
+&
+\begin{description}
+This file contains the following iterative transformations:
+\begin{itemize}
+\item [Targreflspelling1:] NPVAR in VP; subj=antecedent
+\item [Targreflspelling2:] CNVAR in VP; subj=antecedent
+\item [Targreflspelling3:] NPVAR in PP in VP; subj=antecedent
+\item [Targreflspelling4:] CNVAR in PP in VP; subj=antecedent
+\item [Targreflspelling5:] NPVAR in VP; indobj=antecedent
+\item [Targreflspelling6:] CNVAR in VP; indobj=antecedent
+\item [Targreflspelling7:] NPVAR in PP in VP; indobj=antecedent
+\item [Targreflspelling8:] CNVAR in PP in VP; indobj=antecedent
+\item [Targreflspelling9:] NPVAR in locargrel in VP
+\item [Targreflspelling10:] CNVAR in locargrel in VP
+\end{itemize}
+Also, a pre- and postrule filter is added. These filters can be found in TC_
+argreflspelling1.mrule.\\
+The transformation class must be iterative because more reflexives may occur: 
+they talked to themselves about themselves. The class might also have been 
+called a rule class, but there is no need for that, since the identity of the 
+variables is also preserved in translation.
+
+A problem exists for cases where an NPVAR will upon substitution be replaced by 
+an NP which contains an element which should be spelled out as a reflexive, 
+since the substitution rules follow the reflexive spelling rules: x1 heard x2 
+$\rightarrow$ x1 heard [stories about x1].\\[2ex]
+Other problems (see also doc.\ 155 pp.\ 6-9): \\
+- For long distance anaphors, there also should be a pronoun instead of a 
+reflexive: he hated it when she belittled him/$^{*}$himself.\\
+Also note that within an NP, a reflexive element is spelled out as a possadj or 
+a genitive: you cannot see him from your position, one is always nervous in 
+front of one's superiors.
+\end{description}
+\newpage
+\begin{verbatim}
+%
+% TRANSFORMATION TArgReflSpelling1 (*NPVAR in VP : subj=antec*)
+< m1: CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              rel1/NPVAR{NPVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                     [ mu3,
+                       rel2/NPVAR{NPVARrec2},
+                       mu4
+                     ],
+              mu5
+            ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              rel1/NPVAR{NPVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                     [ mu3,
+                       rel2/I3::NP{NPrec1}[head/T1],
+                       mu4
+                     ],
+              mu5
+            ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: RIGHTTOLEFT
+       m1: NPVARrec1 = NPVARrec2 EXCEPT FOR [cases] AND
+           NOT EXIST (mu3, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) 
+       I3: NPrec1.NPhead = reflNP
+       m : NOT EXIST (mu3, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) 
+         I31: NPVARrec3 = NPVARrec1 EXCEPT FOR [cases]
+      >
+
+<
+   SUBRULE (* 1. myself *)
+      < >
+      < T1: REFLPRO(AUX_myselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 1
+                            number : singular }
+          A1: NPrec1 := AUX_NPONmyRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONmyRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 1
+                            number : singular }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 2. yourself *)
+      < >
+      < T1: REFLPRO(AUX_yourselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 2
+                            number : singular }
+          A1: NPrec1 := AUX_NPONyoursgRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONyoursgRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 2
+                            number : singular }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3a. himself *)
+      < >
+      < T1: REFLPRO(AUX_himselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( masculine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: NPrec1 := AUX_NPONhimRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONhimRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : singular }            AND
+              NPVARrec1.NPhead <> oneNP                    AND
+              ( masculine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI masculinegender } ) 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3b. herself *)
+      < >
+      < T1: REFLPRO(AUX_herselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( feminine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPrec1 := AUX_NPONherRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONherRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( feminine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3c. itself *)
+      < >
+      < T1: REFLPRO(AUX_itselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              NPVARrec1.genders = [omegagender] AND
+              NPVARrec1.sexes = [] 
+          A1: NPrec1 := AUX_NPONitRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONitRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              NPVARrec1.genders = [omegagender] AND
+              NPVARrec1.sexes = [] 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 4. ourselves *)
+      < >
+      < T1: REFLPRO(AUX_ourselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 1
+                            number : plural }
+          A1: NPrec1 := AUX_NPONourRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONourRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 1
+                            number : plural } 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 5. yourselves *)
+      < >
+      < T1: REFLPRO(AUX_yourselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 2
+                            number : plural }
+          A1: NPrec1 := AUX_NPONyourplRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONyourplRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 2
+                            number : plural } 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 6. themselves *)
+      < >
+      < T1: REFLPRO(AUX_themselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : plural }
+          A1: NPrec1 := AUX_NPONthemRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONthemRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : plural } 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 6. oneself *)
+      < >
+      < T1: REFLPRO(AUX_oneselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1.NPhead = oneNP
+          A1: NPrec1 := AUX_NPONoneRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONoneRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1.NPhead = oneNP
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TArgReflSpelling1
+\item[* relevant examples:] I gave myself a present, One shouldn't degrade 
+oneself, the baby hurt itself/herself/himself
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] CLAUSEtoSENTENCE
+\item[* class:] (name of rule, transformation or filter class) TC\_
+ArgReflSpelling
+\item[* date of creation:] 17-AUG-1988 11:38:19  
+\item[* author:] margreet sanders
+\item[* copied from:] Dutch TArgReflSpelling1 and English TObjReflInsertion1
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:] to spell out the second of two identical NPVARs as a reflexive. 
+Even the LEVEL of the two VARs must be the same. The cases of the two VARs 
+may differ, though.
+\item[\ \ strategy:] (also: deviations from accepted proposals) It is assumed 
+that the nearest (= rightmost) NPVAR in S is the antecedent for the reflexive.
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+For the formulation of the third person singular rules (with reference to sex 
+and gender) see TObjReflInsertion1: inanimate NPs have sexes = [], but may 
+still have a gender specification (for cases like {\em ship\/}, which might be 
+referred to as {\em she\/}. Animate NPs may have only one sex (even
+words like {\em doctor\/} should have only one sex per entry); persproNPs have 
+no sexes, but only gender.
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+No condition has been formulated on the presence of reflexives in case of a 
+reflexive verb, since argument reflexives and inherent reflexives may occur in 
+one sentence: reveal yourself to yourself. Hence, false paths may be created 
+here in analysis, making the wrong reflNP into an NPVAR. This will only be 
+solved in TC\_ReflexiveSpelling, just preceding the pattern rules.
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Targreflspelling2
+< m1: CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              rel1/CNVAR{CNVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                     [ mu3,
+                       rel2/CNVAR{CNVARrec2},
+                       mu4
+                     ],
+              mu5
+            ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              rel1/CNVAR{CNVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                     [ mu3,
+                       rel2/I3::NP{NPrec1}[head/T1],
+                       mu4
+                     ],
+              mu5
+            ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: RIGHTTOLEFT
+       m1: CNVARrec1 = CNVARrec2 EXCEPT FOR [cases] AND
+           NOT EXIST (mu3, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) 
+       I3: NPrec1.NPhead = reflNP
+       m : NOT EXIST (mu3, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) 
+         I31: CNVARrec3 = CNVARrec1 EXCEPT FOR [cases]
+      >
+
+<
+   SUBRULE (* 3a. himself *)
+      < >
+      < T1: REFLPRO(AUX_himselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              ( masculine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: NPrec1 := AUX_NPONhimRFLPR;
+              NPrec1.cases := CNVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONhimRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [singular] AND
+              ( masculine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3b. herself *)
+      < >
+      < T1: REFLPRO(AUX_herselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              ( feminine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPrec1 := AUX_NPONherRFLPR;
+              NPrec1.cases := CNVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONherRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [singular] AND
+              ( feminine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3c. itself *)
+      < >
+      < T1: REFLPRO(AUX_itselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              CNVARrec1.genders = [omegagender] AND
+              CNVARrec1.sexes = [] 
+          A1: NPrec1 := AUX_NPONitRFLPR;
+              NPrec1.cases := CNVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONitRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [singular] AND
+              CNVARrec1.genders = [omegagender] AND
+              CNVARrec1.sexes = [] 
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases
+         >
+
+
+   SUBRULE (* 6. themselves *)
+      < >
+      < T1: REFLPRO(AUX_themselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [plural]
+          A1: NPrec1 := AUX_NPONthemRFLPR;
+              NPrec1.cases := CNVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONthemRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [plural] 
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases
+         >
+
+>
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Targreflspelling2
+\item[* relevant examples:] (The man who) gave himself a present, hurt himself
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] xpproptoclause
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-JUN-1990 15:47:51  
+\item[* author:] Petra de Wit
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TArgreflspelling3 (*NPVAR in PP in VP: subj=antec*)
+< m1: CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              rel1/NPVAR{NPVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                     [ mu3,
+                       prepobjrel/VARPREPP{VARPREPPrec2}
+                                 [mu5,
+                                  rel2/NPVAR{NPVARrec2},
+                                  mu6
+                                 ],
+                       mu4
+                     ],
+              mu8
+            ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              rel1/NPVAR{NPVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                     [ mu3,
+                       prepobjrel/PREPP{PREPPrec2}
+                                 [mu5,
+                                  rel2/I3::NP{NPrec1}[head/T1],
+                                  mu6
+                                 ],
+                       mu4
+                     ],
+              mu8
+            ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: RIGHTTOLEFT
+       m1: NPVARrec1 = NPVARrec2 EXCEPT FOR [cases] AND
+           NOT EXIST (mu3, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) 
+       I3: NPrec1.NPhead = reflNP
+       m : NOT EXIST (mu3, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) 
+         I31: NPVARrec3 = NPVARrec1 EXCEPT FOR [cases]
+      >
+
+<
+   SUBRULE (* 1. myself *)
+      < >
+      < T1: REFLPRO(AUX_myselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 1
+                            number : singular }
+          A1: NPrec1 := AUX_NPONmyRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONmyRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 1
+                            number : singular }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 2. yourself *)
+      < >
+      < T1: REFLPRO(AUX_yourselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 2
+                            number : singular }
+          A1: NPrec1 := AUX_NPONyoursgRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONyoursgRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 2
+                            number : singular }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2
+         >
+
+   SUBRULE (* 3a. himself *)
+      < >
+      < T1: REFLPRO(AUX_himselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( masculine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: NPrec1 := AUX_NPONhimRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONhimRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( masculine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2
+
+         >
+
+   SUBRULE (* 3b. herself *)
+      < >
+      < T1: REFLPRO(AUX_herselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( feminine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPrec1 := AUX_NPONherRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONherRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( feminine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2
+         >
+
+   SUBRULE (* 3c. itself *)
+      < >
+      < T1: REFLPRO(AUX_itselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              NPVARrec1.genders = [omegagender] AND
+              NPVARrec1.sexes = [] 
+          A1: NPrec1 := AUX_NPONitRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONitRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              NPVARrec1.genders = [omegagender] AND
+              NPVARrec1.sexes = [] 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+         >
+
+   SUBRULE (* 4. ourselves *)
+      < >
+      < T1: REFLPRO(AUX_ourselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 1
+                            number : plural }
+          A1: NPrec1 := AUX_NPONourRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONourRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 1
+                            number : plural } 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 5. yourselves *)
+      < >
+      < T1: REFLPRO(AUX_yourselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 2
+                            number : plural }
+          A1: NPrec1 := AUX_NPONyourplRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONyourplRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 2
+                            number : plural } 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 6. themselves *)
+      < >
+      < T1: REFLPRO(AUX_themselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : plural }
+          A1: NPrec1 := AUX_NPONthemRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONthemRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : plural } 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 6. oneself *)
+      < >
+      < T1: REFLPRO(AUX_oneselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1.NPhead = oneNP
+          A1: NPrec1 := AUX_NPONoneRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONoneRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1.NPhead = oneNP
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+>
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TArgreflspelling3
+\item[* relevant examples:] He dreamt about himself, 
+He gave a book to himself, They talked about themselves
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] xpproptoclause
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-JUN-1990 11:01:59  
+\item[* author:] Petra de Wit
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Targreflspelling4
+< m1: CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              rel1/CNVAR{CNVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                     [ mu3,
+                       prepobjrel/VARPREPP{VARPREPPrec2}
+                                 [mu5,
+                                  rel2/CNVAR{CNVARrec2},
+                                  mu6
+                                 ],
+                       mu4
+                     ],
+              mu8
+            ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              rel1/CNVAR{CNVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                     [ mu3,
+                       prepobjrel/PREPP{PREPPrec2}
+                                 [mu5,
+                                  rel2/I3::NP{NPrec1}[head/T1],
+                                  mu6
+                                 ],
+                       mu4
+                     ],
+              mu8
+            ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: RIGHTTOLEFT
+       m1: CNVARrec1 = CNVARrec2 EXCEPT FOR [cases] AND
+           NOT EXIST (mu3, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) 
+       I3: NPrec1.NPhead = reflNP
+       m : NOT EXIST (mu3, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) 
+         I31: CNVARrec3 = CNVARrec1 EXCEPT FOR [cases]
+      >
+
+<
+   SUBRULE (* 3a. himself *)
+      < >
+      < T1: REFLPRO(AUX_himselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              ( masculine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: NPrec1 := AUX_NPONhimRFLPR;
+              NPrec1.cases := CNVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONhimRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [singular] AND
+              ( masculine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 3b. herself *)
+      < >
+      < T1: REFLPRO(AUX_herselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              ( feminine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPrec1 := AUX_NPONherRFLPR;
+              NPrec1.cases := CNVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONherRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [singular] AND
+              ( feminine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 3c. itself *)
+      < >
+      < T1: REFLPRO(AUX_itselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              CNVARrec1.genders = [omegagender] AND
+              CNVARrec1.sexes = [] 
+          A1: NPrec1 := AUX_NPONitRFLPR;
+              NPrec1.cases := CNVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONitRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [singular] AND
+              CNVARrec1.genders = [omegagender] AND
+              CNVARrec1.sexes = [] 
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 6. themselves *)
+      < >
+      < T1: REFLPRO(AUX_themselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [plural]
+          A1: NPrec1 := AUX_NPONthemRFLPR;
+              NPrec1.cases := CNVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONthemRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [plural] 
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+>
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Targreflspelling4
+\item[* relevant examples:] (The man who) dreamt about himself, gave a present 
+to himself
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] xpproptoclause 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-JUN-1990 15:50:04  
+\item[* author:] Petra de Wit
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Targreflspelling5 (*NPVAR in VP :indobj=antec*)
+< m1: CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              predrel/VERBP{VERBPrec1}
+                   I2:[ mu2,
+                       rel1/NPVAR{NPVARrec1},
+                       mu3,
+                       rel2/NPVAR{NPVARrec2},
+                       mu4
+                     ],
+              mu5
+            ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                  I2:[ mu2, 
+                       rel1/NPVAR{NPVARrec1},
+                       mu3,
+                       rel2/I3::NP{NPrec1}[head/T1],
+                       mu4
+                     ],
+              mu5
+            ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: RIGHTTOLEFT
+       I2: RIGHTTOLEFT
+       m1: NPVARrec1 = NPVARrec2 AND
+           NOT EXIST (mu3, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) 
+       I3: NPrec1.NPhead = reflNP
+       m : NOT EXIST (mu3, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) 
+         I31: NPVARrec3 = NPVARrec1 
+      >
+
+<
+   SUBRULE (* 1. myself *)
+      < >
+      < T1: REFLPRO(AUX_myselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 1
+                            number : singular }
+          A1: NPrec1 := AUX_NPONmyRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONmyRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 1
+                            number : singular }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 2. yourself *)
+      < >
+      < T1: REFLPRO(AUX_yourselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 2
+                            number : singular }
+          A1: NPrec1 := AUX_NPONyoursgRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONyoursgRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 2
+                            number : singular }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3a. himself *)
+      < >
+      < T1: REFLPRO(AUX_himselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( masculine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: NPrec1 := AUX_NPONhimRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONhimRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : singular }            AND
+              NPVARrec1.NPhead <> oneNP                 (*   AND
+              ( (masculine IN NPVARrec1.sexes) OR
+                (NPVARrec1 = { sexes    : []
+                              genders NI masculinegender } )) *)
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3b. herself *)
+      < >
+      < T1: REFLPRO(AUX_herselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( feminine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPrec1 := AUX_NPONherRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONherRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( feminine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3c. itself *)
+      < >
+      < T1: REFLPRO(AUX_itselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              NPVARrec1.genders = [omegagender] AND
+              NPVARrec1.sexes = [] 
+          A1: NPrec1 := AUX_NPONitRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONitRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              NPVARrec1.genders = [omegagender] AND
+              NPVARrec1.sexes = [] 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 4. ourselves *)
+      < >
+      < T1: REFLPRO(AUX_ourselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 1
+                            number : plural }
+          A1: NPrec1 := AUX_NPONourRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONourRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 1
+                            number : plural } 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 5. yourselves *)
+      < >
+      < T1: REFLPRO(AUX_yourselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 2
+                            number : plural }
+          A1: NPrec1 := AUX_NPONyourplRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONyourplRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 2
+                            number : plural } 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 6. themselves *)
+      < >
+      < T1: REFLPRO(AUX_themselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : plural }
+          A1: NPrec1 := AUX_NPONthemRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONthemRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : plural } 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 6. oneself *)
+      < >
+      < T1: REFLPRO(AUX_oneselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1.NPhead = oneNP
+          A1: NPrec1 := AUX_NPONoneRFLPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONoneRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1.NPhead = oneNP
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Targreflspelling5
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-JUN-1990 13:33:03  
+\item[* author:] Petra de Wit
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Targreflspelling6
+< m1: CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              predrel/VERBP{VERBPrec1}
+                  I2:[ mu2,
+                       rel1/CNVAR{CNVARrec1},
+                       mu3,
+                       rel2/CNVAR{CNVARrec2},
+                       mu4
+                     ],
+              mu5
+            ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                  I2:[ mu2, 
+                       rel1/CNVAR{CNVARrec1},
+                       mu3,
+                       rel2/I3::NP{NPrec1}[head/T1],
+                       mu4
+                     ],
+              mu5
+            ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: RIGHTTOLEFT
+       I2: RIGHTTOLEFT
+       m1: CNVARrec1 = CNVARrec2 AND
+           NOT EXIST (mu3, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) 
+       I3: NPrec1.NPhead = reflNP
+       m : NOT EXIST (mu3, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) 
+         I31: CNVARrec3 = CNVARrec1 
+      >
+
+<
+   SUBRULE (* 3a. himself *)
+      < >
+      < T1: REFLPRO(AUX_himselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              ( masculine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: NPrec1 := AUX_NPONhimRFLPR;
+              NPrec1.cases := CNVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONhimRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [singular] AND
+              ( masculine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3b. herself *)
+      < >
+      < T1: REFLPRO(AUX_herselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              ( feminine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPrec1 := AUX_NPONherRFLPR;
+              NPrec1.cases := CNVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONherRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [singular] AND
+              ( feminine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3c. itself *)
+      < >
+      < T1: REFLPRO(AUX_itselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              CNVARrec1.genders = [omegagender] AND
+              CNVARrec1.sexes = [] 
+          A1: NPrec1 := AUX_NPONitRFLPR;
+              NPrec1.cases := CNVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONitRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [singular] AND
+              CNVARrec1.genders = [omegagender] AND
+              CNVARrec1.sexes = [] 
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases
+         >
+
+
+   SUBRULE (* 6. themselves *)
+      < >
+      < T1: REFLPRO(AUX_themselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [plural]
+          A1: NPrec1 := AUX_NPONthemRFLPR;
+              NPrec1.cases := CNVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONthemRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [plural] 
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases
+         >
+>
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Targreflspelling6
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-JUN-1990 15:52:34  
+\item[* author:] Petra de Wit
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Targreflspelling7 (*NPVAR in PP in VP: indobj=antec*)
+< m1: CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              predrel/VERBP{VERBPrec1}
+                  I2:[ mu2,
+                       rel1/NPVAR{NPVARrec1},
+                       mu3,
+                       prepobjrel/VARPREPP{VARPREPPrec2}
+                                 [mu5,
+                                  rel2/NPVAR{NPVARrec2},
+                                  mu6
+                                 ],
+                       mu4
+                     ],
+              mu8
+            ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              predrel/VERBP{VERBPrec1}
+                  I2:[ mu2,
+                       rel1/NPVAR{NPVARrec1},
+                       mu3,
+                       prepobjrel/PREPP{PREPPrec2}
+                                 [mu5,
+                                  rel2/I3::NP{NPrec1}[head/T1],
+                                  mu6
+                                 ],
+                       mu4
+                     ],
+              mu8
+            ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: RIGHTTOLEFT
+       I2: RIGHTTOLEFT
+       m1: NPVARrec1 = NPVARrec2 AND
+           NOT EXIST (mu3, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) 
+       I3: NPrec1.NPhead = reflNP
+       m : NOT EXIST (mu3, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) 
+         I31: NPVARrec3 = NPVARrec1 
+      >
+
+<
+   SUBRULE (* 1. myself *)
+      < >
+      < T1: REFLPRO(AUX_myselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 1
+                            number : singular }
+          A1: NPrec1 := AUX_NPONmyRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONmyRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 1
+                            number : singular }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 2. yourself *)
+      < >
+      < T1: REFLPRO(AUX_yourselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 2
+                            number : singular }
+          A1: NPrec1 := AUX_NPONyoursgRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONyoursgRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 2
+                            number : singular }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2
+         >
+
+   SUBRULE (* 3a. himself *)
+      < >
+      < T1: REFLPRO(AUX_himselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( masculine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: NPrec1 := AUX_NPONhimRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONhimRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( masculine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2
+
+         >
+
+   SUBRULE (* 3b. herself *)
+      < >
+      < T1: REFLPRO(AUX_herselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( feminine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPrec1 := AUX_NPONherRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONherRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( feminine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2
+         >
+
+   SUBRULE (* 3c. itself *)
+      < >
+      < T1: REFLPRO(AUX_itselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              NPVARrec1.genders = [omegagender] AND
+              NPVARrec1.sexes = [] 
+          A1: NPrec1 := AUX_NPONitRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONitRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              NPVARrec1.genders = [omegagender] AND
+              NPVARrec1.sexes = [] 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+         >
+
+   SUBRULE (* 4. ourselves *)
+      < >
+      < T1: REFLPRO(AUX_ourselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 1
+                            number : plural }
+          A1: NPrec1 := AUX_NPONourRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONourRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 1
+                            number : plural } 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 5. yourselves *)
+      < >
+      < T1: REFLPRO(AUX_yourselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 2
+                            number : plural }
+          A1: NPrec1 := AUX_NPONyourplRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONyourplRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 2
+                            number : plural } 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 6. themselves *)
+      < >
+      < T1: REFLPRO(AUX_themselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : plural }
+          A1: NPrec1 := AUX_NPONthemRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONthemRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1 = { person : 3
+                            number : plural } 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 6. oneself *)
+      < >
+      < T1: REFLPRO(AUX_oneselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: NPVARrec1.NPhead = oneNP
+          A1: NPrec1 := AUX_NPONoneRFLPR;
+              NPrec1.cases := NPVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONoneRFLPR EXCEPT FOR [cases] AND
+              NPVARrec1.NPhead = oneNP
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+>
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Targreflspelling7
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-JUN-1990 13:50:47  
+\item[* author:] Petra de Wit
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Targreflspelling8
+< m1: CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              predrel/VERBP{VERBPrec1}
+                   I2:[ mu2,
+                       rel1/CNVAR{CNVARrec1},
+                       mu3,
+                       prepobjrel/VARPREPP{VARPREPPrec2}
+                                 [mu5,
+                                  rel2/CNVAR{CNVARrec2},
+                                  mu6
+                                 ],
+                       mu4
+                     ],
+              mu8
+            ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              predrel/VERBP{VERBPrec1}
+                   I2:[ mu2,
+                       rel1/CNVAR{CNVARrec1},
+                       mu3,
+                       prepobjrel/PREPP{PREPPrec2}
+                                 [mu5,
+                                  rel2/I3::NP{NPrec1}[head/T1],
+                                  mu6
+                                 ],
+                       mu4
+                     ],
+              mu8
+            ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: RIGHTTOLEFT
+       I2: RIGHTTOLEFT
+       m1: CNVARrec1 = CNVARrec2  AND
+           NOT EXIST (mu3, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) 
+       I3: NPrec1.NPhead = reflNP
+       m : NOT EXIST (mu3, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) 
+         I31: CNVARrec3 = CNVARrec1 
+      >
+
+<
+   SUBRULE (* 3a. himself *)
+      < >
+      < T1: REFLPRO(AUX_himselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              ( masculine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: NPrec1 := AUX_NPONhimRFLPR;
+              NPrec1.cases := CNVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONhimRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [singular] AND
+              ( masculine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 3b. herself *)
+      < >
+      < T1: REFLPRO(AUX_herselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              ( feminine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPrec1 := AUX_NPONherRFLPR;
+              NPrec1.cases := CNVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONherRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [singular] AND
+              ( feminine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 3c. itself *)
+      < >
+      < T1: REFLPRO(AUX_itselfREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              CNVARrec1.genders = [omegagender] AND
+              CNVARrec1.sexes = [] 
+          A1: NPrec1 := AUX_NPONitRFLPR;
+              NPrec1.cases := CNVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2;
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONitRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [singular] AND
+              CNVARrec1.genders = [omegagender] AND
+              CNVARrec1.sexes = [] 
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+   SUBRULE (* 6. themselves *)
+      < >
+      < T1: REFLPRO(AUX_themselvesREFLPROkey){REFLPROrec1} >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [plural]
+          A1: NPrec1 := AUX_NPONthemRFLPR;
+              NPrec1.cases := CNVARrec2.cases;
+              PREPPrec2 := VARPREPPrec2
+         >
+
+      DECOMP
+         <
+          C1: NPrec1 = AUX_NPONthemRFLPR EXCEPT FOR [cases] AND
+              CNVARrec1.numbers = [plural] 
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases;
+              VARPREPPrec2 := PREPPrec2;
+
+         >
+
+>
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Targreflspelling8
+\item[* relevant examples:]
+\item[* language:] (Dutch, English, Spanish) 
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-JUN-1990 15:54:02  
+\item[* author:] Petra de Wit
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION Targreflspelling9
+< m1: CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              rel1/NPVAR{NPVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                     [ mu3,
+                       locargrel/PREPP{PREPPrec2}
+                                 [mu5,
+                                  rel2/NPVAR{NPVARrec2},
+                                  mu6
+                                 ],
+                       mu4
+                     ],
+              mu8
+            ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              rel1/NPVAR{NPVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                     [ mu3,
+                       locargrel/PREPP{PREPPrec2}
+                                 [mu5,
+                                  rel2/I3::NP{NPrec1}[head/T1],
+                                  mu6
+                                 ],
+                       mu4
+                     ],
+              mu8
+            ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: RIGHTTOLEFT
+       m1: NPVARrec1 = NPVARrec2 EXCEPT FOR [cases] AND
+           NOT EXIST (mu3, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) 
+       I3: NPrec1.NPhead = reflNP
+       m : NOT EXIST (mu3, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::NPVAR{NPVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::NPVAR{NPVARrec3} ]
+                           ] ) 
+         I31: NPVARrec3 = NPVARrec1 EXCEPT FOR [cases]
+      >
+
+<
+   SUBRULE (* 1. me *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_iBPERSPROkey){BPERSPROrec1}] >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 1
+                            number : singular }
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              PERSPROrec1.persprocase := accusative;
+              NPrec1 := AUX_NPONiPRSPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              PERSPROrec1.persprocase = accusative AND
+              NPrec1 = AUX_NPONiPRSPR EXCEPT FOR [cases] AND
+              NPrec1.cases = [accusative] AND
+              NPVARrec1 = { person : 1
+                            number : singular }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 2. you *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_yousgBPERSPROkey){BPERSPROrec1}]>
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 2
+                            number : singular }
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              PERSPROrec1.persprocase := accusative;
+              NPrec1 := AUX_NPONyousgPRSPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              PERSPROrec1.persprocase = accusative AND
+              NPrec1 = AUX_NPONyousgPRSPR EXCEPT FOR [cases] AND
+              NPrec1.cases = [accusative] AND
+              NPVARrec1 = { person : 2
+                            number : singular }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3a. she *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_sheBPERSPROkey){BPERSPROrec1}]>
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( feminine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              PERSPROrec1.persprocase := accusative;
+              NPrec1 := AUX_NPONshePRSPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+          DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              PERSPROrec1.persprocase = accusative AND
+              NPrec1 = AUX_NPONshePRSPR EXCEPT FOR [cases] AND
+              NPrec1.cases = [accusative] AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( feminine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3b. he *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_heBPERSPROkey){BPERSPROrec1}]>
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( masculine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              PERSPROrec1.persprocase := accusative;
+              NPrec1 := AUX_NPonhePRSPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              NPrec1 = AUX_NPonhePRSPR EXCEPT FOR [cases] AND 
+              NPrec1.cases = [accusative] AND
+              PERSPROrec1.persprocase = accusative AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              ( masculine IN NPVARrec1.sexes OR
+                NPVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3c. it *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_itBPERSPROkey){BPERSPROrec1}] >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              NPVARrec1.genders = [omegagender] AND
+              NPVARrec1.sexes = [] 
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              PERSPROrec1.persprocase := accusative;
+              NPrec1 := AUX_NPonitPRSPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              NPrec1 = AUX_NPonitPRSPR EXCEPT FOR [cases] AND
+              NPrec1.cases = [accusative] AND
+              PERSPROrec1.persprocase = accusative AND
+              NPVARrec1 = { person : 3
+                            number : singular } AND
+              NPVARrec1.NPhead <> oneNP AND
+              NPVARrec1.genders = [omegagender] AND
+              NPVARrec1.sexes = [] 
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 4. we *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_weBPERSPROkey){BPERSPROrec1}] >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 1
+                            number : plural }
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              PERSPROrec1.persprocase := accusative;
+              NPrec1 := AUX_NPonwePRSPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              PERSPROrec1.persprocase = accusative AND
+              NPrec1 = AUX_NPonwePRSPR EXCEPT FOR [cases] AND
+              NPrec1.cases = [accusative] AND
+              NPVARrec1 = { person : 1
+                            number : plural }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 5. you *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_youplBPERSPROkey){BPERSPROrec1}] >
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 2
+                            number : plural }
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              PERSPROrec1.persprocase := accusative;
+              NPrec1 := AUX_NPonyouplPRSPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              PERSPROrec1.persprocase = accusative AND
+              NPrec1 = AUX_NPonyouplPRSPR EXCEPT FOR [cases] AND
+              NPrec1.cases = [accusative] AND
+              NPVARrec1 = { person : 2
+                            number : plural }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 5. they *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_theyBPRSPRkey){BPERSPROrec1}]>
+
+      COMP
+         <
+          C1: NPVARrec1 = { person : 3
+                            number : plural }
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              PERSPROrec1.persprocase := accusative;
+              NPrec1 := AUX_NPontheyPRSPR;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              PERSPROrec1.persprocase = accusative AND
+              NPrec1 = AUX_NPontheyPRSPR EXCEPT FOR [cases] AND
+              NPrec1.cases = [accusative] AND
+              NPVARrec1 = { person : 3
+                            number : plural }
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+
+
+
+   SUBRULE (* 6. one *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_oneINDEFPROkey){BPERSPROrec1}]>
+
+      COMP
+         <
+          C1: NPVARrec1.NPhead = oneNP
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              NPrec1 := AUX_NPononeINDFPR;
+              PERSPROrec1.persprocase := accusative;
+              NPrec1.cases := NPVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              PERSPROrec1.persprocase = accusative AND
+              NPrec1 = AUX_NPononeINDFPR EXCEPT FOR [cases] AND
+              NPrec1.cases = [accusative] AND
+              NPVARrec1.NPhead = oneNP
+          A1: NPVARrec2 := NPVARrec1;
+              NPVARrec2.cases := NPrec1.cases
+         >
+>
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] Targreflspelling9
+\item[* relevant examples:] He kept his wife beside him, I put the man beside 
+me
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] xpproptoclause
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 21-JUN-1990 15:55:36  
+\item[* author:] Petra de Wit
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+\newpage
+\begin{verbatim}
+% TRANSFORMATION TArgReflSpelling10 (*who saw someone behind him*)
+< m1: CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              rel1/CNVAR{CNVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                     [ mu3,
+                       locargrel/PREPP{PREPPrec2}
+                                 [mu5,
+                                  rel2/CNVAR{CNVARrec2},
+                                  mu6
+                                 ],
+                       mu4
+                     ],
+              mu8
+            ]
+>
+
+< m : CLAUSE{CLAUSErec1}
+         I1:[ mu1,
+              rel1/CNVAR{CNVARrec1},
+              mu2,
+              predrel/VERBP{VERBPrec1}
+                     [ mu3,
+                       locargrel/PREPP{PREPPrec2}
+                                 [mu5,
+                                  rel2/I3::NP{NPrec1}[head/T1],
+                                  mu6
+                                 ],
+                       mu4
+                     ],
+              mu8
+            ]
+>
+
+   MATCHCONDITIONS
+      <
+       I1: RIGHTTOLEFT
+       m1: CNVARrec1 = CNVARrec2 EXCEPT FOR [cases] AND
+           NOT EXIST (mu3, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) 
+       I3: NPrec1.NPhead = reflNP
+       m : NOT EXIST (mu3, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../I31::CNVAR{CNVARrec3}]) AND
+           NOT EXIST (mu4, [../VARPREPP{VARPREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) AND
+           NOT EXIST (mu4, [../PREPP{PREPPrec1}
+                                   [ mu7,
+                                     ../I31::CNVAR{CNVARrec3} ]
+                           ] ) 
+         I31: CNVARrec3 = CNVARrec1 EXCEPT FOR [cases]
+      >
+
+<
+   SUBRULE (* 3a. she *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_sheBPERSPROkey){BPERSPROrec1}]>
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              ( feminine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              NPrec1 := AUX_NPonPRSPR;
+              NPrec1.cases := CNVARrec2.cases
+         >
+
+          DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              NPrec1 = AUX_NPonPRSPR AND
+              CNVARrec1.numbers = [singular] AND
+              ( feminine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI femininegender } )
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3b. he *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_heBPERSPROkey){BPERSPROrec1}]>
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              ( masculine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              NPrec1 := AUX_NPonPRSPR;
+              NPrec1.cases := CNVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              NPrec1 = AUX_NPonPRSPR AND
+              CNVARrec1.numbers = [singular] AND
+              ( masculine IN CNVARrec1.sexes OR
+                CNVARrec1 = { sexes    : []
+                              genders NI masculinegender } )
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases
+         >
+
+   SUBRULE (* 3c. it *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_itBPERSPROkey){BPERSPROrec1}] >
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [singular] AND
+              CNVARrec1.genders = [omegagender] AND
+              CNVARrec1.sexes = [] 
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              NPrec1 := AUX_NPonPRSPR;
+              NPrec1.cases := CNVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              NPrec1 = AUX_NPonPRSPR AND
+              CNVARrec1.numbers = [singular] AND
+              CNVARrec1.genders = [omegagender] AND
+              CNVARrec1.sexes = [] 
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases
+         >
+
+
+   SUBRULE (* 5. they *)
+      < >
+      < T1: PERSPRO{PERSPROrec1}
+                   [head/BPERSPRO(AUX_theyBPRSPRkey){BPERSPROrec1}]>
+
+      COMP
+         <
+          C1: CNVARrec1.numbers = [plural]
+          A1: PERSPROrec1 := COPYT_bpersproTOperspro(BPERSPROrec1);
+              NPrec1 := AUX_NPonPRSPR;
+              NPrec1.cases := CNVARrec2.cases
+         >
+
+      DECOMP
+         <
+          C1: PERSPROrec1 = COPYT_bpersproTOperspro(BPERSPROrec1) AND
+              NPrec1 = AUX_NPonPRSPR AND
+              CNVARrec1.numbers = [plural]
+          A1: CNVARrec2 := CNVARrec1;
+              CNVARrec2.cases := NPrec1.cases
+         >
+
+>
+
+
+&
+
+\end{verbatim}
+\newpage
+\begin{description}
+\item[* name:] TArgReflSpelling10
+\item[* relevant examples:] (the man who) kept his wife beside him
+\item[* language:] (Dutch, English, Spanish) English
+\item[* kind of rule:] (M-rule, S-rule, Transferrule) M-rule
+\item[* subgrammar:] 
+\item[* class:] (name of rule, transformation or filter class)
+\item[* date of creation:] 25-JUN-1990 11:00:45  
+\item[* author:] Petra de Wit
+\item[* copied from:]
+\item[* modification:]\mbox{}
+\begin{enumerate}
+\item date: ../../..\ \ \ \ \ author:
+\item date: ../../..\ \ \ \ \ author:
+\end{enumerate}
+\item[* task:]
+\item[\ \ strategy:] (also: deviations from accepted proposals)
+\item[\ \ rejected alternatives:]
+\item[\ \ clarification of variables:]
+\item[\ \ clarification of the splitting up into subrules:]
+\item[\ \ clarification of the collapsing of rules:] (e.g. clarification of parameters)
+\item[\ \ differences analytical/generative version:]
+\item[\  \ suggested semantics:]
+\item[\ \ presuppositions:]\mbox{}
+\begin{enumerate}
+\item dictionary:\\
+
+\item rules:\\
+
+\end{enumerate}
+\item[\ \ consequences in the grammar:]
+\item[\ \ translation aspects:]\mbox{}
+\begin{enumerate} 
+\item within this language:\\
+
+\item in other languages:\\
+
+\end{enumerate}
+\item[* relevant literature/documents:]
+\item[\ \ remarks:]\mbox{}
+\begin{enumerate}
+\item problems:\\
+
+\item modifications:\\
+
+\end{enumerate}
+\end{description}
+%%

@@ -1,0 +1,2306 @@
+%ENGLISH
+&
+
+%NP1rule
+
+REGULAREXPRESSION:
+
+NP = [POSSADJ/1 | DETP/2 | NP/3] . CN/4 . [ (GLUE/5.GEN/6) | THANP/7 ]
+
+CONDITIONSANDACTIONS:
+
+VAR    
+       classpar       :: timeadvclasstype;
+       deixispar      :: deixistype;
+       aspectpar      :: aspecttype;
+       retropar       :: retrotype;
+       definitepar    :: deftype;
+       numberspar     :: numbersettype;
+       casespar       :: caseSETtype;
+       genderspar     :: genderSETtype;
+       sexespar       :: sexSETtype;
+       actsubcspar    :: nounsubcSETtype;
+       temporalpar    :: temporaltype;
+       animatepar     :: animatetype;
+       humanpar       :: humantype;
+       posscomaspar   :: posscomaSETtype;
+       actcomaspar    :: posscomaSETtype;
+       thetanppar     :: thetanptype;
+       nounpatternefspar :: synpatternSETtype;
+       detnpmoodpar   :: xpmoodtype;
+       genericpar     :: generictype;
+       posspredpar    :: posspredtype;
+       possnietnppar  :: possnietnptype;
+       syntquantpar   :: syntquanttype;
+       specQpar       :: specQtype;
+       posspar        :: posstype;
+
+       whdetfound     ::: BOOLEAN;
+       qpfound        ::: BOOLEAN;
+       genposs        ::: BOOLEAN;
+       genreal        ::: BOOLEAN;
+       possnumberspar :: numberSETtype;
+       detdefpar      ::: deftype;
+       detrelfound    ::: BOOLEAN;
+
+
+?
+HELP
+!(* moved to lssurfquo: FUNCTION QPunderDETP(T1:LSSTREE_pstree):BOOLEAN;
+   VAR result  : BOOLEAN;
+       sonlist : LSSTREE_prelnode;
+BEGIN
+   result := false;
+   sonlist := T1^.sons;
+   WHILE NOT (result) AND (sonlist <> NIL) DO
+     BEGIN
+     IF sonlist^.node^.cat = QP
+        THEN result := TRUE;
+     sonlist := sonlist^.brother;
+     END;
+   QPunderDETP := result;
+END;*) {QPunderDETP}
+
+
+
+!(* moved to lssurfquo: FUNCTION GENunderNP(T1:LSSTREE_pstree):BOOLEAN;
+   VAR result  : BOOLEAN;
+       sonlist : LSSTREE_prelnode;
+BEGIN
+   result := false;
+   sonlist := T1^.sons;
+   WHILE NOT (result) AND (sonlist <> NIL) DO
+     BEGIN
+     IF sonlist^.node^.cat = GEN
+        THEN result := TRUE;
+     sonlist := sonlist^.brother;
+     END;
+   GENunderNP := result;
+END;*) {GENunderNP}
+
+
+!(* moved to lssurfquo:
+FUNCTION PNunderCN(T1:LSSTREE_pstree):BOOLEAN;
+   VAR result  : BOOLEAN;
+       son,sonlist : LSSTREE_prelnode;
+BEGIN
+   result := false;
+   sonlist := T1^.sons;
+   WHILE NOT (result) AND (sonlist <> NIL) DO
+     BEGIN
+     IF sonlist^.node^.cat = NOUN 
+     THEN BEGIN
+          result := TRUE;
+          son := sonlist^.node^.sons
+          END;
+    sonlist := sonlist^.brother
+    END;
+  IF result THEN result := (son <> NIL);
+  IF result 
+  THEN BEGIN
+       result := (son^.node^.cat = SUBNOUN);
+       IF result THEN son := son^.node^.sons;
+       END;
+  IF result THEN result := (son <> NIL);
+  IF result 
+  THEN BEGIN
+       result := (son^.node^.cat = BPROPERNOUN);
+       END;
+  PNunderCN := result;
+END;*)
+
+
+
+?
+
+<*
+ HINIT:BEGIN
+         classpar      := omegatimeadvclass;
+         deixispar     := omegadeixis;
+         aspectpar     := omegaaspect;
+         retropar      := false;
+         definitepar   := omegadef;
+         numberspar    := [singular,plural];
+         casespar      := [nominative,accusative];
+         genderspar    := [omegagender];
+         sexespar      := [];
+         actsubcspar   := [othernoun];
+         temporalpar   := false;
+         animatepar    := omegaAnimate;
+         humanpar      := omegaHuman;
+         posscomaspar  := [];
+         actcomaspar   := [count];
+         thetanppar    := omegathetanp;
+         nounpatternefspar := [];
+         detnpmoodpar  := nowh;
+         genericpar    := omegageneric;
+         posspredpar   := false;
+         possnietnppar := false;
+         syntquantpar  := Omegaquant;
+         specQpar      := yesspec; 
+         posspar       := true;
+
+         possnumberspar := [singular,plural];
+         whdetfound     := false;
+         qpfound        := false;
+         genposs        := true;
+         genreal        := false;
+         detdefpar      := omegadef;
+         detrelfound    := false;
+      END;
+
+
+
+1     :<*  !(*possadj*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := detrel;
+                            detrelfound := true;
+                            detnpmoodpar   := %POSSADJ.mood;
+                            IF %POSSADJ.mood = wh 
+                                THEN definitepar := indef
+                                ELSE definitepar := def;
+                            posspredpar    := true;
+                            posscomaspar   := [count,mass];
+                          END
+        *>
+
+2     :<*  !(*detp*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := detrel;
+                            detrelfound := true;
+                            qpfound := QPunderDETP(b);
+                            possnietnppar := %DETP.possnietnp;
+                            definitepar   := %DETP.definite;
+                            detdefpar     := %DETP.definite;
+                            detnpmoodpar  := %DETP.mood;
+                            IF %DETP.mood = wh 
+                               THEN WhDetFound := true;
+                            posspredpar   := %DETP.posspred;
+                            syntquantpar  := %DETP.syntquant;  !(*In NPrule omega *)
+                            possnumberspar:= %DETP.possnumbers;
+                            posscomaspar  := %DETP.posscomas;
+                          END
+        *>
+
+3     :<*  !(*np on genitive NP, PROPERNOUN, INDEFPRO*)
+        LOCALCONDITION: GENunderNP(b)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := detrel;
+                            detrelfound := true;
+                            genposs := false;
+                            definitepar  := def;
+                            posspredpar  := %NP.posspred;
+                            possnietnppar := %NP.possnietnp;
+                            posscomaspar := [count,mass];
+                            detnpmoodpar := %NP.mood;
+                            syntquantpar := %NP.syntquant;  !(*In NPrule only
+                                                             for INDEFPRO*)
+                          END
+        *>
+
+
+4     :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: ( ((%CN.definite = def) AND WhDetFound) OR
+                              (%CN.definite = omegadef) OR
+                              (%CN.definite = detdefpar) 
+                            ) AND
+                            ( (plural IN %CN.numbers) OR
+                              (detrelfound) OR
+                              (mass IN %CN.posscomas) 
+                            ) AND
+                            ( (plural IN %CN.numbers) OR
+                              (detrelfound) OR
+                              (NOT PNunderCN(b) )
+                            ) 
+                           !(*conditions on posscomas still to be added MJS*)
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            IF definitepar = omegadef 
+                               THEN definitepar := %CN.definite;
+                            classpar    := %CN.class;
+                            deixispar   := %CN.deixis;
+                            aspectpar   := %CN.aspect;
+                            retropar    := %CN.retro;
+                            numberspar  := %CN.numbers;
+                            casespar    := %CN.cases;
+                            genderspar  := %CN.genders;
+                            sexespar    := %CN.sexes;
+                            actsubcspar := %CN.actsubcs;
+                            temporalpar := %CN.temporal;
+                            animatepar  := %CN.animate;
+                            humanpar    := %CN.human;
+                            IF plural IN %CN.numbers 
+                              THEN actcomaspar := [count] 
+                              ELSE IF posscomaspar = [count]
+                                THEN actcomaspar := [count]
+                                ELSE actcomaspar := %CN.posscomas;   
+                            thetanppar  := %CN.thetanp;
+                            nounpatternefspar := %CN.nounpatternefs;
+                            posspar     := %CN.poss;
+                            IF ((NOT detrelfound) AND
+                                ((plural IN %CN.numbers) OR
+                                 (mass IN %CN.posscomas)) )
+                               THEN posspredpar := true;
+                          END
+       *>
+
+5     :<*  !(* glue *)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: genposs
+                #ACTION:  BEGIN
+                            SYNREL := gluerel;
+                          END
+       *>
+
+6     :<*  !(* gen *)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: genposs
+                #ACTION:  BEGIN
+                            SYNREL := modrel;
+                            genreal := true;
+                          END
+       *>
+
+7     :<*  !(* extrap/THANP *)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: qpfound AND NOT genreal
+                #ACTION:  BEGIN
+                            SYNREL := extraposrel;
+                          END
+       *>
+
+
+
+HFINAL: #CONDITION: TRUE
+        #ACTION: BEGIN
+                 IF ((singular IN possnumberspar) AND
+                     (singular IN numberspar)) THEN
+                   BEGIN
+                   MAKET_NP;
+                   $NP.number   := singular;
+                   $NP.superdeixis := omegadeixis;
+                   $NP.class    := classpar;
+                   $NP.deixis   := deixispar;
+                   $NP.aspect   := aspectpar;
+                   $NP.retro    := retropar;
+                   IF (detrelfound OR genreal) 
+                      THEN $NP.definite := definitepar
+                      ELSE $NP.definite := indef;
+                   IF genreal 
+                      THEN $NP.cases    := []
+                      ELSE $NP.cases    := casespar;
+                   $NP.person   := 3; 
+                   $NP.genders  := genderspar;
+                   $NP.sexes    := sexespar;
+                   $NP.actsubcs := actsubcspar;
+                   $NP.temporal := temporalpar;
+                   $NP.animate  := animatepar;
+                   $NP.human    := humanpar;
+                   IF (posscomaspar = []) 
+                     THEN $NP.actcomas := actcomaspar 
+                     ELSE IF ((actcomaspar <> [count]) AND 
+                              (mass in posscomaspar))
+                          THEN $NP.actcomas := [mass]
+                     ELSE IF ((actcomaspar <> [count]) AND 
+                              NOT (mass in posscomaspar))
+                          THEN $NP.actcomas := [count];
+              !(*Is this correct? MJS*)
+                   $NP.thetanp  := thetanppar;
+                   $NP.nounpatternefs := nounpatternefspar;
+                   $NP.mood     := detnpmoodpar;
+                   $NP.generic  := genericpar;
+                   $NP.posspred := posspredpar;
+                   $NP.possnietnp := possnietnppar;
+                   $NP.syntquant:= syntquantpar;
+                   $NP.NPhead   := otherNP;
+                   $NP.specQ    := specQpar;
+                   IF genposs = true THEN  
+                     $NP.poss     := posspar ELSE
+                     $NP.poss     := false;
+                   END; !(*singular*)
+
+                 IF ((plural IN possnumberspar) AND
+                     (plural IN numberspar)) THEN
+                   BEGIN
+                   MAKET_NP;
+                   $NP.number   := plural;
+                   $NP.superdeixis := omegadeixis;
+                   $NP.class    := classpar;
+                   $NP.deixis   := deixispar;
+                   $NP.aspect   := aspectpar;
+                   $NP.retro    := retropar;
+                   IF (detrelfound OR genreal) 
+                      THEN $NP.definite := definitepar
+                      ELSE $NP.definite := indef;
+                   IF genreal 
+                      THEN $NP.cases    := []
+                      ELSE $NP.cases    := casespar;
+                   $NP.person   := 3; 
+                   $NP.genders  := genderspar;
+                   $NP.sexes    := sexespar;
+                   $NP.actsubcs := actsubcspar;
+                   $NP.temporal := temporalpar;
+                   $NP.animate  := animatepar;
+                   $NP.human    := humanpar;
+                   $NP.actcomas := actcomaspar;
+             !(*Is this correct? MJS*)
+                   $NP.thetanp  := thetanppar;
+                   $NP.nounpatternefs := nounpatternefspar;
+                   $NP.mood     := detnpmoodpar;
+                   $NP.generic  := genericpar;
+                   $NP.posspred := posspredpar;
+                   $NP.possnietnp := possnietnppar;
+                   $NP.syntquant  := syntquantpar;
+                   $NP.NPhead   := otherNP;
+                   $NP.specQ    := specQpar;
+                   IF genposs = true THEN  
+                     $NP.poss     := posspar ELSE
+                     $NP.poss     := false;
+                   END; !(*plural*)
+                 END !(*action*)
+*>
+
+END;
+&                           
+
+
+
+
+%NP2rule
+
+REGULAREXPRESSION:
+
+NP = ( DEMPRO/1 | PERSPRO/2 | INDEFPRO/3 | WHPRO/4 | PROPERNOUN/5 | 
+       RECIPRO/6 | POSSPRO/7 )
+      . [ (GLUE/8.GEN/9) |  PREPP/10 ]
+                                                         
+CONDITIONSANDACTIONS:
+
+  VAR  
+       classpar       :: timeadvclasstype;
+       aspectpar      :: aspecttype;
+       deixispar      :: deixistype;
+       retropar       :: retrotype;
+       definitepar    :: deftype;
+       personpar      :: persontype;
+       numberspar     :: numberSETtype;
+       casespar       :: caseSETtype;
+       genderspar     :: genderSETtype;
+       sexespar       :: sexSETtype;
+       actsubcspar    :: nounsubcSETtype;
+       temporalpar    :: temporaltype;
+       animatepar     :: animatetype;
+       humanpar       :: humantype;
+       actcomaspar    :: posscomasettype;
+       detnpmoodpar   :: xpmoodtype;
+       genericpar     :: generictype;
+       posspredpar    :: posspredtype;
+       possnietnppar  :: possnietnptype;
+       syntquantpar   :: syntquanttype;
+       NPheadpar      :: NPheadtype;
+       specQpar       :: specQtype;
+       posspar        :: posstype;
+
+       modpossPROfound ::: BOOLEAN;
+       genposs        ::: BOOLEAN;
+       genreal        ::: BOOLEAN;
+
+
+<*
+ HINIT:BEGIN
+         classpar     := omegatimeadvclass;
+         aspectpar    := omegaaspect;
+         deixispar    := omegadeixis;
+         retropar     := false;
+         definitepar  := omegadef;
+         personpar    := 3;
+         numberspar   := [];
+         casespar     := [nominative,accusative];
+         genderspar   := [omegagender];
+         sexespar     := [];
+         actsubcspar  := [othernoun];
+         temporalpar  := false;
+         animatepar   := omegaAnimate;
+         humanpar     := omegaHuman;
+         actcomaspar  := [count];
+         detnpmoodpar := nowh;
+         genericpar   := omegageneric;
+         posspredpar  := false;
+         possnietnppar := false;
+         syntquantpar := Omegaquant;
+         NPheadpar    := otherNP;
+         specQpar     := omegaspec; 
+         posspar      := false;
+
+         modpossPROfound := false;
+         genposs      := true;
+         genreal      := false;
+      END;
+
+
+1     :<*    !(*dempro*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            genposs := false;
+                            definitepar := def;
+                            actcomaspar := [];
+                            numberspar  := [%DEMPRO.number];
+                            specQpar    := yesspec;
+
+                            IF %DEMPRO.key = KEY_thatDEMPROkey
+                            THEN NPheadpar := thatNP
+                            ELSE IF %DEMPRO.key = KEY_thisDEMPROkey
+                                 THEN NPheadpar := thisNP
+                                 ELSE IF %DEMPRO.key = KEY_theseDEMPROkey
+                                      THEN NPheadpar := theseNP
+                                      ELSE IF %DEMPRO.key = KEY_thoseDEMPROkey
+                                           THEN NPheadpar := thoseNP;
+                                         !(* ELSE default *)
+                          END
+        *>
+
+2     :<*  !(*perspro*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            genposs := false;
+                            definitepar := def;
+                            personpar   := %PERSPRO.person;
+                            numberspar  := [%PERSPRO.number];
+                            casespar    := [%PERSPRO.persprocase];
+                            genderspar  := [%PERSPRO.gender];
+                            animatepar  := %PERSPRO.animate;
+                            NPheadpar   := %PERSPRO.NPhead;
+                            specQpar    := yesspec;
+                            posspredpar := true;
+                          END
+        *>
+
+3     :<*   !(*indefpro*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            !(*genposs remains true*)
+                            modpossPROfound := true;
+                            definitepar := %INDEFPRO.definite;
+                            numberspar  := [%INDEFPRO.number];
+                            posspar     := %INDEFPRO.poss;
+                            possnietnppar := %INDEFPRO.possnietnp;
+                            syntquantpar  := %INDEFPRO.syntquant;
+                            animatepar  := %INDEFPRO.animate;
+                            NPheadpar   := %INDEFPRO.NPhead;
+                            posspredpar := true;
+                            specQpar    := yesspec;
+                            IF %INDEFPRO.NPhead = ONEnp THEN
+                              casespar := [nominative];
+                          END
+
+        *>
+
+4     :<*   !(*whpro*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            genposs := false;
+                            modpossPROfound := true;
+                            posspredpar  := true;
+                            definitepar  := indef;
+                            detnpmoodpar := wh;
+                            numberspar   := [%WHPRO.number];
+                            sexespar     := %WHPRO.sexes; 
+                            animatepar   := %WHPRO.animate;
+                            posspar      := %WHPRO.poss;
+                            specQpar     := yesspec;
+
+                            IF %WHPRO.animate = noanimate
+                            THEN BEGIN
+                                 NPheadpar := whatWHPRONP;
+                                 humanpar  := nohuman;
+                                 END
+                            ELSE BEGIN
+                                 humanpar  := yeshuman;
+                                 casespar  := %WHPRO.cases;
+                                 END;
+                          END
+        *>
+
+5     :<*   !(*propernoun*)
+        LOCALCONDITION: singular IN %PROPERNOUN.numbers
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            !(*genposs remains true*)
+                            modpossPROfound := true;
+                            numberspar  := [singular];
+                            sexespar    := %PROPERNOUN.sexes;
+                            actsubcspar := [%PROPERNOUN.subc];
+                            animatepar  := %PROPERNOUN.animate;
+                            humanpar    := %PROPERNOUN.human;
+                            genderspar  := %PROPERNOUN.genders;
+                            posspar     := %PROPERNOUN.poss;
+                            temporalpar := %PROPERNOUN.temporal;
+                            posspredpar := true;
+                            definitepar := def;
+                            specQpar    := yesspec;
+                            classpar    := %PROPERNOUN.class;
+                            aspectpar   := %PROPERNOUN.aspect;
+                            deixispar   := %PROPERNOUN.deixis;
+                            retropar    := %PROPERNOUN.retro;
+                          END
+        *>
+
+6     :<*  !(*recipro*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            !(*genposs remains true. Is that correct? MJS*)
+                            numberspar  := [plural];
+                            definitepar := def;
+                            casespar    := [accusative];
+                            specQpar    := yesspec;  
+                            NPheadpar   := reciproNP;
+                          END
+        *>
+
+ 7     :<*  !(*posspro*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            genposs     := false;
+                            numberspar  := [singular,plural];
+                            definitepar := def;
+                            specQpar    := yesspec;  
+                            posspredpar := true;
+                          END
+        *>
+
+ 8     :<*  !(*glue*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: genposs
+                #ACTION:  BEGIN
+                            SYNREL := gluerel;
+                          END
+        *>
+
+ 9    :<*  !(*gen*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: genposs
+                #ACTION:  BEGIN
+                            SYNREL := modrel;
+                            genreal := true;
+                          END
+        *>
+
+10    :<*  !(*prepp*)
+        LOCALCONDITION: (%PREPP.stranded = false) AND
+                        (%PREPP.headkey = KEY_ofPREPkey) 
+        GLOBAL: #CONDITION: modpossPROfound AND 
+                            NOT genreal
+                #ACTION:  BEGIN
+                            SYNREL := possrel;
+                          END
+        *>
+
+HFINAL: #CONDITION: TRUE
+        #ACTION: BEGIN
+                   IF singular IN numberspar THEN
+                     BEGIN
+                       MAKET_NP;
+                       $NP.superdeixis := omegadeixis;
+                       $NP.class     := classpar;
+                       $NP.aspect    := aspectpar;
+                       $NP.deixis    := deixispar;
+                       $NP.retro     := retropar;
+                       $NP.definite  := definitepar;
+                       $NP.person    := personpar;
+                       $NP.number    := singular;
+                       IF genreal 
+                          THEN $NP.cases    := []
+                          ELSE $NP.cases    := casespar;
+                       $NP.genders   := genderspar;
+                       $NP.sexes     := sexespar;     
+                       $NP.actsubcs  := actsubcspar;
+                       $NP.temporal  := temporalpar;
+                       $NP.animate   := animatepar;  
+                       $NP.human     := humanpar;      
+                       $NP.actcomas  := actcomaspar;
+                       $NP.thetanp   := omegathetanp;
+                       $NP.nounpatternefs := [];
+                       $NP.mood      := detnpmoodpar;
+                       $NP.generic   := genericpar;
+                       $NP.posspred  := posspredpar;
+                       $NP.possnietnp := possnietnppar;
+                       $NP.syntquant := syntquantpar;
+                       $NP.NPhead    := NPheadpar;
+                       $NP.specQ     := specQpar;
+                       $NP.poss      := posspar; 
+                     END; !(*singular*)
+
+                   IF plural IN numberspar THEN
+                     BEGIN
+                       MAKET_NP;
+                       $NP.superdeixis := omegadeixis;
+                       $NP.class     := classpar;
+                       $NP.aspect    := aspectpar;
+                       $NP.deixis    := deixispar;
+                       $NP.retro     := retropar;
+                       $NP.definite  := definitepar;
+                       $NP.person    := personpar;
+                       $NP.number    := plural;
+                       IF genreal 
+                          THEN $NP.cases    := []
+                          ELSE $NP.cases    := casespar;
+                       $NP.genders   := genderspar;
+                       $NP.sexes     := sexespar;     
+                       $NP.actsubcs  := [othernoun];
+                       $NP.temporal  := temporalpar;
+                       $NP.animate   := animatepar;  
+                       $NP.human     := humanpar;      
+                       $NP.actcomas  := actcomaspar;
+                       $NP.thetanp   := omegathetanp;
+                       $NP.nounpatternefs := [];
+                       $NP.mood      := detnpmoodpar;
+                       $NP.generic   := genericpar;
+                       $NP.posspred  := posspredpar;
+                       $NP.possnietnp := possnietnppar;
+                       $NP.syntquant := syntquantpar;
+                       $NP.NPhead    := NPheadpar;
+                       $NP.specQ     := specQpar;
+                       $NP.poss      := posspar; 
+                     END; !(*plural*)
+                 END !(*action*)
+*>
+END;
+&                           
+
+
+
+
+%NP3rule
+
+REGULAREXPRESSION:
+
+NP = [ ADVP/1 ] . NP/2 . [ ADVP/3 ]
+                                                         
+CONDITIONSANDACTIONS:
+
+  VAR  
+       classpar       :: timeadvclasstype;
+       aspectpar      :: aspecttype;
+       deixispar      :: deixistype;
+       retropar       :: retrotype;
+       definitepar    :: deftype;
+       personpar      :: persontype;
+       numberpar      :: numbertype;
+       casespar       :: caseSETtype;
+       genderspar     :: genderSETtype;
+       sexespar       :: sexSETtype;
+       actsubcspar    :: nounsubcSETtype;
+       temporalpar    :: temporaltype;
+       animatepar     :: animatetype;
+       humanpar       :: humantype;
+       actcomaspar    :: posscomaSETtype;
+       thetanppar     :: thetanptype;
+       nounpatternefspar :: synpatternSETtype;
+       posspredpar    :: posspredtype;
+       possnietnppar  :: possnietnptype;
+       detnpmoodpar   :: xpmoodtype;
+       genericpar     :: generictype;
+       syntquantpar   :: syntquanttype;
+       NPheadpar      :: NPheadtype;
+       specQpar       :: specQtype;
+       posspar        :: posstype;
+
+       advfound       :: BOOLEAN;
+?
+HELP
+FUNCTION INDEFunderNP(T1:LSSTREE_pstree):BOOLEAN;
+   VAR result  : BOOLEAN;
+       sonlist : LSSTREE_prelnode;
+BEGIN
+   result := false;
+   sonlist := T1^.sons;
+   WHILE NOT (result) AND (sonlist <> NIL) DO
+     BEGIN
+     IF sonlist^.node^.cat = INDEFPRO
+        THEN IF sonlist^.relation = head
+             THEN result := TRUE;
+     sonlist := sonlist^.brother;
+     END;
+   INDEFunderNP := result;
+END; {INDEFunderNP}
+
+?
+
+
+
+<*
+ HINIT:BEGIN
+       classpar       := omegatimeadvclass;
+       aspectpar      := omegaaspect;
+       deixispar      := omegadeixis;
+       retropar       := false;
+       definitepar    := omegadef;
+       personpar      := 3;
+       numberpar      := singular;
+       casespar       := [];
+       genderspar     := [omegagender];
+       sexespar       := [];
+       actsubcspar    := [othernoun];
+       temporalpar    := false;
+       animatepar     := omegaAnimate;
+       humanpar       := omegaHuman;
+       actcomaspar    := [count];
+       thetanppar     := omegathetanp;
+       nounpatternefspar := [];
+       posspredpar    := false;
+       possnietnppar  := false;
+       detnpmoodpar   := nowh;
+       genericpar     := omegageneric;
+       syntquantpar   := Omegaquant;
+       NPheadpar      := otherNP;
+       specQpar       := omegaspec;
+       posspar        := true;
+
+       advfound       := false;
+
+     END;
+
+
+
+
+1     :<*
+        LOCALCONDITION: PreXPAdv IN %ADVP.actsubcefs
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := modrel;
+                            advfound := true;
+                          END
+        *>
+
+2     :<*
+        LOCALCONDITION: (%NP.mood = nowh) AND
+                        NOT INDEFunderNP(b)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            classpar      := %NP.class;
+                            aspectpar     := %NP.aspect;
+                            deixispar     := %NP.deixis;
+                            retropar      := %NP.retro;
+                            definitepar   := %NP.definite;
+                            personpar     := %NP.person;
+                            numberpar     := %NP.number;
+                            casespar      := %NP.cases;
+                            genderspar    := %NP.genders;
+                            sexespar      := %NP.sexes;
+                            actsubcspar   := %NP.actsubcs;
+                            temporalpar   := %NP.temporal;
+                            posspar       := %NP.poss;
+                            animatepar    := %NP.animate;
+                            humanpar      := %NP.human;
+                            actcomaspar   := %NP.actcomas;
+                            thetanppar    := %NP.thetanp;
+                            nounpatternefspar := %NP.nounpatternefs; 
+                            posspredpar   := %NP.posspred;
+                            possnietnppar := %NP.possnietnp;
+                            detnpmoodpar  := %NP.mood;
+                            genericpar    := %NP.generic;
+                            syntquantpar  := %NP.syntquant;
+                            NPheadpar     := %NP.NPhead;
+                            specQpar      := %NP.specQ;
+                          END
+       *>
+
+3     :<*
+        LOCALCONDITION: PostXPAdv IN %ADVP.actsubcefs
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := postmodrel;
+                            advfound := true;
+                          END
+        *>
+
+
+
+HFINAL: #CONDITION: advfound
+        #ACTION: BEGIN
+                 MAKET_NP;
+                 $NP.superdeixis := omegadeixis;
+                 $NP.class     := classpar;
+                 $NP.aspect    := aspectpar;
+                 $NP.deixis    := deixispar;
+                 $NP.retro     := retropar;
+                 $NP.definite  := definitepar;
+                 $NP.person    := personpar;
+                 $NP.number    := numberpar;
+                 $NP.cases     := casespar;
+                 $NP.genders   := genderspar;
+                 $NP.sexes     := sexespar;
+                 $NP.actsubcs  := actsubcspar;
+                 $NP.temporal  := temporalpar;
+                 $NP.poss      := posspar;
+                 $NP.animate   := animatepar;
+                 $NP.human     := humanpar;
+                 $NP.actcomas  := actcomaspar;
+                 $NP.thetanp   := thetanppar;
+                 $NP.nounpatternefs := nounpatternefspar;
+                 $NP.posspred  := posspredpar;
+                 $NP.possnietnp:= possnietnppar;
+                 $NP.mood      := detnpmoodpar; 
+                 $NP.generic   := genericpar;
+                 $NP.syntquant := syntquantpar;
+                 $NP.NPhead    := NPheadpar;
+                 $NP.specQ     := specQpar;
+                 END
+*>
+END;
+&                           
+
+
+
+%NP4rule
+
+REGULAREXPRESSION:
+
+NP = THERE/1
+                                                         
+
+CONDITIONSANDACTIONS:
+VAR    
+       classpar       :: timeadvclasstype;
+       deixispar      :: deixistype;
+       aspectpar      :: aspecttype;
+       retropar       :: retrotype;
+       definitepar    :: deftype;
+       numberspar     :: numbersettype;
+       casespar       :: caseSETtype;
+       genderspar     :: genderSETtype;
+       sexespar       :: sexSETtype;
+       actsubcspar    :: nounsubcSETtype;
+       temporalpar    :: temporaltype;
+       animatepar     :: animatetype;
+       humanpar       :: humantype;
+       posscomaspar   :: posscomaSETtype;
+       actcomaspar    :: posscomaSETtype;
+       thetanppar     :: thetanptype;
+       nounpatternefspar :: synpatternSETtype;
+       detnpmoodpar   :: xpmoodtype;
+       genericpar     :: generictype;
+       posspredpar    :: posspredtype;
+       possnietnppar  :: possnietnptype;
+       syntquantpar   :: syntquanttype;
+       specQpar       :: specQtype;
+       posspar        :: posstype;
+
+       whdetfound     :: BOOLEAN;
+       qpfound        :: BOOLEAN;
+       genposs        :: BOOLEAN;
+       genreal        :: BOOLEAN;
+       possnumberspar :: numberSETtype;
+       detdefpar      :: deftype;
+       detrelfound    :: BOOLEAN;
+
+
+
+
+
+<*
+ HINIT:BEGIN
+         classpar      := omegatimeadvclass;
+         deixispar     := omegadeixis;
+         aspectpar     := omegaaspect;
+         retropar      := false;
+         definitepar   := omegadef;
+         numberspar    := [singular,plural];
+         casespar      := [nominative,accusative];
+         genderspar    := [omegagender];
+         sexespar      := [];
+         actsubcspar   := [othernoun];
+         temporalpar   := false;
+         animatepar    := omegaAnimate;
+         humanpar      := omegaHuman;
+         posscomaspar  := [];
+         actcomaspar   := [count];
+         thetanppar    := omegathetanp;
+         nounpatternefspar := [];
+         detnpmoodpar  := nowh;
+         genericpar    := omegageneric;
+         posspredpar   := false;
+         possnietnppar := false;
+         syntquantpar  := Omegaquant;
+         specQpar      := yesspec; 
+         posspar       := true;
+
+         possnumberspar := [singular,plural];
+         whdetfound     := false;
+         qpfound        := false;
+         genposs        := true;
+         genreal        := false;
+         detdefpar      := omegadef;
+         detrelfound    := false;
+      END;
+
+
+
+1: 
+       <*
+         LOCALCONDITION: TRUE
+         GLOBAL: #CONDITION: TRUE
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+
+                            END
+       *>
+
+
+HFINAL: #CONDITION: TRUE
+        #ACTION: BEGIN
+                   IF singular IN possnumberspar THEN
+                   BEGIN
+                     MAKET_NP;
+                     $NP.number      := singular;
+                     $NP.superdeixis := omegadeixis;
+                     $NP.class       := classpar;
+                     $NP.deixis      := deixispar;
+                     $NP.aspect      := aspectpar;
+                     $NP.retro       := retropar;
+                     $NP.definite    := definitepar;
+                     $NP.cases       := casespar;
+                     $NP.person      := 3; 
+                     $NP.genders     := genderspar;
+                     $NP.sexes       := sexespar;
+                     $NP.actsubcs    := [othernoun];
+                     $NP.temporal    := temporalpar;
+                     $NP.animate     := animatepar;
+                     $NP.human       := humanpar;
+                     $NP.actcomas    := [count];
+                     $NP.thetanp     := thetanppar;
+                     $NP.nounpatternefs := nounpatternefspar;
+                     $NP.mood     := detnpmoodpar;
+                     $NP.generic  := genericpar;
+                     $NP.posspred := posspredpar;
+                     $NP.possnietnp := possnietnppar;
+                     $NP.syntquant:= syntquantpar;
+                     $NP.NPhead   := thereNP;
+                     $NP.specQ    := yesspec;
+                     $NP.poss     := TRUE;
+                   END; !(*singular*)
+                   IF plural IN possnumberspar THEN
+                   BEGIN
+                     MAKET_NP;
+                     $NP.number      := plural;
+                     $NP.superdeixis := omegadeixis;
+                     $NP.class       := classpar;
+                     $NP.deixis      := deixispar;
+                     $NP.aspect      := aspectpar;
+                     $NP.retro       := retropar;
+                     $NP.definite    := definitepar;
+                     $NP.cases       := casespar;
+                     $NP.person      := 3; 
+                     $NP.genders     := genderspar;
+                     $NP.sexes       := sexespar;
+                     $NP.actsubcs    := [othernoun];
+                     $NP.temporal    := temporalpar;
+                     $NP.animate     := animatepar;
+                     $NP.human       := humanpar;
+                     $NP.actcomas    := [count];
+                     $NP.thetanp     := thetanppar;
+                     $NP.nounpatternefs := nounpatternefspar;
+                     $NP.mood     := detnpmoodpar;
+                     $NP.generic  := genericpar;
+                     $NP.posspred := posspredpar;
+                     $NP.possnietnp := possnietnppar;
+                     $NP.syntquant:= syntquantpar;
+                     $NP.NPhead   := thereNP;
+                     $NP.specQ    := yesspec;
+                     $NP.poss     := TRUE;
+                   END; !(*plural*)
+                 END !(*action*)
+*>
+
+END;
+&                           
+
+
+
+%NP5rule
+
+REGULAREXPRESSION:
+
+NP = SENTENCE/1
+                                                         
+
+CONDITIONSANDACTIONS:
+VAR    
+       classpar       :: timeadvclasstype;
+       deixispar      :: deixistype;
+       aspectpar      :: aspecttype;
+       retropar       :: retrotype;
+       infsortvar     :: inftype;
+       definitepar    :: deftype;
+       numberspar     :: numbersettype;
+       casespar       :: caseSETtype;
+       genderspar     :: genderSETtype;
+       sexespar       :: sexSETtype;
+       actsubcspar    :: nounsubcSETtype;
+       temporalpar    :: temporaltype;
+       animatepar     :: animatetype;
+       humanpar       :: humantype;
+       posscomaspar   :: posscomaSETtype;
+       actcomaspar    :: posscomaSETtype;
+       thetanppar     :: thetanptype;
+       nounpatternefspar :: synpatternSETtype;
+       detnpmoodpar   :: xpmoodtype;
+       genericpar     :: generictype;
+       posspredpar    :: posspredtype;
+       possnietnppar  :: possnietnptype;
+       syntquantpar   :: syntquanttype;
+       specQpar       :: specQtype;
+       posspar        :: posstype;
+
+       whdetfound     :: BOOLEAN;
+       qpfound        :: BOOLEAN;
+       genposs        :: BOOLEAN;
+       genreal        :: BOOLEAN;
+       possnumberspar :: numberSETtype;
+       detdefpar      :: deftype;
+       detrelfound    :: BOOLEAN;
+
+
+
+
+
+<*
+ HINIT:BEGIN
+         classpar      := omegatimeadvclass;
+         deixispar     := omegadeixis;
+         aspectpar     := omegaaspect;
+         retropar      := false;
+         definitepar   := omegadef;
+         numberspar    := [singular,plural];
+         casespar      := [nominative,accusative];
+         infsortvar    := omegainf;
+         genderspar    := [omegagender];
+         sexespar      := [];
+         actsubcspar   := [othernoun];
+         temporalpar   := false;
+         animatepar    := omegaAnimate;
+         humanpar      := omegaHuman;
+         posscomaspar  := [];
+         actcomaspar   := [count];
+         thetanppar    := omegathetanp;
+         nounpatternefspar := [];
+         detnpmoodpar  := nowh;
+         genericpar    := omegageneric;
+         posspredpar   := false;
+         possnietnppar := false;
+         syntquantpar  := Omegaquant;
+         specQpar      := yesspec; 
+         posspar       := true;
+
+         possnumberspar := [singular,plural];
+         whdetfound     := false;
+         qpfound        := false;
+         genposs        := true;
+         genreal        := false;
+         detdefpar      := omegadef;
+         detrelfound    := false;
+      END;
+
+
+
+1: 
+       <*
+         LOCALCONDITION: (%SENTENCE.mood = declarative)            AND
+                         (%SENTENCE.senttype = subordinateclause)  AND
+                         (%SENTENCE.modus = ingform)               AND
+                         (%SENTENCE.infsort IN [possing,opening]) AND
+                         (NOT %SENTENCE.adverbial)
+         GLOBAL: #CONDITION: TRUE
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+                              infsortvar := %SENTENCE.infsort;
+
+                            END
+       *>
+
+
+HFINAL: #CONDITION: TRUE
+        #ACTION: BEGIN
+                   MAKET_NP;
+                   $NP.number      := singular;
+                   $NP.superdeixis := omegadeixis;
+                   $NP.class       := classpar;
+                   $NP.deixis      := deixispar;
+                   $NP.aspect      := aspectpar;
+                   $NP.retro       := retropar;
+                   $NP.definite    := def;
+                   $NP.cases       := casespar;
+                   $NP.person      := 3; 
+                   $NP.genders     := genderspar;
+                   $NP.sexes       := sexespar;
+                   $NP.actsubcs    := [othernoun];
+                   $NP.temporal    := temporalpar;
+                   $NP.animate     := animatepar;
+                   $NP.human       := humanpar;
+                   $NP.actcomas    := [count];
+                   $NP.thetanp     := thetanppar;
+                   $NP.nounpatternefs := nounpatternefspar;
+                   $NP.mood        := detnpmoodpar;
+                   $NP.generic     := genericpar;
+                   $NP.posspred    := posspredpar;
+                   $NP.possnietnp  := possnietnppar;
+                   $NP.syntquant   := syntquantpar;
+                   IF infsortvar = possing THEN
+                     $NP.NPhead      := sentNP;
+                   IF infsortvar = opening THEN
+                     $NP.NPhead      := openingNP;
+                   $NP.specQ       := yesspec;
+                   $NP.poss        := TRUE;
+                 END !(*action*)
+*>
+
+END;
+&                           
+
+
+
+
+%CN1rule
+
+REGULAREXPRESSION:
+
+
+CN = { ADJP/1 | DETP/5 | SENTENCE/16 | PROPERNOUN/13} . NOUN/2 . 
+       [PROPERNOUN/17 | PREPP/18] . 
+       [PREPP/14 | SENTENCE/15] .
+       {(PREPP/3 |  ADVP/9)} . {SENTENCE/4}
+
+                                                         
+CONDITIONSANDACTIONS:
+  VAR  
+       classpar    :: timeadvclasstype;   
+       deixispar   :: deixistype;
+       aspectpar   :: aspecttype;
+       retropar    :: retrotype;          
+       definitepar :: deftype;
+       numberspar  ::: numberSETtype;
+       casespar    :: caseSETtype;
+       genderspar  :: genderSETtype;
+       sexespar    :: sexSETtype;
+       actsubcspar :: nounsubcSETtype;
+       temporalpar :: temporaltype;
+       posspar     :: posstype;
+       animatepar  ::: animatetype;
+       humanpar    :: humantype;
+       posscomaspar::: posscomaSETtype;
+       thetanppar  ::: thetanptype;
+       nounpatternefspar ::: synpatternSETtype;
+       prepkeypar  ::: keytype;
+       sORpostmodfound :: BOOLEAN;
+       COMPLexpected ::: BOOLEAN;
+       nonhumannounexpected ::: BOOLEAN;
+
+
+
+
+<*
+ HINIT:BEGIN
+         classpar    := omegaTimeAdvClass;   
+         deixispar   := omegadeixis;      
+         aspectpar   := omegaAspect; 
+         retropar    := false;          
+         definitepar := omegadef;   
+         numberspar  := [singular]; 
+         casespar    := [nominative, accusative];
+         genderspar  := [omegagender];
+         sexespar    := [];
+         actsubcspar := [othernoun];
+         temporalpar := false;
+         posspar     := false;
+         animatepar  := omegaAnimate;
+         humanpar    := omegaHuman;
+         posscomaspar:= [count];
+         thetanppar  := omegathetanp;
+         nounpatternefspar := [];
+         prepkeypar  := 0;
+         COMPLexpected := false;
+         sORpostmodfound := false;
+         nonhumannounexpected := false;
+       END;
+
+
+
+ 1  !(* modrel/ADJP *)
+      :<*
+        LOCALCONDITION: attributive in %ADJP.actuseefs 
+                        !(* restrictions on adjsubc? *)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := modrel
+                          END
+        *>
+
+5  !(* modrel/DETP *)
+     :<*
+        LOCALCONDITION: (%DETP.definite = indef) AND
+                        (%DETP.mood = nowh)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := modrel;
+                            definitepar := def;
+                            posscomaspar := %DETP.posscomas
+                          END
+        *>
+
+16 !(* Modrel/SENTENCE*)
+    :<* 
+        LOCALCONDITION: (%SENTENCE.PROsubject = true) AND
+                        (%SENTENCE.mood = anterelative) AND
+                        (%SENTENCE.modus = ingform)
+                        
+        GLOBAL: #CONDITION:  TRUE
+                #ACTION:  BEGIN
+                            SYNREL := modrel;
+                          END
+        *>
+
+
+2  !(* head/NOUN *)
+      :<*
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            classpar     := %NOUN.class;
+                            deixispar    := %NOUN.deixis;
+                            aspectpar    := %NOUN.aspect;
+                            retropar     := %NOUN.retro;    
+                            genderspar   := %NOUN.genders;
+                            numberspar   := %NOUN.numbers;
+                            sexespar     := %NOUN.sexes;
+                            actsubcspar  := %NOUN.subcs;
+                            temporalpar  := %NOUN.temporal;
+                            posspar      := %NOUN.poss;
+                            animatepar   := %NOUN.animate;
+                            humanpar     := %NOUN.human;
+                            posscomaspar := %NOUN.posscomas;
+                            thetanppar   := %NOUN.thetanp;
+                            nounpatternefspar := %NOUN.nounpatterns;
+                            prepkeypar   := %NOUN.prepkey;
+
+                            IF %NOUN.thetanp <> omegathetanp
+                               THEN COMPLexpected := TRUE;
+                          END
+        *>
+
+3     :<*  !(* postmodrel/PREPP *)
+        LOCALCONDITION: (%PREPP.stranded = false) AND
+                        ((%PREPP.headkey = KEY_ofPREPkey) OR
+                        (%PREPP.actsubcefs * [loc, dir, temp, 
+                                              comitative, voorfor] <> [])) AND
+                         (%PREPP.coord <> corrcoord) AND
+                        (%PREPP.mood = nowh)  
+
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := postmodrel;
+                            sORpostmodfound := true;
+                          END
+        *>
+
+
+4: 
+       <*
+         LOCALCONDITION: %SENTENCE.mood = relative
+         GLOBAL: #CONDITION: TRUE
+                 #ACTION:   BEGIN
+                              SYNREL := postmodrel;
+
+                            END
+       *>
+
+14    :<*
+        LOCALCONDITION: (%PREPP.mood = nowh )   AND
+                        (NOT %PREPP.stranded) !(*JO*) AND
+                         (%PREPP.coord <> corrcoord)
+        GLOBAL: #CONDITION: (COMPLexpected) AND
+                            (%PREPP.headkey = prepkeypar) AND
+                            (nounpatternefspar * [synPREPNP, synPREPNP_THATSENT,
+                                                  synPREPNP_QSENT] <> [])
+
+                #ACTION:  BEGIN
+                            SYNREL := prepobjrel; 
+                            sORpostmodfound := true;
+                          END
+        *>
+
+15     :<*
+        LOCALCONDITION: TRUE
+                        
+        GLOBAL: #CONDITION: (COMPLexpected) AND
+                      ((%SENTENCE.conjkey = KEY_thatconjkey) AND
+                        (%SENTENCE.mood = declarative) AND
+                        (synTHATSENT IN nounpatternefspar)) OR
+                        ((%SENTENCE.conjkey = KEY_whetherconjkey) AND
+                        (%SENTENCE.mood = yesnointerrogative) AND
+                        (synQSENT IN nounpatternefspar)) OR
+                        ((%SENTENCE.mood = whinterrogative) AND
+                        (synQSENT IN nounpatternefspar)) AND
+                         (%SENTENCE.coord <> corrcoord)
+
+                #ACTION:  BEGIN
+                            SYNREL := complrel;
+                          END
+        *>
+
+
+13     :<*
+        LOCALCONDITION: (singular IN %PROPERNOUN.numbers )  
+        GLOBAL: #CONDITION: numberspar = [singular]
+                #ACTION:  BEGIN
+                            SYNREL := modrel;
+                            nonhumannounexpected := true;
+                          END
+        *>
+
+17     :<*
+        LOCALCONDITION: (singular IN %PROPERNOUN.numbers )
+        GLOBAL: #CONDITION: numberspar = [singular]
+                #ACTION:  BEGIN
+                            SYNREL := postmodrel;
+                            sORpostmodfound := true;
+                          END
+        *>
+
+18     :<*  !(* modrel/PREPP: bag of potatoes *)
+        LOCALCONDITION: (%PREPP.stranded = false) AND
+                        (%PREPP.headkey = KEY_ofPREPkey) AND
+                        (%PREPP.coord <> corrcoord) AND
+                        (%PREPP.mood = nowh)  
+
+        GLOBAL: #CONDITION: NOT (detpundernp(b))
+                #ACTION:  BEGIN
+                            SYNREL := modrel;
+                          END
+        *>
+
+9     :<*
+        LOCALCONDITION: (%ADVP.mood = nowh)   AND
+                        (%ADVP.actsubcefs * 
+                                 [Locadv, DirAdv, TempAdv,
+                                  causadv] <> []) AND
+                         (%ADVP.coord <> corrcoord)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := postmodrel;
+                                                      END
+        *>
+
+
+HFINAL: #CONDITION: nonhumannounexpected <= (humanpar <> yeshuman)
+        #ACTION: BEGIN
+                 MAKET_CN;
+                 IF sORpostmodfound THEN
+                 actsubcspar := actsubcspar - [unitnoun];
+                   !(* to block '*three year/years in Beiroet ago'*)
+                 $CN.class      := classpar;
+                 $CN.deixis     := deixispar;
+                 $CN.aspect     := aspectpar;
+                 $CN.retro      := retropar;    
+                 $CN.definite   := definitepar;
+                 $CN.numbers    := numberspar;
+                 $CN.genders    := genderspar; 
+                 $CN.sexes      := sexespar;
+                 $CN.actsubcs   := actsubcspar;
+                 $CN.temporal   := temporalpar;
+                 $CN.poss       := posspar;
+                 $CN.animate    := animatepar;
+                 $CN.human      := humanpar;
+                 $CN.posscomas  := posscomaspar;
+                 $CN.thetanp    := thetanppar;
+                 $CN.nounpatternefs := nounpatternefspar;
+                 $CN.cases      := casespar;
+                 END
+*>
+END;
+&
+
+
+
+%DETPrule
+
+REGULAREXPRESSION:
+
+DETP = NUM/1 | DET/2 | DEMADJ/3 | QP/4 | ART/5 | CARD/11 |
+       (DETP/6 . PREP/7 . (DETP/8 | NP/9 | POSSADJ/10)) 
+
+CONDITIONSANDACTIONS:
+  VAR  definitepar   :: deftype;
+       posspredpar   :: posspredtype;
+       possnumberspar:: numberSETtype;
+       posscomaspar  :: posscomaSETtype;
+       detnpmoodpar  :: xpmoodtype;
+       possnietnppar :: possnietnptype;
+       syntquantpar  :: syntquanttype;
+
+
+<*
+ HINIT:BEGIN
+         definitepar    := omegadef;
+         posspredpar    := false;
+         possnumberspar := [singular];  
+         posscomaspar   := [count];
+         detnpmoodpar   := nowh;
+         possnietnppar  := false;
+         syntquantpar   := Omegaquant;  (* hoeft niet veranderd
+                                           attribuut vervult geen rol 
+                                           meer *)
+       END;
+
+
+
+
+1     :<*  !(*num*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            definitepar    := indef;
+                            possnumberspar := %NUM.numbers;
+                            posspredpar    := true;
+                          END
+        *>
+
+2     :<*  !(*det*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            definitepar   := %DET.definite; 
+                            posspredpar   := %DET.posspred; 
+                            possnumberspar := %DET.possnumbers; 
+                            posscomaspar  := %DET.posscomas; 
+                            detnpmoodpar  := %DET.mood;
+                            possnietnppar := %DET.possnietnp;
+                          END
+        *>
+
+3     :<*   !(*demadj*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            definitepar  := def;
+                            possnumberspar := [%DEMADJ.number];
+                            posspredpar  := true;
+                          END
+        *>
+
+4     :<*   !(*QP*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            definitepar  := %QP.definite;
+                            posspredpar  := %QP.posspred;
+                            possnumberspar := %QP.possnumbers;
+                            posscomaspar := %QP.posscomas;
+                            detnpmoodpar := %QP.mood
+                          END
+        *>
+
+5     :<*   !(*art*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            definitepar    := %ART.definite;
+                            possnumberspar := %ART.possnumbers;
+                            posscomaspar   := %ART.posscomas;
+                            posspredpar    := true;
+                            IF %ART.definite = indef
+                               THEN possnietnppar := true;
+                          END
+        *>
+
+6     :<*  !(* detp *)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := modrel;
+                            definitepar := adef;
+                            possnietnppar :=  %DETP.possnietnp;
+                            posspredpar   :=  %DETP.posspred;
+                            detnpmoodpar  :=  %DETP.mood;
+                            posscomaspar :=  %DETP.posscomas;
+                         (*  possnumberspar voor none en one *)
+                          END
+        *>
+
+7     :<* !(* prep *)
+        LOCALCONDITION: %PREP.key = KEY_ofprepkey
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := partrel
+                          END
+        *> 
+
+8     :<* !(* detp *)
+        LOCALCONDITION: (%DETP.definite = def)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            possnumberspar := %DETP.possnumbers;
+                          END
+        *>
+
+9     :<* !(* np *)
+        LOCALCONDITION: (%NP.definite = def)  AND
+                        GENunderNP(b)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            possnumberspar := [singular, plural];
+                          END
+        *>
+
+10     :<* !(* possadj *)
+        LOCALCONDITION: true
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            possnumberspar := [singular, plural];
+                          END
+        *>
+
+11     :<* !(* cardinal *)
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+                              possnumberspar := %CARD.possnumbers;
+                              definitepar := indef;
+                            END
+       *>
+
+
+
+
+HFINAL: #CONDITION: TRUE
+        #ACTION: BEGIN
+                 MAKET_DETP;
+                 $DETP.definite    := definitepar;
+                 $DETP.posspred    := posspredpar;
+                 $DETP.possnumbers := possnumberspar;
+                 $DETP.posscomas   := posscomaspar;
+                 $DETP.mood        := detnpmoodpar;
+                 $DETP.possnietnp  := possnietnppar;
+                 $DETP.syntquant   := syntquantpar;
+                 $DETP.superdeixis := omegadeixis;
+                 END
+*>
+END;
+&                           
+
+
+
+
+%PREPPrule
+REGULAREXPRESSION:
+
+PREPP = [ADVP/3 | NP/4] . PREP/1 . [NP/2 | PREPP/5 | ADVP/6 | ADJP/7 | SENTENCE
+/8]
+
+
+CONDITIONSANDACTIONS:
+
+VAR
+    actsubcefsvar  ::: prepsubceffsettype;
+    adjpfound      :: BOOLEAN;
+    advpfound      :: BOOLEAN;
+    aspectvar      :: aspecttype;
+    classvar       :: timeadvclasstype;
+    complfound     :: BOOLEAN;
+    deixisvar      :: deixistype;
+    headkeyvar     :: keytype;
+    moodvar        :: xpmoodtype;
+    npfound        :: BOOLEAN;
+    npheadvar      :: npheadtype;
+    ppfound        :: BOOLEAN;
+    retrovar       :: retrotype;
+    sentfound      :: BOOLEAN;
+    specQvar       :: specQtype;
+    strandedvar    :: BOOLEAN;
+    synppefsvar    :: synpatterneffsettype;
+    thetappvar     :: thetapptype;    
+
+
+
+<* 
+HINIT: BEGIN
+	 actsubcefsvar  := [];
+         adjpfound      := FALSE;
+         advpfound      := FALSE;
+	 aspectvar      := omegaAspect;
+	 classvar       := omegaTimeAdvClass;
+         complfound     := FALSE;
+	 deixisvar      := omegadeixis;
+	 headkeyvar     := 0;
+	 moodvar        := nowh;
+         npfound        := FALSE;
+         npheadvar      := otherNP;
+         ppfound        := FALSE;
+	 retrovar       := false;
+         sentfound      := FALSE;
+         specQvar       := omegaspec;
+         strandedvar    := FALSE;
+	 synppefsvar    := [];
+         thetappvar     := omegathetapp;    
+       END;
+  
+
+
+1: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+                              actsubcefsvar := %PREP.subcs;
+                              synppefsvar   := %PREP.synpps;
+                              headkeyvar    := %PREP.key;
+                              classvar      := %PREP.class;
+                              deixisvar     := %PREP.deixis;
+                              aspectvar     := %PREP.aspect;
+                              retrovar      := %PREP.retro;
+                              thetappvar    := %PREP.thetapp;
+                            END
+       *>
+
+2: 
+       <*
+         LOCALCONDITION: (%NP.cases * [accusative] <> [])
+         GLOBAL: #CONDITION: ( (actsubcefsvar <> [temp]) OR
+                               (%NP.temporal = true) )
+                 #ACTION:   BEGIN
+                              SYNREL    := objrel;
+                              moodvar   := %NP.mood;
+                              specQvar  := %NP.specQ;
+                              npheadvar := %NP.nphead;
+                              complfound := TRUE;
+                              npfound   := TRUE;
+                            END
+       *>
+
+3: 
+       <*
+         LOCALCONDITION: (preppadv IN %ADVP.actsubcefs)
+         GLOBAL: #CONDITION: TRUE
+                 #ACTION:   BEGIN
+                              SYNREL := modrel;
+
+                            END
+       *>
+
+4: 
+       <*
+         LOCALCONDITION: (%NP.nphead = otherNP)       AND
+                         (unitnoun IN %NP.actsubcs)
+         GLOBAL: #CONDITION: TRUE
+                 #ACTION:   BEGIN
+                              SYNREL := modrel;
+
+                            END
+       *>
+
+5: 
+       <*
+         LOCALCONDITION: ((%PREPP.actsubcefs * [loc, temp] <> [])   AND
+                          (NOT %PREPP.stranded)
+                         )
+         GLOBAL: #CONDITION: TRUE
+                 #ACTION:   BEGIN
+                              SYNREL     := objrel;
+                              complfound := TRUE;
+                              ppfound    := TRUE;
+                              specQvar   := yesspec;
+                            END
+       *>
+
+6: 
+       <*
+         LOCALCONDITION: (%ADVP.actsubcefs * [locadv, tempadv] <> [])
+         GLOBAL: #CONDITION: TRUE
+                 #ACTION:   BEGIN
+                              SYNREL     := objrel;
+                              complfound := TRUE;
+                              advpfound  := TRUE;
+                              specQvar   := yesspec;
+                            END
+       *>
+
+7: 
+       <*
+         LOCALCONDITION: (predicative IN %ADJP.actuseefs)
+         GLOBAL: #CONDITION: TRUE
+                 #ACTION:   BEGIN
+                              SYNREL     := predrel;
+                              complfound := TRUE;
+                              adjpfound  := TRUE;
+                              specQvar   := yesspec;
+                            END
+       *>
+
+8: 
+       <*
+         LOCALCONDITION:( %SENTENCE.senttype = subordinateclause ) AND
+            (( %SENTENCE.mood IN [whinterrogative,yesnointerrogative]) OR
+             ( %SENTENCE.infsort IN [accing]))
+         GLOBAL: #CONDITION: TRUE
+                 #ACTION:   BEGIN
+                              SYNREL     := predrel;
+                              complfound := TRUE;
+                              sentfound  := TRUE;
+                              specQvar   := yesspec;
+                            END
+       *>
+
+
+HFINAL: #CONDITION: true
+        #ACTION: BEGIN
+                    IF (NOT complfound)      AND
+                       (synppefsvar * [synnovpargs] <> [])
+                    THEN synppefsvar := synppefsvar * [synnovpargs];
+                    IF (NOT complfound)      AND
+                       (synppefsvar * [synNP] <> [])
+                    THEN BEGIN
+                      synppefsvar := synppefsvar * [synNP];
+                      strandedvar := TRUE;
+                    END;
+                    IF npfound
+                    THEN BEGIN
+                      IF (npheadvar = openingnp) THEN 
+                        synppefsvar := synppefsvar * [synOPENGERUND]
+                      ELSE synppefsvar := synppefsvar * [synNP];
+                    END;
+                    IF adjpfound 
+                    THEN synppefsvar := synppefsvar * [synOPENADJPPROP, 
+                                                       synCLOSEDADJPPROP];
+                    IF advpfound
+                    THEN synppefsvar := synppefsvar * [synLOCPREPP];
+                    IF ppfound
+                    THEN synppefsvar := synppefsvar * [synLOCPREPP];
+                    IF sentfound
+                    THEN synppefsvar := synppefsvar * [synNP];
+                    IF synppefsvar <> [] THEN BEGIN
+		      MAKET_PREPP;
+		      $PREPP.actsubcefs  := actsubcefsvar;
+		      $PREPP.mood        := moodvar;
+		      $PREPP.synppefs    := synppefsvar;
+		      $PREPP.headkey     := headkeyvar;
+		      $PREPP.class       := classvar;
+		      $PREPP.deixis      := deixisvar;
+		      $PREPP.aspect      := aspectvar;
+		      $PREPP.retro       := retrovar;
+		      $PREPP.superdeixis := omegadeixis;
+		      $PREPP.thetapp     := thetappvar;
+		      $PREPP.specQ       := specQvar;
+		      $PREPP.stranded    := strandedvar;
+                    END
+                 END
+*>
+END  !(*PREPP*);
+
+& 
+
+
+%ADVPrule1
+REGULAREXPRESSION: 
+ADVP = [ NP/4 | NP/44 | QP/5 | ADVP/6] . ADV/1 . [THANP/7 ] . [ NP/2 | ADVP/3 ]
+ 
+CONDITIONSANDACTIONS:
+VAR
+                       reqvar           :: polarityEFFSETtype;
+                       envvar           :: polarityEFFSETtype;
+                       classvar         :: timeadvclasstype;
+                       deixisvar        :: deixistype;
+                       aspectvar        :: aspecttype;
+                       retrovar         :: retrotype;
+                       moodvar          :: xpmoodtype;
+                       thetaadvvar      :: thetaadvtype;
+                       superdeixisvar   :: deixistype;
+                       actsubcefsvar    :: advsubcEFFSETtype;
+                       advpatternefsvar :: synpatternEFFSETtype;
+                       positionvar      :: positionSETtype;
+                       possnietnpvar    :: possnietnptype;
+                       thanasvar        :: thanascompltype;
+                       temporalvar      :: temporaltype;
+                       headfound        :: BOOLEAN;
+                       precomplfound    ::: BOOLEAN;
+                       postcomplfound   ::: BOOLEAN;        
+                       THANPpossible    ::: BOOLEAN;
+                       ASCOMPLADVfound  :: BOOLEAN;
+                       DEGREEMODfound   ::: BOOLEAN;
+                       DEGREEADVexpected ::: BOOLEAN;
+                       DEGREEADVfound   ::: BOOLEAN;
+
+
+<* 
+HINIT: BEGIN
+          
+        reqvar              :=[pospol, negpol, omegapol];
+        envvar              :=[pospol, negpol, omegapol];
+        classvar            :=omegaTimeAdvClass;
+        deixisvar           :=omegadeixis;
+        aspectvar           :=omegaAspect;
+        retrovar            :=false;
+        moodvar             :=nowh;
+        thetaadvvar         :=omegathetaadvp;
+        superdeixisvar      :=omegadeixis;
+        actsubcefsvar       :=[];
+        advpatternefsvar    :=[];
+        positionvar         :=[];  
+        possnietnpvar       :=false;      
+        thanasvar           :=omegacompl; 
+        headfound           :=false;      
+        precomplfound       :=false;      
+        postcomplfound      :=false;      
+        temporalvar         :=false;
+        THANPpossible       := false;
+        ASCOMPLADVfound     := false;
+        DEGREEMODfound      := false;
+        DEGREEADVexpected   := false;
+        DEGREEADVfound      := false;
+
+       END;
+
+1: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: true
+                 #ACTION:   BEGIN
+                              SYNREL := head;
+                              headfound := true;
+			      reqvar              :=%ADV.req;
+			      envvar              :=%ADV.env;
+			      classvar            :=%ADV.class;
+			      deixisvar           :=%ADV.deixis;
+			      aspectvar           :=%ADV.aspect;
+			      retrovar            :=%ADV.retro;
+			      moodvar             :=%ADV.mood;
+			      thetaadvvar         :=%ADV.thetaadv;
+			      actsubcefsvar       :=%ADV.subcs;
+			      advpatternefsvar    :=%ADV.advpatterns;
+			      positionvar         :=%ADV.position;  
+			      possnietnpvar       :=%ADV.possnietnp;      
+			      thanasvar           :=%ADV.thanas; 
+			      temporalvar         :=%ADV.temporal;
+                            END
+       *>
+
+2: 
+       <*
+         LOCALCONDITION:    (%NP.temporal = true)    !(* dutch: al DRIE UUR*) 
+                         AND
+                            (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT precomplfound) AND
+                             (NOT postcomplfound)
+                 #ACTION:  BEGIN
+                              SYNREL := modrel;
+                              postcomplfound := true;
+                           END
+       *>
+
+3:  !(* overgenomen uit Dutch; engels voorbeeld?? *)
+       <*
+         LOCALCONDITION: (%ADVP.temporal = true) AND
+                         (synMEASUREPHRASE IN %ADVP.advpatternefs) AND
+                         (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT precomplfound) AND
+                             (NOT postcomplfound)
+                 #ACTION:  BEGIN
+                              SYNREL := modrel;
+                              postcomplfound := true;
+                           END
+       *>
+
+
+
+4: 
+       <*
+         LOCALCONDITION:   (%NP.temporal = true)      !(* three hours ago *)
+                         AND
+                           (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: (NOT precomplfound) AND
+                             (NOT postcomplfound)
+                 #ACTION:  BEGIN
+                              SYNREL := modrel;
+                              precomplfound := true;
+                           END
+       *>
+
+
+
+44: 
+       <*
+         LOCALCONDITION: (unitnoun IN %NP.actsubcs) OR
+                         ((%NP.definite = indef) AND
+                          (mass IN %NP.actcomas ) 
+                         ) (* amountnp *) AND 
+                         (%NP.coord <> corrcoord)
+         GLOBAL: #CONDITION: NOT DEGREEMODfound
+                 #ACTION:   BEGIN
+                              SYNREL := premodrel;
+                              degreeadvexpected := true;
+                              DEGREEmodfound := true;
+                            END
+       *>
+
+5: 
+       <*
+         LOCALCONDITION: %QP.hop = false
+         GLOBAL: #CONDITION: NOT DEGREEMODfound
+                 #ACTION:  BEGIN
+                              SYNREL := degreemodrel;
+                              moodvar := %QP.mood;
+                              IF %QP.thanas <> omegacompl
+                              THEN THANPpossible := true;
+                              DEGREEmodfound := true;
+                           END
+       *>
+
+6: 
+       <*
+         LOCALCONDITION: (degreeadv IN %ADVP.actsubcefs)  AND
+                         (%ADVP.coord <> corrcoord)
+         GLOBAL: #CONDITION: NOT DEGREEMODfound
+                 #ACTION:  BEGIN
+                              SYNREL := degreemodrel;
+                              If %ADVP.thanas = ascompl
+                              THEN ASCOMPLADVfound := true;
+                              If %ADVP.thanas = ascompl
+                              THEN THANPpossible := true;
+                              moodvar := %ADVP.mood;
+                              DEGREEmodfound := true;
+                           END
+       *>
+
+7: 
+       <*
+         LOCALCONDITION: true
+         GLOBAL: #CONDITION: THANPpossible
+                 #ACTION:   BEGIN
+                              SYNREL := postmodrel; 
+                            END
+       *>
+
+
+
+HFINAL: #CONDITION: headfound AND
+                    ((actsubcefsvar * [tempadv] <> []) OR
+                    ((NOT precomplfound) AND
+                     (NOT postcomplfound)
+                    ))
+        #ACTION: BEGIN
+
+                    !(*check of aanwezige complementen compatibel zijn met ADV*)
+                    IF postcomplfound
+                    THEN advpatternefsvar := advpatternefsvar * [synNP];
+
+                    IF precomplfound
+                    THEN advpatternefsvar := 
+                                        advpatternefsvar * [synMEASUREPHRASE];
+
+
+                    !(*check of verwachte complementen inderdaad aanwezig zijn*)
+                    IF ((advpatternefsvar <= [synMEASUREPHRASE]) AND 
+                        (NOT precomplfound)
+                       )
+                    THEN advpatternefsvar := [];
+                    IF ((advpatternefsvar <= [synNP]) AND
+                        (NOT postcomplfound)
+                       )
+                    THEN advpatternefsvar := [];
+                       
+                    IF ((advpatternefsvar <> []) AND
+                       (degreeadvexpected <= degreeadvfound)
+                      )
+                    THEN BEGIN
+                    MAKET_ADVP;
+		    $ADVP.req           := reqvar;
+		    $ADVP.env           := envvar;
+		    $ADVP.class         := classvar;
+		    $ADVP.deixis        := deixisvar;
+		    $ADVP.aspect        := aspectvar;
+		    $ADVP.retro         := retrovar;
+		    $ADVP.mood          := moodvar;
+		    $ADVP.thetaadv      := thetaadvvar;
+		    $ADVP.superdeixis   := superdeixisvar;
+		    $ADVP.actsubcefs    := actsubcefsvar;
+		    $ADVP.advpatternefs := advpatternefsvar;
+		    $ADVP.position      := positionvar;  
+		    $ADVP.possnietnp    := possnietnpvar;      
+		    $ADVP.thanas        := thanasvar; 
+		    $ADVP.temporal      := temporalvar;
+                    END
+                 END
+*>
+END;
+
+&
+<FF>
+%NP6rule
+
+REGULAREXPRESSION:
+
+NP = REFLPRO/1
+                                                         
+CONDITIONSANDACTIONS:
+  VAR  
+       personpar      :: persontype;
+       numberspar     :: numberSETtype;
+       sexespar       :: sexSETtype;
+       genderspar     :: genderSETtype;
+
+
+
+
+<*
+ HINIT:BEGIN
+         personpar    := 3;
+         numberspar   := [];
+         sexespar     := [];
+         genderspar   := [omegagender];
+        END;
+
+
+
+1     :<*  !(*reflpro*)
+        LOCALCONDITION: TRUE
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            personpar   := %REFLPRO.person;
+                            numberspar  := [%REFLPRO.number];
+                            genderspar  := [%REFLPRO.gender];
+                            IF %REFLPRO.gender = masculinegender
+                              THEN sexespar := [masculine] 
+                              ELSE IF %REFLPRO.gender = femininegender
+                                THEN sexespar := [feminine]
+                                ELSE sexespar := [];   
+                          END
+        *>
+
+HFINAL: #CONDITION: TRUE
+        #ACTION: BEGIN
+                       MAKET_NP;
+                       $NP.superdeixis := omegadeixis;
+                       $NP.definite  := def;
+                       $NP.person    := personpar;
+                       IF (singular IN numberspar) 
+                         THEN
+                           $NP.number := singular
+                         ELSE
+                           $NP.number := plural;
+                       IF (personpar <> 3) 
+                         THEN
+                           BEGIN
+                             $NP.animate := yesanimate;
+                             $NP.human   := yeshuman;
+                           END
+                         ELSE
+                           IF (personpar = 3) AND
+                              (genderspar <> [omegagender])
+                             THEN  
+                               BEGIN
+                                 $NP.animate := yesanimate;
+                                 $NP.human := yeshuman;
+                               END;
+                       $NP.cases     := [accusative];
+                       $NP.NPhead    := reflNP;
+                       $NP.specQ     := yesspec;
+                       $NP.poss      := false;
+                       $NP.sexes     := sexespar;
+                     END; !(*make_t*)
+
+*>
+END;
+&                           
+%NP7rule
+
+REGULAREXPRESSION:
+
+NP = (NP/1 . PUNC/2 . NP/3 . [PUNC/4])
+                                                         
+
+CONDITIONSANDACTIONS:
+  VAR  
+       definitepar :: deftype;
+       personpar :: persontype;
+       numberpar ::: numbertype;
+       casespar ::: caseSETtype;
+       genderspar :: genderSETtype;
+       sexespar :: sexSETtype;
+       actsubcspar :: nounsubcSETtype;
+       temporalpar :: temporaltype;
+       posspar :: posstype;
+       animatepar :: animatetype;
+       humanpar :: humantype;
+       actcomaspar :: posscomaSETtype;
+       thetanppar :: thetanptype;
+       nounpatternefspar :: synpatternSETtype;
+       genericpar :: generictype;
+       NPheadpar :: NPheadtype;
+       posspredpar :: posspredtype;
+       possnietnppar :: possnietnptype;
+       detnpmoodpar :: xpmoodtype;
+       syntquantpar :: syntquanttype;
+       specQpar     :: specQtype;
+       classpar :: timeadvclasstype;
+       deixispar  :: deixistype;
+       aspectpar  :: aspecttype;
+       retropar   :: retrotype;
+
+
+<*
+ HINIT:BEGIN
+         definitepar := omegadef ;  
+         personpar := 3;
+         numberpar := omeganumber;   
+         casespar := [nominative, accusative];
+         genderspar := [omegagender];
+         sexespar := [];
+         actsubcspar := [othernoun];
+         temporalpar := false;
+         posspar := false;
+         animatepar := omegaAnimate;
+         humanpar := omegaHuman;
+         actcomaspar := [];
+         thetanppar := omegathetanp;
+         nounpatternefspar := [];
+         genericpar := omegageneric;
+         NPheadpar := otherNP;
+         posspredpar := false;
+         possnietnppar := false;
+         detnpmoodpar := nowh;
+         syntquantpar := Omegaquant;
+         specQpar  := omegaspec; 
+         classpar := omegaTimeAdvClass;
+         deixispar := omegadeixis;
+         aspectpar := omegaAspect;
+         retropar := false;
+      END;
+
+
+1     :<*
+        LOCALCONDITION: (%NP.NPhead IN  [persproNP, othernp]) AND
+                        ( %NP.mood = nowh)  AND
+                         (%NP.coord <> corrcoord)
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := head;
+                            definitepar := %NP.definite; 
+                            personpar := %NP.person;
+                            numberpar := %NP.number;
+                            casespar := %NP.cases;
+                            genderspar := %NP.genders;
+                            sexespar := %NP.sexes;
+                            actsubcspar := %NP.actsubcs;
+                            temporalpar := %NP.temporal;
+                            posspar := %NP.poss;
+                            animatepar := %NP.animate;
+                            humanpar := %NP.human;
+                            actcomaspar := %NP.actcomas;
+                            thetanppar := %NP.thetanp;
+                            nounpatternefspar := %NP.nounpatternefs;
+                            genericpar := %NP.generic;
+                            NPheadpar := %NP.NPhead;
+                            posspredpar := %NP.posspred;
+                            possnietnppar := %NP.possnietnp;
+                            detnpmoodpar := %NP.mood;
+                            syntquantpar := %NP.syntquant;
+                            specQpar  := %NP.specQ;
+                            classpar := %NP.class;
+                            deixispar  :=  %NP.deixis;
+                            aspectpar  := %NP.aspect;
+                            retropar   := %NP.retro;
+                          END
+        *>
+
+2     :<*
+        LOCALCONDITION: %PUNC.key = KEY_kommaPUNCkey 
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := puncrel;
+                          END
+        *>
+
+3     :<*
+        LOCALCONDITION: (%NP.NPhead IN [persproNP, othernp]) AND
+                        (%NP.mood = nowh)  AND
+                         (%NP.coord <> corrcoord)
+        GLOBAL: #CONDITION: (%NP.number = numberpar) AND
+                            (%NP.cases = casespar) 
+                #ACTION:  BEGIN
+                            SYNREL := apposrel;
+                          END
+        *>
+
+4     :<*
+        LOCALCONDITION: %PUNC.key = KEY_kommaPUNCkey 
+        GLOBAL: #CONDITION: TRUE
+                #ACTION:  BEGIN
+                            SYNREL := puncrel;
+                          END
+        *>
+
+
+HFINAL: #CONDITION: TRUE
+        #ACTION: BEGIN
+                   MAKET_NP;
+                 $NP.definite := definitepar;
+                 $NP.person := personpar;
+                 $NP.number := numberpar;
+                 $NP.cases := casespar;
+                 $NP.genders := genderspar;
+                 $NP.sexes := sexespar;
+                 $NP.actsubcs := actsubcspar;
+                 $NP.temporal := temporalpar;
+                 $NP.poss := posspar;
+                 $NP.animate := animatepar;
+                 $NP.human := humanpar;
+                 $NP.actcomas := actcomaspar;
+                 $NP.thetanp := thetanppar;
+                 $NP.nounpatternefs := nounpatternefspar;
+                 $NP.posspred := posspredpar;
+                 $NP.possnietnp := possnietnppar;
+                 $NP.mood := detnpmoodpar; 
+                 $NP.generic := genericpar;
+                 $NP.syntquant := syntquantpar;
+                 $NP.NPhead := NPheadpar;
+                 $NP.specQ  := specQpar;
+                 $NP.class := classpar;
+                 $NP.deixis := deixispar;
+                 $NP.aspect := aspectpar;
+                 $NP.retro := retropar;
+                 END
+*>
+END;
+&                           
+
+%%
