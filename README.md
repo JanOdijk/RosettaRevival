@@ -26,5 +26,5 @@ A number of folders have been set up to store what is available from the past:
       * .lok
       * .slk
       * .cpt
-  * When unzipping there turned out to be two different make files of different sizes with the same name. This still has to be looked into. 
+  * When unzipping there turned out to be two files that differ only in their names by upper. v. lower case: Mrule.make  and mrule.make in the DUTCH, ENGLISH and SPANISH folders. Since I unzipped on a Windows system, only one of these could be extracted. This still has to be looked into. 
 
