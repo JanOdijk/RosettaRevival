@@ -11,7 +11,7 @@ A number of folders have been set up to store what is available from the past:
 * _RBS_: Rosetta beheer Systeem
 * _RosettaCD_: the contents of the Rosetta CD. 
 
-## Update 2026-05-7
+## Update 2026-05-8
 
 * _Gridline_: 
     * Added on 2026=05-07: analysis files by GridLine and some Rosetta documentation files. 
@@ -26,5 +26,7 @@ A number of folders have been set up to store what is available from the past:
       * .lok
       * .slk
       * .cpt
+  * Some .p and .pof files are actually derived files but they have been retained because  they need only be derived again when we change one of the rules, which we currently do not plan to do.
+  * The folder LEX has also been included, though on the full-RosettaCD it is a separate folder outside of the ARCHIVE folder. We have to check where the relevant files in the subfolders (by language) should be located.
   * When unzipping there turned out to be two files that differ only in their names by upper. v. lower case: Mrule.make  and mrule.make in the DUTCH, ENGLISH and SPANISH folders. Since I unzipped on a Windows system, only one of these could be extracted. This still has to be looked into. 
 
